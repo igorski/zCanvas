@@ -390,36 +390,6 @@ zgor.ZSprite.prototype.getElement = function()
 };
 
 /**
- * @override
- * @public
- */
-zgor.ZSprite.prototype.onAddedToStage = function()
-{
-    // inherited from interface
-};
-
-/**
- * @override
- * @public
- */
-zgor.ZSprite.prototype.onRemovedFromStage = function()
-{
-    // inherited from interface
-};
-
-/**
- * @public
- * @param {boolean} aValue whether to use event bubbling
- */
-zgor.ZSprite.prototype.setEventBubbling = function( aValue )
-{
-    this._useEventBubbling = aValue;
-
-    // will update event bubbling status in case Sprite has a parent container
-    this.setParent( this._parent, this._useEventBubbling );
-};
-
-/**
  * set a reference to the parent sprite containing this one
  *
  * @override
