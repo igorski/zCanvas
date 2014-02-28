@@ -24,20 +24,27 @@ var zgor = zgor || {};
 
 /**
  * provides an API equivalent to the Flash Sprite / Display Object for manipulating "Objects" on a canvas element.
- * extends a basic EventTarget for dispatching events, delegated by the zCanvas
  *
- * inheriting classes should override the public "draw"-method which is used for drawing the
- * sprite's visual representation onto the zCanvas. This method is invoked on each draw cycle.
+ * the basic zSprite renders an Image onto a zCanvas and can capture interaction events, and be draggable
+ *
+ * inheriting classes that require custom logic should override the public "update"-method which is
+ * invoked prior before the contents of this Sprite are rendered onto the zCanvas
+ *
+ * inheriting classes that have custom draw logic, should also override the public "draw"-method which is used
+ * for drawing the zSprite's visual representation onto the zCanvas. This method is invoked on each draw cycle.
  *
  * @constructor
  * @extends {util.Disposable}
  *
- * @param {number}        aXPos initial X position of this sprite
- * @param {number}        aYPos initial X position of this sprite
- * @param {number}        aWidth width of this sprite
- * @param {number}        aHeight width of this sprite
- * @param {Image|string=} aImageSource optional image, when passed, no override of the "draw"-method is required, as
- *                        it will draw the image. Can be either HTMLImageElement or base64 encoded string
+ * @param {number}        aXPos (initial) x-coordinate position of this sprite
+ * @param {number}        aYPos (initial) y-coordinate position of this sprite
+ * @param {number}        aWidth the width this Sprite will occupy on the zCanvas
+ * @param {number}        aHeight the height this Sprite will occupy on the zCanvas
+ * @param {Image|string=} aImageSource optional image, when given, no override of the "draw"-method is required, as
+ *                        it will render the image by default at the current coordinates and at the given
+ *                        width and height. aImageSource can be either HTMLImageElement or a base64 encoded string
+ *                        if not defined, you must override the "draw"-method as otherwise this sprite won't
+ *                        render anything onto the zCanvas
  */
 zgor.ZSprite = function( aXPos, aYPos, aWidth, aHeight, aImageSource )
 {
@@ -157,19 +164,24 @@ zgor.ZSprite.prototype.next;
 
 /**
  * reference to the zCanvas holding this zSprite
+ * NOTE : will be null if the zSprite isn't added to
+ * the display list
  *
  * @public
  * @type {zgor.zCanvas}
  */
-zgor.ZSprite.prototype.zCanvas;
+zgor.ZSprite.prototype.canvas;
 
 /* public methods */
 
 /**
  * @public
  * @param {CanvasRenderingContext2D} aCanvasContext
+ * @param {number} currentTimestamp the current timestamp
+ *                 which can be used to create strict timed animations
+ *                 ( keep zCanvas' framerate in mind!)
  */
-zgor.ZSprite.prototype.draw = function( aCanvasContext )
+zgor.ZSprite.prototype.draw = function( aCanvasContext, currentTimestamp )
 {
     // extend in subclass if you're drawing a custom object instead of a graphical asset, don't
     // forget to invoke the super call for drawing the child display list !
@@ -216,26 +228,24 @@ zgor.ZSprite.prototype.setDraggable = function( aValue, aKeepInBounds )
 /**
  * invoked on each render cycle before the draw-method
  * is invoked, you can override this in your subclass
- * for custom logic / animation
+ * for custom logic / animation such as updating the
+ * state of this Object (like position, size, etc.)
  *
  * @public
+ *
+ * @param {number} currentTimestamp the current timestamp
+ *                 which can be used to create strict timed animations
+ *                 ( keep zCanvas' framerate in mind!)
  */
-zgor.ZSprite.prototype.update = function()
+zgor.ZSprite.prototype.update = function( currentTimestamp )
 {
-    // just an example, override
-
-    /*
-    if ( this.isDragging )
-        return;
-
-    var time = +new Date() * 0.002;
-
-    this.setX( Math.sin( time ) * 96 + this.bounds.width );
-    this.setY( Math.cos( time * 0.9 ) * 96 + this.bounds.height );
-    */
+    // override in subclass
 };
 
 /**
+ * update / replace the Image contents of this zSprite, can be used
+ * to swap spritesheets (for instance)
+ *
  * @public
  *
  * @param {Image|string=} aImage image, can be either HTMLImageElement or base64 encoded string
@@ -266,13 +276,13 @@ zgor.ZSprite.prototype.updateImage = function( aImage, aNewWidth, aNewHeight )
 
     if ( aNewWidth )
     {
-        var prevWidth     = this.bounds.width;
+        var prevWidth     = this.bounds.width || 0;
         this.bounds.width = aNewWidth;
         this.bounds.left -= ( aNewWidth * .5 - prevWidth * .5 );
     }
     if ( aNewHeight )
     {
-        var prevHeight     = this.bounds.height;
+        var prevHeight     = this.bounds.height || 0;
         this.bounds.height = aNewHeight;
         this.bounds.top   -= ( aNewHeight *.5 - prevHeight *.5 );
     }
@@ -281,8 +291,8 @@ zgor.ZSprite.prototype.updateImage = function( aImage, aNewWidth, aNewHeight )
 
     if ( this._keepInBounds && ( aNewWidth || aNewHeight ))
     {
-        var minX = -( this.bounds.width  - this.zCanvas.getWidth() );
-        var minY = -( this.bounds.height - this.zCanvas.getHeight() );
+        var minX = -( this.bounds.width  - this.canvas.getWidth() );
+        var minY = -( this.bounds.height - this.canvas.getHeight() );
 
         if ( this.bounds.left > 0 ) {
             this.bounds.left = 0;
@@ -368,6 +378,24 @@ zgor.ZSprite.prototype.setY = function( aValue )
             theChild = theChild.next;
         }
     }
+};
+
+/**
+ * @public
+ * @return {number}
+ */
+zgor.ZSprite.prototype.getWidth = function()
+{
+    return this.bounds.width;
+};
+
+/**
+ * @public
+ * @return {number}
+ */
+zgor.ZSprite.prototype.getHeight = function()
+{
+    return this.bounds.height;
 };
 
 /**
@@ -460,6 +488,8 @@ zgor.ZSprite.prototype.addChild = function( aChild )
         aChild.next      = null;
     }
     aChild.setParent( this, this._useEventBubbling );
+    aChild.canvas = this.canvas;
+
     this._children.push( aChild );
 
     return this;
@@ -483,6 +513,7 @@ zgor.ZSprite.prototype.removeChild = function( aChild )
         }
     }
     aChild.setParent( null );
+    aChild.canvas = null;
 
     // update linked list
     var l = this._children.length;
@@ -529,14 +560,53 @@ zgor.ZSprite.prototype.contains = function( aChild )
 /* event handlers */
 
 /**
- * invoked when the user interacts with the Canvas, this method evaluates
- * the event data and applies it to this object when applicable
+ * invoked when the user clicks / touches this sprite, NOTE : this
+ * is a "down"-handler and indicates the sprite has just been touched
+ *
+ * @protected
+ *
+ * @param {number} aXPosition position of the touch / cursor
+ * @param {number} aYPosition position of the touch / cursor
+ */
+zgor.ZSprite.prototype.handlePress = function( aXPosition, aYPosition )
+{
+    // override in subclass
+};
+
+/**
+ * invoked when the user releases touch of this (previously pressed) Sprite
+ *
+ * @protected
+ */
+zgor.ZSprite.prototype.handleRelease = function()
+{
+    // override in subclass
+};
+
+/**
+ * invoked when user has clicked / tapped this Sprite, this indicates
+ * the user has pressed and released within 250 ms
+ *
+ * @protected
+ */
+zgor.ZSprite.prototype.handleClick = function()
+{
+    // override in class extension
+};
+
+/**
+ * invoked when the user interacts with the zCanvas, this method evaluates
+ * the event data and checks whether it applies to this sprite and
+ * when it does, applicable delegate handlers will be invoked on this Object
+ * (see "handlePress", "handleRelease", "handleClick", "handleMove")
+ *
+ * do NOT override this method, override the individual "protected" handlers instead
  *
  * @public
  *
  * @param {number} aEventX the events X offset, passed for quick evaluation of position updates
  * @param {number} aEventY the events Y offset, passed for quick evaluation of position updates
- * @param {Event} aEvent the original event for further querying
+ * @param {Event} aEvent the original event that triggered this action
  *
  * @return {boolean} whether this zSprite has handled the event
  */
@@ -574,6 +644,16 @@ zgor.ZSprite.prototype.handleInteraction = function( aEventX, aEventY, aEvent )
         if ( aEvent.type == "touchend" ||
              aEvent.type == "mouseup" )
         {
+            this.isDragging = false;
+
+            // in case we only handled this object for a short
+            // period (250 ms), we assume it was clicked / tapped
+
+            if ( /** @type {number} */ ( +new Date() ) - this._dragStartTime < 250 )
+            {
+                this.handleClick();
+            }
+
             this.handleRelease();
             return true;
         }
@@ -592,6 +672,12 @@ zgor.ZSprite.prototype.handleInteraction = function( aEventX, aEventY, aEvent )
             if ( aEvent.type == "touchstart" ||
                  aEvent.type == "mousedown" )
             {
+                this.isDragging     = true;
+                this._dragStartTime = +new Date();
+
+                this._dragStartOffset            = { "x" : this.bounds.left, "y" : this.bounds.top };
+                this.__dragStartEventCoordinates = { "x" : aEventX, "y" : aEventY };
+
                 this.handlePress( aEventX, aEventY );
                 return true;
             }
@@ -610,36 +696,7 @@ zgor.ZSprite.prototype.handleInteraction = function( aEventX, aEventY, aEvent )
 };
 
 /**
- * invoked when a click / tap event has been registered
- *
- * @protected
- */
-zgor.ZSprite.prototype.handleClick = function()
-{
-    // override in class extension
-};
-
-/**
- * press handler, invoked by the "handleInteraction"-method
- * this method will delegate drag and click logic
- *
- * @private
- *
- * @param {number} aXPosition
- * @param {number} aYPosition
- */
-zgor.ZSprite.prototype.handlePress = function( aXPosition, aYPosition )
-{
-    this.isDragging     = true;
-    this._dragStartTime = +new Date();
-
-    this._dragStartOffset            = { "x" : this.bounds.left, "y" : this.bounds.top };
-    this.__dragStartEventCoordinates = { "x" : aXPosition,       "y" : aYPosition };
-};
-
-/**
  * move handler, invoked by the "handleInteraction"-method
- * this method will delegate drag logic
  *
  * @private
  *
@@ -660,10 +717,10 @@ zgor.ZSprite.prototype.handleMove = function( aXPosition, aYPosition )
     //theX = aXPosition - thisHalfWidth;
     //theY = aYPosition - thisHalfHeight;
 
-    if ( this.zCanvas )
+    if ( this.canvas )
     {
-        var stageWidth  = this.zCanvas.getWidth();
-        var stageHeight = this.zCanvas.getHeight();
+        var stageWidth  = this.canvas.getWidth();
+        var stageHeight = this.canvas.getHeight();
 
         // keep within bounds ?
 
@@ -705,25 +762,6 @@ zgor.ZSprite.prototype.handleMove = function( aXPosition, aYPosition )
     }
     this.setX( theX );
     this.setY( theY );
-};
-
-/**
- * unpress handler, invoked by the "handleInteraction"-method
- * this method will delegate drag and click logic
- *
- * @private
- */
-zgor.ZSprite.prototype.handleRelease = function()
-{
-    this.isDragging = false;
-
-    // in case we only handled this object for a short
-    // period, we assume it was clicked / tapped
-
-    if ( /** @type {number} */ ( +new Date() ) - this._dragStartTime < 250 )
-    {
-        this.handleClick();
-    }
 };
 
 /* protected methods */

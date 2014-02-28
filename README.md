@@ -9,6 +9,10 @@ The concept of zCanvas encourages Object Oriented Programming, where each custom
 project should inherit its prototype from the zSprite-"class". You'll find you'll only have to override two methods
 for custom drawable logic and its visual rendering.
 
+zCanvas will provide an API that takes care of all animation and update logic you'd associate with, for instance, a game
+loop. However, the rendering logic (i.e. the "drawing" of the visual content) can be as low level as you'd like, by
+drawing straight onto the <canvas> using the browsers CanvasRenderingContext2D-API.
+
 zCanvas has been written in vanilla JavaScript and thus works independent from (and should work with) any other
 JavaScript framework.
 
@@ -20,8 +24,8 @@ provides an API that allows you to interact with drawable Objects as separate en
 elements leaving you, as developer, without the hassle of managing the relation of the drawn elements to the <canvas> element and DOM.
 
 zCanvas follows the concept of the DisplayList (familiar to those knowledgeable in ActionScript 3) where drawable Objects
-become visible on screen once they have been added to a container. zSprites can also be stacked within other zSprites.
-If you're familiar with addChild and removeChild, you're good to go.
+become visible on screen once they have been added to a container. zSprites are also containers, so you can stack zSprites
+onto other zSprites, without having to worry about z indices. If you're familiar with addChild and removeChild, you're good to go.
 
 Optimized for performance
 =========================
