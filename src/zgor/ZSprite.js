@@ -191,10 +191,8 @@ zgor.ZSprite.prototype.draw = function( aCanvasContext, currentTimestamp )
         var bounds = this.bounds;
 
         aCanvasContext.drawImage( this._image,
-                                  /** @type {number} */ ( bounds.left ),
-                                  /** @type {number} */ ( bounds.top ),
-                                  /** @type {number} */ ( bounds.width ),
-                                  /** @type {number} */ ( bounds.height ));
+                                  0, 0, bounds.width, bounds.height,
+                                  bounds.left, bounds.top, bounds.width, bounds.height );
     }
     // draw the children onto the canvas
     if ( this._children.length > 0 )

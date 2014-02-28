@@ -17,7 +17,7 @@ zCanvas has been written in vanilla JavaScript and thus works independent from (
 JavaScript framework.
 
 DisplayList convention
-======================
+----------------------
 
 Where the HTMLCanvasElement differs from other HTML elements in that its contents aren't visible as individual nodes (but rather, as pixels), zCanvas
 provides an API that allows you to interact with drawable Objects as separate entities (called zSprites), attaching logic to individual
@@ -27,23 +27,27 @@ zCanvas follows the concept of the DisplayList (familiar to those knowledgeable 
 become visible on screen once they have been added to a container. zSprites are also containers, so you can stack zSprites
 onto other zSprites, without having to worry about z indices. If you're familiar with addChild and removeChild, you're good to go.
 
-Optimized for performance
-=========================
+Optimized for high performance
+------------------------------
 
 zCanvas has been extensively optimized for the best performance and works a treat on mobile devices too. The amount of
 event listeners attached to DOM elements are limited to the <canvas> only, where the internal interactions are delegated
 to the zSprites by the zCanvas.
 
 Easily animatable
-=================
+-----------------
 
 As all rendering logic resides in a single method of your zSprite, you can easily attach tweening libraries such as
 the excellent TweenMax by Greensock to alter the visible properties of your zSprite for maximum eye candy.
 
-Google Closure
-==============
+Google Closure ? Nice. Enjoy compression
+----------------------------------------
 
 zCanvas has been annotated extensively with JSDocs, allowing the source to minimized with maximum compression when using the
 Closure compiler by Google. If you're also partial to using the Closure Library by Google, you can replace the rudimentary
 Disposable / EventHandler / bind described in the utils/Helpers.js-file with the respective goog-counterparts.
 
+Live Demo
+=========
+
+You can view some basic features in a down-and-dirty demo here : https://rawgithub.com/igorski/zCanvas/master/examples/index.html

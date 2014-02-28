@@ -297,7 +297,9 @@
 
         heroHandler.addEventListener( window, "keyup", function( e )
         {
-            hero.running = false;
+            if ( e.keyCode == 39 || e.keyCode == 37 ) {
+                hero.running = false;
+            }
         });
 
     </script>
