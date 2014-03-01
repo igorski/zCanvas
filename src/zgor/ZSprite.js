@@ -177,11 +177,10 @@ zgor.ZSprite.prototype.canvas;
 /**
  * @public
  * @param {CanvasRenderingContext2D} aCanvasContext
- * @param {number} currentTimestamp the current timestamp
+ * @param {number} aCurrentTimestamp the current timestamp
  *                 which can be used to create strict timed animations
- *                 ( keep zCanvas' framerate in mind!)
  */
-zgor.ZSprite.prototype.draw = function( aCanvasContext, currentTimestamp )
+zgor.ZSprite.prototype.draw = function( aCanvasContext, aCurrentTimestamp )
 {
     // extend in subclass if you're drawing a custom object instead of a graphical asset, don't
     // forget to invoke the super call for drawing the child display list !
@@ -202,7 +201,7 @@ zgor.ZSprite.prototype.draw = function( aCanvasContext, currentTimestamp )
         while ( theSprite )
         {
             theSprite.update();
-            theSprite.draw( aCanvasContext );
+            theSprite.draw( aCanvasContext, aCurrentTimestamp );
 
             theSprite = theSprite.next;
         }
@@ -231,13 +230,132 @@ zgor.ZSprite.prototype.setDraggable = function( aValue, aKeepInBounds )
  *
  * @public
  *
- * @param {number} currentTimestamp the current timestamp
+ * @param {CanvasRenderingContext2D} aCanvasContext
+ * @param {number} aCurrentTimestamp the current timestamp
  *                 which can be used to create strict timed animations
- *                 ( keep zCanvas' framerate in mind!)
  */
-zgor.ZSprite.prototype.update = function( currentTimestamp )
+zgor.ZSprite.prototype.update = function( aCanvasContext, aCurrentTimestamp )
 {
     // override in subclass
+};
+
+/**
+ * pixel-based collision detection, can be queried to check whether this zSprite
+ * collides with another Object, by supplying specific RGBA values it is possible to
+ * check for collision with a specific Object if its colour is unique (for instance
+ * a fully black "wall" (R = 0, G = 0, B = 0) or an invisible constraint (for instance
+ * fully red and fully transparent (R = 255, G = null, B = null, A = 0)
+ *
+ * NOTE : execute in "update"-method as this requires existing pixel data onscreen
+ *
+ * @public
+ *
+ * @param {CanvasRenderingContext2D} aCanvasContext the current Canvas context
+ * @param {number|null=} aRedValue optional value between 0 - 255 the red channel must hold
+ * @param {number|null=} aGreenValue optional value between 0 - 255 the green channel must hold
+ * @param {number|null=} aBlueValue optional value between 0 - 255 the blue channel must hold
+ * @param {number|null=} aAlphaValue optional value between 0 - 255 the alpha channel must hold
+ * @param {number=} aX optional x-coordinate of the collision, defaults to current x
+ * @param {number=} aY optional y-coordinate of the collision, defaults to current y
+ * @param {number=} aWidth optional width of the collision rectangle, will default
+ *                  to one pixel (will check one pixel to the left of this sprite and
+ *                  one pixel on the right side of this sprite)
+ * @param {number=} aHeight optional height of the collision rectangle, will default
+ *                  to one pixel (will check one pixel above this sprite and one
+ *                  pixel below this sprite)
+ *
+ * @return {number} 0 = no collision, 1 = horizontal collision, 2 = vertical collision, 3 = horizontal and vertical collisions
+ */
+zgor.ZSprite.prototype.checkCollision = function( aCanvasContext, aRedValue, aGreenValue, aBlueValue, aAlphaValue,
+                                                  aX, aY, aWidth, aHeight )
+{
+    aX = aX || this.getX();
+    aY = aY || this.getY();
+
+    aWidth  = aWidth  || 1;
+    aHeight = aHeight || 1;
+
+    var spriteWidth  = this.getWidth();
+    var spriteHeight = this.getHeight();
+
+    // the inner collision check
+
+    var internalCheck = function( aX, aY, aWidth, aHeight )
+    {
+        var bitmap = aCanvasContext.getImageData( aX, aY, aWidth, aHeight );
+
+        // Here we loop through the bitmap slice and its colors
+        // (maximum four, each representing a channel in the RGBA spectrum)
+
+        for ( var i = 0, l = ( aWidth * aHeight ) * 4; i < l; i += 4 )
+        {
+            var match = false;
+
+            // check red value (if specified)
+
+            if ( aRedValue !== null && aRedValue !== void 0 )
+            {
+                match = ( bitmap.data[ i ] == aRedValue );
+                if ( !match ) return false;
+            }
+
+            // check green value (if specified)
+
+            if ( aGreenValue !== null && aGreenValue !== void 0 )
+            {
+                match = ( bitmap.data[ i + 1 ] == aGreenValue );
+                if ( !match ) return false;
+            }
+
+            // check blue value (if specified)
+
+            if ( aBlueValue !== null && aBlueValue !== void 0 )
+            {
+                match = ( bitmap.data[ i + 2 ] == aBlueValue );
+                if ( !match ) return false;
+            }
+
+            // check alpha value (if specified)
+
+            if ( aAlphaValue !== null && aAlphaValue !== void 0 )
+            {
+                match = ( bitmap.data[ i + 3 ] == aAlphaValue );
+                if ( !match ) return false;
+            }
+
+            if ( match )
+                return true;
+        }
+        return false;
+    };
+
+    var horizontalCollision, verticalCollision;
+
+    // check 1 : to the left
+    horizontalCollision = internalCheck( aX - aWidth, aY, aWidth, spriteHeight );
+
+    // check 2 : below
+    verticalCollision = internalCheck( aX, aY + spriteHeight + aHeight, spriteWidth, aHeight );
+
+    // check 3: to the right
+    if ( !horizontalCollision )
+        horizontalCollision = internalCheck( aX + spriteWidth + aWidth, aY, aWidth, spriteHeight );
+
+    // check 4 : above
+    if ( !verticalCollision )
+        verticalCollision = internalCheck( aX, aY - aHeight, spriteWidth, aHeight );
+
+    if ( !horizontalCollision && !verticalCollision )
+        return 0;
+
+    if ( horizontalCollision )
+    {
+        if ( verticalCollision )
+            return 3;
+
+        return 1;
+    }
+    return 2;
 };
 
 /**

@@ -45,14 +45,7 @@ zgor.ZCanvas = function( aWidth, aHeight, aAnimateable, aFrameRate )
     this._fps            = aFrameRate;
     this._renderInterval = 1000 / aFrameRate;
 
-    // no need to keep redefining the scope application of these callbacks! cache them!
-    this._renderHandler  = util.bind( function()
-    {
-        this._renderId = window[ "requestAnimationFrame" ]( util.bind( this.render, this ));
-
-    }, this );
-
-    this._renderTimeoutCallback = util.bind( this.render, this );
+    this._renderHandler  = util.bind( this.render, this );
 
     this._children = [];
     this._animate = aAnimateable || false;
@@ -71,12 +64,11 @@ zgor.ZCanvas = function( aWidth, aHeight, aAnimateable, aFrameRate )
 // inherit from parent disposable
 zgor.ZCanvas.prototype = new util.Disposable();
 
-/* class variables */
+/* class properties */
 
-/** @private @type {HTMLCanvasElement} */ zgor.ZCanvas.prototype._element;
-/** @private @type {number} */            zgor.ZCanvas.prototype._width;
-/** @private @type {number} */            zgor.ZCanvas.prototype._height;
-
+/** @private @type {HTMLCanvasElement} */        zgor.ZCanvas.prototype._element;
+/** @private @type {number} */                   zgor.ZCanvas.prototype._width;
+/** @private @type {number} */                   zgor.ZCanvas.prototype._height;
 /** @private @type {CanvasRenderingContext2D} */ zgor.ZCanvas.prototype._canvasContext;
 /** @private @type {util.EventHandler} */        zgor.ZCanvas.prototype._eventHandler;
 /** @private @type {Array.<zgor.ZSprite>} */     zgor.ZCanvas.prototype._children;
@@ -87,14 +79,14 @@ zgor.ZCanvas.prototype = new util.Disposable();
 /** @private @type {number} */    zgor.ZCanvas.prototype._renderInterval;
 /** @private @type {!Function} */ zgor.ZCanvas.prototype._renderHandler;
 /** @private @type {number} */    zgor.ZCanvas.prototype._renderId;
-/** @private @type {!Function} */ zgor.ZCanvas.prototype._renderTimeoutCallback;
 
 /* public methods */
 
 /**
  * @public
  * @param {zgor.ZSprite} aChild
- * @return {zgor.ZCanvas} this object - for chaining purposes
+ *
+ * @return {zgor.ZCanvas} this zCanvas - for chaining purposes
  */
 zgor.ZCanvas.prototype.addChild = function( aChild )
 {
@@ -166,9 +158,13 @@ zgor.ZCanvas.prototype.removeChild = function( aChild )
 };
 
 /**
+ * get the <canvas>-element inside the DOM that is used
+ * to render this zCanvas' contents
+ *
  * @override
  * @public
- * @returns {Element}
+ *
+ * @return {Element}
  */
 zgor.ZCanvas.prototype.getElement = function()
 {
@@ -308,6 +304,7 @@ zgor.ZCanvas.prototype.update = function( aDelayed )
  * update the dimensions of the zCanvas
  *
  * @public
+ *
  * @param {number} aWidth
  * @param {number} aHeight
  */
@@ -329,6 +326,7 @@ zgor.ZCanvas.prototype.disposeInternal = function()
 {
     this.removeListeners();
 
+    this._animate = false;
     window[ "cancelAnimationFrame" ]( this._renderId ); // kill render loop
 
     // dispose all sprites on Display List
@@ -420,25 +418,38 @@ zgor.ZCanvas.prototype.render = function()
 
     if ( !this._disposed && this._animate )
     {
-        setTimeout( this._renderHandler, this._renderInterval );
+        this._renderId = window[ "requestAnimationFrame" ]( this._renderHandler );
     }
     var ctx = this._canvasContext;
     var now = +new Date();  // current timestamp
 
-    // clear previous canvas contents
-
-    ctx.fillStyle = 'rgb(245,245,245)';
-    ctx.fillRect( 0, 0, this._width, this._height );
-
-    // draw the children onto the canvas
     if ( this._children.length > 0 )
     {
+        // update all child sprites
         var theSprite = this._children[ 0 ];
 
         while ( theSprite )
         {
-            theSprite.update( now );
-            theSprite.draw  ( ctx, now );
+            theSprite.update( ctx, now );
+
+            theSprite = theSprite.next;
+        }
+    }
+
+    // clear previous canvas contents
+
+    ctx.fillStyle = 'rgb(255,255,255)';
+    ctx.fillRect( 0, 0, this._width, this._height );
+
+    // draw the children onto the canvas
+
+    if ( this._children.length > 0 )
+    {
+        theSprite = this._children[ 0 ];
+
+        while ( theSprite )
+        {
+            theSprite.draw( ctx, now );
 
             theSprite = theSprite.next;
         }
