@@ -83,6 +83,20 @@ zgor.ZCanvas.prototype = new util.Disposable();
 /* public methods */
 
 /**
+ * get the <canvas>-element inside the DOM that is used
+ * to render this zCanvas' contents
+ *
+ * @override
+ * @public
+ *
+ * @return {Element}
+ */
+zgor.ZCanvas.prototype.getElement = function()
+{
+    return this._element;
+};
+
+/**
  * @public
  * @param {zgor.ZSprite} aChild
  *
@@ -99,7 +113,7 @@ zgor.ZCanvas.prototype.addChild = function( aChild )
         aChild.last.next = aChild;
         aChild.next      = null;
     }
-    aChild.setParent( this, true );
+    aChild.setParent( this );
     aChild.canvas = this;
 
     this._children.push( aChild );
@@ -158,44 +172,6 @@ zgor.ZCanvas.prototype.removeChild = function( aChild )
 };
 
 /**
- * get the <canvas>-element inside the DOM that is used
- * to render this zCanvas' contents
- *
- * @override
- * @public
- *
- * @return {Element}
- */
-zgor.ZCanvas.prototype.getElement = function()
-{
-    return this._element;
-};
-
-/**
- * return the framerate of the zCanvas, can be queried by
- * child zSprites to calculate strictly timed animated operations
- *
- * @public
- * @return {number}
- */
-zgor.ZCanvas.prototype.getFrameRate = function()
-{
-    return this._fps;
-};
-
-/**
- * retrieve the render interval for this zCanvas, this basically
- * describes the elapsed time in milliseconds between each successive
- * render at the current framerate
- *
- * @return {number}
- */
-zgor.ZCanvas.prototype.getRenderInterval = function()
-{
-    return this._renderInterval;
-};
-
-/**
  * retrieve a child of this zCanvas by its index in the Display List
  *
  * @public
@@ -206,6 +182,17 @@ zgor.ZCanvas.prototype.getRenderInterval = function()
 zgor.ZCanvas.prototype.getChildAt = function( index )
 {
     return this._children[ index ];
+};
+
+/**
+ * remove a child from this zCanvas' Display List at the given index
+ *
+ * @public
+ * @param {number} index of the object to remove
+ */
+zgor.ZCanvas.prototype.removeChildAt = function( index )
+{
+    this.removeChild( this.getChildAt( index ));
 };
 
 /**
@@ -249,17 +236,6 @@ zgor.ZCanvas.prototype.getChildrenUnderPoint = function( aX, aY, aWidth, aHeight
 };
 
 /**
- * remove a child from this zCanvas' Display List at the given index
- *
- * @public
- * @param {number} index of the object to remove
- */
-zgor.ZCanvas.prototype.removeChildAt = function( index )
-{
-    this.removeChild( this.getChildAt( index ));
-};
-
-/**
  * @public
  * @return {number} the amount of children in this object's Display List
  */
@@ -273,6 +249,7 @@ zgor.ZCanvas.prototype.numChildren = function()
  *
  * @public
  * @param {zgor.ZSprite} aChild
+ *
  * @return {boolean}
  */
 zgor.ZCanvas.prototype.contains = function( aChild )
@@ -287,6 +264,30 @@ zgor.ZCanvas.prototype.contains = function( aChild )
         }
     }
     return false;
+};
+
+/**
+ * return the framerate of the zCanvas, can be queried by
+ * child zSprites to calculate strictly timed animated operations
+ *
+ * @public
+ * @return {number}
+ */
+zgor.ZCanvas.prototype.getFrameRate = function()
+{
+    return this._fps;
+};
+
+/**
+ * retrieve the render interval for this zCanvas, this basically
+ * describes the elapsed time in milliseconds between each successive
+ * render at the current framerate
+ *
+ * @return {number}
+ */
+zgor.ZCanvas.prototype.getRenderInterval = function()
+{
+    return this._renderInterval;
 };
 
 /**
@@ -305,6 +306,50 @@ zgor.ZCanvas.prototype.getWidth = function()
 zgor.ZCanvas.prototype.getHeight = function()
 {
     return this._height;
+};
+
+/**
+ * updates the dimensions of the zCanvas
+ *
+ * @public
+ *
+ * @param {number} aWidth
+ * @param {number} aHeight
+ */
+zgor.ZCanvas.prototype.setDimensions = function( aWidth, aHeight )
+{
+    this._element[ "width" ]  = this._width  = aWidth;
+    this._element[ "height" ] = this._height = aHeight;
+
+    this.update( true );
+};
+
+/**
+ * @public
+ * @return {boolean}
+ */
+zgor.ZCanvas.prototype.isAnimateable = function()
+{
+    return this._animate;
+};
+
+/**
+ * forces an update of the Canvas' contents, this will be omitted
+ * when this is an animated zCanvas as the next render cycle
+ * will auto-update the contents automatically
+ *
+ * @public
+ */
+zgor.ZCanvas.prototype.update = function()
+{
+    if ( !this._animate )
+    {
+        // we add a 0 ms delay to make sure the update occurs on the
+        // next render cycle of the BROWSER (overcomes blank screen
+        // when this occurs during heavy asynchronous operations)
+
+        setTimeout( this._renderHandler, 0 );
+    }
 };
 
 /**
@@ -427,55 +472,6 @@ zgor.ZCanvas.prototype.checkCollision = function( aSprite, aRedValue, aGreenValu
         return 1;
     }
     return 2;
-};
-
-/**
- * @public
- * @return {boolean}
- */
-zgor.ZCanvas.prototype.isAnimateable = function()
-{
-    return this._animate;
-};
-
-/**
- * forces an update of the Canvas' contents, this will be omitted
- * when this is an animated zCanvas as the next render cycle
- * will auto-update the contents automatically
- *
- * @public
- * @param {boolean=} aDelayed optional 0 ms delay which makes
- *                   sure the update occurs on the next render cycle
- *                   use this when performing large memory operations
- */
-zgor.ZCanvas.prototype.update = function( aDelayed )
-{
-    if ( !this._animate )
-    {
-        if ( aDelayed )
-        {
-            setTimeout( this._renderHandler, 0 );
-        }
-        else {
-            this.render();
-        }
-    }
-};
-
-/**
- * update the dimensions of the zCanvas
- *
- * @public
- *
- * @param {number} aWidth
- * @param {number} aHeight
- */
-zgor.ZCanvas.prototype.setDimensions = function( aWidth, aHeight )
-{
-    this._element[ "width" ]  = this._width  = aWidth;
-    this._element[ "height" ] = this._height = aHeight;
-
-    this.update( true );
 };
 
 /* protected methods */

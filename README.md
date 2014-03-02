@@ -47,6 +47,11 @@ zCanvas has been annotated extensively with JSDocs, allowing the source to minim
 Closure compiler by Google. If you're also partial to using the Closure Library by Google, you can replace the rudimentary
 Disposable / EventHandler / bind described in the utils/Helpers.js-file with the respective goog-counterparts.
 
+Documentation
+=============
+
+Want to view the API ? You can check the wiki here : https://github.com/igorski/zCanvas/wiki/zCanvas-overview
+
 Live Demo
 =========
 
