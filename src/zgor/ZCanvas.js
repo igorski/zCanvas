@@ -209,6 +209,46 @@ zgor.ZCanvas.prototype.getChildAt = function( index )
 };
 
 /**
+ * retrieve all children of this zCanvas that are currently residing at
+ * a given coordinate and rectangle, can be used in conjunction with zSprite
+ * "collidesWith"-method to query only the objects that are in its vicinity, greatly
+ * freeing up CPU resources by not checking against out of bounds objects
+ *
+ * @public
+ *
+ * @param {number} aX x-coordinate
+ * @param {number} aY y-coordinate
+ * @param {number} aWidth rectangle width
+ * @param {number} aHeight rectangle height
+ * @param {boolean=} aOnlyCollidables optionally only return children that are collidable defaults to false
+ *
+ * @return {Array.<zgor.ZSprite>}
+ */
+zgor.ZCanvas.prototype.getChildrenUnderPoint = function( aX, aY, aWidth, aHeight, aOnlyCollidables )
+{
+    var out = [];
+
+    var i = this._children.length;
+
+    while ( i-- )
+    {
+        var theChild = this._children[ i ];
+
+        var childX = theChild.getX(), childY = theChild.getY(),
+            childWidth = theChild.getWidth(), childHeight = theChild.getHeight();
+
+        if ( childX < aX + aWidth  && childX + childWidth > aX &&
+             childY < aY + aHeight && childY + childHeight > aY )
+        {
+            if ( !aOnlyCollidables || ( aOnlyCollidables && theChild.collidable ))
+                out.push( theChild );
+        }
+
+    }
+    return out;
+};
+
+/**
  * remove a child from this zCanvas' Display List at the given index
  *
  * @public
@@ -268,6 +308,128 @@ zgor.ZCanvas.prototype.getHeight = function()
 };
 
 /**
+ * high precision pixel-based collision detection, can be queried to check whether the given
+ * zSprite collides with another drawable object. By supplying specific RGBA values it is
+ * possible to check for collision with a specific object as long as its colour is unique
+ * (for instance a fully black "wall" (R = 0, G = 0, B = 0) or a purple "bullet"
+ * (R = 255, G = 0, B = 128), etc. Note this method requires more from the CPU than
+ * simply checking overlapping bounding boxes (see zSprite "collidesWith"-method).
+ *
+ * NOTE : invoke this in "update"-method of a zSprite as this requires existing pixel data
+ * being onscreen !
+ *
+ * @public
+ *
+ * @param {zgor.ZSprite} aSprite to check collisions for
+ * @param {number|null=} aRedValue optional value between 0 - 255 the red channel must hold
+ * @param {number|null=} aGreenValue optional value between 0 - 255 the green channel must hold
+ * @param {number|null=} aBlueValue optional value between 0 - 255 the blue channel must hold
+ * @param {number|null=} aAlphaValue optional value between 0 - 255 the alpha channel must hold
+ * @param {number=} aX optional x-coordinate of the collision, defaults to current x of given sprite
+ * @param {number=} aY optional y-coordinate of the collision, defaults to current y of given sprite
+ * @param {number=} aWidth optional width of the collision rectangle, will default
+ *                  to one pixel (will check one pixel to the left of given sprite and
+ *                  one pixel on the right side of given sprite)
+ * @param {number=} aHeight optional height of the collision rectangle, will default
+ *                  to one pixel (will check one pixel above given sprite and one
+ *                  pixel below given sprite)
+ *
+ * @return {number} 0 = no collision, 1 = horizontal collision, 2 = vertical collision, 3 = horizontal and vertical collisions
+ */
+zgor.ZCanvas.prototype.checkCollision = function( aSprite, aRedValue, aGreenValue, aBlueValue, aAlphaValue,
+                                                  aX, aY, aWidth, aHeight )
+{
+    aX = aX || aSprite.getX();
+    aY = aY || aSprite.getY();
+
+    aWidth  = aWidth  || 1;
+    aHeight = aHeight || 1;
+
+    var spriteWidth  = aSprite.getWidth();
+    var spriteHeight = aSprite.getHeight();
+    var ctx          = this._canvasContext;
+
+    // the inner collision check
+
+    var internalCheck = function( aX, aY, aWidth, aHeight )
+    {
+        var bitmap = ctx.getImageData( aX, aY, aWidth, aHeight );
+
+        // Here we loop through the bitmap slice and its colors
+        // (maximum four, each representing a channel in the RGBA spectrum)
+
+        for ( var i = 0, l = ( aWidth * aHeight ) * 4; i < l; i += 4 )
+        {
+            var match = false;
+
+            // check red value (if specified)
+
+            if ( aRedValue !== null && aRedValue !== void 0 )
+            {
+                match = ( bitmap.data[ i ] == aRedValue );
+                if ( !match ) return false;
+            }
+
+            // check green value (if specified)
+
+            if ( aGreenValue !== null && aGreenValue !== void 0 )
+            {
+                match = ( bitmap.data[ i + 1 ] == aGreenValue );
+                if ( !match ) return false;
+            }
+
+            // check blue value (if specified)
+
+            if ( aBlueValue !== null && aBlueValue !== void 0 )
+            {
+                match = ( bitmap.data[ i + 2 ] == aBlueValue );
+                if ( !match ) return false;
+            }
+
+            // check alpha value (if specified)
+
+            if ( aAlphaValue !== null && aAlphaValue !== void 0 )
+            {
+                match = ( bitmap.data[ i + 3 ] == aAlphaValue );
+                if ( !match ) return false;
+            }
+
+            if ( match )
+                return true;
+        }
+        return false;
+    };
+
+    var horizontalCollision, verticalCollision;
+
+    // check 1 : to the left
+    horizontalCollision = internalCheck( aX - aWidth, aY, aWidth, spriteHeight );
+
+    // check 2 : below
+    verticalCollision = internalCheck( aX, aY + spriteHeight + aHeight, spriteWidth, aHeight );
+
+    // check 3: to the right
+    if ( !horizontalCollision )
+        horizontalCollision = internalCheck( aX + spriteWidth + aWidth, aY, aWidth, spriteHeight );
+
+    // check 4 : above
+    if ( !verticalCollision )
+        verticalCollision = internalCheck( aX, aY - aHeight, spriteWidth, aHeight );
+
+    if ( !horizontalCollision && !verticalCollision )
+        return 0;
+
+    if ( horizontalCollision )
+    {
+        if ( verticalCollision )
+            return 3;
+
+        return 1;
+    }
+    return 2;
+};
+
+/**
  * @public
  * @return {boolean}
  */
@@ -292,7 +454,7 @@ zgor.ZCanvas.prototype.update = function( aDelayed )
     {
         if ( aDelayed )
         {
-            setTimeout( this._renderTimeoutCallback, 0 );
+            setTimeout( this._renderHandler, 0 );
         }
         else {
             this.render();

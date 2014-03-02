@@ -141,7 +141,7 @@
             Hero.prototype.direction    = 0;     // 0 = left, 1 = right
             Hero.prototype.running      = false; // is the hero running ?
             Hero.prototype.jumping      = false; // is the hero jumping ?
-            Hero.prototype.falling      = false; // is the hero falling ?
+            Hero.prototype.falling      = true;  // is the hero falling ? (set to true for gravity)
             Hero.prototype.xSpeed       = 0;     // horizontal speed (i.e. walking)
             Hero.prototype.MAX_X_SPEED  = 5;     // maximum horizontal speed in pixels per frame
             Hero.prototype.ySpeed       = 0;     // vertical speed (i.e. jumping/falling)
@@ -195,56 +195,82 @@
 
                 // movement
 
-                var currentXposition = this.getX();
-                var currentYposition = this.getY();
+                var prevX = this.getX(), prevY = this.getY();
+                var thisWidth = this.getWidth(), thisHeight = this.getHeight();
 
                 // are we moving horizontally ?
 
                 if ( this.xSpeed !== 0 )
                 {
-                    this.setX( Math.round( currentXposition + this.xSpeed ));
+                    this.setX( Math.round( prevX + this.xSpeed ));
 
                     // keep in bounds (exiting screen on left/right result in appearing on right/left)
 
-                    var myPos = this.getX(), myWidth = this.getWidth();
+                    var myPos = this.getX();
 
-                    if ( myPos > ( cvsWidth + myWidth )) {
-                        this.setX( -myWidth );
+                    if ( myPos > ( cvsWidth + thisWidth )) {
+                        this.setX( -thisWidth );
                     }
-                    if ( myPos < -myWidth) {
-                        this.setX( cvsWidth + myWidth - 1 );
+                    if ( myPos < -thisWidth) {
+                        this.setX( cvsWidth + thisWidth - 1 );
                     }
                 }
 
                 // updating movement : are we moving vertically ? (currently only a jump up )
 
-                if ( this.jumping )
+                if ( !this.falling && this.jumping )
                 {
-                    this.setY( this.falling ? currentYposition + this.ySpeed * 1.5 : currentYposition - this.ySpeed );
-
-                    // keep in bounds (poor mans "floor collision"-detection)
-                    var maxPos = this.canvas.getHeight() - this.getHeight();
-
-                    if ( this.getY() > maxPos )
-                    {
-                        this.setY( maxPos );
-                        this.jumping = this.falling = false;
-                    }
-                }
-
-                // collision detection
-                var collision = this.checkCollision( ctx, 255, 128, 0 );
-
-                if ( collision > 0 )
-                {
-                //    log("COLL > " + collision );
-                    if ( collision == 1 || collision == 3 )
-                        this.setX( currentXposition );
-                    if ( collision == 2 || collision == 3 )
-                        this.setY( currentYposition );
+                    this.setY( prevY - this.ySpeed );
                 }
                 else {
-                //    log("");
+                    this.setY( prevY + 7 ); // 7 = default gravity
+                }
+
+                // keep in vertical bounds
+                if ( this.getY() > this.canvas.getHeight() + thisHeight )
+                {
+                    this.setY( -thisHeight );
+                }
+
+                // collision detection : first up get all collidable objects in our direct vicinity
+                var sprites = this.canvas.getChildrenUnderPoint( this.getX(), this.getY(), thisWidth, thisHeight, true );
+
+                if ( sprites.length > 0 )
+                {
+                    var amt = sprites.length;
+
+                    while ( amt-- )
+                    {
+                        // use faster (but less precise) bounding box check as it suffices for this example
+                        var sprite          = sprites[ amt ];
+                        var checkHorizontal = true;
+
+                        if ( this.collidesWithEdge( sprite, 3 ))
+                        {
+                            var targetY = sprite.getY() - thisHeight; // perfect align on top / i.e. "standing on floor"
+
+                            if ( targetY < prevY ) {
+                                targetY = sprite.getY() + sprite.getHeight() - thisHeight;
+                            }
+                            else {
+                                checkHorizontal = false;
+                            }
+                            this.setY( targetY );
+                            this.jumping    = false;
+                        }
+                        else if ( this.collidesWithEdge( sprite, 1 )) {
+                            this.setY( prevY );
+                        }
+
+                        if ( !checkHorizontal )
+                            continue;
+
+                        if ( this.collidesWithEdge( sprite, 2 ) ||
+                             this.collidesWithEdge( sprite, 0 ))
+                        {
+                            this.setX( prevX );
+                        }
+                    }
                 }
 
                 // in case the user has stopped moving the hero, we
@@ -284,7 +310,7 @@
             // our spritesheet is 380 x 70 pixels with each individual tile
             // in the sheet being 38 x 35 pixels
 
-            var hero = new Hero( cvsWidth / 2, cvsHeight - 35 / 2, 38, 35, heroSheet );
+            var hero = new Hero( 100, cvsHeight / 2, 38, 35, heroSheet );
             cvs.addChild( hero );
 
             // STEP 5 : ADDING KEYBOARD INTERACTION
@@ -335,13 +361,17 @@
             // STEP 6 : A TEST FOR COLLISION DETECTION
             // ---------------------------------------
 
-            var wall = new zgor.ZSprite( 50, cvsHeight - 100, 10, 100 );
-            wall.draw = function( ctx, ts )
+            var wallLeft = new zgor.ZSprite( 50, Math.round( cvsHeight / 1.5 ), 10, 100, null, true );
+            wallLeft.draw = function( ctx, ts )
             {
                 ctx.fillStyle = 'rgb(255,128,0)';
                 ctx.fillRect(this.getX(),this.getY(),this.getWidth(),this.getHeight());
             };
-            cvs.addChild( wall );
+            cvs.addChild( wallLeft );
+
+            var wallBottom = new zgor.ZSprite( 50, wallLeft.getY() + wallLeft.getHeight(), cvsWidth / 1.5, 10, null, true );
+            wallBottom.draw = wallLeft.draw;
+            cvs.addChild( wallBottom );
         }
     </script>
 </body>
