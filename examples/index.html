@@ -4,6 +4,7 @@
     <meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable = no" name="viewport">
     <meta charset="utf-8" />
     <title>ZCanvas example</title>
+    <script type="text/javascript" src="./assets/images.js"></script>
     <script type="text/javascript" src="../src/util/Helpers.js"></script>
     <script type="text/javascript" src="../src/zgor/ZCanvas.js"></script>
     <script type="text/javascript" src="../src/zgor/ZSprite.js"></script>
@@ -42,337 +43,324 @@
         // append zCanvas to DOM
         document.getElementById( "demo" ).appendChild( cvs.getElement() );
 
-        // preload all used images
+        // STEP 2 : SELF ANIMATING IMAGE EXAMPLE
+        // --------------------------------------
 
-        var totalImages        = 2, amountLoaded = 0;
-        var loadHandler        = function( e ) { if ( ++amountLoaded == totalImages ) startDemo(); };
-        var backgroundImage    = new Image();
-        backgroundImage.onload = loadHandler;
-        backgroundImage.src    = "./assets/example.jpg";
-        var heroSheet          = new Image();
-        heroSheet.onload       = loadHandler;
-        heroSheet.src          = "./assets/megaman.png";
+        // first sprite will acts as a background
+        // (see included "assets.js"-file for the assetBackground-image data)
+        var bgWidth  = 400, bgHeight = 1204;
+        var bgSprite = new zgor.ZSprite( 0, 0, bgWidth, bgHeight, assetBackground );
 
-        function startDemo()
+        // custom overrides, to demonstrate a simple custom behaviour
+        // where animation is perfectly timed (test by switching tabs in
+        // the browser, animation stops when switching tabs, but by calculating
+        // position by verifying elapsed time, it appears as if the application
+        // hasn't been paused. Though you could actually prefer a "pause" depending on context...
+
+        var direction      = 0;    // 0 being down, 1 being up
+        var speed          = 2;    // the amount of pixels we move per frame
+        var prevStamp      = +new Date();
+        var renderInterval = cvs.getRenderInterval();
+        var maxYPosition   = bgHeight - cvsHeight;
+
+        bgSprite.update = function( aCanvasContext, aCurrentTimestamp )
         {
-            // STEP 2 : SELF ANIMATING IMAGE EXAMPLE
-            // --------------------------------------
+            var delta = ( aCurrentTimestamp - prevStamp ); // should roughly equal the render interval of the zCanvas
+            prevStamp = aCurrentTimestamp;                 // store last timestamp
 
-            // first sprite will acts as a background, we'll create it from an <img> element
-            var bgWidth  = 400, bgHeight = 1204;
-            var bgSprite = new zgor.ZSprite( 0, 0, bgWidth, bgHeight, backgroundImage );
+            // slide the background either up or down
 
-            // custom overrides, to demonstrate a simple custom behaviour
-            // where animation is perfectly timed (test by switching tabs in
-            // the browser, animation stops when switching tabs, but by calculating
-            // position by verifying elapsed time, it appears as if the application
-            // hasn't been paused. Though you could actually prefer a "pause" depending on context...
+            var amount = speed / renderInterval * delta;
 
-            var direction      = 0;    // 0 being down, 1 being up
-            var speed          = 2;    // the amount of pixels we move per frame
-            var prevStamp      = +new Date();
-            var renderInterval = cvs.getRenderInterval();
-            var maxYPosition   = bgHeight - cvsHeight;
+            if ( direction == 0 ) {
+                this.setY( this.getY() - amount );
+            }
+            else {
+                this.setY( this.getY() + amount );
+            }
+            var currentPosition = this.getY();
 
-            bgSprite.update = function( aCanvasContext, aCurrentTimestamp )
+            // keep movement within canvas bounds
+
+            if ( currentPosition < -( maxYPosition )) {
+                direction = 1;
+                this.setY( -maxYPosition );
+            }
+            else if ( currentPosition > 0 ) {
+                direction = 0;
+                this.setY( 0 );
+            }
+        };
+
+        // add the sprite onto the canvas so we can see it
+        cvs.addChild( bgSprite );
+
+        // STEP 3 : DRAGGABLE IMAGE SPRITE EXAMPLE
+        // ---------------------------------------
+
+        // second sprite > represents a transparent gitHub logo at 75x75 px
+        // (see included "assets.js"-file for the assetGitHubLogo-image data)
+
+        var sprite = new zgor.ZSprite( 0, 0, 75, 75, ghLogo, assetGitHubLogo );
+
+        // add the GitHub logo-sprite onto the canvas
+        cvs.addChild( sprite );
+
+        // make this sprite draggable so the user can move it around
+        sprite.setDraggable( true );
+
+        // STEP 4 : NEW SUBCLASS / SPRITESHEET EXAMPLE
+        // -------------------------------------------
+        // when writing your application using OOP-paradigms, it makes
+        // more sense to create new "classes" for custom zSprite Objects, like such:
+
+        var Hero = function( aX, aY, aWidth, aHeight, aImage )
+        {
+            this.setX( aX );
+            this.setY( aY );
+            this.updateImage( aImage, aWidth, aHeight );
+
+            this._maxIndexCount = 5; // hard coded, every 5 frames we step to the next tile in the sprite sheet
+        };
+        Hero.prototype = new zgor.ZSprite();
+
+        // Hero class variables
+        Hero.prototype.direction    = 0;     // 0 = left, 1 = right
+        Hero.prototype.running      = false; // is the hero running ?
+        Hero.prototype.jumping      = false; // is the hero jumping ?
+        Hero.prototype.falling      = true;  // is the hero falling ? (set to true for gravity)
+        Hero.prototype.xSpeed       = 0;     // horizontal speed (i.e. walking)
+        Hero.prototype.MAX_X_SPEED  = 5;     // maximum horizontal speed in pixels per frame
+        Hero.prototype.ySpeed       = 0;     // vertical speed (i.e. jumping/falling)
+        Hero.prototype._jumpCount   = 0;     // internal : countdown for determining max jump height reached
+
+        // Hero tile / spritesheet variables
+        Hero.prototype._standingTiles = 2;   // three slides for the "standing" animation
+        Hero.prototype._runningTiles  = 9;   // ten slides for the "running" animation
+
+        // Hero rendering variables
+        Hero.prototype._spriteIndex   = 0;   // internal : which horizontal tile in the sprite sheet is current
+        Hero.prototype._spriteRow     = 0;   // internal : which vertical row in the sprite sheet is current
+        Hero.prototype._indexCounter  = 0;   // internal : the frame counter that is increased on each frame render
+        Hero.prototype._maxIndexCount = 0;   // internal : what is the max number of count before we switch tile
+
+        // public methods
+
+        Hero.prototype.jump = function()
+        {
+            if ( this.jumping )
+                return;
+
+            this.ySpeed     = 5;
+            this._jumpCount = 10;
+            this.jumping    = true;
+            this.falling    = false;
+        };
+
+        // override update-method for custom logic
+        Hero.prototype.update = function( ctx, timestamp )
+        {
+            // animation update operations (i.e. switch tile in sheet)
+            if ( ++this._indexCounter == this._maxIndexCount )
             {
-                var delta = ( aCurrentTimestamp - prevStamp ); // should roughly equal the render interval of the zCanvas
-                prevStamp = aCurrentTimestamp;                 // store last timestamp
+                ++this._spriteIndex;
+                this._indexCounter = 0;
+            }
 
-                // slide the background either up or down
+            var maxIndex = this.running ? this._runningTiles : this._standingTiles;
 
-                var amount = speed / renderInterval * delta;
+            // loop animation
+            if ( this._spriteIndex > maxIndex ) {
+                this._spriteIndex = 0;
+            }
 
-                if ( direction == 0 ) {
-                    this.setY( this.getY() - amount );
-                }
-                else {
-                    this.setY( this.getY() + amount );
-                }
-                var currentPosition = this.getY();
+            // select the right tile row depending on direction and action
 
-                // keep movement within canvas bounds
+            this._spriteRow = hero.direction;
+            if ( this.running )
+                this._spriteRow += 2;
 
-                if ( currentPosition < -( maxYPosition )) {
-                    direction = 1;
-                    this.setY( -maxYPosition );
-                }
-                else if ( currentPosition > 0 ) {
-                    direction = 0;
-                    this.setY( 0 );
-                }
-            };
+            // movement
 
-            // add the sprite onto the canvas so we can see it
-            cvs.addChild( bgSprite );
+            var prevX = this.getX(), prevY = this.getY();
+            var thisWidth = this.getWidth(), thisHeight = this.getHeight();
 
-            // STEP 3 : DRAGGABLE IMAGE SPRITE EXAMPLE
-            // ---------------------------------------
+            // are we moving horizontally ?
 
-            // second sprite > represents a transparent gitHub logo at 75x75 px
-            // for representational purposes, we supply a base64 encoded png string to the sprite
-            // rather than a reference to an <img> element
-
-            var ghLogo = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEsAAABLCAYAAAFPSUp8AAAAGXRFWHRTb2Z0d2FyZQBBZG9iZSBJbWFnZVJlYWR5ccllPAAACwJpVFh0WE1MOmNvbS5hZG9iZS54bXAAAAAAADw/eHBhY2tldCBiZWdpbj0i77u/IiBpZD0iVzVNME1wQ2VoaUh6cmVTek5UY3prYzlkIj8+Cjx4OnhtcG1ldGEgeG1sbnM6eD0iYWRvYmU6bnM6bWV0YS8iIHg6eG1wdGs9IkFkb2JlIFhNUCBDb3JlIDQuMi4yLWMwNjMgNTMuMzUyNjI0LCAyMDA4LzA3LzMwLTE4OjA1OjQxICAgICAgICAiPgogPHJkZjpSREYgeG1sbnM6cmRmPSJodHRwOi8vd3d3LnczLm9yZy8xOTk5LzAyLzIyLXJkZi1zeW50YXgtbnMjIj4KICA8cmRmOkRlc2NyaXB0aW9uIHJkZjphYm91dD0iIgogICAgeG1sbnM6eG1wPSJodHRwOi8vbnMuYWRvYmUuY29tL3hhcC8xLjAvIgogICAgeG1sbnM6ZGM9Imh0dHA6Ly9wdXJsLm9yZy9kYy9lbGVtZW50cy8xLjEvIgogICAgeG1sbnM6cGhvdG9zaG9wPSJodHRwOi8vbnMuYWRvYmUuY29tL3Bob3Rvc2hvcC8xLjAvIgogICB4bXA6Q3JlYXRvclRvb2w9IkFkb2JlIFBob3Rvc2hvcCBDUzQgTWFjaW50b3NoIgogICB4bXA6Q3JlYXRlRGF0ZT0iMjAxNC0wMi0yOFQxNDo0OTo0NiswMTowMCIKICAgeG1wOk1vZGlmeURhdGU9IjIwMTQtMDItMjhUMTQ6NDk6NDYrMDE6MDAiCiAgIHhtcDpNZXRhZGF0YURhdGU9IjIwMTQtMDItMjhUMTQ6NDk6NDYrMDE6MDAiCiAgIGRjOmZvcm1hdD0iaW1hZ2UvcG5nIgogICBwaG90b3Nob3A6Q29sb3JNb2RlPSIzIgogICBwaG90b3Nob3A6SUNDUHJvZmlsZT0ic1JHQiBJRUM2MTk2Ni0yLjEiLz4KIDwvcmRmOlJERj4KPC94OnhtcG1ldGE+CiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAg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";
-            var sprite = new zgor.ZSprite( 0, 0, 75, 75, ghLogo );
-
-            // add the GitHub logo-sprite onto the canvas
-            cvs.addChild( sprite );
-
-            // make this sprite draggable so the user can move it around
-            sprite.setDraggable( true );
-
-            // STEP 4 : NEW SUBCLASS / SPRITESHEET EXAMPLE
-            // -------------------------------------------
-            // when writing your application using OOP-paradigms, it makes
-            // more sense to create new "classes" for custom zSprite Objects, like such:
-
-            var Hero = function( aX, aY, aWidth, aHeight, aImage )
+            if ( this.xSpeed !== 0 )
             {
-                this.setX( aX );
-                this.setY( aY );
-                this.updateImage( aImage, aWidth, aHeight );
+                this.setX( Math.round( prevX + this.xSpeed ));
 
-                this._maxIndexCount = 5; // hard coded, every 5 frames we step to the next tile in the sprite sheet
-            };
-            Hero.prototype = new zgor.ZSprite();
+                // keep in bounds (exiting screen on left/right result in appearing on right/left)
 
-            // Hero class variables
-            Hero.prototype.direction    = 0;     // 0 = left, 1 = right
-            Hero.prototype.running      = false; // is the hero running ?
-            Hero.prototype.jumping      = false; // is the hero jumping ?
-            Hero.prototype.falling      = true;  // is the hero falling ? (set to true for gravity)
-            Hero.prototype.xSpeed       = 0;     // horizontal speed (i.e. walking)
-            Hero.prototype.MAX_X_SPEED  = 5;     // maximum horizontal speed in pixels per frame
-            Hero.prototype.ySpeed       = 0;     // vertical speed (i.e. jumping/falling)
-            Hero.prototype._jumpCount   = 0;     // internal : countdown for determining max jump height reached
+                var myPos = this.getX();
 
-            // Hero tile / spritesheet variables
-            Hero.prototype._standingTiles = 2;   // three slides for the "standing" animation
-            Hero.prototype._runningTiles  = 9;   // ten slides for the "running" animation
+                if ( myPos > ( cvsWidth + thisWidth )) {
+                    this.setX( -thisWidth );
+                }
+                if ( myPos < -thisWidth) {
+                    this.setX( cvsWidth + thisWidth - 1 );
+                }
+            }
 
-            // Hero rendering variables
-            Hero.prototype._spriteIndex   = 0;   // internal : which horizontal tile in the sprite sheet is current
-            Hero.prototype._spriteRow     = 0;   // internal : which vertical row in the sprite sheet is current
-            Hero.prototype._indexCounter  = 0;   // internal : the frame counter that is increased on each frame render
-            Hero.prototype._maxIndexCount = 0;   // internal : what is the max number of count before we switch tile
+            // updating movement : are we moving vertically ? (currently only a jump up )
 
-            // public methods
-
-            Hero.prototype.jump = function()
+            if ( !this.falling && this.jumping )
             {
-                if ( this.jumping )
-                    return;
+                this.setY( prevY - this.ySpeed );
+            }
+            else {
+                this.setY( prevY + 7 ); // 7 = default gravity
+            }
 
-                this.ySpeed     = 5;
-                this._jumpCount = 10;
-                this.jumping    = true;
-                this.falling    = false;
-            };
-
-            // override update-method for custom logic
-            Hero.prototype.update = function( ctx, timestamp )
+            // keep in vertical bounds
+            if ( this.getY() > this.canvas.getHeight() + thisHeight )
             {
-                // animation update operations (i.e. switch tile in sheet)
-                if ( ++this._indexCounter == this._maxIndexCount )
+                this.setY( -thisHeight );
+            }
+
+            // collision detection : first up get all collidable objects in our direct vicinity
+            var sprites = this.canvas.getChildrenUnderPoint( this.getX(), this.getY(), thisWidth, thisHeight, true );
+
+            if ( sprites.length > 0 )
+            {
+                var amt = sprites.length;
+
+                while ( amt-- )
                 {
-                    ++this._spriteIndex;
-                    this._indexCounter = 0;
-                }
+                    // use faster (but less precise) bounding box check as it suffices for this example
+                    var sprite          = sprites[ amt ];
+                    var checkHorizontal = true;
 
-                var maxIndex = this.running ? this._runningTiles : this._standingTiles;
-
-                // loop animation
-                if ( this._spriteIndex > maxIndex ) {
-                    this._spriteIndex = 0;
-                }
-
-                // select the right tile row depending on direction and action
-
-                this._spriteRow = hero.direction;
-                if ( this.running )
-                    this._spriteRow += 2;
-
-                // movement
-
-                var prevX = this.getX(), prevY = this.getY();
-                var thisWidth = this.getWidth(), thisHeight = this.getHeight();
-
-                // are we moving horizontally ?
-
-                if ( this.xSpeed !== 0 )
-                {
-                    this.setX( Math.round( prevX + this.xSpeed ));
-
-                    // keep in bounds (exiting screen on left/right result in appearing on right/left)
-
-                    var myPos = this.getX();
-
-                    if ( myPos > ( cvsWidth + thisWidth )) {
-                        this.setX( -thisWidth );
-                    }
-                    if ( myPos < -thisWidth) {
-                        this.setX( cvsWidth + thisWidth - 1 );
-                    }
-                }
-
-                // updating movement : are we moving vertically ? (currently only a jump up )
-
-                if ( !this.falling && this.jumping )
-                {
-                    this.setY( prevY - this.ySpeed );
-                }
-                else {
-                    this.setY( prevY + 7 ); // 7 = default gravity
-                }
-
-                // keep in vertical bounds
-                if ( this.getY() > this.canvas.getHeight() + thisHeight )
-                {
-                    this.setY( -thisHeight );
-                }
-
-                // collision detection : first up get all collidable objects in our direct vicinity
-                var sprites = this.canvas.getChildrenUnderPoint( this.getX(), this.getY(), thisWidth, thisHeight, true );
-
-                if ( sprites.length > 0 )
-                {
-                    var amt = sprites.length;
-
-                    while ( amt-- )
+                    if ( this.collidesWithEdge( sprite, 3 ))
                     {
-                        // use faster (but less precise) bounding box check as it suffices for this example
-                        var sprite          = sprites[ amt ];
-                        var checkHorizontal = true;
+                        var targetY = sprite.getY() - thisHeight; // perfect align on top / i.e. "standing on floor"
 
-                        if ( this.collidesWithEdge( sprite, 3 ))
-                        {
-                            var targetY = sprite.getY() - thisHeight; // perfect align on top / i.e. "standing on floor"
-
-                            if ( targetY < prevY ) {
-                                targetY = sprite.getY() + sprite.getHeight() - thisHeight;
-                            }
-                            else {
-                                checkHorizontal = false;
-                            }
-                            this.setY( targetY );
-                            this.jumping    = false;
+                        if ( targetY < prevY ) {
+                            targetY = sprite.getY() + sprite.getHeight() - thisHeight;
                         }
-                        else if ( this.collidesWithEdge( sprite, 1 )) {
-                            this.setY( prevY );
+                        else {
+                            checkHorizontal = false;
                         }
+                        this.setY( targetY );
+                        this.jumping    = false;
+                    }
+                    else if ( this.collidesWithEdge( sprite, 1 )) {
+                        this.setY( prevY );
+                    }
 
-                        if ( !checkHorizontal )
-                            continue;
+                    if ( !checkHorizontal )
+                        continue;
 
-                        if ( this.collidesWithEdge( sprite, 2 ) ||
-                             this.collidesWithEdge( sprite, 0 ))
-                        {
-                            this.setX( prevX );
-                        }
+                    if ( this.collidesWithEdge( sprite, 2 ) ||
+                         this.collidesWithEdge( sprite, 0 ))
+                    {
+                        this.setX( prevX );
                     }
                 }
+            }
 
-                // in case the user has stopped moving the hero, we
-                // slowly reduce the heros speed so he doesn't stop at once
+            // in case the user has stopped moving the hero, we
+            // slowly reduce the heros speed so he doesn't stop at once
 
-                if ( !this.running )
-                {
-                    if ( this.xSpeed < 0 ) {
-                        this.xSpeed += .25;
+            if ( !this.running )
+            {
+                if ( this.xSpeed < 0 ) {
+                    this.xSpeed += .25;
+                }
+                else if ( this.xSpeed > 0 ) {
+                    this.xSpeed -= .25;
+                }
+            }
+
+            // in case the user has stopped holding the jump button down, we
+            // slowly reduce the heros speed so he falls back down
+            if ( this.jumping && !this.falling && --this._jumpCount <= 0 )
+            {
+                this.falling = true;
+            }
+        };
+
+        // override draw-method for custom logic
+        Hero.prototype.draw = function( ctx, timestamp )
+        {
+            var bounds = this.bounds;
+
+            ctx.drawImage( this._image,
+                           this._spriteIndex * bounds.width,    // tile x offset
+                           this._spriteRow * ( bounds.height + 1 ),     // tile y offset
+                           bounds.width, bounds.height,         // tile width and height
+                           bounds.left, bounds.top, bounds.width, bounds.height );
+        };
+
+        // create a new Hero and add it to the stage
+        // our spritesheet is 380 x 70 pixels with each individual tile
+        // in the sheet being 38 x 35 pixels
+        // (see included "assets.js"-file for the assetSpriteSheet-image data)
+
+        var hero = new Hero( 100, cvsHeight / 2, 38, 35, assetSpriteSheet );
+        cvs.addChild( hero );
+
+        // STEP 5 : ADDING KEYBOARD INTERACTION
+        // ------------------------------------
+
+        var heroHandler = new util.EventHandler(); // create a handler for all key listeners
+
+        heroHandler.addEventListener( window, "keydown", function( e )
+        {
+            switch ( e.keyCode )
+            {
+                // move up (jump)
+                case 38:
+
+                    hero.jump();
+                    break;
+
+                // move hero to the right
+                case 39:
+                    hero.direction = 1;
+
+                    if ( hero.xSpeed < hero.MAX_X_SPEED )
+                        ++hero.xSpeed;
+
+                    hero.running = true;
+                    break;
+
+                // move hero to the left
+                case 37:
+                    hero.direction = 0;
+                    if ( hero.xSpeed > -hero.MAX_X_SPEED ) {
+                        --hero.xSpeed;
                     }
-                    else if ( this.xSpeed > 0 ) {
-                        this.xSpeed -= .25;
-                    }
-                }
+                    hero.running = true;
+                    break;
+            }
+        });
 
-                // in case the user has stopped holding the jump button down, we
-                // slowly reduce the heros speed so he falls back down
-                if ( this.jumping && !this.falling && --this._jumpCount <= 0 )
-                {
-                    this.falling = true;
-                }
-            };
+        // add a listener for key up (release) so we can tell the hero to stop running
 
-            // override draw-method for custom logic
-            Hero.prototype.draw = function( ctx, timestamp )
-            {
-                var bounds = this.bounds;
+        heroHandler.addEventListener( window, "keyup", function( e )
+        {
+            if ( e.keyCode == 39 || e.keyCode == 37 ) {
+                hero.running = false;
+            }
+        });
 
-                ctx.drawImage( this._image,
-                               this._spriteIndex * bounds.width,    // tile x offset
-                               this._spriteRow * ( bounds.height + 1 ),     // tile y offset
-                               bounds.width, bounds.height,         // tile width and height
-                               bounds.left, bounds.top, bounds.width, bounds.height );
-            };
+        // STEP 6 : A TEST FOR COLLISION DETECTION
+        // ---------------------------------------
 
-            // create a new Hero and add it to the stage
-            // our spritesheet is 380 x 70 pixels with each individual tile
-            // in the sheet being 38 x 35 pixels
+        var wallLeft = new zgor.ZSprite( 50, Math.round( cvsHeight / 1.5 ), 10, 100, null, true );
+        wallLeft.draw = function( ctx, ts )
+        {
+            ctx.fillStyle = 'rgb(255,128,0)';
+            ctx.fillRect(this.getX(),this.getY(),this.getWidth(),this.getHeight());
+        };
+        cvs.addChild( wallLeft );
 
-            var hero = new Hero( 100, cvsHeight / 2, 38, 35, heroSheet );
-            cvs.addChild( hero );
+        var wallBottom = new zgor.ZSprite( 50, wallLeft.getY() + wallLeft.getHeight(), cvsWidth / 1.5, 10, null, true );
+        wallBottom.draw = wallLeft.draw;
+        cvs.addChild( wallBottom );
 
-            // STEP 5 : ADDING KEYBOARD INTERACTION
-            // ------------------------------------
-
-            var heroHandler = new util.EventHandler(); // create a handler for all key listeners
-
-            heroHandler.addEventListener( window, "keydown", function( e )
-            {
-                switch ( e.keyCode )
-                {
-                    // move up (jump)
-                    case 38:
-
-                        hero.jump();
-                        break;
-
-                    // move hero to the right
-                    case 39:
-                        hero.direction = 1;
-
-                        if ( hero.xSpeed < hero.MAX_X_SPEED )
-                            ++hero.xSpeed;
-
-                        hero.running = true;
-                        break;
-
-                    // move hero to the left
-                    case 37:
-                        hero.direction = 0;
-                        if ( hero.xSpeed > -hero.MAX_X_SPEED ) {
-                            --hero.xSpeed;
-                        }
-                        hero.running = true;
-                        break;
-                }
-            });
-
-            // add a listener for key up (release) so we can tell the hero to stop running
-
-            heroHandler.addEventListener( window, "keyup", function( e )
-            {
-                if ( e.keyCode == 39 || e.keyCode == 37 ) {
-                    hero.running = false;
-                }
-            });
-
-            // STEP 6 : A TEST FOR COLLISION DETECTION
-            // ---------------------------------------
-
-            var wallLeft = new zgor.ZSprite( 50, Math.round( cvsHeight / 1.5 ), 10, 100, null, true );
-            wallLeft.draw = function( ctx, ts )
-            {
-                ctx.fillStyle = 'rgb(255,128,0)';
-                ctx.fillRect(this.getX(),this.getY(),this.getWidth(),this.getHeight());
-            };
-            cvs.addChild( wallLeft );
-
-            var wallBottom = new zgor.ZSprite( 50, wallLeft.getY() + wallLeft.getHeight(), cvsWidth / 1.5, 10, null, true );
-            wallBottom.draw = wallLeft.draw;
-            cvs.addChild( wallBottom );
-        }
     </script>
 </body>
 </html>
