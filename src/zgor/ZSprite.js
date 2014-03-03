@@ -53,11 +53,12 @@ zgor.ZSprite = function( aXPos, aYPos, aWidth, aHeight, aImageSource, aIsCollida
     {
         if ( aImageSource instanceof Image )
         {
-            this._image = aImageSource;
+            this._image      = aImageSource;
+            this._imageReady = true;    // source is loaded
         }
-        else {
-            this._image     = new Image();
-            this._image.src = aImageSource;
+        else
+        {
+            this.createImageFromSource( aImageSource );
         }
     }
     this.bounds     = { "left" : aXPos, "top" : aYPos, "width" : aWidth, "height" : aHeight };
@@ -100,6 +101,15 @@ zgor.ZSprite.prototype._parent = null;
  * @type {Image}
  */
 zgor.ZSprite.prototype._image;
+
+/**
+ * whether this zSprite is ready for drawing (will be false
+ * when an Image source is used and the Image is still loading its data)
+ *
+ * @protected
+ * @type {boolean}
+ */
+zgor.ZSprite.prototype._imageReady = false;
 
 /**
  * @private
@@ -183,10 +193,10 @@ zgor.ZSprite.prototype.canvas;
  */
 zgor.ZSprite.prototype.draw = function( aCanvasContext, aCurrentTimestamp )
 {
-    // extend in subclass if you're drawing a custom object instead of a graphical asset, don't
-    // forget to invoke the super call for drawing the child display list !
+    // extend in subclass if you're drawing a custom object instead of a graphical Image asset
+    // don't forget to draw the child display list when overriding this method!
 
-    if ( this._image )
+    if ( this._imageReady )
     {
         var bounds = this.bounds;
 
@@ -194,6 +204,7 @@ zgor.ZSprite.prototype.draw = function( aCanvasContext, aCurrentTimestamp )
                                   0, 0, bounds.width, bounds.height,
                                   bounds.left, bounds.top, bounds.width, bounds.height );
     }
+
     // draw the children onto the canvas
     if ( this._children.length > 0 )
     {
@@ -325,10 +336,7 @@ zgor.ZSprite.prototype.updateImage = function( aImage, aNewWidth, aNewHeight )
         }
         else
         {
-            if ( !this._image ) {
-                this._image = new Image();
-            }
-            this._image.src = aImage;
+            this.createImageFromSource( aImage );
         }
     }
 
@@ -843,4 +851,21 @@ zgor.ZSprite.prototype.disposeInternal = function()
         theChild.next = theChild.last = null;   // break references
     }
     this._children = [];
+};
+
+/**
+ * creates a drawable image from a supplied base64 image source
+ *
+ * @protected
+ * @param {string} aImageSource base64 encoded image data
+ */
+zgor.ZSprite.prototype.createImageFromSource = function( aImageSource )
+{
+    this._imageReady   = false;    // we can only draw once the image has been fully loaded!
+    this._image        = new Image();
+    this._image.onload = util.bind( function( e )
+    {
+        this._imageReady = true;
+    });
+    this._image.src = aImageSource;
 };
