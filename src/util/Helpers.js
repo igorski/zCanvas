@@ -58,7 +58,7 @@ util.EventHandler = function()
 
 util.EventHandler.prototype = new util.Disposable();
 
-/** @private @type {Array.<Object>} */ util.EventHandler.prototype._eventMappings;
+/** @private @type {Array.<{ element: Element, type: string, listener: !Function}>} */ util.EventHandler.prototype._eventMappings;
 
 /**
  * attach a listener and an event handler to an element

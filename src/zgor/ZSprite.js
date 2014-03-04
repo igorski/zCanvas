@@ -870,10 +870,18 @@ zgor.ZSprite.prototype.createImageFromSource = function( aImageSource )
 {
     this._imageReady   = false;    // we can only draw once the image has been fully loaded!
     this._image        = new Image();
-    this._image.onload = util.bind( function( e )
+
+    // prepare load callback via managed handler
+    var eventHandler = new util.EventHandler();
+    var loadCallback = util.bind( function( e )
     {
         this._imageReady = true;
+        eventHandler.dispose();  // will clean up listeners
 
     }, this );
+
+    eventHandler.addEventListener( this._image, "load", loadCallback );
+
+    // load the image
     this._image.src = aImageSource;
 };
