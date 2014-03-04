@@ -61,7 +61,7 @@ zgor.ZSprite = function( aXPos, aYPos, aWidth, aHeight, aImageSource, aIsCollida
             this.createImageFromSource( aImageSource );
         }
     }
-    this.bounds     = { "left" : aXPos, "top" : aYPos, "width" : aWidth, "height" : aHeight };
+    this._bounds     = { "left" : aXPos, "top" : aYPos, "width" : aWidth, "height" : aHeight };
     this.collidable = aIsCollidable || false;
     this._children  = [];
 };
@@ -72,13 +72,13 @@ zgor.ZSprite.prototype = new util.Disposable();
 /* class variables */
 
 /**
- * rectangle describing this Objects bounds
- * relative to the Canvas
+ * rectangle describing this sprites bounds
+ * (relative to the zCanvas)
  *
  * @public
- * @type {Object} w/properties left, top, width, height
+ * @type {{ left: number, top: number, width: number, height: number }}
  */
-zgor.ZSprite.prototype.bounds;
+zgor.ZSprite.prototype._bounds;
 
 /**
  * whether this zSprite can collide with others
@@ -186,26 +186,160 @@ zgor.ZSprite.prototype.canvas;
 /* public methods */
 
 /**
+ * toggle the draggable mode of this zSprite
+ *
  * @public
- * @param {CanvasRenderingContext2D} aCanvasContext
+ *
+ * @param {boolean} aValue whether we want to activate / deactivate the dragging mode
+ * @param {boolean=} aKeepInBounds optional, whether we should keep dragging within bounds
+ */
+zgor.ZSprite.prototype.setDraggable = function( aValue, aKeepInBounds )
+{
+    this._draggable    = aValue;
+    this._keepInBounds = aKeepInBounds || false;
+};
+
+/**
+ * @public
+ *
+ * @return {number}
+ */
+zgor.ZSprite.prototype.getX = function()
+{
+    return this._bounds.left;
+};
+
+/**
+ * @public
+ *
+ * @param {number} aValue
+ */
+zgor.ZSprite.prototype.setX = function( aValue )
+{
+    var delta        = aValue - this._bounds.left;
+    this._bounds.left = aValue;
+
+    // as the offsets of the children are drawn relative to the Canvas, we
+    // must update their offsets by the delta value too
+
+    if ( this._children.length > 0 )
+    {
+        var theChild = this._children[ 0 ];
+
+        while ( theChild )
+        {
+            if ( !theChild.isDragging ) {
+                theChild.setX( theChild.getX() + delta );
+            }
+            theChild = theChild.next;
+        }
+    }
+};
+
+/**
+ * @public
+ *
+ * @return {number}
+ */
+zgor.ZSprite.prototype.getY = function()
+{
+    return this._bounds.top;
+};
+
+/**
+ * @public
+ *
+ * @param {number} aValue
+ */
+zgor.ZSprite.prototype.setY = function( aValue )
+{
+    var delta       = aValue - this._bounds.top;
+    this._bounds.top = aValue;
+
+    // as the offsets of the children are drawn relative to the Canvas, we
+    // must update their offsets by the delta value too
+
+    if ( this._children.length > 0 )
+    {
+        var theChild = this._children[ 0 ];
+
+        while ( theChild )
+        {
+            if ( !theChild.isDragging ) {
+                theChild.setY( theChild.getY() + delta );
+            }
+            theChild = theChild.next;
+        }
+    }
+};
+
+/**
+ * @public
+ *
+ * @return {number}
+ */
+zgor.ZSprite.prototype.getWidth = function()
+{
+    return this._bounds.width;
+};
+
+/**
+ * @public
+ *
+ * @return {number}
+ */
+zgor.ZSprite.prototype.getHeight = function()
+{
+    return this._bounds.height;
+};
+
+/**
+ * @public
+ *
+ * @return {{ left: number, top: number, width: number, height: number }}
+ */
+zgor.ZSprite.prototype.getBounds = function()
+{
+    return this._bounds;
+};
+
+/**
+ * invoked on each render cycle before the draw-method
+ * is invoked, you can override this in your subclass
+ * for custom logic / animation such as updating the
+ * state of this Object (like position, size, etc.)
+ *
+ * @public
+ *
  * @param {number} aCurrentTimestamp the current timestamp
  *                 which can be used to create strict timed animations
  */
-zgor.ZSprite.prototype.draw = function( aCanvasContext, aCurrentTimestamp )
+zgor.ZSprite.prototype.update = function( aCurrentTimestamp )
+{
+    // override in prototype-extensions or instance
+};
+
+/**
+ * @public
+ *
+ * @param {CanvasRenderingContext2D} aCanvasContext to draw on
+ */
+zgor.ZSprite.prototype.draw = function( aCanvasContext )
 {
     // extend in subclass if you're drawing a custom object instead of a graphical Image asset
     // don't forget to draw the child display list when overriding this method!
 
     if ( this._imageReady )
     {
-        var bounds = this.bounds;
+        var bounds = this._bounds;
 
         aCanvasContext.drawImage( this._image,
                                   0, 0, bounds.width, bounds.height,
                                   bounds.left, bounds.top, bounds.width, bounds.height );
     }
 
-    // draw the children onto the canvas
+    // draw this Sprites children onto the canvas
+
     if ( this._children.length > 0 )
     {
         var theSprite = this._children[ 0 ];
@@ -221,41 +355,12 @@ zgor.ZSprite.prototype.draw = function( aCanvasContext, aCurrentTimestamp )
 };
 
 /**
- * toggle the draggable mode of this zSprite
- *
- * @public
- *
- * @param {boolean} aValue whether we want to activate / deactivate the dragging mode
- * @param {boolean=} aKeepInBounds optional, whether we should keep dragging within bounds
- */
-zgor.ZSprite.prototype.setDraggable = function( aValue, aKeepInBounds )
-{
-    this._draggable    = aValue;
-    this._keepInBounds = aKeepInBounds || false;
-};
-
-/**
- * invoked on each render cycle before the draw-method
- * is invoked, you can override this in your subclass
- * for custom logic / animation such as updating the
- * state of this Object (like position, size, etc.)
- *
- * @public
- *
- * @param {CanvasRenderingContext2D} aCanvasContext
- * @param {number} aCurrentTimestamp the current timestamp
- *                 which can be used to create strict timed animations
- */
-zgor.ZSprite.prototype.update = function( aCanvasContext, aCurrentTimestamp )
-{
-    // override in subclass
-};
-
-/**
  * queries the bounding box of another sprite to check whether it overlaps the bounding box of this sprite, this
  * can be used as a fast method to detect collisions, though note it is less accurate than checking at the pixel level
  * via the zCanvas "checkCollision"-method as it will match the entire bounding box, and omit checking for transparent
  * areas !
+ *
+ * @public
  *
  * @param {zgor.ZSprite} aSprite the sprite to check against
  *
@@ -282,6 +387,8 @@ zgor.ZSprite.prototype.collidesWith = function( aSprite )
  *
  * NOTE : ONLY query against results of ZCanvas' "getChildrenUnderPoint"-method as for brevity (and speeds)
  * sake, we only check the desired plane, and not against the other axis.
+ *
+ * @public
  *
  * @param {zgor.ZSprite} aSprite the sprite to check against
  * @param {number} aEdge the edge to check 0 = left, 1 = above, 2 = right, 3 = below this is relative
@@ -345,145 +452,38 @@ zgor.ZSprite.prototype.updateImage = function( aImage, aNewWidth, aNewHeight )
 
     if ( aNewWidth )
     {
-        var prevWidth     = this.bounds.width || 0;
-        this.bounds.width = aNewWidth;
-        this.bounds.left -= ( aNewWidth * .5 - prevWidth * .5 );
+        var prevWidth     = this._bounds.width || 0;
+        this._bounds.width = aNewWidth;
+        this._bounds.left -= ( aNewWidth * .5 - prevWidth * .5 );
     }
     if ( aNewHeight )
     {
-        var prevHeight     = this.bounds.height || 0;
-        this.bounds.height = aNewHeight;
-        this.bounds.top   -= ( aNewHeight *.5 - prevHeight *.5 );
+        var prevHeight     = this._bounds.height || 0;
+        this._bounds.height = aNewHeight;
+        this._bounds.top   -= ( aNewHeight *.5 - prevHeight *.5 );
     }
 
     // make sure the image is still in bounds
 
     if ( this._keepInBounds && ( aNewWidth || aNewHeight ))
     {
-        var minX = -( this.bounds.width  - this.canvas.getWidth() );
-        var minY = -( this.bounds.height - this.canvas.getHeight() );
+        var minX = -( this._bounds.width  - this.canvas.getWidth() );
+        var minY = -( this._bounds.height - this.canvas.getHeight() );
 
-        if ( this.bounds.left > 0 ) {
-            this.bounds.left = 0;
+        if ( this._bounds.left > 0 ) {
+            this._bounds.left = 0;
         }
-        else if ( this.bounds.left < minX ) {
-            this.bounds.left = minX;
+        else if ( this._bounds.left < minX ) {
+            this._bounds.left = minX;
         }
 
-        if ( this.bounds.top > 0 ) {
-            this.bounds.top = 0;
+        if ( this._bounds.top > 0 ) {
+            this._bounds.top = 0;
         }
-        else if ( this.bounds.top < minY ) {
-            this.bounds.top = minY;
-        }
-    }
-};
-
-/**
- * @public
- * @return {number}
- */
-zgor.ZSprite.prototype.getX = function()
-{
-    return this.bounds.left;
-};
-
-/**
- * @public
- * @param {number} aValue
- */
-zgor.ZSprite.prototype.setX = function( aValue )
-{
-    var delta        = aValue - this.bounds.left;
-    this.bounds.left = aValue;
-
-    // as the offsets of the children are drawn relative to the Canvas, we
-    // must update their offsets by the delta value too
-
-    if ( this._children.length > 0 )
-    {
-        var theChild = this._children[ 0 ];
-
-        while ( theChild )
-        {
-            if ( !theChild.isDragging ) {
-                theChild.setX( theChild.getX() + delta );
-            }
-            theChild = theChild.next;
+        else if ( this._bounds.top < minY ) {
+            this._bounds.top = minY;
         }
     }
-};
-
-/**
- * @public
- * @return {number}
- */
-zgor.ZSprite.prototype.getY = function()
-{
-    return this.bounds.top;
-};
-
-/**
- * @public
- * @param {number} aValue
- */
-zgor.ZSprite.prototype.setY = function( aValue )
-{
-    var delta       = aValue - this.bounds.top;
-    this.bounds.top = aValue;
-
-    // as the offsets of the children are drawn relative to the Canvas, we
-    // must update their offsets by the delta value too
-
-    if ( this._children.length > 0 )
-    {
-        var theChild = this._children[ 0 ];
-
-        while ( theChild )
-        {
-            if ( !theChild.isDragging ) {
-                theChild.setY( theChild.getY() + delta );
-            }
-            theChild = theChild.next;
-        }
-    }
-};
-
-/**
- * @public
- * @return {number}
- */
-zgor.ZSprite.prototype.getWidth = function()
-{
-    return this.bounds.width;
-};
-
-/**
- * @public
- * @return {number}
- */
-zgor.ZSprite.prototype.getHeight = function()
-{
-    return this.bounds.height;
-};
-
-/**
- * @public
- * @return {Object}
- */
-zgor.ZSprite.prototype.getBounds = function()
-{
-    return this.bounds;
-};
-
-/**
- * @override
- * @public
- * @returns {Element}
- */
-zgor.ZSprite.prototype.getElement = function()
-{
-    // inherited from interface, no actual element to return !!
 };
 
 /**
@@ -491,6 +491,7 @@ zgor.ZSprite.prototype.getElement = function()
  *
  * @override
  * @public
+ *
  * @param {zgor.ZSprite} aParent
  */
 zgor.ZSprite.prototype.setParent = function( aParent )
@@ -500,6 +501,7 @@ zgor.ZSprite.prototype.setParent = function( aParent )
 
 /**
  * @public
+ *
  * @return {zgor.ZSprite} parent
  */
 zgor.ZSprite.prototype.getParent = function()
@@ -508,41 +510,11 @@ zgor.ZSprite.prototype.getParent = function()
 };
 
 /**
- * get a child of this Sprite by its index in the Display List
+ * append another zSprite to the display list of this sprite
  *
  * @public
- * @param {number} index of the object in the Display List
- * @return {zgor.ZSprite} the referenced object
- */
-zgor.ZSprite.prototype.getChildAt = function( index )
-{
-    return this._children[ index ];
-};
-
-/**
- * remove a child from this object's Display List at the given index
  *
- * @public
- * @param {number} index of the object to remove
- */
-zgor.ZSprite.prototype.removeChildAt = function( index )
-{
-    this.removeChild( this.getChildAt( index ));
-};
-
-/**
- * @public
- * @return {number} the amount of children in this object's Display List
- */
-zgor.ZSprite.prototype.numChildren = function()
-{
-    return this._children.length;
-};
-
-/**
- * @public
- *
- * @param {zgor.ZSprite} aChild
+ * @param {zgor.ZSprite} aChild to append
  * @return {zgor.ZSprite} this object - for chaining purposes
  */
 zgor.ZSprite.prototype.addChild = function( aChild )
@@ -565,8 +537,10 @@ zgor.ZSprite.prototype.addChild = function( aChild )
 };
 
 /**
+ * remove a child zSprite from this sprites display list
+ *
  * @public
- * @param {zgor.ZSprite} aChild  the child to remove from this Object
+ * @param {zgor.ZSprite} aChild the child to remove
  */
 zgor.ZSprite.prototype.removeChild = function( aChild )
 {
@@ -606,6 +580,38 @@ zgor.ZSprite.prototype.removeChild = function( aChild )
 };
 
 /**
+ * get a child of this Sprite by its index in the Display List
+ *
+ * @public
+ * @param {number} index of the object in the Display List
+ * @return {zgor.ZSprite} the referenced object
+ */
+zgor.ZSprite.prototype.getChildAt = function( index )
+{
+    return this._children[ index ];
+};
+
+/**
+ * remove a child from this object's Display List at the given index
+ *
+ * @public
+ * @param {number} index of the object to remove
+ */
+zgor.ZSprite.prototype.removeChildAt = function( index )
+{
+    this.removeChild( this.getChildAt( index ));
+};
+
+/**
+ * @public
+ * @return {number} the amount of children in this object's Display List
+ */
+zgor.ZSprite.prototype.numChildren = function()
+{
+    return this._children.length;
+};
+
+/**
  * check whether a given display object is present in this object's display list
  *
  * @public
@@ -639,7 +645,7 @@ zgor.ZSprite.prototype.contains = function( aChild )
  */
 zgor.ZSprite.prototype.handlePress = function( aXPosition, aYPosition )
 {
-    // override in subclass
+    // override in prototype-extensions or instance
 };
 
 /**
@@ -649,7 +655,7 @@ zgor.ZSprite.prototype.handlePress = function( aXPosition, aYPosition )
  */
 zgor.ZSprite.prototype.handleRelease = function()
 {
-    // override in subclass
+    // override in prototype-extensions or instance
 };
 
 /**
@@ -660,7 +666,76 @@ zgor.ZSprite.prototype.handleRelease = function()
  */
 zgor.ZSprite.prototype.handleClick = function()
 {
-    // override in class extension
+    // override in prototype-extensions or instance
+};
+
+/**
+ * move handler, invoked by the "handleInteraction"-method
+ *
+ * @private
+ *
+ * @param {number} aXPosition
+ * @param {number} aYPosition
+ */
+zgor.ZSprite.prototype.handleMove = function( aXPosition, aYPosition )
+{
+    var thisHalfWidth  = this._bounds.width  * .5;
+    var thisHalfHeight = this._bounds.height * .5;
+
+    var theX, theY;
+
+    theX = this._dragStartOffset.x + ( aXPosition - this.__dragStartEventCoordinates.x );
+    theY = this._dragStartOffset.y + ( aYPosition - this.__dragStartEventCoordinates.y );
+
+    // in case of dragging from center, use the following (not usable when image exceeds stage dimensions!!)
+    //theX = aXPosition - thisHalfWidth;
+    //theY = aYPosition - thisHalfHeight;
+
+    if ( this.canvas )
+    {
+        var stageWidth  = this.canvas.getWidth();
+        var stageHeight = this.canvas.getHeight();
+
+        // keep within bounds ?
+
+        if ( this._keepInBounds )
+        {
+            var minX = -( this._bounds.width  - stageWidth );
+            var minY = -( this._bounds.height - stageHeight );
+
+            if ( theX > 0 ) {
+                theX = 0;
+            }
+            else if ( theX < minX ) {
+                theX = minX;
+            }
+
+            if ( theY > 0 ) {
+                theY = 0;
+            }
+            else if ( theY < minY ) {
+                theY = minY;
+            }
+        }
+        else
+        {
+            if ( theX < 0 ) {
+                theX = aXPosition - thisHalfWidth;
+            }
+            else if ( theX > stageWidth ) {
+                theX = aXPosition + thisHalfWidth;
+            }
+
+            if ( theY < 0 ) {
+                theY = aYPosition - thisHalfHeight;
+            }
+            else if ( theY > stageHeight ) {
+                theY = aYPosition + thisHalfHeight;
+            }
+        }
+    }
+    this.setX( theX );
+    this.setY( theY );
 };
 
 /**
@@ -730,7 +805,7 @@ zgor.ZSprite.prototype.handleInteraction = function( aEventX, aEventY, aEvent )
     // evaluate if the event applies to this sprite by
     // matching the event offset with the Sprite bounds
 
-    var coordinates = this.bounds;
+    var coordinates = this._bounds;
 
     if ( aEventX >= thisX && aEventX <= ( thisX + coordinates.width ) &&
          aEventY >= thisY && aEventY <= ( thisY + coordinates.height ))
@@ -744,7 +819,7 @@ zgor.ZSprite.prototype.handleInteraction = function( aEventX, aEventY, aEvent )
                 this.isDragging     = true;
                 this._dragStartTime = +new Date();
 
-                this._dragStartOffset            = { "x" : this.bounds.left, "y" : this.bounds.top };
+                this._dragStartOffset            = { "x" : this._bounds.left, "y" : this._bounds.top };
                 this.__dragStartEventCoordinates = { "x" : aEventX, "y" : aEventY };
 
                 this.handlePress( aEventX, aEventY );
@@ -762,75 +837,6 @@ zgor.ZSprite.prototype.handleInteraction = function( aEventX, aEventY, aEvent )
         return true;
     }
     return false;
-};
-
-/**
- * move handler, invoked by the "handleInteraction"-method
- *
- * @private
- *
- * @param {number} aXPosition
- * @param {number} aYPosition
- */
-zgor.ZSprite.prototype.handleMove = function( aXPosition, aYPosition )
-{
-    var thisHalfWidth  = this.bounds.width  * .5;
-    var thisHalfHeight = this.bounds.height * .5;
-
-    var theX, theY;
-
-    theX = this._dragStartOffset.x + ( aXPosition - this.__dragStartEventCoordinates.x );
-    theY = this._dragStartOffset.y + ( aYPosition - this.__dragStartEventCoordinates.y );
-
-    // in case of dragging from center, use the following (not usable when image exceeds stage dimensions!!)
-    //theX = aXPosition - thisHalfWidth;
-    //theY = aYPosition - thisHalfHeight;
-
-    if ( this.canvas )
-    {
-        var stageWidth  = this.canvas.getWidth();
-        var stageHeight = this.canvas.getHeight();
-
-        // keep within bounds ?
-
-        if ( this._keepInBounds )
-        {
-            var minX = -( this.bounds.width  - stageWidth );
-            var minY = -( this.bounds.height - stageHeight );
-
-            if ( theX > 0 ) {
-                theX = 0;
-            }
-            else if ( theX < minX ) {
-                theX = minX;
-            }
-
-            if ( theY > 0 ) {
-                theY = 0;
-            }
-            else if ( theY < minY ) {
-                theY = minY;
-            }
-        }
-        else
-        {
-            if ( theX < 0 ) {
-                theX = aXPosition - thisHalfWidth;
-            }
-            else if ( theX > stageWidth ) {
-                theX = aXPosition + thisHalfWidth;
-            }
-
-            if ( theY < 0 ) {
-                theY = aYPosition - thisHalfHeight;
-            }
-            else if ( theY > stageHeight ) {
-                theY = aYPosition + thisHalfHeight;
-            }
-        }
-    }
-    this.setX( theX );
-    this.setY( theY );
 };
 
 /* protected methods */
@@ -857,6 +863,7 @@ zgor.ZSprite.prototype.disposeInternal = function()
  * creates a drawable image from a supplied base64 image source
  *
  * @protected
+ *
  * @param {string} aImageSource base64 encoded image data
  */
 zgor.ZSprite.prototype.createImageFromSource = function( aImageSource )
@@ -866,6 +873,7 @@ zgor.ZSprite.prototype.createImageFromSource = function( aImageSource )
     this._image.onload = util.bind( function( e )
     {
         this._imageReady = true;
-    });
+
+    }, this );
     this._image.src = aImageSource;
 };

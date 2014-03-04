@@ -83,6 +83,22 @@ zgor.ZCanvas.prototype = new util.Disposable();
 /* public methods */
 
 /**
+ * appends this zCanvas to the DOM (i.e. adds the references <canvas>-
+ * element into the supplied container
+ *
+ * @public
+ *
+ * @param {Element} aContainer DOM node to append the zCanvas to
+ */
+zgor.ZCanvas.prototype.insertInPage = function( aContainer )
+{
+    if ( this.getElement().parentNode )
+        throw new Error( "zCanvas already present in DOM" );
+
+    aContainer.appendChild( this.getElement());
+};
+
+/**
  * get the <canvas>-element inside the DOM that is used
  * to render this zCanvas' contents
  *
@@ -588,7 +604,7 @@ zgor.ZCanvas.prototype.render = function()
 
         while ( theSprite )
         {
-            theSprite.update( ctx, now );
+            theSprite.update( now );
 
             theSprite = theSprite.next;
         }
@@ -607,7 +623,7 @@ zgor.ZCanvas.prototype.render = function()
 
         while ( theSprite )
         {
-            theSprite.draw( ctx, now );
+            theSprite.draw( ctx );
 
             theSprite = theSprite.next;
         }

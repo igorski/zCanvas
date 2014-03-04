@@ -41,7 +41,7 @@
         var cvs       = new zgor.ZCanvas( cvsWidth, cvsHeight, true, 60 );
 
         // append zCanvas to DOM
-        document.getElementById( "demo" ).appendChild( cvs.getElement() );
+        cvs.insertInPage( document.getElementById( "demo" ));
 
         // STEP 2 : SELF ANIMATING IMAGE EXAMPLE
         // --------------------------------------
@@ -63,7 +63,7 @@
         var renderInterval = cvs.getRenderInterval();
         var maxYPosition   = bgHeight - cvsHeight;
 
-        bgSprite.update = function( aCanvasContext, aCurrentTimestamp )
+        bgSprite.update = function( aCurrentTimestamp )
         {
             var delta = ( aCurrentTimestamp - prevStamp ); // should roughly equal the render interval of the zCanvas
             prevStamp = aCurrentTimestamp;                 // store last timestamp
@@ -101,13 +101,13 @@
         // second sprite > represents a transparent gitHub logo at 75x75 px
         // (see included "assets.js"-file for the assetGitHubLogo-image data)
 
-        var sprite = new zgor.ZSprite( 0, 0, 75, 75, assetGitHubLogo, false );
+        var ghSprite = new zgor.ZSprite( 0, 0, 75, 75, assetGitHubLogo, false );
 
         // add the GitHub logo-sprite onto the canvas
-        cvs.addChild( sprite );
+        cvs.addChild( ghSprite );
 
         // make this sprite draggable so the user can move it around
-        sprite.setDraggable( true );
+        ghSprite.setDraggable( true );
 
         // STEP 4 : NEW SUBCLASS / SPRITESHEET EXAMPLE
         // -------------------------------------------
@@ -158,7 +158,7 @@
         };
 
         // override update-method for custom logic
-        Hero.prototype.update = function( ctx, timestamp )
+        Hero.prototype.update = function( timestamp )
         {
             // animation update operations (i.e. switch tile in sheet)
             if ( ++this._indexCounter == this._maxIndexCount )
@@ -282,9 +282,9 @@
         };
 
         // override draw-method for custom logic
-        Hero.prototype.draw = function( ctx, timestamp )
+        Hero.prototype.draw = function( ctx )
         {
-            var bounds = this.bounds;
+            var bounds = this._bounds;
 
             ctx.drawImage( this._image,
                            this._spriteIndex * bounds.width,    // tile x offset
@@ -350,10 +350,10 @@
         // ---------------------------------------
 
         var wallLeft = new zgor.ZSprite( 50, Math.round( cvsHeight / 1.5 ), 10, 100, null, true );
-        wallLeft.draw = function( ctx, ts )
+        wallLeft.draw = function( ctx )
         {
             ctx.fillStyle = 'rgb(255,128,0)';
-            ctx.fillRect(this.getX(),this.getY(),this.getWidth(),this.getHeight());
+            ctx.fillRect( this.getX(), this.getY(), this.getWidth(), this.getHeight());
         };
         cvs.addChild( wallLeft );
 
