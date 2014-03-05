@@ -12,11 +12,11 @@
 </head>
 <body>
     <div id="container">
-        <h1>zCanvas demo</h1>
+        <h1>zCanvas spritesheet demo</h1>
         <div id="demo"><!-- x --></div>
         <p>
-            Demo features : auto scrolling background and a
-            keyboard controllable spritesheet animation that has collision detection.
+            Demo features : auto scrolling background and a keyboard / touchscreen-controllable spritesheet animation
+            that uses the fast (and moderately accurate) collision detection-variant (see API docs).
         </p>
         <span id="debug">
 
@@ -33,6 +33,8 @@
             debug.innerHTML = msg;
         }
 
+        var container = document.getElementById( "demo" );
+
         // get window dimensions
 
         var w, h;
@@ -47,19 +49,19 @@
 
         // create a new zCanvas that renders at 60 fps
         // keep it within the device / browser bounds
-        var cvsWidth  = w < 800 ? w : 800;
+        var cvsWidth  = w < 800 ? w * .93 : 800;
         var cvsHeight = h < 350 ? h : 350;
         var cvs       = new zgor.ZCanvas( cvsWidth, cvsHeight, true, 60 );
 
         // append zCanvas to DOM
-        cvs.insertInPage( document.getElementById( "demo" ));
+        cvs.insertInPage( container );
 
         // STEP 2 : SELF ANIMATING IMAGE EXAMPLE
         // --------------------------------------
 
         // first sprite will acts as a background
         // (see included "assets.js"-file for the assetBackground-image data)
-        var bgWidth  = 400, bgHeight = 1204;
+        var bgWidth  = 800, bgHeight = 1067;
         var bgSprite = new zgor.ZSprite( 0, 0, bgWidth, bgHeight, assetBackground );
 
         // custom overrides, to demonstrate a simple custom behaviour
@@ -142,6 +144,9 @@
         Hero.prototype._maxIndexCount = 0;   // internal : what is the max number of count before we switch tile
 
         // public methods
+        // --------------
+
+        // makes the hero jump
 
         Hero.prototype.jump = function()
         {
@@ -154,7 +159,25 @@
             this.falling    = false;
         };
 
-        // override update-method for custom logic
+        // makes the hero run left (0) or right (1) at incremental speed
+
+        Hero.prototype.run = function( direction )
+        {
+            hero.direction = direction;
+            hero.running   = true;
+        };
+
+        // stops the hero (will slowly move to a halt)
+
+        Hero.prototype.stop = function()
+        {
+            hero.running = false;
+        };
+
+        // overridden methods
+        // ------------------
+
+        // update-method for custom logic
         Hero.prototype.update = function( timestamp )
         {
             // animation update operations (i.e. switch tile in sheet)
@@ -167,9 +190,8 @@
             var maxIndex = this.running ? this._runningTiles : this._standingTiles;
 
             // loop animation
-            if ( this._spriteIndex > maxIndex ) {
+            if ( this._spriteIndex > maxIndex )
                 this._spriteIndex = 0;
-            }
 
             // select the right tile row depending on direction and action
 
@@ -178,6 +200,25 @@
                 this._spriteRow += 2;
 
             // movement
+
+            if ( this.running )
+            {
+                switch ( this.direction )
+                {
+                    case 0:
+                        // left
+                        if ( hero.xSpeed > -hero.MAX_X_SPEED )
+                            hero.xSpeed -= .125;
+
+                        break;
+
+                    case 1:
+                        // right
+                        if ( hero.xSpeed < hero.MAX_X_SPEED )
+                            hero.xSpeed += .125;
+                        break;
+                }
+            }
 
             var prevX = this.getX(), prevY = this.getY();
             var thisWidth = this.getWidth(), thisHeight = this.getHeight();
@@ -305,63 +346,18 @@
         // in the sheet being 38 x 35 pixels
         // (see included "assets.js"-file for the assetSpriteSheet-image data)
 
-        var hero = new Hero( 100, cvsHeight / 2, 38, 35, assetSpriteSheet );
+        var hero = new Hero( cvsWidth / 2, cvsHeight / 2, 38, 35, assetSpriteSheet );
         cvs.addChild( hero );
 
-        // STEP 4 : ADDING KEYBOARD INTERACTION
-        // ------------------------------------
-
-        var heroHandler = new util.EventHandler(); // create a handler for all key listeners
-
-        heroHandler.addEventListener( window, "keydown", function( e )
-        {
-            switch ( e.keyCode )
-            {
-                // move up (jump)
-                case 38:
-
-                    hero.jump();
-                    break;
-
-                // move hero to the right
-                case 39:
-                    hero.direction = 1;
-
-                    if ( hero.xSpeed < hero.MAX_X_SPEED )
-                        ++hero.xSpeed;
-
-                    hero.running = true;
-                    break;
-
-                // move hero to the left
-                case 37:
-                    hero.direction = 0;
-                    if ( hero.xSpeed > -hero.MAX_X_SPEED ) {
-                        --hero.xSpeed;
-                    }
-                    hero.running = true;
-                    break;
-            }
-        });
-
-        // add a listener for key up (release) so we can tell the hero to stop running
-
-        heroHandler.addEventListener( window, "keyup", function( e )
-        {
-            if ( e.keyCode == 39 || e.keyCode == 37 ) {
-                hero.running = false;
-            }
-        });
-
-        // STEP 5 : A TEST FOR COLLISION DETECTION
-        // ---------------------------------------
+        // STEP 4 : HOW ABOUT COLLISION DETECTION
+        // --------------------------------------
 
         // we test using the super-fast bounding box collision detection, as such we can
         // afford to make separate sprites of each wall, it's up to your applications needs
         // how you do this (for instance use an unique color for walls and use a single bitmap
         // along with pixel collision detection)
 
-        var wallLeft = new zgor.ZSprite( 50, Math.round( cvsHeight / 1.5 ), 10, 100, null, true );
+        var wallLeft = new zgor.ZSprite( 50, Math.round( cvsHeight / 1.75 ), 10, 100, null, true );
         cvs.addChild( wallLeft );
 
         var wallBottom = new zgor.ZSprite( 50, wallLeft.getY() + wallLeft.getHeight(), cvsWidth / 1.5, 10, null, true );
@@ -381,6 +377,86 @@
             ctx.fillRect( this.getX(), this.getY(), this.getWidth(), this.getHeight());
         };
         wallBottom.draw = wallRight.draw = wallTopRight.draw = wallLeft.draw;
+
+        // STEP 5 : ADDING KEYBOARD OR TOUCH INTERACTION
+        // ---------------------------------------------
+
+        var heroHandler  = new util.EventHandler(); // create a handler for the required listeners
+        var touchHandler = new util.EventHandler(); // separate for touch controls
+
+        // we add on-screen controls buttons for touch screens (we cannot test for
+        // touchscreens reliably as most browsers support touch events though the DEVICE
+        // it is running on hasn't got touch support !
+
+        var leftBtn = document.createElement( "div" );
+        leftBtn.id  = "left-btn";
+
+        var rightBtn = document.createElement( "div" );
+        rightBtn.id  = "right-btn";
+
+        var jumpBtn = document.createElement( "div" );
+        jumpBtn.id  = "jump-btn";
+
+        container.appendChild( leftBtn );
+        container.appendChild( rightBtn );
+        container.appendChild( jumpBtn );
+
+        var cancelHandler = function( e )
+        {
+            hero.stop();
+        };
+
+        touchHandler.addEventListener( leftBtn,  "touchstart", function( e ) { hero.run( 0 ); });
+        touchHandler.addEventListener( rightBtn, "touchstart", function( e ) { hero.run( 1 ); });
+        touchHandler.addEventListener( jumpBtn,  "touchstart", function( e ) { hero.jump(); });
+        touchHandler.addEventListener( leftBtn,  "touchend",   cancelHandler );
+        touchHandler.addEventListener( rightBtn, "touchend",   cancelHandler );
+
+        // keyboard control for desktop devices
+
+        heroHandler.addEventListener( window, "keydown", function( e )
+        {
+            switch ( e.keyCode )
+            {
+                // move up (jump)
+                case 38:
+                    hero.jump();
+                    break;
+
+                // move hero to the right
+                case 39:
+                    if ( !hero.running )
+                        hero.run( 1 );
+                    break;
+
+                // move hero to the left
+                case 37:
+                    if ( !hero.running )
+                        hero.run( 0 );
+                    break;
+            }
+
+            // remove the touch handler and buttons, we now
+            // know the user has a keyboard
+
+            if ( touchHandler != null )
+            {
+                touchHandler.dispose();
+                touchHandler = null;
+                container.removeChild( leftBtn );
+                container.removeChild( rightBtn );
+                container.removeChild( jumpBtn );
+            }
+        });
+
+        // add a listener for key up (release) so we can tell the hero to stop running
+
+        heroHandler.addEventListener( window, "keyup", function( e )
+        {
+            if ( e.keyCode == 39 || e.keyCode == 37 ) {
+                hero.stop();
+            }
+        });
 
     </script>
 </body>
