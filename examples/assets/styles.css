@@ -22,11 +22,12 @@ body {
 #left-btn, #right-btn, #jump-btn {
     position: absolute;
     bottom: 1em;
-    width: 50px;
-    height: 50px;
+    padding: 1em 1.5em;
+    font-weight: bold;
     border-radius: 20%;
-    background-color: rgba(255,255,255,.75);
-    border-bottom: 5px solid #999;
+    color: #FFF;
+    background-color: rgba(255,0,128,.85);
+    border-bottom: 5px solid #FF0099;
 }
 
 #left-btn {
@@ -34,7 +35,7 @@ body {
 }
 
 #right-btn {
-    left: 70px;
+    left: 75px;
 }
 
 #jump-btn {

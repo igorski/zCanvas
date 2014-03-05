@@ -388,14 +388,17 @@
         // touchscreens reliably as most browsers support touch events though the DEVICE
         // it is running on hasn't got touch support !
 
-        var leftBtn = document.createElement( "div" );
-        leftBtn.id  = "left-btn";
+        var leftBtn       = document.createElement( "div" );
+        leftBtn.id        = "left-btn";
+        leftBtn.innerHTML = "<";
 
-        var rightBtn = document.createElement( "div" );
-        rightBtn.id  = "right-btn";
+        var rightBtn       = document.createElement( "div" );
+        rightBtn.id        = "right-btn";
+        rightBtn.innerHTML = ">";
 
-        var jumpBtn = document.createElement( "div" );
-        jumpBtn.id  = "jump-btn";
+        var jumpBtn       = document.createElement( "div" );
+        jumpBtn.id        = "jump-btn";
+        jumpBtn.innerHTML = "A";
 
         container.appendChild( leftBtn );
         container.appendChild( rightBtn );
