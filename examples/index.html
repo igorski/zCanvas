@@ -406,11 +406,13 @@
             hero.stop();
         };
 
-        touchHandler.addEventListener( leftBtn,  "touchstart", function( e ) { hero.run( 0 ); });
-        touchHandler.addEventListener( rightBtn, "touchstart", function( e ) { hero.run( 1 ); });
-        touchHandler.addEventListener( jumpBtn,  "touchstart", function( e ) { hero.jump(); });
-        touchHandler.addEventListener( leftBtn,  "touchend",   cancelHandler );
-        touchHandler.addEventListener( rightBtn, "touchend",   cancelHandler );
+        touchHandler.addEventListener( leftBtn,  "touchstart",  function( e ) { hero.run( 0 ); });
+        touchHandler.addEventListener( rightBtn, "touchstart",  function( e ) { hero.run( 1 ); });
+        touchHandler.addEventListener( jumpBtn,  "touchstart",  function( e ) { hero.jump(); });
+        touchHandler.addEventListener( leftBtn,  "touchcancel", cancelHandler );
+        touchHandler.addEventListener( leftBtn,  "touchcancel", cancelHandler );
+        touchHandler.addEventListener( leftBtn,  "touchend",    cancelHandler );
+        touchHandler.addEventListener( rightBtn, "touchend",    cancelHandler );
 
         // keyboard control for desktop devices
 
