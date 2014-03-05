@@ -333,9 +333,7 @@ zgor.ZSprite.prototype.draw = function( aCanvasContext )
     {
         var bounds = this._bounds;
 
-        aCanvasContext.drawImage( this._image,
-                                  -bounds.left, -bounds.top, bounds.width, bounds.height,
-                                  bounds.left, 0, bounds.width, bounds.height );
+        aCanvasContext.drawImage( this._image, bounds.left, bounds.top, bounds.width, bounds.height );
     }
 
     // draw this Sprites children onto the canvas
@@ -463,8 +461,6 @@ zgor.ZSprite.prototype.updateImage = function( aImage, aNewWidth, aNewHeight )
         this._bounds.top   -= ( aNewHeight *.5 - prevHeight *.5 );
     }
 
-    this.sanitizeDimensions();
-
     // make sure the image is still in bounds
 
     if ( this._keepInBounds && ( aNewWidth || aNewHeight ))
@@ -499,9 +495,6 @@ zgor.ZSprite.prototype.updateImage = function( aImage, aNewWidth, aNewHeight )
 zgor.ZSprite.prototype.setParent = function( aParent )
 {
     this._parent = /** @type {zgor.ZSprite} */ ( aParent );
-
-    // we are now on-screen, make sure all fits
-    this.sanitizeDimensions();
 };
 
 /**
@@ -696,47 +689,44 @@ zgor.ZSprite.prototype.handleMove = function( aXPosition, aYPosition )
     //theX = aXPosition - thisHalfWidth;
     //theY = aYPosition - thisHalfHeight;
 
-    if ( this.canvas )
+    var stageWidth  = this.canvas.getWidth();
+    var stageHeight = this.canvas.getHeight();
+
+    // keep within bounds ?
+
+    if ( this._keepInBounds )
     {
-        var stageWidth  = this.canvas.getWidth();
-        var stageHeight = this.canvas.getHeight();
+        var minX = -( this._bounds.width  - stageWidth );
+        var minY = -( this._bounds.height - stageHeight );
 
-        // keep within bounds ?
-
-        if ( this._keepInBounds )
-        {
-            var minX = -( this._bounds.width  - stageWidth );
-            var minY = -( this._bounds.height - stageHeight );
-
-            if ( theX > 0 ) {
-                theX = 0;
-            }
-            else if ( theX < minX ) {
-                theX = minX;
-            }
-
-            if ( theY > 0 ) {
-                theY = 0;
-            }
-            else if ( theY < minY ) {
-                theY = minY;
-            }
+        if ( theX > 0 ) {
+            theX = 0;
         }
-        else
-        {
-            if ( theX < 0 ) {
-                theX = aXPosition - thisHalfWidth;
-            }
-            else if ( theX > stageWidth ) {
-                theX = aXPosition + thisHalfWidth;
-            }
+        else if ( theX < minX ) {
+            theX = minX;
+        }
 
-            if ( theY < 0 ) {
-                theY = aYPosition - thisHalfHeight;
-            }
-            else if ( theY > stageHeight ) {
-                theY = aYPosition + thisHalfHeight;
-            }
+        if ( theY > 0 ) {
+            theY = 0;
+        }
+        else if ( theY < minY ) {
+            theY = minY;
+        }
+    }
+    else
+    {
+        if ( theX < 0 ) {
+            theX = aXPosition - thisHalfWidth;
+        }
+        else if ( theX > stageWidth ) {
+            theX = aXPosition + thisHalfWidth;
+        }
+
+        if ( theY < 0 ) {
+            theY = aYPosition - thisHalfHeight;
+        }
+        else if ( theY > stageHeight ) {
+            theY = aYPosition + thisHalfHeight;
         }
     }
     this.setX( theX );
@@ -889,24 +879,4 @@ zgor.ZSprite.prototype.createImageFromSource = function( aImageSource )
 
     // load the image
     this._image.src = aImageSource;
-};
-
-/**
- * the dimensions of this sprite shouldn't exceed the dimensions of the canvas element, while
- * Chrome is pretty forgiving of this, Firefox will throw an error. This method ensures that
- * erroneous sizes won't exceed the canvas dimensions
- *
- * @protected
- */
-zgor.ZSprite.prototype.sanitizeDimensions = function()
-{
-    if ( this.canvas != null )
-    {
-        if ( this._bounds.width  > this.canvas.getWidth()) {
-            this._bounds.width =  this.canvas.getWidth();
-        }
-        if ( this._bounds.height > this.canvas.getHeight()) {
-            this._bounds.height = this.canvas.getHeight();
-        }
-    }
 };
