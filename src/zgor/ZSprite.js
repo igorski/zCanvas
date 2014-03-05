@@ -216,7 +216,7 @@ zgor.ZSprite.prototype.getX = function()
  */
 zgor.ZSprite.prototype.setX = function( aValue )
 {
-    var delta        = aValue - this._bounds.left;
+    var delta         = aValue - this._bounds.left;
     this._bounds.left = aValue;
 
     // as the offsets of the children are drawn relative to the Canvas, we
@@ -253,7 +253,7 @@ zgor.ZSprite.prototype.getY = function()
  */
 zgor.ZSprite.prototype.setY = function( aValue )
 {
-    var delta       = aValue - this._bounds.top;
+    var delta        = aValue - this._bounds.top;
     this._bounds.top = aValue;
 
     // as the offsets of the children are drawn relative to the Canvas, we
@@ -334,8 +334,8 @@ zgor.ZSprite.prototype.draw = function( aCanvasContext )
         var bounds = this._bounds;
 
         aCanvasContext.drawImage( this._image,
-                                  0, 0, bounds.width, bounds.height,
-                                  bounds.left, bounds.top, bounds.width, bounds.height );
+                                  -bounds.left, -bounds.top, bounds.width, bounds.height,
+                                  bounds.left, 0, bounds.width, bounds.height );
     }
 
     // draw this Sprites children onto the canvas
@@ -463,6 +463,8 @@ zgor.ZSprite.prototype.updateImage = function( aImage, aNewWidth, aNewHeight )
         this._bounds.top   -= ( aNewHeight *.5 - prevHeight *.5 );
     }
 
+    this.sanitizeDimensions();
+
     // make sure the image is still in bounds
 
     if ( this._keepInBounds && ( aNewWidth || aNewHeight ))
@@ -497,6 +499,9 @@ zgor.ZSprite.prototype.updateImage = function( aImage, aNewWidth, aNewHeight )
 zgor.ZSprite.prototype.setParent = function( aParent )
 {
     this._parent = /** @type {zgor.ZSprite} */ ( aParent );
+
+    // we are now on-screen, make sure all fits
+    this.sanitizeDimensions();
 };
 
 /**
@@ -528,8 +533,8 @@ zgor.ZSprite.prototype.addChild = function( aChild )
         aChild.last.next = aChild;
         aChild.next      = null;
     }
-    aChild.setParent( this );
     aChild.canvas = this.canvas;
+    aChild.setParent( this );
 
     this._children.push( aChild );
 
@@ -555,8 +560,8 @@ zgor.ZSprite.prototype.removeChild = function( aChild )
             this._children.splice( i, 1 );
         }
     }
-    aChild.setParent( null );
     aChild.canvas = null;
+    aChild.setParent( null );
 
     // update linked list
     var l = this._children.length;
@@ -884,4 +889,24 @@ zgor.ZSprite.prototype.createImageFromSource = function( aImageSource )
 
     // load the image
     this._image.src = aImageSource;
+};
+
+/**
+ * the dimensions of this sprite shouldn't exceed the dimensions of the canvas element, while
+ * Chrome is pretty forgiving of this, Firefox will throw an error. This method ensures that
+ * erroneous sizes won't exceed the canvas dimensions
+ *
+ * @protected
+ */
+zgor.ZSprite.prototype.sanitizeDimensions = function()
+{
+    if ( this.canvas != null )
+    {
+        if ( this._bounds.width  > this.canvas.getWidth()) {
+            this._bounds.width =  this.canvas.getWidth();
+        }
+        if ( this._bounds.height > this.canvas.getHeight()) {
+            this._bounds.height = this.canvas.getHeight();
+        }
+    }
 };

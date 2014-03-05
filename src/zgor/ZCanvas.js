@@ -129,8 +129,8 @@ zgor.ZCanvas.prototype.addChild = function( aChild )
         aChild.last.next = aChild;
         aChild.next      = null;
     }
-    aChild.setParent( this );
     aChild.canvas = this;
+    aChild.setParent( this );
 
     this._children.push( aChild );
 
