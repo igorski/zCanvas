@@ -284,7 +284,7 @@
 
             ctx.drawImage( this._image,
                            this._spriteIndex * bounds.width,            // tile x offset
-                           this._spriteRow * ( bounds.height + 1 ),     // tile y offset
+                           this._spriteRow   * bounds.height,           // tile y offset
                            bounds.width, bounds.height,                 // tile width and height
                            bounds.left, bounds.top, bounds.width, bounds.height );
         };
