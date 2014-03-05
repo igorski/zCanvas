@@ -3,7 +3,7 @@
 <head>
     <meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable = no" name="viewport">
     <meta charset="utf-8" />
-    <title>ZCanvas example</title>
+    <title>ZCanvas animated spritesheet example</title>
     <link rel="stylesheet" href="./assets/styles.css">
     <script type="text/javascript" src="./assets/images.js"></script>
     <script type="text/javascript" src="../src/util/Helpers.js"></script>
@@ -11,15 +11,17 @@
     <script type="text/javascript" src="../src/zgor/ZSprite.js"></script>
 </head>
 <body>
-    <h1>zCanvas demo</h1>
-    <div id="demo"><!-- x --></div>
-    <p>
-        Demo features : auto scrolling background, draggable transparent GitHub logo and
-        keyboard controllable spritesheet animation that has collision detection.
-    </p>
-    <span id="debug">
+    <div id="container">
+        <h1>zCanvas demo</h1>
+        <div id="demo"><!-- x --></div>
+        <p>
+            Demo features : auto scrolling background and a
+            keyboard controllable spritesheet animation that has collision detection.
+        </p>
+        <span id="debug">
 
-    </span>
+        </span>
+    </div>
     <script type="text/javascript">
 
         // STEP 1 : SETUP
@@ -31,9 +33,22 @@
             debug.innerHTML = msg;
         }
 
+        // get window dimensions
+
+        var w, h;
+        if ( window.outerHeight ) {
+            w = window.outerWidth;
+            h = window.outerHeight;
+        }
+        else {
+            w = document.body.clientWidth;
+            h = document.body.clientHeight;
+        }
+
         // create a new zCanvas that renders at 60 fps
-        var cvsWidth  = 350;
-        var cvsHeight = 350;
+        // keep it within the device / browser bounds
+        var cvsWidth  = w < 800 ? w : 800;
+        var cvsHeight = h < 350 ? h : 350;
         var cvs       = new zgor.ZCanvas( cvsWidth, cvsHeight, true, 60 );
 
         // append zCanvas to DOM
@@ -91,21 +106,7 @@
         // add the sprite onto the canvas so we can see it
         cvs.addChild( bgSprite );
 
-        // STEP 3 : DRAGGABLE IMAGE SPRITE EXAMPLE
-        // ---------------------------------------
-
-        // second sprite > represents a transparent gitHub logo at 75x75 px
-        // (see included "assets.js"-file for the assetGitHubLogo-image data)
-
-        var ghSprite = new zgor.ZSprite( 0, 0, 75, 75, assetGitHubLogo, false );
-
-        // add the GitHub logo-sprite onto the canvas
-        cvs.addChild( ghSprite );
-
-        // make this sprite draggable so the user can move it around
-        ghSprite.setDraggable( true );
-
-        // STEP 4 : NEW SUBCLASS / SPRITESHEET EXAMPLE
+        // STEP 3 : NEW SUBCLASS / SPRITESHEET EXAMPLE
         // -------------------------------------------
         // when writing your application using OOP-paradigms, it makes
         // more sense to create new "classes" for custom zSprite Objects, like such:
@@ -232,14 +233,24 @@
                     {
                         var targetY = sprite.getY() - thisHeight; // perfect align on top / i.e. "standing on floor"
 
-                        if ( targetY < prevY ) {
-                            targetY = sprite.getY() + sprite.getHeight() - thisHeight;
+                        if ( targetY < prevY )
+                        {
+                            if ( !this.collidesWithEdge( sprite, 1 ) &&
+                                 !this.collidesWithEdge( sprite, 0 ))
+                            {
+                                // we're jumping INTO another object
+                                targetY = sprite.getY() + sprite.getHeight() - thisHeight;
+                            }
+                            else {
+                                targetY = prevY; // jumped against, halt movement
+                            }
                         }
                         else {
+                            // we're allowed to "jump", horizontal blocking not applicable for THIS collision
                             checkHorizontal = false;
                         }
                         this.setY( targetY );
-                        this.jumping    = false;
+                        this.jumping = false;
                     }
                     else if ( this.collidesWithEdge( sprite, 1 )) {
                         this.setY( prevY );
@@ -297,7 +308,7 @@
         var hero = new Hero( 100, cvsHeight / 2, 38, 35, assetSpriteSheet );
         cvs.addChild( hero );
 
-        // STEP 5 : ADDING KEYBOARD INTERACTION
+        // STEP 4 : ADDING KEYBOARD INTERACTION
         // ------------------------------------
 
         var heroHandler = new util.EventHandler(); // create a handler for all key listeners
@@ -342,20 +353,34 @@
             }
         });
 
-        // STEP 6 : A TEST FOR COLLISION DETECTION
+        // STEP 5 : A TEST FOR COLLISION DETECTION
         // ---------------------------------------
 
+        // we test using the super-fast bounding box collision detection, as such we can
+        // afford to make separate sprites of each wall, it's up to your applications needs
+        // how you do this (for instance use an unique color for walls and use a single bitmap
+        // along with pixel collision detection)
+
         var wallLeft = new zgor.ZSprite( 50, Math.round( cvsHeight / 1.5 ), 10, 100, null, true );
+        cvs.addChild( wallLeft );
+
+        var wallBottom = new zgor.ZSprite( 50, wallLeft.getY() + wallLeft.getHeight(), cvsWidth / 1.5, 10, null, true );
+        cvs.addChild( wallBottom );
+
+        var wallRight = new zgor.ZSprite( wallBottom.getWidth() + wallLeft.getX() - 10, wallBottom.getY() - hero.getHeight(), 10, hero.getHeight(), null, true );
+        cvs.addChild( wallRight );
+
+        // something we can jump on
+        var wallTopRight = new zgor.ZSprite( wallRight.getX(), wallRight.getY(), 100, 10, null, true );
+        cvs.addChild( wallTopRight );
+
+        // custom render logic for each wall
         wallLeft.draw = function( ctx )
         {
             ctx.fillStyle = 'rgb(255,128,0)';
             ctx.fillRect( this.getX(), this.getY(), this.getWidth(), this.getHeight());
         };
-        cvs.addChild( wallLeft );
-
-        var wallBottom = new zgor.ZSprite( 50, wallLeft.getY() + wallLeft.getHeight(), cvsWidth / 1.5, 10, null, true );
-        wallBottom.draw = wallLeft.draw;
-        cvs.addChild( wallBottom );
+        wallBottom.draw = wallRight.draw = wallTopRight.draw = wallLeft.draw;
 
     </script>
 </body>
