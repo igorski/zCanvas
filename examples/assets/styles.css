@@ -28,6 +28,12 @@ body {
     color: #FFF;
     background-color: rgba(255,0,128,.85);
     border-bottom: 5px solid #FF0099;
+    -webkit-touch-callout: none;
+      -webkit-user-select: none;
+       -khtml-user-select: none;
+         -moz-user-select: none;
+          -ms-user-select: none;
+              user-select: none;
 }
 
 #left-btn {
