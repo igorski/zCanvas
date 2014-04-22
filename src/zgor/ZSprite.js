@@ -572,8 +572,9 @@ zgor.ZSprite.prototype.removeChild = function( aChild )
             theSprite.last = null;
         }
 
-        if ( i == ( l - 1 ))
+        if ( i == ( l - 1 )) {
             theSprite.next = null;
+        }
     }
 };
 
@@ -757,22 +758,24 @@ zgor.ZSprite.prototype.handleInteraction = function( aEventX, aEventY, aEvent )
     // first traverse the children of this sprite
     var foundInteractionInChild = false;
 
-    var thisX = this.getX();
-    var thisY = this.getY();
+    var thisX       = this.getX();
+    var thisY       = this.getY();
+    var numChildren = this._children.length;
 
-    if ( this._children.length > 0 )
+    if ( numChildren > 0 )
     {
-        var theChild = this._children[ 0 ];
+        // reverse loop to first handle top layers
+        var theChild = this._children[ numChildren - 1 ];
 
         while ( theChild )
         {
             foundInteractionInChild = theChild.handleInteraction( aEventX, aEventY, aEvent );
 
             // child is higher in DisplayList, takes precedence over this parent
-            if ( foundInteractionInChild )
+            if ( foundInteractionInChild ) {
                 return true;
-
-            theChild = theChild.next;
+            }
+            theChild = theChild.last;
         }
     }
 

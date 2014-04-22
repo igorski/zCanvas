@@ -243,8 +243,9 @@ zgor.ZCanvas.prototype.getChildrenUnderPoint = function( aX, aY, aWidth, aHeight
         if ( childX < aX + aWidth  && childX + childWidth > aX &&
              childY < aY + aHeight && childY + childHeight > aY )
         {
-            if ( !aOnlyCollidables || ( aOnlyCollidables && theChild.collidable ))
+            if ( !aOnlyCollidables || ( aOnlyCollidables && theChild.collidable )) {
                 out.push( theChild );
+            }
         }
 
     }
@@ -528,7 +529,8 @@ zgor.ZCanvas.prototype.handleInteraction = function( aEvent )
 
     if ( numChildren > 0 )
     {
-        var theChild = this._children[ 0 ];
+        // reverse loop to first handle top layers
+        var theChild = this._children[ numChildren - 1 ];
 
         switch ( aEvent.type )
         {
@@ -548,7 +550,7 @@ zgor.ZCanvas.prototype.handleInteraction = function( aEvent )
                 while ( theChild )
                 {
                     theChild.handleInteraction( eventOffsetX, eventOffsetY, aEvent );
-                    theChild = theChild.next; // note we don't break this loop for multi touch purposes
+                    theChild = theChild.last; // note we don't break this loop for multi touch purposes
                 }
                 break;
 
@@ -564,7 +566,7 @@ zgor.ZCanvas.prototype.handleInteraction = function( aEvent )
                     if ( found )
                         break;
 
-                    theChild = theChild.next;
+                    theChild = theChild.last;
                 }
                 break;
         }
