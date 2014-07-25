@@ -40,8 +40,8 @@ Easily animatable
 As all rendering logic resides in a single method of your zSprite, you can easily attach tweening libraries such as
 the excellent TweenMax by Greensock to alter the visible properties of your zSprite for maximum eye candy.
 
-Google Closure ? Nice. Enjoy compression
-----------------------------------------
+Using Google Closure ? Nice. Enjoy the compression
+--------------------------------------------------
 
 zCanvas has been annotated extensively with JSDocs, allowing the source to minimized with maximum compression when using the
 Closure compiler by Google. If you're also partial to using the Closure Library by Google, you can replace the rudimentary

@@ -77,6 +77,7 @@ zgor.ZCanvas.prototype = new util.Disposable();
 /** @private @type {boolean} */   zgor.ZCanvas.prototype._animate = false;
 /** @private @type {number} */    zgor.ZCanvas.prototype._fps;
 /** @private @type {number} */    zgor.ZCanvas.prototype._renderInterval;
+/** @private @type {number} */    zgor.ZCanvas.prototype._lastRender = 0;
 /** @private @type {!Function} */ zgor.ZCanvas.prototype._renderHandler;
 /** @private @type {number} */    zgor.ZCanvas.prototype._renderId;
 
@@ -590,45 +591,54 @@ zgor.ZCanvas.prototype.handleInteraction = function( aEvent )
  */
 zgor.ZCanvas.prototype.render = function()
 {
-    // keep render cycle going at the requested framerate
+    var now   = +new Date();  // current timestamp
+    var delta = now - this._lastRender;
+
+    // only execute render when the time for a single frame
+    // (at the requested framerate) has passed
+
+    if ( delta > this._renderInterval )
+    {
+        this._lastRender = now - ( delta % this._renderInterval );
+        var ctx = this._canvasContext;
+
+        if ( this._children.length > 0 )
+        {
+            // update all child sprites
+            var theSprite = this._children[ 0 ];
+
+            while ( theSprite )
+            {
+                theSprite.update( now );
+
+                theSprite = theSprite.next;
+            }
+        }
+
+        // clear previous canvas contents
+
+        ctx.fillStyle = 'rgb(255,255,255)';
+        ctx.fillRect( 0, 0, this._width, this._height );
+
+        // draw the children onto the canvas
+
+        if ( this._children.length > 0 )
+        {
+            theSprite = this._children[ 0 ];
+
+            while ( theSprite )
+            {
+                theSprite.draw( ctx );
+
+                theSprite = theSprite.next;
+            }
+        }
+    }
+    // keep render loop going
 
     if ( !this._disposed && this._animate )
     {
         this._renderId = window[ "requestAnimationFrame" ]( this._renderHandler );
-    }
-    var ctx = this._canvasContext;
-    var now = +new Date();  // current timestamp
-
-    if ( this._children.length > 0 )
-    {
-        // update all child sprites
-        var theSprite = this._children[ 0 ];
-
-        while ( theSprite )
-        {
-            theSprite.update( now );
-
-            theSprite = theSprite.next;
-        }
-    }
-
-    // clear previous canvas contents
-
-    ctx.fillStyle = 'rgb(255,255,255)';
-    ctx.fillRect( 0, 0, this._width, this._height );
-
-    // draw the children onto the canvas
-
-    if ( this._children.length > 0 )
-    {
-        theSprite = this._children[ 0 ];
-
-        while ( theSprite )
-        {
-            theSprite.draw( ctx );
-
-            theSprite = theSprite.next;
-        }
     }
 };
 
