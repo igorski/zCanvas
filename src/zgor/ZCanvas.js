@@ -360,7 +360,7 @@ zgor.ZCanvas.prototype.setDimensions = function( aWidth, aHeight )
     this._element[ "width" ]  = this._width  = aWidth;
     this._element[ "height" ] = this._height = aHeight;
 
-    this.update( true );
+    this.invalidate();
 };
 
 /**
