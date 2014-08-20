@@ -175,8 +175,8 @@ zgor.ZSprite.prototype.next;
 
 /**
  * reference to the zCanvas holding this zSprite
- * NOTE : will be null if the zSprite isn't added to
- * the display list
+ * NOTE : will be null if the zSprite isn't present on
+ * the ZCanvas' display list
  *
  * @public
  * @type {zgor.zCanvas}
@@ -542,7 +542,9 @@ zgor.ZSprite.prototype.addChild = function( aChild )
  */
 zgor.ZSprite.prototype.removeChild = function( aChild )
 {
-    aChild.dispose();
+    aChild.setParent( null );
+    aChild.canvas = null;
+    //aChild.dispose(); // no, we might like to re-use the child at a later stage ?
 
     var i = this._children.length;
 
@@ -553,8 +555,6 @@ zgor.ZSprite.prototype.removeChild = function( aChild )
             this._children.splice( i, 1 );
         }
     }
-    aChild.canvas = null;
-    aChild.setParent( null );
 
     // update linked list
     var l = this._children.length;
@@ -845,6 +845,13 @@ zgor.ZSprite.prototype.handleInteraction = function( aEventX, aEventY, aEvent )
  */
 zgor.ZSprite.prototype.disposeInternal = function()
 {
+    // in case this ZSprite was still on the ZCanvas, remove it
+
+    if ( this._parent != null )
+    {
+        this._parent.removeChild( this );
+    }
+
     // dispose the children
     var i = this._children.length;
 

@@ -80,6 +80,7 @@ zgor.ZCanvas.prototype = new util.Disposable();
 /** @private @type {number} */    zgor.ZCanvas.prototype._lastRender = 0;
 /** @private @type {!Function} */ zgor.ZCanvas.prototype._renderHandler;
 /** @private @type {number} */    zgor.ZCanvas.prototype._renderId;
+/** @private @type {number} */    zgor.ZCanvas.prototype._updateTimeout;
 
 /* public methods */
 
@@ -135,20 +136,23 @@ zgor.ZCanvas.prototype.addChild = function( aChild )
 
     this._children.push( aChild );
 
-    if ( !this._animate )
-    {
-        this.render(); // re-draw Canvas contents if we're not animating
-    }
+    this.invalidate();
+
     return this;
 };
 
 /**
  * @public
- * @param {zgor.ZSprite} aChild  the child to remove from this zCanvas
+ * @param {zgor.ZSprite} aChild the child to remove from this zCanvas
+ *
+ * @return {zgor.ZSprite} the removed child - for chaining purposes
  */
 zgor.ZCanvas.prototype.removeChild = function( aChild )
 {
-    aChild.dispose();
+    aChild.setParent( null );
+    aChild.canvas = null;
+
+    //aChild.dispose(); // no, we might like to re-use the child at a later stage ?
 
     var i = this._children.length;
 
@@ -160,8 +164,6 @@ zgor.ZCanvas.prototype.removeChild = function( aChild )
             break;
         }
     }
-    aChild.setParent( null );
-    aChild.canvas = null;
 
     // update linked list
     var l = this._children.length;
@@ -182,10 +184,10 @@ zgor.ZCanvas.prototype.removeChild = function( aChild )
         if ( i == ( l - 1 ))
             theSprite.next = null;
     }
-    if ( !this._animate )
-    {
-        this.render(); // re-draw Canvas contents if we're not animating
-    }
+
+    this.invalidate();
+
+    return aChild;
 };
 
 /**
@@ -210,6 +212,25 @@ zgor.ZCanvas.prototype.getChildAt = function( index )
 zgor.ZCanvas.prototype.removeChildAt = function( index )
 {
     this.removeChild( this.getChildAt( index ));
+};
+
+/**
+ * invoke when the state of the ZCanvas has changed (i.e.
+ * the visual contents should change), this will invoke
+ * a new render request (obsolete if the canvas is
+ * continuously rendering due to being animatable)
+ *
+ * @public
+ */
+zgor.ZCanvas.prototype.invalidate = function()
+{
+    // if the ZCanvas isn't updating, we make a
+    // request for updating the contents
+
+    if ( !this._animate )
+    {
+        this.update();
+    }
 };
 
 /**
@@ -362,11 +383,20 @@ zgor.ZCanvas.prototype.update = function()
 {
     if ( !this._animate )
     {
-        // we add a 0 ms delay to make sure the update occurs on the
+        // we add a short delay to make sure the update occurs on the
         // next render cycle of the BROWSER (overcomes blank screen
-        // when this occurs during heavy asynchronous operations)
+        // when this occurs during heavy asynchronous operations) for
+        // this purpose a 0 ms delay suffices, but we up the delay
+        // slightly because of :
 
-        setTimeout( this._renderHandler, 0 );
+        // a contribution by Igor Kogan : use the timeout as a proxy
+        // and clear previous timeouts upon subsequent requests to
+        // avoid a massive influx of render operations happening
+        // in series during state change operations (i.e. lots of
+        // add/remove children, etc.)
+
+        clearTimeout( this._updateTimeout );
+        this._updateTimeout = setTimeout( this._renderHandler, 5 );
     }
 };
 
@@ -495,6 +525,65 @@ zgor.ZCanvas.prototype.checkCollision = function( aSprite, aRedValue, aGreenValu
 /* protected methods */
 
 /**
+ * the render loop drawing the Objects onto the Canvas, shouldn't be
+ * invoked directly but by the animation loop or an update request
+ *
+ * @protected
+ */
+zgor.ZCanvas.prototype.render = function()
+{
+    var now   = +new Date();  // current timestamp
+    var delta = now - this._lastRender;
+
+    // only execute render when the time for a single frame
+    // (at the requested framerate) has passed
+
+    if ( delta > this._renderInterval )
+    {
+        this._lastRender = now - ( delta % this._renderInterval );
+        var ctx = this._canvasContext;
+
+        if ( this._children.length > 0 )
+        {
+            // update all child sprites
+            var theSprite = this._children[ 0 ];
+
+            while ( theSprite )
+            {
+                theSprite.update( now );
+
+                theSprite = theSprite.next;
+            }
+        }
+
+        // clear previous canvas contents
+
+        ctx.fillStyle = 'rgb(255,255,255)';
+        ctx.fillRect( 0, 0, this._width, this._height );
+
+        // draw the children onto the canvas
+
+        if ( this._children.length > 0 )
+        {
+            theSprite = this._children[ 0 ];
+
+            while ( theSprite )
+            {
+                theSprite.draw( ctx );
+
+                theSprite = theSprite.next;
+            }
+        }
+    }
+    // keep render loop going
+
+    if ( !this._disposed && this._animate )
+    {
+        this._renderId = window[ "requestAnimationFrame" ]( this._renderHandler );
+    }
+};
+
+/**
  * @override
  * @protected
  */
@@ -506,7 +595,7 @@ zgor.ZCanvas.prototype.disposeInternal = function()
     window[ "cancelAnimationFrame" ]( this._renderId ); // kill render loop
 
     // dispose all sprites on Display List
-    
+
     var i = this.numChildren();
 
     while ( i-- )
@@ -576,71 +665,10 @@ zgor.ZCanvas.prototype.handleInteraction = function( aEvent )
     aEvent.preventDefault();
 
     // update the Canvas contents
-    if ( !this._animate )
-    {
-        this.render();
-    }
+    this.invalidate();
 };
 
 /* private methods */
-
-/**
- * the render loop drawing the Objects onto the Canvas
- *
- * @private
- */
-zgor.ZCanvas.prototype.render = function()
-{
-    var now   = +new Date();  // current timestamp
-    var delta = now - this._lastRender;
-
-    // only execute render when the time for a single frame
-    // (at the requested framerate) has passed
-
-    if ( delta > this._renderInterval )
-    {
-        this._lastRender = now - ( delta % this._renderInterval );
-        var ctx = this._canvasContext;
-
-        if ( this._children.length > 0 )
-        {
-            // update all child sprites
-            var theSprite = this._children[ 0 ];
-
-            while ( theSprite )
-            {
-                theSprite.update( now );
-
-                theSprite = theSprite.next;
-            }
-        }
-
-        // clear previous canvas contents
-
-        ctx.fillStyle = 'rgb(255,255,255)';
-        ctx.fillRect( 0, 0, this._width, this._height );
-
-        // draw the children onto the canvas
-
-        if ( this._children.length > 0 )
-        {
-            theSprite = this._children[ 0 ];
-
-            while ( theSprite )
-            {
-                theSprite.draw( ctx );
-
-                theSprite = theSprite.next;
-            }
-        }
-    }
-    // keep render loop going
-
-    if ( !this._disposed && this._animate )
-    {
-        this._renderId = window[ "requestAnimationFrame" ]( this._renderHandler );
-    }
-};
 
 /**
  * zSprites have no HTML elements, the actual HTML listeners are
