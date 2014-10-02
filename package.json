@@ -1,0 +1,39 @@
+{
+  "name": "zcanvas",
+  "homepage": "http://www.igorski.nl/",
+  "author": "Igor Zinken (http://github.com/igorski/)",
+  "bugs": {
+    "url": "https://github.com/igorski/zCanvas/issues/"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/igorski/zCanvas.git"
+  },
+  "description": "Small JavaScript library that provides an OOP-style solution for working with HTMLCanvas drawables as if they were tangible, separate objects. Good for lightweight game engines, mobile friendly.",
+  "keywords": [
+    "canvas",
+    "oop",
+    "object",
+    "oriented",
+    "display",
+    "list",
+    "abstraction",
+    "mobile",
+    "tablet",
+    "game",
+    "engine",
+    "graphics",
+    "pixel",
+    "blitter",
+    "draggable",
+    "clickable",
+    "collision",
+    "detection"
+  ],
+  "preferGlobal": false,
+  "version": "1.0.0",
+  "license": "MIT",
+  "engines": {
+    "node": "0.10.*"
+  }
+}
