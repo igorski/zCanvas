@@ -240,8 +240,7 @@
                     }
                 }
 
-                var prevX = this.getX(), prevY = this.getY();
-                var thisWidth = this.getWidth(), thisHeight = this.getHeight();
+                var prevX = this.getX(), prevY = this.getY(), thisWidth = this.getWidth(), thisHeight = this.getHeight();
 
                 // are we moving horizontally ?
 
@@ -391,12 +390,12 @@
             cvs.addChild( wallTopRight );
 
             // custom render logic for each wall
-            wallLeft.draw = function( ctx )
+            var wallDrawFn = function( ctx )
             {
                 ctx.fillStyle = 'rgb(255,128,0)';
                 ctx.fillRect( this.getX(), this.getY(), this.getWidth(), this.getHeight());
             };
-            wallBottom.draw = wallRight.draw = wallTopRight.draw = wallLeft.draw;
+            wallBottom.draw = wallRight.draw = wallTopRight.draw = wallLeft.draw = wallDrawFn;
 
             // STEP 5 : ADDING KEYBOARD OR TOUCH INTERACTION
             // ---------------------------------------------

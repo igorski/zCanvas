@@ -133,7 +133,7 @@ define( "zCanvas", [ "helpers", "zSprite" ], function( helpers, zSprite )
             aChild.last.next = aChild;
             aChild.next      = null;
         }
-        aChild.canvas = this;
+        aChild.setCanvas( this );
         aChild.setParent( this );
 
         this._children.push( aChild );
@@ -152,7 +152,7 @@ define( "zCanvas", [ "helpers", "zSprite" ], function( helpers, zSprite )
     zCanvas.prototype.removeChild = function( aChild )
     {
         aChild.setParent( null );
-        aChild.canvas = null;
+        aChild.setCanvas( null );
 
         //aChild.dispose(); // no, we might like to re-use the child at a later stage ?
 
@@ -534,7 +534,7 @@ define( "zCanvas", [ "helpers", "zSprite" ], function( helpers, zSprite )
      */
     zCanvas.prototype.render = function()
     {
-        var now   = +new Date();  // current timestamp
+        var now   = Date.now();  // current timestamp
         var delta = now - this._lastRender;
 
         // only execute render when the time for a single frame

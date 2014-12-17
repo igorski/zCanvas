@@ -49,8 +49,9 @@ define( "zSprite", [ "helpers", "zCanvas" ], function( helpers, zCanvas )
      *                        if not defined, you must override the "draw"-method as otherwise this sprite won't
      *                        render anything onto the zCanvas
      * @param {boolean=}      aIsCollidable optionally whether this Sprite can collide with others
+     * @param {boolean=}      aIsMask optional, whether to use this sprite as a mask
      */
-    var zSprite = function( aXPos, aYPos, aWidth, aHeight, aImageSource, aIsCollidable )
+    var zSprite = function( aXPos, aYPos, aWidth, aHeight, aImageSource, aIsCollidable, aIsMask )
     {
         if ( aImageSource )
         {
@@ -64,9 +65,10 @@ define( "zSprite", [ "helpers", "zCanvas" ], function( helpers, zCanvas )
                 this.createImageFromSource( aImageSource );
             }
         }
+        this.collidable  = aIsCollidable || false;
+        this._children   = [];
         this._bounds     = { "left" : aXPos, "top" : aYPos, "width" : aWidth, "height" : aHeight };
-        this.collidable = aIsCollidable || false;
-        this._children  = [];
+        this._mask       = aIsMask || false;
     };
     
     // inherit from parent Disposable
@@ -75,14 +77,23 @@ define( "zSprite", [ "helpers", "zCanvas" ], function( helpers, zCanvas )
     /* class variables */
     
     /**
-     * rectangle describing this sprites bounds
-     * (relative to the zCanvas)
+     * rectangle describing this sprites bounds relative to the zCanvas
+     * basically this describes its x- and y- coordinates and its dimensions
      *
      * @public
      * @type {{ left: number, top: number, width: number, height: number }}
      */
     zSprite.prototype._bounds;
-    
+
+    /**
+     * rectangle describing this sprites restrictions (only applicable
+     * to draggable zSprites to ensure they remain within these bounds)
+     *
+     * @protected
+     * @type {{ left: number, top: number, width: number, height: number }}
+     */
+    zSprite.prototype._constraint;
+
     /**
      * whether this zSprite can collide with others
      *
@@ -90,6 +101,15 @@ define( "zSprite", [ "helpers", "zCanvas" ], function( helpers, zCanvas )
      * @type {boolean}
      */
     zSprite.prototype.collidable;
+
+    /**
+     * whether this zSprites image contents should function as a mask
+     * (for instance to obscure the contents of underlyting zSprites)
+     *
+     * @protected
+     * @type {boolean}
+     */
+    zSprite.prototype._mask;
     
     /**
      * @protected
@@ -119,8 +139,31 @@ define( "zSprite", [ "helpers", "zCanvas" ], function( helpers, zCanvas )
      * @type {boolean}
      */
     zSprite.prototype._draggable = false;
-    
+
     /**
+     * whether this zSprite can receive user interaction events, when
+     * false this Sprite is omitted from "handleInteraction"-queries
+     * executed when the user interacts with the parent StageCanvas element
+     *
+     * @protected
+     * @type {boolean}
+     */
+    zSprite.prototype._interactive = false;
+
+    /**
+     * indicates the user is currently hovering over this Sprite, note
+     * this DOES NOT mean we are dragging (see _dragging) this value
+     * will ALWAYS be false if the zSprite is not interactive
+     *
+     * @public
+     * @type {boolean}
+     */
+    zSprite.prototype.hover = false;
+
+    /**
+     * whether to restrict this zSprites movement
+     * to its constraints / zCanvas dimensions
+     *
      * @private
      * @type {boolean}
      */
@@ -182,7 +225,7 @@ define( "zSprite", [ "helpers", "zCanvas" ], function( helpers, zCanvas )
      * the ZCanvas' display list
      *
      * @public
-     * @type {zgor.zCanvas}
+     * @type {zCanvas}
      */
     zSprite.prototype.canvas;
     
@@ -220,7 +263,7 @@ define( "zSprite", [ "helpers", "zCanvas" ], function( helpers, zCanvas )
     zSprite.prototype.setX = function( aValue )
     {
         var delta         = aValue - this._bounds.left;
-        this._bounds.left = aValue;
+        this._bounds.left = this._constraint ? aValue + this._constraint.left : aValue;
     
         // as the offsets of the children are drawn relative to the Canvas, we
         // must update their offsets by the delta value too
@@ -257,7 +300,7 @@ define( "zSprite", [ "helpers", "zCanvas" ], function( helpers, zCanvas )
     zSprite.prototype.setY = function( aValue )
     {
         var delta        = aValue - this._bounds.top;
-        this._bounds.top = aValue;
+        this._bounds.top = this._constraint ? aValue + this._constraint.top : aValue;
     
         // as the offsets of the children are drawn relative to the Canvas, we
         // must update their offsets by the delta value too
@@ -305,6 +348,30 @@ define( "zSprite", [ "helpers", "zCanvas" ], function( helpers, zCanvas )
     {
         return this._bounds;
     };
+
+    /**
+     * whether this Sprite is interactive (should responds to user
+     * interactions such as mouse hover, mouse clicks / touches, etc.)
+     *
+     * @public
+     * @return {boolean}
+     */
+    zSprite.prototype.getInteractive = function()
+    {
+        return this._interactive;
+    };
+
+    /**
+     * toggle the interactive state of this zSprite
+     *
+     * @public
+     *
+     * @param {boolean} aValue
+     */
+    zSprite.prototype.setInteractive = function( aValue )
+    {
+        this._interactive = aValue;
+    };
     
     /**
      * invoked on each render cycle before the draw-method
@@ -320,6 +387,77 @@ define( "zSprite", [ "helpers", "zCanvas" ], function( helpers, zCanvas )
     zSprite.prototype.update = function( aCurrentTimestamp )
     {
         // override in prototype-extensions or instance
+        // recursively update this sprites children :
+
+        if ( this._children.length > 0 )
+        {
+            var theSprite = this._children[ 0 ];
+
+            while ( theSprite )
+            {
+                theSprite.update( aCurrentTimestamp );
+                theSprite = theSprite.next;
+            }
+        }
+    };
+
+    /**
+     * update the position of this Sprite, where setX and setY operate directly on the
+     * Sprites coordinates, this method validates the requested coordinates against the
+     * defined constraints of this Sprite to ensure it remains within bounds
+     *
+     * @public
+     *
+     * @param {number=} aXPosition optionally desired x-coordinate, defaults to current position
+     * @param {number=} aYPosition optionally desired y-coordinate, defaults to current position
+     */
+    zSprite.prototype.updatePosition = function( aXPosition, aYPosition )
+    {
+        if ( typeof aXPosition !== "number" ) {
+            aXPosition = this._bounds.left;
+        }
+        if ( typeof aYPosition !== "number" ) {
+            aYPosition = this._bounds.top;
+        }
+        aXPosition -= this._constraint.left;
+        aYPosition -= this._constraint.top;
+
+        var thisWidth   = this._bounds.width;
+        var thisHeight  = this._bounds.height;
+        var stageWidth  = this._constraint.width;
+        var stageHeight = this._constraint.height;
+
+        // keep within bounds ?
+
+        if ( this._keepInBounds )
+        {
+            // There is a very small chance that the bounds width/height compared to stage width/height
+            // is only very slightly different, which will produce a positive numeric result very close to, but not quite zero.
+            // To play it safe, we will limit it to a maximum of 0.
+            var minX = Math.min( 0, -( thisWidth  - stageWidth  ));
+            var minY = Math.min( 0, -( thisHeight - stageHeight ));
+
+            aXPosition = Math.min( 0, Math.max( aXPosition, minX ));
+            aYPosition = Math.min( 0, Math.max( aYPosition, minY ));
+        }
+        else
+        {
+            if ( aXPosition < 0 ) {
+                aXPosition = aXPosition - ( thisWidth  * .5 );
+            }
+            else if ( aXPosition > stageWidth ) {
+                aXPosition = aXPosition + ( thisWidth  * .5 );
+            }
+
+            if ( aYPosition < 0 ) {
+                aYPosition = aYPosition - ( thisHeight * .5 );
+            }
+            else if ( aYPosition > stageHeight ) {
+                aYPosition = aYPosition + ( thisHeight * .5 );
+            }
+        }
+        this.setX( aXPosition );
+        this.setY( aYPosition );
     };
     
     /**
@@ -331,7 +469,15 @@ define( "zSprite", [ "helpers", "zCanvas" ], function( helpers, zCanvas )
     {
         // extend in subclass if you're drawing a custom object instead of a graphical Image asset
         // don't forget to draw the child display list when overriding this method!
-    
+
+        aCanvasContext.save();
+
+        // zSprite acts as a mask for underlying Sprites ?
+
+        if ( this._mask ) {
+            aCanvasContext.globalCompositeOperation = 'destination-in';
+        }
+
         if ( this._imageReady )
         {
             var bounds = this._bounds;
@@ -347,12 +493,18 @@ define( "zSprite", [ "helpers", "zCanvas" ], function( helpers, zCanvas )
     
             while ( theSprite )
             {
-                theSprite.update();
-                theSprite.draw( aCanvasContext, aCurrentTimestamp );
-    
+                theSprite.draw( aCanvasContext );
                 theSprite = theSprite.next;
             }
         }
+
+        // restore canvas drawing operation so subsequent sprites draw as overlay
+
+        if ( this._mask ) {
+            aCanvasContext.globalCompositeOperation = 'source-over';
+        }
+
+        aCanvasContext.restore();
     };
     
     /**
@@ -509,7 +661,64 @@ define( "zSprite", [ "helpers", "zCanvas" ], function( helpers, zCanvas )
     {
         return this._parent;
     };
-    
+
+    /**
+     * set a reference to the zCanvas that is rendering this sprite
+     *
+     * @public
+     *
+     * @param {zCanvas} aCanvas
+     */
+    zSprite.prototype.setCanvas = function( aCanvas )
+    {
+        this.canvas = aCanvas;
+
+        // no constraint specified ? use stage bounds
+
+        if ( !this._constraint && aCanvas )
+        {
+            this.setParentConstraint( 0, 0, aCanvas.getWidth(), aCanvas.getHeight() );
+        }
+    };
+
+    /**
+     * a zSprite can be constrained in its movement (when dragging) to ensure it remains
+     * within desired boundaries
+     *
+     * a parent constraint specifies the boundaries of this zSprites "container"
+     * which can be used when dragging this sprite within boundaries. this constraint
+     * will by default be equal to the zCanvas' dimensions (when "setCanvas" is invoked)
+     * but this method can be invoked to override it to a custom Rectangle
+     *
+     * @public
+     *
+     * @param {number} aLeft
+     * @param {number} aTop
+     * @param {number} aWidth
+     * @param {number} aHeight
+     *
+     * @return {{ left: number, top: number, width: number, height: number }} the generated constraint Rectangle
+     */
+    zSprite.prototype.setParentConstraint = function( aLeft, aTop, aWidth, aHeight )
+    {
+        this._constraint = { "left" : aLeft, "top" : aTop, "width" : aWidth, "height" : aHeight };
+
+        this._bounds.left = Math.max( aLeft, this._bounds.left );
+        this._bounds.top  = Math.max( aTop,  this._bounds.top );
+
+        return this._constraint;
+    };
+
+    /**
+     * @public
+     *
+     * @return {{ left: number, top: number, width: number, height: number }}
+     */
+    zSprite.prototype.getParentConstraint = function()
+    {
+        return this._constraint;
+    };
+
     /**
      * append another zSprite to the display list of this sprite
      *
@@ -529,7 +738,7 @@ define( "zSprite", [ "helpers", "zCanvas" ], function( helpers, zCanvas )
             aChild.last.next = aChild;
             aChild.next      = null;
         }
-        aChild.canvas = this.canvas;
+        aChild.setCanvas( this.canvas );
         aChild.setParent( this );
     
         this._children.push( aChild );
@@ -546,7 +755,7 @@ define( "zSprite", [ "helpers", "zCanvas" ], function( helpers, zCanvas )
     zSprite.prototype.removeChild = function( aChild )
     {
         aChild.setParent( null );
-        aChild.canvas = null;
+        aChild.setCanvas( null );
         //aChild.dispose(); // no, we might like to re-use the child at a later stage ?
     
         var i = this._children.length;
@@ -673,6 +882,7 @@ define( "zSprite", [ "helpers", "zCanvas" ], function( helpers, zCanvas )
     
     /**
      * move handler, invoked by the "handleInteraction"-method
+     * to delegate drag logic
      *
      * @private
      *
@@ -681,60 +891,10 @@ define( "zSprite", [ "helpers", "zCanvas" ], function( helpers, zCanvas )
      */
     zSprite.prototype.handleMove = function( aXPosition, aYPosition )
     {
-        var thisHalfWidth  = this._bounds.width  * .5;
-        var thisHalfHeight = this._bounds.height * .5;
-    
-        var theX, theY;
-    
-        theX = this._dragStartOffset.x + ( aXPosition - this.__dragStartEventCoordinates.x );
-        theY = this._dragStartOffset.y + ( aYPosition - this.__dragStartEventCoordinates.y );
-    
-        // in case of dragging from center, use the following (not usable when image exceeds stage dimensions!!)
-        //theX = aXPosition - thisHalfWidth;
-        //theY = aYPosition - thisHalfHeight;
-    
-        var stageWidth  = this.canvas.getWidth();
-        var stageHeight = this.canvas.getHeight();
-    
-        // keep within bounds ?
-    
-        if ( this._keepInBounds )
-        {
-            var minX = -( this._bounds.width  - stageWidth );
-            var minY = -( this._bounds.height - stageHeight );
-    
-            if ( theX > 0 ) {
-                theX = 0;
-            }
-            else if ( theX < minX ) {
-                theX = minX;
-            }
-    
-            if ( theY > 0 ) {
-                theY = 0;
-            }
-            else if ( theY < minY ) {
-                theY = minY;
-            }
-        }
-        else
-        {
-            if ( theX < 0 ) {
-                theX = aXPosition - thisHalfWidth;
-            }
-            else if ( theX > stageWidth ) {
-                theX = aXPosition + thisHalfWidth;
-            }
-    
-            if ( theY < 0 ) {
-                theY = aYPosition - thisHalfHeight;
-            }
-            else if ( theY > stageHeight ) {
-                theY = aYPosition + thisHalfHeight;
-            }
-        }
-        this.setX( theX );
-        this.setY( theY );
+        var theX = this._dragStartOffset.x + ( aXPosition - this._dragStartEventCoordinates.x );
+        var theY = this._dragStartOffset.y + ( aYPosition - this._dragStartEventCoordinates.y );
+
+        this.updatePosition( theX, theY );
     };
     
     /**
@@ -755,9 +915,6 @@ define( "zSprite", [ "helpers", "zCanvas" ], function( helpers, zCanvas )
      */
     zSprite.prototype.handleInteraction = function( aEventX, aEventY, aEvent )
     {
-        if ( !this._draggable )
-            return false;
-    
         // first traverse the children of this sprite
         var foundInteractionInChild = false;
     
@@ -781,6 +938,10 @@ define( "zSprite", [ "helpers", "zCanvas" ], function( helpers, zCanvas )
                 theChild = theChild.last;
             }
         }
+
+        if ( !this._interactive ) {
+            return false;
+        }
     
         // did we have a previous interaction and the 'up' event was fired?
         // unset this property or update the position in case the event is a move event
@@ -794,7 +955,7 @@ define( "zSprite", [ "helpers", "zCanvas" ], function( helpers, zCanvas )
                 // in case we only handled this object for a short
                 // period (250 ms), we assume it was clicked / tapped
     
-                if ( /** @type {number} */ ( +new Date() ) - this._dragStartTime < 250 )
+                if ( Date.now() - this._dragStartTime < 250 )
                 {
                     this.handleClick();
                 }
@@ -811,6 +972,10 @@ define( "zSprite", [ "helpers", "zCanvas" ], function( helpers, zCanvas )
         if ( aEventX >= thisX && aEventX <= ( thisX + coordinates.width ) &&
              aEventY >= thisY && aEventY <= ( thisY + coordinates.height ))
         {
+            // this Sprites coordinates and dimensions are INSIDE the current event coordinates
+
+            this.hover = true;
+
             // yes sir, we've got a match
             if ( !this.isDragging )
             {
@@ -818,21 +983,24 @@ define( "zSprite", [ "helpers", "zCanvas" ], function( helpers, zCanvas )
                      aEvent.type == "mousedown" )
                 {
                     this.isDragging     = true;
-                    this._dragStartTime = +new Date();
+                    this._dragStartTime = Date.now();
     
-                    this._dragStartOffset            = { "x" : this._bounds.left, "y" : this._bounds.top };
-                    this.__dragStartEventCoordinates = { "x" : aEventX, "y" : aEventY };
+                    this._dragStartOffset           = { "x" : this._bounds.left, "y" : this._bounds.top };
+                    this._dragStartEventCoordinates = { "x" : aEventX, "y" : aEventY };
     
                     this.handlePress( aEventX, aEventY );
                     return true;
                 }
             }
         }
+        else {
+            this.hover = false;
+        }
     
         // the move handler is outside of the bounds check to
         // ensure we don't lose the handle by quickly moving around...
     
-        if ( this.isDragging )
+        if ( this._draggable && this.isDragging )
         {
             this.handleMove( aEventX, aEventY );
             return true;
