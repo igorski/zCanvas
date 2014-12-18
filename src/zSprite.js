@@ -67,13 +67,16 @@ define( "zSprite", [ "helpers", "zCanvas" ], function( helpers, zCanvas )
         }
         this.collidable  = aIsCollidable || false;
         this._children   = [];
-        this._bounds     = { "left" : aXPos, "top" : aYPos, "width" : aWidth, "height" : aHeight };
+        this._bounds     = { "left" : 0, "top" : 0, "width" : aWidth, "height" : aHeight };
         this._mask       = aIsMask || false;
+
+        this.setX( aXPos );
+        this.setY( aYPos );
     };
     
     // inherit from parent Disposable
-    zSprite.prototype = new helpers.Disposable();
-    
+    helpers.extend( zSprite, helpers.Disposable );
+
     /* class variables */
     
     /**
@@ -243,6 +246,13 @@ define( "zSprite", [ "helpers", "zCanvas" ], function( helpers, zCanvas )
     {
         this._draggable    = aValue;
         this._keepInBounds = aKeepInBounds || false;
+
+        // if we want to drag this zSprite and it isn't interactive, set it as interactive
+        // otherwise it will not receive any interaction events from the zCanvas
+
+        if ( aValue && !this._interactive ) {
+            this.setInteractive( true );
+        }
     };
     
     /**
@@ -275,7 +285,7 @@ define( "zSprite", [ "helpers", "zCanvas" ], function( helpers, zCanvas )
             while ( theChild )
             {
                 if ( !theChild.isDragging ) {
-                    theChild.setX( theChild.getX() + delta );
+                    theChild.setX( theChild._bounds.left + delta );
                 }
                 theChild = theChild.next;
             }
@@ -312,7 +322,7 @@ define( "zSprite", [ "helpers", "zCanvas" ], function( helpers, zCanvas )
             while ( theChild )
             {
                 if ( !theChild.isDragging ) {
-                    theChild.setY( theChild.getY() + delta );
+                    theChild.setY( theChild._bounds.top + delta );
                 }
                 theChild = theChild.next;
             }
@@ -419,13 +429,15 @@ define( "zSprite", [ "helpers", "zCanvas" ], function( helpers, zCanvas )
         if ( typeof aYPosition !== "number" ) {
             aYPosition = this._bounds.top;
         }
-        aXPosition -= this._constraint.left;
-        aYPosition -= this._constraint.top;
 
+        if ( this._constraint ) {
+            aXPosition -= this._constraint.left;
+            aYPosition -= this._constraint.top;
+        }
         var thisWidth   = this._bounds.width;
         var thisHeight  = this._bounds.height;
-        var stageWidth  = this._constraint.width;
-        var stageHeight = this._constraint.height;
+        var stageWidth  = this._constraint ? this._constraint.width  : this.canvas.width;
+        var stageHeight = this._constraint ? this._constraint.height : this.canvas.height;
 
         // keep within bounds ?
 
@@ -442,17 +454,17 @@ define( "zSprite", [ "helpers", "zCanvas" ], function( helpers, zCanvas )
         }
         else
         {
-            if ( aXPosition < 0 ) {
+            /*if ( aXPosition < 0 ) {
                 aXPosition = aXPosition - ( thisWidth  * .5 );
             }
-            else if ( aXPosition > stageWidth ) {
+            else*/ if ( aXPosition > stageWidth ) {
                 aXPosition = aXPosition + ( thisWidth  * .5 );
             }
 
-            if ( aYPosition < 0 ) {
+            /*if ( aYPosition < 0 ) {
                 aYPosition = aYPosition - ( thisHeight * .5 );
             }
-            else if ( aYPosition > stageHeight ) {
+            else*/ if ( aYPosition > stageHeight ) {
                 aYPosition = aYPosition + ( thisHeight * .5 );
             }
         }
@@ -505,6 +517,12 @@ define( "zSprite", [ "helpers", "zCanvas" ], function( helpers, zCanvas )
         }
 
         aCanvasContext.restore();
+
+        // draw an outline when in debug mode
+
+        if ( this.canvas.DEBUG ) {
+            this.drawOutline( aCanvasContext );
+        }
     };
     
     /**
@@ -1061,5 +1079,21 @@ define( "zSprite", [ "helpers", "zCanvas" ], function( helpers, zCanvas )
         // load the image
         this._image.src = aImageSource;
     };
+
+    /**
+     * draw the bounding box for this Sprite onto the Canvas, can
+     * be used when debugging
+     *
+     * @protected
+     *
+     * @param {CanvasRenderingContext2D} aCanvasContext to draw on
+     */
+    zSprite.prototype.drawOutline = function( aCanvasContext )
+    {
+        aCanvasContext.lineWidth   = 1;
+        aCanvasContext.strokeStyle = '#FF0000';
+        aCanvasContext.strokeRect( this.getX(), this.getY(), this.getWidth(), this.getHeight() )
+    };
+
     return zSprite;
 });

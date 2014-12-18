@@ -48,4 +48,12 @@ Want to view the API ? You can check the wiki here : https://github.com/igorski/
 Live Demo
 =========
 
-You can view some basic features in a down-and-dirty demo here : https://rawgithub.com/igorski/zCanvas/master/examples/index.html
+You can view some basic features in the down-and-dirty demos here :
+
+Game-like demo showcasing the use of sprite sheets for animating characters:
+
+https://rawgithub.com/igorski/zCanvas/master/examples/demo1.html
+
+Demo showcasing the layering and masking effects, both mouse and touch responsive.
+
+https://rawgithub.com/igorski/zCanvas/master/examples/demo2.html

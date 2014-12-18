@@ -68,12 +68,14 @@ define( "zCanvas", [ "helpers", "zSprite" ], function( helpers, zSprite )
 
     /* class properties */
 
+    /** @public @type {boolean} */                   zCanvas.prototype.DEBUG = false; // whether to draw zSprite bounds
     /** @private @type {HTMLCanvasElement} */        zCanvas.prototype._element;
     /** @private @type {number} */                   zCanvas.prototype._width;
     /** @private @type {number} */                   zCanvas.prototype._height;
+    /** @private @type {string} */                   zCanvas.prototype._bgColor = "rgb(255,255,255)";
     /** @private @type {CanvasRenderingContext2D} */ zCanvas.prototype._canvasContext;
     /** @private @type {helpers.EventHandler} */     zCanvas.prototype._eventHandler;
-    /** @private @type {Array.<zSprite>} */     zCanvas.prototype._children;
+    /** @private @type {Array.<zSprite>} */          zCanvas.prototype._children;
 
     /** @private @type {boolean} */   zCanvas.prototype._disposed = false;
     /** @private @type {boolean} */   zCanvas.prototype._animate = false;
@@ -366,6 +368,19 @@ define( "zCanvas", [ "helpers", "zSprite" ], function( helpers, zSprite )
     };
 
     /**
+     * set the background color for the zCanvas, either hexadecimal
+     * or RGB/RGBA, e.g. "#FF0000" or "rgba(255,0,0,1)";
+     *
+     * @public
+     *
+     * @param {string} aColor
+     */
+    zCanvas.prototype.setBackgroundColor = function( aColor )
+    {
+        this._bgColor = aColor;
+    };
+
+    /**
      * @public
      * @return {boolean}
      */
@@ -553,14 +568,13 @@ define( "zCanvas", [ "helpers", "zSprite" ], function( helpers, zSprite )
                 while ( theSprite )
                 {
                     theSprite.update( now );
-
                     theSprite = theSprite.next;
                 }
             }
 
             // clear previous canvas contents
 
-            ctx.fillStyle = 'rgb(255,255,255)';
+            ctx.fillStyle = this._bgColor;
             ctx.fillRect( 0, 0, this._width, this._height );
 
             // draw the children onto the canvas
@@ -572,7 +586,6 @@ define( "zCanvas", [ "helpers", "zSprite" ], function( helpers, zSprite )
                 while ( theSprite )
                 {
                     theSprite.draw( ctx );
-
                     theSprite = theSprite.next;
                 }
             }
