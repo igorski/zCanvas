@@ -241,6 +241,8 @@ define( "zSprite", [ "helpers", "zCanvas" ], function( helpers, zCanvas )
      *
      * @param {boolean} aValue whether we want to activate / deactivate the dragging mode
      * @param {boolean=} aKeepInBounds optional, whether we should keep dragging within bounds
+     *                   this will default to the bounds of the canvas, or can be a custom
+     *                   restraint (see "setParentConstraint")
      */
     zSprite.prototype.setDraggable = function( aValue, aKeepInBounds )
     {
@@ -444,13 +446,15 @@ define( "zSprite", [ "helpers", "zCanvas" ], function( helpers, zCanvas )
         if ( this._keepInBounds )
         {
             // There is a very small chance that the bounds width/height compared to stage width/height
-            // is only very slightly different, which will produce a positive numeric result very close to, but not quite zero.
-            // To play it safe, we will limit it to a maximum of 0.
+            // is only very slightly different, which will produce a positive numeric result very close to,
+            // but not quite zero. To play it safe, we will limit it to a maximum of 0.
             var minX = Math.min( 0, -( thisWidth  - stageWidth  ));
             var minY = Math.min( 0, -( thisHeight - stageHeight ));
+            var maxX = stageWidth  - thisWidth;
+            var maxY = stageHeight - thisHeight;
 
-            aXPosition = Math.min( 0, Math.max( aXPosition, minX ));
-            aYPosition = Math.min( 0, Math.max( aYPosition, minY ));
+            aXPosition = Math.min( maxX, Math.max( aXPosition, minX ));
+            aYPosition = Math.min( maxY, Math.max( aYPosition, minY ));
         }
         else
         {

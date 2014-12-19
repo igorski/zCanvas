@@ -14,8 +14,11 @@
         <h1>zCanvas demo</h1>
         <div id="demo"><!-- x --></div>
         <p>
-            Demo features : multiple nested Sprites (the circles) treated as separate layers, movable by either mouse or touch,
-            with hover states and masking (the scrollable star layer).
+            Demo features : multiple nested Sprites (the circles), masking (the scrollable star layer) and restricted
+            movement (the rectangle). The circles are movable by either mouse or touch, either individually or at once (dragging the large circle
+            will drag its child circles), while the rectangle is also draggable but constrained to the bottom right part of the canvas.
+            Note that you can drag the rectangle under the circle, but after release, the higher circle layer takes
+            precendence in responding to the mouse / touch events.
         </p>
         <span id="debug">
 
@@ -90,7 +93,7 @@
             // a sprite that will acts as a mask for underlying content
             // (see included "images.js"-file for the assetStar-image data)
 
-            var starSize = cvsHeight * .75; // make the star slightly smaller than the canvas
+            var starSize = cvsWidth * .3; // make the star slightly smaller than the canvas
 
             var spriteMask = new zSprite( 0, 0, starSize, starSize, assetStar, false, true );
 
@@ -153,7 +156,7 @@
             // here we override the getters and setters to accommodate for the radius of the circle as
             // the circles center point is the x- and y-coordinate to provide from-center-snapping
             CircleSprite.prototype.getX = function() { return helpers.super( this, "getX" ) + this.radius; };
-            CircleSprite.prototype.getY = function() { return helpers.super( this, "getY" ) - this.radius * 2; };
+            CircleSprite.prototype.getY = function() { return helpers.super( this, "getY" ) + this.radius; };
 
             // CircleSprite draw logic
             CircleSprite.prototype.draw = function( ctx )
@@ -176,13 +179,31 @@
 
             // create the circle instances, note all circles beyond circle1 will be children of circle1
             // (and thus should move according to the mutations of circle1)
-            var circle1 = new CircleSprite( bgWidth / 2, bgHeight / 2, bgHeight / 10, "#FF0000" );
-            var circle2 = new CircleSprite( bgWidth / 2, bgHeight / 2, bgHeight / 20, "#0000FF" );
-            var circle3 = new CircleSprite( bgWidth / 2, bgHeight / 4, bgHeight / 20, "#00FF00" );
+            var largeCircleSize = cvsHeight / 5, smallCircleSize = cvsHeight / 10;
+
+            var circle1 = new CircleSprite( cvsWidth / 2, cvsHeight / 2, largeCircleSize, "#FF0000" );
+            var circle2 = new CircleSprite( cvsWidth / 2, circle1.getY() - smallCircleSize / 2,               smallCircleSize, "#0000FF" );
+            var circle3 = new CircleSprite( cvsWidth / 2, circle1.getY() + largeCircleSize + smallCircleSize, smallCircleSize, "#00FF00" );
+
+            // CONSTRAINED RECTANGLE SPRITE
+            // ----------------------------
+
+            var rectSize  = bgHeight / 15;
+            var rectangle = new zSprite( cvsWidth * .75, cvsHeight * .5, rectSize, rectSize );
+            rectangle.setParentConstraint( cvsWidth / 2, cvsHeight / 2, cvsWidth / 2, cvsHeight / 2 ); // add a constraint
+            rectangle.setDraggable( true, true ); // we'd like to be able to drag the Rectangle but restrict its movements
+
+            // Rectangle draw logic
+            rectangle.draw = function( ctx )
+            {
+                ctx.fillStyle = '#FF00FF';
+                ctx.fillRect( this.getX(), this.getY(), this.getWidth(), this.getHeight() );
+            };
 
             // add all Sprites to the zCanvas display list so they are visible
 
             cvs.addChild( spriteMask );
+            cvs.addChild( rectangle );
             cvs.addChild( circle1 );
 
             // add all additional circles to the display list of circle1 so they are nested
