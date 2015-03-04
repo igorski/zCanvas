@@ -1,6 +1,8 @@
 {
-  "name": "zcanvas",
+  "name": "zCanvas",
   "homepage": "http://www.igorski.nl/",
+  "version": "1.0.1",
+  "license": "MIT",
   "author": "Igor Zinken (http://github.com/igorski/)",
   "bugs": {
     "url": "https://github.com/igorski/zCanvas/issues/"
@@ -31,8 +33,6 @@
     "detection"
   ],
   "preferGlobal": false,
-  "version": "1.0.0",
-  "license": "MIT",
   "engines": {
     "node": "0.10.*"
   }
