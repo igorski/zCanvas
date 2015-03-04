@@ -20,7 +20,20 @@
  * IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-define( "zCanvas", [ "helpers", "zSprite" ], function( helpers, zSprite )
+(function( aName, aModule )
+{
+    // CommonJS
+    if ( typeof module !== "undefined" )
+        module.exports = aModule();
+
+    // AMD
+    else if ( typeof define === "function" && typeof define.amd === "object" )
+        define( aName, [ "helpers", "zSprite" ], function( helpers, zSprite ) { return aModule(); });
+
+    // Browser global
+    else this[ aName ] = aModule;
+
+}( "zCanvas", function()
 {
     "use strict";
 
@@ -762,5 +775,7 @@ define( "zCanvas", [ "helpers", "zSprite" ], function( helpers, zSprite )
 
         return { "x" : left, "y" : top };
     };
+
     return zCanvas;
-});
+
+}));

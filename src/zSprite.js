@@ -20,8 +20,20 @@
  * IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
+(function( aName, aModule )
+{
+    // CommonJS
+    if ( typeof module !== "undefined" )
+        module.exports = aModule();
 
-define( "zSprite", [ "helpers", "zCanvas" ], function( helpers, zCanvas )
+    // AMD
+    else if ( typeof define === "function" && typeof define.amd === "object" )
+        define( aName, [ "helpers", "zCanvas" ], function( helpers, zCanvas ) { return aModule(); });
+
+    // Browser global
+    else this[ aName ] = aModule;
+
+}( "zSprite", function()
 {
     "use strict";
 
@@ -73,12 +85,12 @@ define( "zSprite", [ "helpers", "zCanvas" ], function( helpers, zCanvas )
         this.setX( aXPos );
         this.setY( aYPos );
     };
-    
+
     // inherit from parent Disposable
     helpers.extend( zSprite, helpers.Disposable );
 
     /* class variables */
-    
+
     /**
      * rectangle describing this sprites bounds relative to the zCanvas
      * basically this describes its x- and y- coordinates and its dimensions
@@ -113,7 +125,7 @@ define( "zSprite", [ "helpers", "zCanvas" ], function( helpers, zCanvas )
      * @type {boolean}
      */
     zSprite.prototype._mask;
-    
+
     /**
      * @protected
      * @type {zSprite}
@@ -121,13 +133,13 @@ define( "zSprite", [ "helpers", "zCanvas" ], function( helpers, zCanvas )
      * stores a reference to the containing zSprite
      */
     zSprite.prototype._parent = null;
-    
+
     /**
      * @protected
      * @type {Image}
      */
     zSprite.prototype._image;
-    
+
     /**
      * whether this zSprite is ready for drawing (will be false
      * when an Image source is used and the Image is still loading its data)
@@ -136,7 +148,7 @@ define( "zSprite", [ "helpers", "zCanvas" ], function( helpers, zCanvas )
      * @type {boolean}
      */
     zSprite.prototype._imageReady = false;
-    
+
     /**
      * @private
      * @type {boolean}
@@ -171,13 +183,13 @@ define( "zSprite", [ "helpers", "zCanvas" ], function( helpers, zCanvas )
      * @type {boolean}
      */
     zSprite.prototype._keepInBounds = false;
-    
+
     /**
      * @public
      * @type {boolean}
      */
     zSprite.prototype.isDragging = false;
-    
+
     /**
      * timestamp of the moment drag was enabled, used for
      * determining on release whether interaction was actually a tap/click
@@ -186,7 +198,7 @@ define( "zSprite", [ "helpers", "zCanvas" ], function( helpers, zCanvas )
      * @type {number}
      */
     zSprite.prototype._dragStartTime = 0;
-    
+
     /**
      * the coordinates of the click/touch event at the moment
      * drag was enabled
@@ -195,7 +207,7 @@ define( "zSprite", [ "helpers", "zCanvas" ], function( helpers, zCanvas )
      * @type {Object} w/ properties x and y
      */
     zSprite.prototype._dragStartEventCoordinates;
-    
+
     /**
      * this Sprites coordinates at the moment drag was enabled
      *
@@ -203,7 +215,7 @@ define( "zSprite", [ "helpers", "zCanvas" ], function( helpers, zCanvas )
      * @type {Object} w/ properties x and y
      */
     zSprite.prototype._dragStartOffset;
-    
+
     /**
      * we use a linked list to quickly traverse the DisplayList
      * of the zCanvas
@@ -212,7 +224,7 @@ define( "zSprite", [ "helpers", "zCanvas" ], function( helpers, zCanvas )
      * @type {zSprite|null}
      */
     zSprite.prototype.last;
-    
+
     /**
      * we use a linked list to quickly traverse the DisplayList
      * of the zCanvas
@@ -221,7 +233,7 @@ define( "zSprite", [ "helpers", "zCanvas" ], function( helpers, zCanvas )
      * @type {zSprite|null}
      */
     zSprite.prototype.next;
-    
+
     /**
      * reference to the zCanvas holding this zSprite
      * NOTE : will be null if the zSprite isn't present on
@@ -231,9 +243,9 @@ define( "zSprite", [ "helpers", "zCanvas" ], function( helpers, zCanvas )
      * @type {zCanvas}
      */
     zSprite.prototype.canvas;
-    
+
     /* public methods */
-    
+
     /**
      * toggle the draggable mode of this zSprite
      *
@@ -256,7 +268,7 @@ define( "zSprite", [ "helpers", "zCanvas" ], function( helpers, zCanvas )
             this.setInteractive( true );
         }
     };
-    
+
     /**
      * @public
      *
@@ -266,7 +278,7 @@ define( "zSprite", [ "helpers", "zCanvas" ], function( helpers, zCanvas )
     {
         return this._bounds.left;
     };
-    
+
     /**
      * @public
      *
@@ -276,14 +288,14 @@ define( "zSprite", [ "helpers", "zCanvas" ], function( helpers, zCanvas )
     {
         var delta         = aValue - this._bounds.left;
         this._bounds.left = this._constraint ? aValue + this._constraint.left : aValue;
-    
+
         // as the offsets of the children are drawn relative to the Canvas, we
         // must update their offsets by the delta value too
-    
+
         if ( this._children.length > 0 )
         {
             var theChild = this._children[ 0 ];
-    
+
             while ( theChild )
             {
                 if ( !theChild.isDragging ) {
@@ -293,7 +305,7 @@ define( "zSprite", [ "helpers", "zCanvas" ], function( helpers, zCanvas )
             }
         }
     };
-    
+
     /**
      * @public
      *
@@ -303,7 +315,7 @@ define( "zSprite", [ "helpers", "zCanvas" ], function( helpers, zCanvas )
     {
         return this._bounds.top;
     };
-    
+
     /**
      * @public
      *
@@ -313,14 +325,14 @@ define( "zSprite", [ "helpers", "zCanvas" ], function( helpers, zCanvas )
     {
         var delta        = aValue - this._bounds.top;
         this._bounds.top = this._constraint ? aValue + this._constraint.top : aValue;
-    
+
         // as the offsets of the children are drawn relative to the Canvas, we
         // must update their offsets by the delta value too
-    
+
         if ( this._children.length > 0 )
         {
             var theChild = this._children[ 0 ];
-    
+
             while ( theChild )
             {
                 if ( !theChild.isDragging ) {
@@ -330,7 +342,7 @@ define( "zSprite", [ "helpers", "zCanvas" ], function( helpers, zCanvas )
             }
         }
     };
-    
+
     /**
      * @public
      *
@@ -340,7 +352,7 @@ define( "zSprite", [ "helpers", "zCanvas" ], function( helpers, zCanvas )
     {
         return this._bounds.width;
     };
-    
+
     /**
      * @public
      *
@@ -350,7 +362,7 @@ define( "zSprite", [ "helpers", "zCanvas" ], function( helpers, zCanvas )
     {
         return this._bounds.height;
     };
-    
+
     /**
      * @public
      *
@@ -384,7 +396,7 @@ define( "zSprite", [ "helpers", "zCanvas" ], function( helpers, zCanvas )
     {
         this._interactive = aValue;
     };
-    
+
     /**
      * invoked on each render cycle before the draw-method
      * is invoked, you can override this in your subclass
@@ -475,7 +487,7 @@ define( "zSprite", [ "helpers", "zCanvas" ], function( helpers, zCanvas )
         this.setX( aXPosition );
         this.setY( aYPosition );
     };
-    
+
     /**
      * @public
      *
@@ -497,16 +509,16 @@ define( "zSprite", [ "helpers", "zCanvas" ], function( helpers, zCanvas )
         if ( this._imageReady )
         {
             var bounds = this._bounds;
-    
+
             aCanvasContext.drawImage( this._image, bounds.left, bounds.top, bounds.width, bounds.height );
         }
-    
+
         // draw this Sprites children onto the canvas
-    
+
         if ( this._children.length > 0 )
         {
             var theSprite = this._children[ 0 ];
-    
+
             while ( theSprite )
             {
                 theSprite.draw( aCanvasContext );
@@ -528,7 +540,7 @@ define( "zSprite", [ "helpers", "zCanvas" ], function( helpers, zCanvas )
             this.drawOutline( aCanvasContext );
         }
     };
-    
+
     /**
      * queries the bounding box of another sprite to check whether it overlaps the bounding box of this sprite, this
      * can be used as a fast method to detect collisions, though note it is less accurate than checking at the pixel level
@@ -544,17 +556,17 @@ define( "zSprite", [ "helpers", "zCanvas" ], function( helpers, zCanvas )
     zSprite.prototype.collidesWith = function( aSprite )
     {
         // checking ourselves are we ?
-    
+
         if ( aSprite == this )
             return false;
-    
+
         var otherX = aSprite.getX(), otherY = aSprite.getY(), otherWidth = aSprite.getWidth(), otherHeight = aSprite.getHeight();
         var myX    = this.getX(), myY = this.getY(), myWidth = this.getWidth(), myHeight = this.getHeight();
-    
+
         return ( otherX < myX + myWidth  && otherX + otherWidth > myX &&
                  otherY < myY + myHeight && otherY + otherHeight > myY );
     };
-    
+
     /**
      * queries the bounding box of another sprite to check whether its edges collide
      * with the edges of this sprite, this can be used as a fast method to detect whether
@@ -575,27 +587,27 @@ define( "zSprite", [ "helpers", "zCanvas" ], function( helpers, zCanvas )
     {
         if ( aSprite == this )
             return false;
-    
+
         if ( isNaN( aEdge ) || aEdge < 0 || aEdge > 3 )
             throw new Error( "invalid argument for edge" );
-    
+
         switch ( aEdge )
         {
             case 0: // left
                 return ( this.getX() <= aSprite.getX() + aSprite.getWidth() );
-    
+
             case 1: // above
                 return ( this.getY() <= aSprite.getY() + aSprite.getHeight() );
-    
+
             case 2: // right
                 return ( this.getX() + this.getWidth() <= aSprite.getX() );
-    
+
             case 3: // below
                 return ( this.getY() + this.getHeight() >= aSprite.getY() );
         }
         return false;
     };
-    
+
     /**
      * update / replace the Image contents of this zSprite, can be used
      * to swap spritesheets (for instance)
@@ -621,10 +633,10 @@ define( "zSprite", [ "helpers", "zCanvas" ], function( helpers, zCanvas )
                 this.createImageFromSource( aImage );
             }
         }
-    
+
         // update width and height if defined
         // reposition relatively from the center
-    
+
         if ( aNewWidth )
         {
             var prevWidth     = this._bounds.width || 0;
@@ -637,21 +649,21 @@ define( "zSprite", [ "helpers", "zCanvas" ], function( helpers, zCanvas )
             this._bounds.height = aNewHeight;
             this._bounds.top   -= ( aNewHeight *.5 - prevHeight *.5 );
         }
-    
+
         // make sure the image is still in bounds
-    
+
         if ( this._keepInBounds && ( aNewWidth || aNewHeight ))
         {
             var minX = -( this._bounds.width  - this.canvas.getWidth() );
             var minY = -( this._bounds.height - this.canvas.getHeight() );
-    
+
             if ( this._bounds.left > 0 ) {
                 this._bounds.left = 0;
             }
             else if ( this._bounds.left < minX ) {
                 this._bounds.left = minX;
             }
-    
+
             if ( this._bounds.top > 0 ) {
                 this._bounds.top = 0;
             }
@@ -660,7 +672,7 @@ define( "zSprite", [ "helpers", "zCanvas" ], function( helpers, zCanvas )
             }
         }
     };
-    
+
     /**
      * set a reference to the parent sprite containing this one
      *
@@ -673,7 +685,7 @@ define( "zSprite", [ "helpers", "zCanvas" ], function( helpers, zCanvas )
     {
         this._parent = /** @type {zSprite} */ ( aParent );
     };
-    
+
     /**
      * @public
      *
@@ -753,7 +765,7 @@ define( "zSprite", [ "helpers", "zCanvas" ], function( helpers, zCanvas )
     {
         // create a linked list
         var numChildren = this._children.length;
-    
+
         if ( numChildren > 0 )
         {
             aChild.last      = this._children[ numChildren - 1 ];
@@ -762,12 +774,12 @@ define( "zSprite", [ "helpers", "zCanvas" ], function( helpers, zCanvas )
         }
         aChild.setCanvas( this.canvas );
         aChild.setParent( this );
-    
+
         this._children.push( aChild );
-    
+
         return this;
     };
-    
+
     /**
      * remove a child zSprite from this sprites display list
      *
@@ -779,9 +791,9 @@ define( "zSprite", [ "helpers", "zCanvas" ], function( helpers, zCanvas )
         aChild.setParent( null );
         aChild.setCanvas( null );
         //aChild.dispose(); // no, we might like to re-use the child at a later stage ?
-    
+
         var i = this._children.length;
-    
+
         while ( i-- )
         {
             if ( this._children[ i ] == aChild )
@@ -789,13 +801,13 @@ define( "zSprite", [ "helpers", "zCanvas" ], function( helpers, zCanvas )
                 this._children.splice( i, 1 );
             }
         }
-    
+
         // update linked list
         var l = this._children.length;
         for ( i = 0; i < l; ++i )
         {
             var theSprite = this._children[ i ];
-    
+
             if ( i > 0 )
             {
                 var prevSprite  = this._children[ i - 1 ];
@@ -805,13 +817,13 @@ define( "zSprite", [ "helpers", "zCanvas" ], function( helpers, zCanvas )
             else {
                 theSprite.last = null;
             }
-    
+
             if ( i == ( l - 1 )) {
                 theSprite.next = null;
             }
         }
     };
-    
+
     /**
      * get a child of this Sprite by its index in the Display List
      *
@@ -823,7 +835,7 @@ define( "zSprite", [ "helpers", "zCanvas" ], function( helpers, zCanvas )
     {
         return this._children[ index ];
     };
-    
+
     /**
      * remove a child from this object's Display List at the given index
      *
@@ -834,7 +846,7 @@ define( "zSprite", [ "helpers", "zCanvas" ], function( helpers, zCanvas )
     {
         this.removeChild( this.getChildAt( index ));
     };
-    
+
     /**
      * @public
      * @return {number} the amount of children in this object's Display List
@@ -843,7 +855,7 @@ define( "zSprite", [ "helpers", "zCanvas" ], function( helpers, zCanvas )
     {
         return this._children.length;
     };
-    
+
     /**
      * check whether a given display object is present in this object's display list
      *
@@ -854,7 +866,7 @@ define( "zSprite", [ "helpers", "zCanvas" ], function( helpers, zCanvas )
     zSprite.prototype.contains = function( aChild )
     {
         var i = this.numChildren();
-    
+
         while ( i-- )
         {
             if ( this._children[ i ] == aChild )
@@ -864,9 +876,9 @@ define( "zSprite", [ "helpers", "zCanvas" ], function( helpers, zCanvas )
         }
         return false;
     };
-    
+
     /* event handlers */
-    
+
     /**
      * invoked when the user clicks / touches this sprite, NOTE : this
      * is a "down"-handler and indicates the sprite has just been touched
@@ -880,7 +892,7 @@ define( "zSprite", [ "helpers", "zCanvas" ], function( helpers, zCanvas )
     {
         // override in prototype-extensions or instance
     };
-    
+
     /**
      * invoked when the user releases touch of this (previously pressed) Sprite
      *
@@ -890,7 +902,7 @@ define( "zSprite", [ "helpers", "zCanvas" ], function( helpers, zCanvas )
     {
         // override in prototype-extensions or instance
     };
-    
+
     /**
      * invoked when user has clicked / tapped this Sprite, this indicates
      * the user has pressed and released within 250 ms
@@ -901,7 +913,7 @@ define( "zSprite", [ "helpers", "zCanvas" ], function( helpers, zCanvas )
     {
         // override in prototype-extensions or instance
     };
-    
+
     /**
      * move handler, invoked by the "handleInteraction"-method
      * to delegate drag logic
@@ -918,7 +930,7 @@ define( "zSprite", [ "helpers", "zCanvas" ], function( helpers, zCanvas )
 
         this.updatePosition( theX, theY );
     };
-    
+
     /**
      * invoked when the user interacts with the zCanvas, this method evaluates
      * the event data and checks whether it applies to this sprite and
@@ -939,20 +951,20 @@ define( "zSprite", [ "helpers", "zCanvas" ], function( helpers, zCanvas )
     {
         // first traverse the children of this sprite
         var foundInteractionInChild = false;
-    
+
         var thisX       = this.getX();
         var thisY       = this.getY();
         var numChildren = this._children.length;
-    
+
         if ( numChildren > 0 )
         {
             // reverse loop to first handle top layers
             var theChild = this._children[ numChildren - 1 ];
-    
+
             while ( theChild )
             {
                 foundInteractionInChild = theChild.handleInteraction( aEventX, aEventY, aEvent );
-    
+
                 // child is higher in DisplayList, takes precedence over this parent
                 if ( foundInteractionInChild ) {
                     return true;
@@ -964,7 +976,7 @@ define( "zSprite", [ "helpers", "zCanvas" ], function( helpers, zCanvas )
         if ( !this._interactive ) {
             return false;
         }
-    
+
         // did we have a previous interaction and the 'up' event was fired?
         // unset this property or update the position in case the event is a move event
         if ( this.isDragging )
@@ -973,24 +985,24 @@ define( "zSprite", [ "helpers", "zCanvas" ], function( helpers, zCanvas )
                  aEvent.type == "mouseup" )
             {
                 this.isDragging = false;
-    
+
                 // in case we only handled this object for a short
                 // period (250 ms), we assume it was clicked / tapped
-    
+
                 if ( Date.now() - this._dragStartTime < 250 )
                 {
                     this.handleClick();
                 }
-    
+
                 this.handleRelease();
                 return true;
             }
         }
         // evaluate if the event applies to this sprite by
         // matching the event offset with the Sprite bounds
-    
+
         var coordinates = this._bounds;
-    
+
         if ( aEventX >= thisX && aEventX <= ( thisX + coordinates.width ) &&
              aEventY >= thisY && aEventY <= ( thisY + coordinates.height ))
         {
@@ -1006,10 +1018,10 @@ define( "zSprite", [ "helpers", "zCanvas" ], function( helpers, zCanvas )
                 {
                     this.isDragging     = true;
                     this._dragStartTime = Date.now();
-    
+
                     this._dragStartOffset           = { "x" : this._bounds.left, "y" : this._bounds.top };
                     this._dragStartEventCoordinates = { "x" : aEventX, "y" : aEventY };
-    
+
                     this.handlePress( aEventX, aEventY );
                     return true;
                 }
@@ -1018,10 +1030,10 @@ define( "zSprite", [ "helpers", "zCanvas" ], function( helpers, zCanvas )
         else {
             this.hover = false;
         }
-    
+
         // the move handler is outside of the bounds check to
         // ensure we don't lose the handle by quickly moving around...
-    
+
         if ( this._draggable && this.isDragging )
         {
             this.handleMove( aEventX, aEventY );
@@ -1029,9 +1041,9 @@ define( "zSprite", [ "helpers", "zCanvas" ], function( helpers, zCanvas )
         }
         return false;
     };
-    
+
     /* protected methods */
-    
+
     /**
      * @override
      * @protected
@@ -1039,15 +1051,15 @@ define( "zSprite", [ "helpers", "zCanvas" ], function( helpers, zCanvas )
     zSprite.prototype.disposeInternal = function()
     {
         // in case this ZSprite was still on the ZCanvas, remove it
-    
+
         if ( this._parent != null )
         {
             this._parent.removeChild( this );
         }
-    
+
         // dispose the children
         var i = this._children.length;
-    
+
         while ( i-- )
         {
             var theChild = this._children[ i ];
@@ -1056,7 +1068,7 @@ define( "zSprite", [ "helpers", "zCanvas" ], function( helpers, zCanvas )
         }
         this._children = [];
     };
-    
+
     /**
      * creates a drawable image from a supplied base64 image source
      *
@@ -1068,18 +1080,18 @@ define( "zSprite", [ "helpers", "zCanvas" ], function( helpers, zCanvas )
     {
         this._imageReady   = false;    // we can only draw once the image has been fully loaded!
         this._image        = new Image();
-    
+
         // prepare load callback via managed handler
         var eventHandler = new helpers.EventHandler();
         var loadCallback = helpers.bind( function( e )
         {
             this._imageReady = true;
             eventHandler.dispose();  // will clean up listeners
-    
+
         }, this );
-    
+
         eventHandler.addEventListener( this._image, "load", loadCallback );
-    
+
         // load the image
         this._image.src = aImageSource;
     };
@@ -1100,4 +1112,5 @@ define( "zSprite", [ "helpers", "zCanvas" ], function( helpers, zCanvas )
     };
 
     return zSprite;
-});
+
+}));

@@ -37,7 +37,7 @@
             window.helpers = helpers;
             window.zCanvas = zCanvas;
             window.zSprite = zSprite;
-            
+
             demo(); // start the actual demo
         });
 
@@ -71,6 +71,7 @@
             // keep it within the device / browser bounds
             var cvsWidth  = w < 800 ? w * .93 : 800;
             var cvsHeight = h < 350 ? h : 350;
+
             var cvs       = new zCanvas( cvsWidth, cvsHeight, true, 60 );
 
             // append zCanvas to DOM
