@@ -783,6 +783,11 @@ if ( typeof module !== "undefined" )
 
         this._children.push( aChild );
 
+        // request a render now the state of the canvas has changed
+
+        if ( this.canvas ) {
+            this.canvas.invalidate();
+        }
         return this;
     };
 
@@ -790,7 +795,9 @@ if ( typeof module !== "undefined" )
      * remove a child zSprite from this sprites display list
      *
      * @public
+     *
      * @param {zSprite} aChild the child to remove
+     * @return {zSprite} the removed child
      */
     zSprite.prototype.removeChild = function( aChild )
     {
@@ -828,14 +835,22 @@ if ( typeof module !== "undefined" )
                 theSprite.next = null;
             }
         }
+
+        // request a render now the state of the canvas has changed
+
+        if ( this.canvas ) {
+            this.canvas.invalidate();
+        }
+        return aChild;
     };
 
     /**
      * get a child of this Sprite by its index in the Display List
      *
      * @public
+     *
      * @param {number} index of the object in the Display List
-     * @return {zSprite} the referenced object
+     * @return {zSprite} the zSprite present at the given index
      */
     zSprite.prototype.getChildAt = function( index )
     {
@@ -846,11 +861,13 @@ if ( typeof module !== "undefined" )
      * remove a child from this object's Display List at the given index
      *
      * @public
+     *
      * @param {number} index of the object to remove
+     * @return {zSprite} the zSprite removed at the given index
      */
     zSprite.prototype.removeChildAt = function( index )
     {
-        this.removeChild( this.getChildAt( index ));
+        return this.removeChild( this.getChildAt( index ));
     };
 
     /**
@@ -866,6 +883,7 @@ if ( typeof module !== "undefined" )
      * check whether a given display object is present in this object's display list
      *
      * @public
+     *
      * @param {zSprite} aChild
      * @return {boolean}
      */
@@ -960,12 +978,12 @@ if ( typeof module !== "undefined" )
 
         var thisX       = this.getX();
         var thisY       = this.getY();
-        var numChildren = this._children.length;
+        var numChildren = this._children.length, theChild;
 
         if ( numChildren > 0 )
         {
             // reverse loop to first handle top layers
-            var theChild = this._children[ numChildren - 1 ];
+            theChild = this._children[ numChildren - 1 ];
 
             while ( theChild )
             {
@@ -987,8 +1005,8 @@ if ( typeof module !== "undefined" )
         // unset this property or update the position in case the event is a move event
         if ( this.isDragging )
         {
-            if ( aEvent.type == "touchend" ||
-                aEvent.type == "mouseup" )
+            if ( aEvent.type === "touchend" ||
+                 aEvent.type === "mouseup" )
             {
                 this.isDragging = false;
 
@@ -1010,7 +1028,7 @@ if ( typeof module !== "undefined" )
         var coordinates = this._bounds;
 
         if ( aEventX >= thisX && aEventX <= ( thisX + coordinates.width ) &&
-            aEventY >= thisY && aEventY <= ( thisY + coordinates.height ))
+             aEventY >= thisY && aEventY <= ( thisY + coordinates.height ))
         {
             // this Sprites coordinates and dimensions are INSIDE the current event coordinates
 
@@ -1019,8 +1037,8 @@ if ( typeof module !== "undefined" )
             // yes sir, we've got a match
             if ( !this.isDragging )
             {
-                if ( aEvent.type == "touchstart" ||
-                    aEvent.type == "mousedown" )
+                if ( aEvent.type === "touchstart" ||
+                     aEvent.type === "mousedown" )
                 {
                     this.isDragging     = true;
                     this._dragStartTime = Date.now();
@@ -1089,12 +1107,12 @@ if ( typeof module !== "undefined" )
 
         // prepare load callback via managed handler
         var eventHandler = new helpers.EventHandler();
-        var loadCallback = helpers.bind( function( e )
+        var loadCallback = function( e )
         {
             this._imageReady = true;
             eventHandler.dispose();  // will clean up listeners
 
-        }, this );
+        }.bind( this );
 
         eventHandler.addEventListener( this._image, "load", loadCallback );
 

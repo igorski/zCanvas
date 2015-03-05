@@ -68,7 +68,7 @@ if ( typeof module !== "undefined" )
         this._fps            = aFrameRate;
         this._renderInterval = 1000 / aFrameRate;
 
-        this._renderHandler  = helpers.bind( this.render, this );
+        this._renderHandler  = this.render.bind( this );
 
         this._children = [];
         this._animate = aAnimateable || false;
@@ -99,14 +99,14 @@ if ( typeof module !== "undefined" )
     /** @private @type {Array.<zSprite>} */          zCanvas.prototype._children;
 
     /** @private @type {boolean} */   zCanvas.prototype._disposed = false;
-    /** @private @type {boolean} */   zCanvas.prototype._animate = false;
+    /** @private @type {boolean} */   zCanvas.prototype._animate  = false;
     /** @private @type {number} */    zCanvas.prototype._fps;
     /** @private @type {number} */    zCanvas.prototype._renderInterval;
     /** @private @type {number} */    zCanvas.prototype._lastRender = 0;
     /** @private @type {!Function} */ zCanvas.prototype._renderHandler;
     /** @private @type {number} */    zCanvas.prototype._renderId;
-    /** @private @type {number} */    zCanvas.prototype._updateTimeout;
-
+    /** @private @type {boolean} */   zCanvas.prototype._renderPending = false;
+    
     /* public methods */
 
     /**
@@ -240,22 +240,15 @@ if ( typeof module !== "undefined" )
     };
 
     /**
-     * invoke when the state of the ZCanvas has changed (i.e.
+     * invoke when the state of the zCanvas has changed (i.e.
      * the visual contents should change), this will invoke
-     * a new render request (obsolete if the canvas is
-     * continuously rendering due to being animatable)
+     * a new render request
      *
      * @public
      */
     zCanvas.prototype.invalidate = function()
     {
-        // if the ZCanvas isn't updating, we make a
-        // request for updating the contents
-
-        if ( !this._animate )
-        {
-            this.update();
-        }
+        this.update();
     };
 
     /**
@@ -278,23 +271,24 @@ if ( typeof module !== "undefined" )
     {
         var out = [];
 
-        var i = this._children.length;
+        var i = this._children.length, theChild, childX, childY, childWidth, childHeight;
 
         while ( i-- )
         {
-            var theChild = this._children[ i ];
+            theChild = this._children[ i ];
 
-            var childX = theChild.getX(), childY = theChild.getY(),
-                childWidth = theChild.getWidth(), childHeight = theChild.getHeight();
+            childX      = theChild.getX();
+            childY      = theChild.getY();
+            childWidth  = theChild.getWidth();
+            childHeight = theChild.getHeight();
 
             if ( childX < aX + aWidth  && childX + childWidth > aX &&
-                childY < aY + aHeight && childY + childHeight > aY )
+                 childY < aY + aHeight && childY + childHeight > aY )
             {
                 if ( !aOnlyCollidables || ( aOnlyCollidables && theChild.collidable )) {
                     out.push( theChild );
                 }
             }
-
         }
         return out;
     };
@@ -322,7 +316,7 @@ if ( typeof module !== "undefined" )
 
         while( i-- )
         {
-            if ( this._children[ i ] == aChild )
+            if ( this._children[ i ] === aChild )
             {
                 return true;
             }
@@ -411,30 +405,21 @@ if ( typeof module !== "undefined" )
     };
 
     /**
-     * forces an update of the Canvas' contents, this will be omitted
-     * when this is an animated zCanvas as the next render cycle
-     * will auto-update the contents automatically
+     * forces an update of the Canvas' contents
+     *
+     * render requests are only executed when the UI is ready
+     * to render (on animationFrame), as such this method can be invoked
+     * repeatedly between render cycles without actually triggering
+     * multiple render executions (a single one will suffice)
      *
      * @public
      */
     zCanvas.prototype.update = function()
     {
-        if ( !this._animate )
+        if ( !this._animate && !this._renderPending )
         {
-            // we add a short delay to make sure the update occurs on the
-            // next render cycle of the BROWSER (overcomes blank screen
-            // when this occurs during heavy asynchronous operations) for
-            // this purpose a 0 ms delay suffices, but we up the delay
-            // slightly because of :
-
-            // a contribution by Igor Kogan : use the timeout as a proxy
-            // and clear previous timeouts upon subsequent requests to
-            // avoid a massive influx of render operations happening
-            // in series during state change operations (i.e. lots of
-            // add/remove children, etc.)
-
-            clearTimeout( this._updateTimeout );
-            this._updateTimeout = setTimeout( this._renderHandler, 5 );
+            this._renderPending = true;
+            this._renderId = requestAnimationFrame( this._renderHandler );
         }
     };
 
@@ -484,18 +469,18 @@ if ( typeof module !== "undefined" )
 
         var internalCheck = function( aX, aY, aWidth, aHeight )
         {
-            var bitmap = ctx.getImageData( aX, aY, aWidth, aHeight );
+            var bitmap = ctx.getImageData( aX, aY, aWidth, aHeight), match;
 
             // Here we loop through the bitmap slice and its colors
             // (maximum four, each representing a channel in the RGBA spectrum)
 
             for ( var i = 0, l = ( aWidth * aHeight ) * 4; i < l; i += 4 )
             {
-                var match = false;
+                match = false;
 
                 // check red value (if specified)
 
-                if ( aRedValue !== null && aRedValue !== void 0 )
+                if ( typeof aRedValue === "number" )
                 {
                     match = ( bitmap.data[ i ] == aRedValue );
                     if ( !match ) return false;
@@ -503,7 +488,7 @@ if ( typeof module !== "undefined" )
 
                 // check green value (if specified)
 
-                if ( aGreenValue !== null && aGreenValue !== void 0 )
+                if ( typeof aGreenValue === "number" )
                 {
                     match = ( bitmap.data[ i + 1 ] == aGreenValue );
                     if ( !match ) return false;
@@ -511,7 +496,7 @@ if ( typeof module !== "undefined" )
 
                 // check blue value (if specified)
 
-                if ( aBlueValue !== null && aBlueValue !== void 0 )
+                if ( typeof aBlueValue === "number" )
                 {
                     match = ( bitmap.data[ i + 2 ] == aBlueValue );
                     if ( !match ) return false;
@@ -519,7 +504,7 @@ if ( typeof module !== "undefined" )
 
                 // check alpha value (if specified)
 
-                if ( aAlphaValue !== null && aAlphaValue !== void 0 )
+                if ( typeof aAlphaValue === "number" )
                 {
                     match = ( bitmap.data[ i + 3 ] == aAlphaValue );
                     if ( !match ) return false;
@@ -573,6 +558,8 @@ if ( typeof module !== "undefined" )
         var now   = Date.now();  // current timestamp
         var delta = now - this._lastRender;
 
+        this._renderPending = false;
+
         // only execute render when the time for a single frame
         // (at the requested framerate) has passed
 
@@ -615,7 +602,8 @@ if ( typeof module !== "undefined" )
 
         if ( !this._disposed && this._animate )
         {
-            this._renderId = window[ "requestAnimationFrame" ]( this._renderHandler );
+            this._renderPending = true;
+            this._renderId = requestAnimationFrame( this._renderHandler );
         }
     };
 
@@ -628,7 +616,7 @@ if ( typeof module !== "undefined" )
         this.removeListeners();
 
         this._animate = false;
-        window[ "cancelAnimationFrame" ]( this._renderId ); // kill render loop
+        cancelAnimationFrame( this._renderId ); // kill render loop
 
         // dispose all sprites on Display List
 
@@ -649,21 +637,21 @@ if ( typeof module !== "undefined" )
      */
     zCanvas.prototype.handleInteraction = function( aEvent )
     {
-        var numChildren  = this._children.length;
-        var eventOffsetX = 0;
-        var eventOffsetY = 0;
+        var numChildren  = this._children.length, theChild;
+        var eventOffsetX = 0, eventOffsetY = 0;
+        var touches, found;
 
         if ( numChildren > 0 )
         {
             // reverse loop to first handle top layers
-            var theChild = this._children[ numChildren - 1 ];
+            theChild = this._children[ numChildren - 1 ];
 
             switch ( aEvent.type )
             {
                 // all touch events
                 default:
 
-                    var touches /** @type {TouchList} */  = aEvent.touches;
+                    touches /** @type {TouchList} */  = aEvent.touches;
 
                     if ( touches.length > 0 )
                     {
@@ -687,7 +675,7 @@ if ( typeof module !== "undefined" )
 
                     while ( theChild )
                     {
-                        var found = theChild.handleInteraction( aEvent.offsetX, aEvent.offsetY, aEvent );
+                        found = theChild.handleInteraction( aEvent.offsetX, aEvent.offsetY, aEvent );
 
                         if ( found )
                             break;
@@ -716,7 +704,7 @@ if ( typeof module !== "undefined" )
     zCanvas.prototype.addListeners = function()
     {
         var theHandler  = this.getHandler();
-        var theListener = helpers.bind( this.handleInteraction, this );
+        var theListener = this.handleInteraction.bind( this );
 
         // use touch events ?
 

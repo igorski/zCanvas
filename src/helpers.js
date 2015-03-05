@@ -170,25 +170,6 @@ helpers.EventHandler.prototype.disposeInternal = function()
     this._eventMappings = null;
 };
 
-/* function binding */
-
-/**
-* bind provides a method to execute a callback function
-* within the scope of a given Object
-*
-* @param {!Function} aFunction the function to execute
-* @param {*} aContext the scope the function should be executed in
-* @param {*=} aArguments optional multiple arguments
-*
-* @return {!Function} scoped function call
-*/
-helpers.bind = function( aFunction, aContext, aArguments )
-{
-    return function() {
-        return aFunction.apply( aContext, arguments );
-    };
-};
-
 /* prototype inheritance */
 
 /**
