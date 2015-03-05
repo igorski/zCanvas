@@ -20,6 +20,14 @@
  * IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
+
+// resolve CommonJS dependencies
+
+if ( typeof module !== "undefined" )
+{
+    var helpers = require( "./helpers" );
+}
+
 (function( aName, aModule )
 {
     // CommonJS
@@ -35,8 +43,6 @@
 
 }( "zSprite", function()
 {
-    "use strict";
-
     /**
      * provides an API equivalent to the Flash Sprite / Display Object for manipulating "Objects" on a canvas element.
      *
@@ -471,18 +477,18 @@
         else
         {
             /*if ( aXPosition < 0 ) {
-                aXPosition = aXPosition - ( thisWidth  * .5 );
-            }
-            else*/ if ( aXPosition > stageWidth ) {
-                aXPosition = aXPosition + ( thisWidth  * .5 );
-            }
+             aXPosition = aXPosition - ( thisWidth  * .5 );
+             }
+             else*/ if ( aXPosition > stageWidth ) {
+            aXPosition = aXPosition + ( thisWidth  * .5 );
+        }
 
             /*if ( aYPosition < 0 ) {
-                aYPosition = aYPosition - ( thisHeight * .5 );
-            }
-            else*/ if ( aYPosition > stageHeight ) {
-                aYPosition = aYPosition + ( thisHeight * .5 );
-            }
+             aYPosition = aYPosition - ( thisHeight * .5 );
+             }
+             else*/ if ( aYPosition > stageHeight ) {
+            aYPosition = aYPosition + ( thisHeight * .5 );
+        }
         }
         this.setX( aXPosition );
         this.setY( aYPosition );
@@ -564,7 +570,7 @@
         var myX    = this.getX(), myY = this.getY(), myWidth = this.getWidth(), myHeight = this.getHeight();
 
         return ( otherX < myX + myWidth  && otherX + otherWidth > myX &&
-                 otherY < myY + myHeight && otherY + otherHeight > myY );
+        otherY < myY + myHeight && otherY + otherHeight > myY );
     };
 
     /**
@@ -982,7 +988,7 @@
         if ( this.isDragging )
         {
             if ( aEvent.type == "touchend" ||
-                 aEvent.type == "mouseup" )
+                aEvent.type == "mouseup" )
             {
                 this.isDragging = false;
 
@@ -1004,7 +1010,7 @@
         var coordinates = this._bounds;
 
         if ( aEventX >= thisX && aEventX <= ( thisX + coordinates.width ) &&
-             aEventY >= thisY && aEventY <= ( thisY + coordinates.height ))
+            aEventY >= thisY && aEventY <= ( thisY + coordinates.height ))
         {
             // this Sprites coordinates and dimensions are INSIDE the current event coordinates
 
@@ -1014,7 +1020,7 @@
             if ( !this.isDragging )
             {
                 if ( aEvent.type == "touchstart" ||
-                     aEvent.type == "mousedown" )
+                    aEvent.type == "mousedown" )
                 {
                     this.isDragging     = true;
                     this._dragStartTime = Date.now();

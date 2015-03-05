@@ -20,6 +20,14 @@
  * IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
+
+// resolve CommonJS dependencies
+
+if ( typeof module !== "undefined" )
+{
+    var helpers = require( "./helpers" );
+}
+
 (function( aName, aModule )
 {
     // CommonJS
@@ -280,7 +288,7 @@
                 childWidth = theChild.getWidth(), childHeight = theChild.getHeight();
 
             if ( childX < aX + aWidth  && childX + childWidth > aX &&
-                 childY < aY + aHeight && childY + childHeight > aY )
+                childY < aY + aHeight && childY + childHeight > aY )
             {
                 if ( !aOnlyCollidables || ( aOnlyCollidables && theChild.collidable )) {
                     out.push( theChild );
@@ -460,7 +468,7 @@
      * @return {number} 0 = no collision, 1 = horizontal collision, 2 = vertical collision, 3 = horizontal and vertical collisions
      */
     zCanvas.prototype.checkCollision = function( aSprite, aRedValue, aGreenValue, aBlueValue, aAlphaValue,
-                                                      aX, aY, aWidth, aHeight )
+                                                 aX, aY, aWidth, aHeight )
     {
         aX = aX || aSprite.getX();
         aY = aY || aSprite.getY();

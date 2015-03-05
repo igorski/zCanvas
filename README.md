@@ -40,11 +40,6 @@ Easily animatable
 As all rendering logic resides in a single method of your zSprite, you can easily attach tweening libraries such as
 the excellent TweenMax by Greensock to alter the visible properties of your zSprite for maximum eye candy.
 
-Documentation
-=============
-
-Want to view the API ? You can check the wiki here : https://github.com/igorski/zCanvas/wiki/zCanvas-overview
-
 Live Demo
 =========
 
@@ -57,3 +52,37 @@ https://rawgithub.com/igorski/zCanvas/master/examples/demo1.html
 Demo showcasing the layering and masking effects, both mouse and touch responsive.
 
 https://rawgithub.com/igorski/zCanvas/master/examples/demo2.html
+
+Project Integration
+===================
+
+zCanvas is compatible with CommonJS, AMD/RequireJS or can be included in the browser via script tags:
+
+CommonJS:
+
+    var zCanvas = require( "zcanvas" ).zCanvas;
+    var zSprite = require( "zcanvas" ).zSprite;
+
+(you can subsequently use a tool like Browserify to build for the browser).
+
+RequireJS:
+
+    require( [ "helpers", "zCanvas", "zSprite" ], function( helpers, zCanvas, zSprite )
+    {
+        // do something...
+    });
+
+Browser:
+
+    <script type="text/javascript" src="./src/helpers.js"></script>
+    <script type="text/javascript" src="./src/zCanvas.js"></script>
+    <script type="text/javascript" src="./src/zSprite.js"></script>
+
+Note that RequireJS and script tag injection requires "helpers.js" for shared functionalities.
+
+The API / Documentation
+=======================
+
+Want to view the API ? You can check the wiki here : https://github.com/igorski/zCanvas/wiki/zCanvas-overview
+
+(or view the source contents of the demos listed above).

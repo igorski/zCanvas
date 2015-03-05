@@ -1,9 +1,14 @@
 {
   "name": "zcanvas",
   "homepage": "http://www.igorski.nl/",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "license": "MIT",
-  "author": "Igor Zinken (http://github.com/igorski/)",
+  "author": {
+    "name": "Igor Zinken",
+    "url": "http://github.com/igorski/"
+  },
+  "directories" : {},
+  "main" : "zcanvas.js",
   "bugs": {
     "url": "https://github.com/igorski/zCanvas/issues/"
   },
@@ -34,6 +39,13 @@
   ],
   "preferGlobal": false,
   "engines": {
-    "node": "0.10.*"
-  }
+    "node": ">=0.6.0"
+  },
+  "readme": "zCanvas\n=======\n\nJavaScript library for interacting with HTML Canvas drawables as if they were separate animatable, interactive Objects.\nzCanvas is optimized for mobile devices, relying on optimal use of resources and works well with touch events, as such\nzCanvas can be an excellent resource for creating (mobile) web games.\n\nThe concept of zCanvas encourages Object Oriented Programming, where each custom drawable Object you create for your\nproject should inherit its prototype from the zSprite-\"class\". You'll find you'll only have to override two methods\nfor custom drawable logic and its visual rendering.\n\nzCanvas will provide an API that takes care of all animation and update logic you'd associate with, for instance, a game\nloop. However, the rendering logic (i.e. the \"drawing\" of the visual content) can be as low level as you'd like, by\ndrawing straight onto the <canvas> using the browsers CanvasRenderingContext2D-API.\n\nzCanvas has been written in vanilla JavaScript and thus works independent from (and should work with) any other\nJavaScript framework.\n\nDisplayList convention\n----------------------\n\nWhere the HTMLCanvasElement differs from other HTML elements in that its contents aren't visible as individual nodes (but rather, as pixels), zCanvas\nprovides an API that allows you to interact with drawable Objects as separate entities (called zSprites), attaching logic to individual\nelements leaving you, as developer, without the hassle of managing the relation of the drawn elements to the <canvas> element and DOM.\n\nzCanvas follows the concept of the DisplayList (familiar to those knowledgeable in ActionScript 3) where drawable Objects\nbecome visible on screen once they have been added to a container. zSprites are also containers, so you can stack zSprites\nonto other zSprites, without having to worry about z indices. If you're familiar with addChild and removeChild, you're good to go.\n\nOptimized for high performance\n------------------------------\n\nzCanvas has been extensively optimized for the best performance and works a treat on mobile devices too. The amount of\nevent listeners attached to DOM elements are limited to the <canvas> only, where the internal interactions are delegated\nto the zSprites by the zCanvas.\n\nEasily animatable\n-----------------\n\nAs all rendering logic resides in a single method of your zSprite, you can easily attach tweening libraries such as\nthe excellent TweenMax by Greensock to alter the visible properties of your zSprite for maximum eye candy.\n\nDocumentation\n=============\n\nWant to view the API ? You can check the wiki here : https://github.com/igorski/zCanvas/wiki/zCanvas-overview\n\nLive Demo\n=========\n\nYou can view some basic features in the down-and-dirty demos here :\n\nGame-like demo showcasing the use of sprite sheets for animating characters:\n\nhttps://rawgithub.com/igorski/zCanvas/master/examples/demo1.html\n\nDemo showcasing the layering and masking effects, both mouse and touch responsive.\n\nhttps://rawgithub.com/igorski/zCanvas/master/examples/demo2.html\n",
+  "readmeFilename": "README.md",
+  "gitHead": "d40e43e32dd066e5a7306a3715ff27f67bbc9682",
+  "_id": "zcanvas@1.0.1",
+  "scripts": {},
+  "_shasum": "d468d085f7772179d16d1becd1790e9471d207fd",
+  "_from": "zcanvas@^1.0.1"
 }
