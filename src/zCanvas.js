@@ -341,11 +341,34 @@ if ( typeof module !== "undefined" )
      * describes the elapsed time in milliseconds between each successive
      * render at the current framerate
      *
+     * @public
      * @return {number}
      */
     zCanvas.prototype.getRenderInterval = function()
     {
         return this._renderInterval;
+    };
+
+    /**
+     * toggle the smoothing of the Canvas' contents.
+     * for pixel art-type graphics, setting the smoothing to
+     * false will yield crisper results
+     *
+     * @public
+     * @param {boolean} aValue
+     */
+    zCanvas.prototype.setSmoothing = function( aValue )
+    {
+        var props = [ "imageSmoothingEnabled",  "mozImageSmoothingEnabled",
+                      "oImageSmoothingEnabled", "webkitImageSmoothingEnabled" ];
+
+        var ctx = this._canvasContext;
+
+        props.forEach( function( prop )
+        {
+            if ( ctx[ prop ] !== undefined )
+                ctx[ prop ] = aValue;
+        });
     };
 
     /**
