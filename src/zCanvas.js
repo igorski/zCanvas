@@ -98,15 +98,17 @@ if ( typeof module !== "undefined" )
     /** @private @type {helpers.EventHandler} */     zCanvas.prototype._eventHandler;
     /** @private @type {Array.<zSprite>} */          zCanvas.prototype._children;
 
-    /** @private @type {boolean} */   zCanvas.prototype._disposed = false;
-    /** @private @type {boolean} */   zCanvas.prototype._animate  = false;
+    /** @private @type {boolean} */   zCanvas.prototype._disposed  = false;
+    /** @private @type {boolean} */   zCanvas.prototype._animate   = false;
+    /** @private @type {boolean} */   zCanvas.prototype._smoothing = true;
+    /** @private @type {boolean} */   zCanvas.prototype._smoothing = true;
     /** @private @type {number} */    zCanvas.prototype._fps;
     /** @private @type {number} */    zCanvas.prototype._renderInterval;
     /** @private @type {number} */    zCanvas.prototype._lastRender = 0;
     /** @private @type {!Function} */ zCanvas.prototype._renderHandler;
     /** @private @type {number} */    zCanvas.prototype._renderId;
     /** @private @type {boolean} */   zCanvas.prototype._renderPending = false;
-    
+
     /* public methods */
 
     /**
@@ -283,7 +285,7 @@ if ( typeof module !== "undefined" )
             childHeight = theChild.getHeight();
 
             if ( childX < aX + aWidth  && childX + childWidth > aX &&
-                 childY < aY + aHeight && childY + childHeight > aY )
+                childY < aY + aHeight && childY + childHeight > aY )
             {
                 if ( !aOnlyCollidables || ( aOnlyCollidables && theChild.collidable )) {
                     out.push( theChild );
@@ -364,10 +366,17 @@ if ( typeof module !== "undefined" )
 
         var ctx = this._canvasContext;
 
-        props.forEach( function( prop )
+        this._smoothing = aValue;
+
+        // observed not to work during setup
+
+        requestAnimationFrame( function()
         {
-            if ( ctx[ prop ] !== undefined )
-                ctx[ prop ] = aValue;
+            props.forEach( function( prop )
+            {
+                if ( ctx[ prop ] !== undefined )
+                    ctx[ prop ] = aValue;
+            });
         });
     };
 
@@ -401,6 +410,10 @@ if ( typeof module !== "undefined" )
     {
         this._element[ "width" ]  = this._width  = aWidth;
         this._element[ "height" ] = this._height = aHeight;
+
+        // smoothing must be re-applied when the canvas dimensions change...
+
+        this.setSmoothing( this._smoothing );
 
         this.invalidate();
     };
