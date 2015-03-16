@@ -16,6 +16,12 @@ drawing straight onto the <canvas> using the browsers CanvasRenderingContext2D-A
 zCanvas has been written in vanilla JavaScript and thus works independent from (and should work with) any other
 JavaScript framework.
 
+## installation
+
+You can get zCanvas via NPM:
+
+    npm install zcanvas
+
 DisplayList convention
 ----------------------
 
