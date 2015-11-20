@@ -88,6 +88,6 @@ https://rawgithub.com/igorski/zCanvas/master/examples/demo2.html
 The API / Documentation
 =======================
 
-Want to view the API ? You can check the wiki here : https://github.com/igorski/zCanvas/wiki/zCanvas-overview
+Want to view the API? You can check the wiki here: https://github.com/igorski/zCanvas/wiki/zCanvas-overview
 
 (or view the source contents of the demos listed above).
