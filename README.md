@@ -72,6 +72,19 @@ Easily animatable
 As all rendering logic resides in a single method of your zSprite, you can easily attach tweening libraries such as
 the excellent TweenMax by Greensock to alter the visible properties of your zSprite for maximum eye candy.
 
+Unit testing
+============
+
+Unit tests are run via mocha, which is installed as a dependency. You can run the tests by running:
+
+    npm test
+    
+Unit tests go in the _./test_-folder. The file name for a unit test must be equal to the file it is testing, but contain
+the suffix "_.test_", e.g. _Functions.js_ will have a test file _Functions.test.js_. Note that all copy / concatenation /
+production related Grunt tasks for JavaScripts must exclude the _.test._-files to avoid them being part of a production build.
+
+NOTE : Node v4.0 or higher must be installed for running the tests (depends on jsdom)
+
 Live Demo
 =========
 

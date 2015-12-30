@@ -190,7 +190,7 @@
 
             var rectSize  = bgHeight / 15;
             var rectangle = new zSprite( cvsWidth * .75, cvsHeight * .5, rectSize, rectSize );
-            rectangle.setParentConstraint( cvsWidth / 2, cvsHeight / 2, cvsWidth / 2, cvsHeight / 2 ); // add a constraint
+            rectangle.setConstraint( cvsWidth / 2, cvsHeight / 2, cvsWidth / 2, cvsHeight / 2 ); // add a constraint
             rectangle.setDraggable( true, true ); // we'd like to be able to drag the Rectangle but restrict its movements
 
             // Rectangle draw logic

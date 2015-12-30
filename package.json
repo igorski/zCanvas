@@ -1,7 +1,7 @@
 {
   "name": "zcanvas",
   "homepage": "http://www.igorski.nl/",
-  "version": "1.0.5",
+  "version": "1.1.0",
   "license": "MIT",
   "author": {
     "name": "Igor Zinken",
@@ -37,6 +37,14 @@
     "collision",
     "detection"
   ],
+  "devDependencies" : {
+    "chai": "^1.9.2",
+    "mocha": "^2.2.5",
+    "mock-browser": "^0.91.34"
+  },
+  "scripts": {
+    "test": "mocha test"
+  },
   "preferGlobal": false,
   "engines": {
     "node": ">=0.6.0"

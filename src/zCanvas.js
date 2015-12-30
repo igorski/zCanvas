@@ -74,7 +74,7 @@ if ( typeof module !== "undefined" )
         this._animate = aAnimateable || false;
 
         this._element       = /** @type {HTMLCanvasElement} */ ( document.createElement( "canvas" ));
-        this._canvasContext = this._element[ "getContext" ]( "2d" );
+        this._canvasContext = this._element.getContext( "2d" );
         this.setDimensions( aWidth, aHeight );
 
         this.addListeners();
@@ -100,7 +100,6 @@ if ( typeof module !== "undefined" )
 
     /** @private @type {boolean} */   zCanvas.prototype._disposed  = false;
     /** @private @type {boolean} */   zCanvas.prototype._animate   = false;
-    /** @private @type {boolean} */   zCanvas.prototype._smoothing = true;
     /** @private @type {boolean} */   zCanvas.prototype._smoothing = true;
     /** @private @type {number} */    zCanvas.prototype._fps;
     /** @private @type {number} */    zCanvas.prototype._renderInterval;
@@ -235,10 +234,11 @@ if ( typeof module !== "undefined" )
      *
      * @public
      * @param {number} index of the object to remove
+     * @return {zSprite} the removed zSprite
      */
     zCanvas.prototype.removeChildAt = function( index )
     {
-        this.removeChild( this.getChildAt( index ));
+        return this.removeChild( this.getChildAt( index ));
     };
 
     /**
@@ -411,10 +411,11 @@ if ( typeof module !== "undefined" )
         this._element[ "width" ]  = this._width  = aWidth;
         this._element[ "height" ] = this._height = aHeight;
 
-        // smoothing must be re-applied when the canvas dimensions change...
+        // non-smoothing must be re-applied when the canvas dimensions change...
 
-        this.setSmoothing( this._smoothing );
-
+        if ( this._smoothing === false ) {
+            this.setSmoothing( this._smoothing );
+        }
         this.invalidate();
     };
 
@@ -602,7 +603,6 @@ if ( typeof module !== "undefined" )
         if ( delta > this._renderInterval )
         {
             this._lastRender = now - ( delta % this._renderInterval );
-            var ctx = this._canvasContext;
 
             if ( this._children.length > 0 )
             {
@@ -616,21 +616,26 @@ if ( typeof module !== "undefined" )
                 }
             }
 
-            // clear previous canvas contents
+            var ctx = this._canvasContext;
 
-            ctx.fillStyle = this._bgColor;
-            ctx.fillRect( 0, 0, this._width, this._height );
-
-            // draw the children onto the canvas
-
-            if ( this._children.length > 0 )
+            if ( ctx )
             {
-                theSprite = this._children[ 0 ];
+                // clear previous canvas contents
 
-                while ( theSprite )
+                ctx.fillStyle = this._bgColor;
+                ctx.fillRect( 0, 0, this._width, this._height );
+
+                // draw the children onto the canvas
+
+                if ( this._children.length > 0 )
                 {
-                    theSprite.draw( ctx );
-                    theSprite = theSprite.next;
+                    theSprite = this._children[ 0 ];
+
+                    while ( theSprite )
+                    {
+                        theSprite.draw( ctx );
+                        theSprite = theSprite.next;
+                    }
                 }
             }
         }

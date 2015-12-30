@@ -71,6 +71,14 @@ if ( typeof module !== "undefined" )
      */
     var zSprite = function( aXPos, aYPos, aWidth, aHeight, aImageSource, aIsCollidable, aIsMask )
     {
+        if ( typeof aXPos   !== "number" ||
+             typeof aYPos   !== "number" ||
+             typeof aWidth  !== "number" ||
+             typeof aHeight !== "number" )
+        {
+            throw new Error( "cannot construct a zSprite without valid coordinates and dimensions" );
+        }
+
         if ( aImageSource )
         {
             if ( aImageSource instanceof Image )
@@ -78,9 +86,12 @@ if ( typeof module !== "undefined" )
                 this._image      = aImageSource;
                 this._imageReady = true;    // source is loaded
             }
-            else
+            else if ( typeof aImageSource === "string" )
             {
                 this.createImageFromSource( aImageSource );
+            }
+            else {
+                throw new Error( "expected Image or String for Image source, got " + aImageSource + " instead" );
             }
         }
         this.collidable  = aIsCollidable || false;
@@ -229,7 +240,7 @@ if ( typeof module !== "undefined" )
      * @public
      * @type {zSprite|null}
      */
-    zSprite.prototype.last;
+    zSprite.prototype.last = null;
 
     /**
      * we use a linked list to quickly traverse the DisplayList
@@ -238,7 +249,7 @@ if ( typeof module !== "undefined" )
      * @public
      * @type {zSprite|null}
      */
-    zSprite.prototype.next;
+    zSprite.prototype.next = null;
 
     /**
      * reference to the zCanvas holding this zSprite
@@ -248,9 +259,20 @@ if ( typeof module !== "undefined" )
      * @public
      * @type {zCanvas}
      */
-    zSprite.prototype.canvas;
+    zSprite.prototype.canvas = null;
 
     /* public methods */
+
+    /**
+     * whether the zSprite is draggable
+     *
+     * @public
+     * @return {boolean}
+     */
+    zSprite.prototype.getDraggable = function()
+    {
+        return this._draggable;
+    };
 
     /**
      * toggle the draggable mode of this zSprite
@@ -260,7 +282,7 @@ if ( typeof module !== "undefined" )
      * @param {boolean} aValue whether we want to activate / deactivate the dragging mode
      * @param {boolean=} aKeepInBounds optional, whether we should keep dragging within bounds
      *                   this will default to the bounds of the canvas, or can be a custom
-     *                   restraint (see "setParentConstraint")
+     *                   restraint (see "setConstraint")
      */
     zSprite.prototype.setDraggable = function( aValue, aKeepInBounds )
     {
@@ -454,6 +476,10 @@ if ( typeof module !== "undefined" )
             aXPosition -= this._constraint.left;
             aYPosition -= this._constraint.top;
         }
+        else if ( !this.canvas ) {
+            throw new Error( "cannot update position of a zSprite that has no constraint or is not added to a zCanvas" );
+        }
+
         var thisWidth   = this._bounds.width;
         var thisHeight  = this._bounds.height;
         var stageWidth  = this._constraint ? this._constraint.width  : this.canvas.width;
@@ -566,11 +592,17 @@ if ( typeof module !== "undefined" )
         if ( aSprite == this )
             return false;
 
-        var otherX = aSprite.getX(), otherY = aSprite.getY(), otherWidth = aSprite.getWidth(), otherHeight = aSprite.getHeight();
-        var myX    = this.getX(), myY = this.getY(), myWidth = this.getWidth(), myHeight = this.getHeight();
+        var otherX      = aSprite.getX(),
+            otherY      = aSprite.getY(),
+            otherWidth  = aSprite.getWidth(),
+            otherHeight = aSprite.getHeight(),
+            myX         = this.getX(),
+            myY         = this.getY(),
+            myWidth     = this.getWidth(),
+            myHeight    = this.getHeight();
 
-        return ( otherX < myX + myWidth  && otherX + otherWidth > myX &&
-        otherY < myY + myHeight && otherY + otherHeight > myY );
+        return ( otherX < myX + myWidth  && otherX + otherWidth  > myX &&
+                 otherY < myY + myHeight && otherY + otherHeight > myY );
     };
 
     /**
@@ -587,11 +619,11 @@ if ( typeof module !== "undefined" )
      * @param {number} aEdge the edge to check 0 = left, 1 = above, 2 = right, 3 = below this is relative
      *                 to the edge of THIS sprite
      *
-     * @param {boolean} whether collision with the given edge has been detected
+     * @return {boolean} whether collision with the given edge has been detected
      */
     zSprite.prototype.collidesWithEdge = function( aSprite, aEdge )
     {
-        if ( aSprite == this )
+        if ( aSprite === this )
             return false;
 
         if ( isNaN( aEdge ) || aEdge < 0 || aEdge > 3 )
@@ -634,7 +666,7 @@ if ( typeof module !== "undefined" )
             {
                 this._image = aImage;
             }
-            else
+            else if ( typeof aImage === "string" )
             {
                 this.createImageFromSource( aImage );
             }
@@ -645,13 +677,13 @@ if ( typeof module !== "undefined" )
 
         if ( aNewWidth )
         {
-            var prevWidth     = this._bounds.width || 0;
+            var prevWidth      = this._bounds.width || 0;
             this._bounds.width = aNewWidth;
             this._bounds.left -= ( aNewWidth * .5 - prevWidth * .5 );
         }
         if ( aNewHeight )
         {
-            var prevHeight     = this._bounds.height || 0;
+            var prevHeight      = this._bounds.height || 0;
             this._bounds.height = aNewHeight;
             this._bounds.top   -= ( aNewHeight *.5 - prevHeight *.5 );
         }
@@ -717,7 +749,7 @@ if ( typeof module !== "undefined" )
 
         if ( !this._constraint && aCanvas )
         {
-            this.setParentConstraint( 0, 0, aCanvas.getWidth(), aCanvas.getHeight() );
+            this.setConstraint( 0, 0, aCanvas.getWidth(), aCanvas.getHeight() );
         }
     };
 
@@ -739,12 +771,14 @@ if ( typeof module !== "undefined" )
      *
      * @return {{ left: number, top: number, width: number, height: number }} the generated constraint Rectangle
      */
-    zSprite.prototype.setParentConstraint = function( aLeft, aTop, aWidth, aHeight )
+    zSprite.prototype.setConstraint = function( aLeft, aTop, aWidth, aHeight )
     {
         this._constraint = { "left" : aLeft, "top" : aTop, "width" : aWidth, "height" : aHeight };
 
         this._bounds.left = Math.max( aLeft, this._bounds.left );
         this._bounds.top  = Math.max( aTop,  this._bounds.top );
+
+        this._keepInBounds = true;
 
         return this._constraint;
     };
@@ -754,7 +788,7 @@ if ( typeof module !== "undefined" )
      *
      * @return {{ left: number, top: number, width: number, height: number }}
      */
-    zSprite.prototype.getParentConstraint = function()
+    zSprite.prototype.getConstraint = function()
     {
         return this._constraint;
     };
@@ -893,7 +927,7 @@ if ( typeof module !== "undefined" )
 
         while ( i-- )
         {
-            if ( this._children[ i ] == aChild )
+            if ( this._children[ i ] === aChild )
             {
                 return true;
             }
