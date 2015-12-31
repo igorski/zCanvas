@@ -62,7 +62,13 @@ if ( typeof module !== "undefined" )
      */
     var zCanvas = function( aWidth, aHeight, aAnimateable, aFrameRate )
     {
-        if ( !aFrameRate ) {
+        if ( typeof aWidth  !== "number" ||
+             typeof aHeight !== "number" )
+        {
+            throw new Error( "cannot construct a zCanvas without valid dimensions" );
+        }
+
+        if ( typeof aFrameRate !== "number" ) {
             aFrameRate = 60;
         }
         this._fps            = aFrameRate;
@@ -71,7 +77,7 @@ if ( typeof module !== "undefined" )
         this._renderHandler  = this.render.bind( this );
 
         this._children = [];
-        this._animate = aAnimateable || false;
+        this._animate = typeof aAnimateable === "boolean" ? aAnimateable : false;
 
         this._element       = /** @type {HTMLCanvasElement} */ ( document.createElement( "canvas" ));
         this._canvasContext = this._element.getContext( "2d" );
@@ -242,6 +248,37 @@ if ( typeof module !== "undefined" )
     };
 
     /**
+     * @public
+     * @return {number} the amount of children in this object's Display List
+     */
+    zCanvas.prototype.numChildren = function()
+    {
+        return this._children.length;
+    };
+
+    /**
+     * check whether a given display object is present in this object's display list
+     *
+     * @public
+     * @param {zSprite} aChild
+     *
+     * @return {boolean}
+     */
+    zCanvas.prototype.contains = function( aChild )
+    {
+        var i = this._children.length;
+
+        while( i-- )
+        {
+            if ( this._children[ i ] === aChild )
+            {
+                return true;
+            }
+        }
+        return false;
+    };
+
+    /**
      * invoke when the state of the zCanvas has changed (i.e.
      * the visual contents should change), this will invoke
      * a new render request
@@ -284,8 +321,8 @@ if ( typeof module !== "undefined" )
             childWidth  = theChild.getWidth();
             childHeight = theChild.getHeight();
 
-            if ( childX < aX + aWidth  && childX + childWidth > aX &&
-                childY < aY + aHeight && childY + childHeight > aY )
+            if ( childX < aX + aWidth  && childX + childWidth  > aX &&
+                 childY < aY + aHeight && childY + childHeight > aY )
             {
                 if ( !aOnlyCollidables || ( aOnlyCollidables && theChild.collidable )) {
                     out.push( theChild );
@@ -293,37 +330,6 @@ if ( typeof module !== "undefined" )
             }
         }
         return out;
-    };
-
-    /**
-     * @public
-     * @return {number} the amount of children in this object's Display List
-     */
-    zCanvas.prototype.numChildren = function()
-    {
-        return this._children.length;
-    };
-
-    /**
-     * check whether a given display object is present in this object's display list
-     *
-     * @public
-     * @param {zSprite} aChild
-     *
-     * @return {boolean}
-     */
-    zCanvas.prototype.contains = function( aChild )
-    {
-        var i = this._children.length;
-
-        while( i-- )
-        {
-            if ( this._children[ i ] === aChild )
-            {
-                return true;
-            }
-        }
-        return false;
     };
 
     /**

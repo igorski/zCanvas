@@ -23,7 +23,7 @@ describe( "zSprite", function()
         global.document              = browser.getDocument();
         global.window                = browser.getWindow();
         global.Image                 = global.window.Image;
-        global.requestAnimationFrame = function( c ) { c(); };
+        global.requestAnimationFrame = function( c ) { setTimeout( c, 4 ); };
 
         // prepare zCanvas
         canvas = new zCanvas( 200, 200 );
@@ -449,7 +449,7 @@ describe( "zSprite", function()
         var removed = sprite.removeChild( child );
 
         assert.notOk( sprite.contains( child ),
-            "expected sprite not to container the child in its display list after removal" );
+            "expected sprite not to contain the child in its display list after removal" );
 
         assert.strictEqual( removed, child,
             "expected removed sprite to equal the requested sprite" );
