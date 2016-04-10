@@ -7,7 +7,7 @@
     <link rel="stylesheet" href="./assets/styles.css">
     <script type="text/javascript" src="./assets/images.js"></script>
     <!-- include RequireJS to resolve dependencies -->
-    <script src="//cdnjs.cloudflare.com/ajax/libs/require.js/2.1.14/require.min.js" type="text/javascript"></script>
+    <script src="http://cdnjs.cloudflare.com/ajax/libs/require.js/2.1.14/require.min.js" type="text/javascript"></script>
 </head>
 <body>
     <div id="container">
@@ -141,13 +141,13 @@
 
             var CircleSprite = function( aX, aY, aRadius, aColor )
             {
-                helpers.super( this, aX - aRadius * 2, aY - aRadius * 1.5, aRadius * 2, aRadius * 2 );
+                this.super( this, aX - aRadius * 2, aY - aRadius * 1.5, aRadius * 2, aRadius * 2 );
 
                 this.radius = aRadius;
                 this.color  = aColor;
                 this.setDraggable( true );
             };
-            helpers.extend( CircleSprite, zSprite );  // CircleSprite extends zSprite
+            zSprite.extend( CircleSprite ); // CircleSprite extends zSprite
 
             // CircleSprite class variables
             CircleSprite.prototype.radius = 0;
@@ -155,8 +155,8 @@
 
             // here we override the getters and setters to accommodate for the radius of the circle as
             // the circles center point is the x- and y-coordinate to provide from-center-snapping
-            CircleSprite.prototype.getX = function() { return helpers.super( this, "getX" ) + this.radius; };
-            CircleSprite.prototype.getY = function() { return helpers.super( this, "getY" ) + this.radius; };
+            CircleSprite.prototype.getX = function() { return this.super( this, "getX" ) + this.radius; };
+            CircleSprite.prototype.getY = function() { return this.super( this, "getY" ) + this.radius; };
 
             // CircleSprite draw logic
             CircleSprite.prototype.draw = function( ctx )
@@ -174,7 +174,7 @@
                 }
                 ctx.closePath();
 
-                helpers.super( this, "draw", ctx ); // will invoke the drawing of nested child elements
+                this.super( this, "draw", ctx ); // will invoke the drawing of nested child elements
             };
 
             // create the circle instances, note all circles beyond circle1 will be children of circle1

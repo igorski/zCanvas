@@ -103,10 +103,28 @@ if ( typeof module !== "undefined" )
         this.setY( aYPos );
     };
 
-    // inherit from parent Disposable
+    // inherit prototype properties of Disposable
     helpers.extend( zSprite, helpers.Disposable );
 
-    /* class variables */
+    /* static methods */
+
+    /**
+     * extend a given Function reference with the zSprite prototype, you
+     * can use this to create custom zSprite extensions. From the extensions
+     * you can call "this.super( extensionInstance, var_args...)" to call
+     * zSprite prototype functions from overriding function declarations
+     *
+     * @public
+     * @param {!Function} extendingFunction reference to
+     *        function which should inherit the zSprite prototype
+     */
+    zSprite.extend = function( extendingFunction )
+    {
+        helpers.extend( extendingFunction, zSprite );
+        extendingFunction.prototype.super = helpers.super;
+    };
+
+    /* instance properties */
 
     /**
      * rectangle describing this sprites bounds relative to the zCanvas

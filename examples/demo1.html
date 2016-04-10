@@ -7,7 +7,7 @@
     <link rel="stylesheet" href="./assets/styles.css">
     <script type="text/javascript" src="./assets/images.js"></script>
     <!-- include RequireJS to resolve dependencies -->
-    <script src="//cdnjs.cloudflare.com/ajax/libs/require.js/2.1.14/require.min.js" type="text/javascript"></script>
+    <script src="http://cdnjs.cloudflare.com/ajax/libs/require.js/2.1.14/require.min.js" type="text/javascript"></script>
 </head>
 <body>
     <div id="container">
@@ -137,11 +137,11 @@
 
             var Hero = function( aX, aY, aWidth, aHeight, aImage )
             {
-                helpers.super( this, aX, aY, aWidth, aHeight, aImage ); // construct as a zSprite
+                this.super( this, aX, aY, aWidth, aHeight, aImage ); // construct as a zSprite
 
                 this._maxIndexCount = 5; // hard coded, every 5 frames we step to the next tile in the sprite sheet
             };
-            helpers.extend( Hero, zSprite );     // Hero extends zSprite
+            zSprite.extend( Hero ); // Hero extends zSprite
 
             // Hero class variables
             Hero.prototype.direction    = 0;     // 0 = left, 1 = right

@@ -90,10 +90,26 @@ if ( typeof module !== "undefined" )
         }
     };
 
-    // inherit from parent disposable
-    zCanvas.prototype = new helpers.Disposable();
+    // inherit prototype properties of Disposable
+    helpers.extend( zCanvas, helpers.Disposable );
 
-    /* class properties */
+    /**
+     * extend a given Function reference with the zCanvas prototype, you
+     * can use this to create custom zCanvas extensions. From the extensions
+     * you can call "this.super( extensionInstance, var_args...)" to call
+     * zCanvas prototype functions from overriding function declarations
+     *
+     * @public
+     * @param {!Function} extendingFunction reference to
+     *        function which should inherit the zCanvas prototype
+     */
+    zCanvas.extend = function( extendingFunction )
+    {
+        helpers.extend( extendingFunction, zCanvas );
+        extendingFunction.prototype.super = helpers.super;
+    };
+
+    /* instance properties */
 
     /** @public @type {boolean} */                   zCanvas.prototype.DEBUG = false; // whether to draw zSprite bounds
     /** @private @type {HTMLCanvasElement} */        zCanvas.prototype._element;
@@ -330,6 +346,15 @@ if ( typeof module !== "undefined" )
             }
         }
         return out;
+    };
+
+    /**
+     * @public
+     * @return {Array.<zSprite>}
+     */
+    zCanvas.prototype.getChildren = function()
+    {
+        return this._children;
     };
 
     /**
