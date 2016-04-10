@@ -120,9 +120,10 @@ if ( typeof module !== "undefined" )
     /** @private @type {helpers.EventHandler} */     zCanvas.prototype._eventHandler;
     /** @private @type {Array.<zSprite>} */          zCanvas.prototype._children;
 
-    /** @private @type {boolean} */   zCanvas.prototype._disposed  = false;
-    /** @private @type {boolean} */   zCanvas.prototype._animate   = false;
-    /** @private @type {boolean} */   zCanvas.prototype._smoothing = true;
+    /** @private @type {boolean} */   zCanvas.prototype._disposed        = false;
+    /** @private @type {boolean} */   zCanvas.prototype._animate         = false;
+    /** @private @type {boolean} */   zCanvas.prototype._smoothing       = true;
+    /** @private @type {boolean} */   zCanvas.prototype._preventDefaults = false;
     /** @private @type {number} */    zCanvas.prototype._fps;
     /** @private @type {number} */    zCanvas.prototype._renderInterval;
     /** @private @type {number} */    zCanvas.prototype._lastRender = 0;
@@ -137,7 +138,6 @@ if ( typeof module !== "undefined" )
      * element into the supplied container
      *
      * @public
-     *
      * @param {Element} aContainer DOM node to append the zCanvas to
      */
     zCanvas.prototype.insertInPage = function( aContainer )
@@ -146,6 +146,20 @@ if ( typeof module !== "undefined" )
             throw new Error( "zCanvas already present in DOM" );
 
         aContainer.appendChild( this.getElement());
+    };
+
+    /**
+     * whether or not all events captured by the zCanvas can
+     * bubble down in the document, when true, DOM events that
+     * have interacted with the zCanvas will stop their propagation
+     * and prevent their default behaviour
+     *
+     * @public
+     * @param {boolean} value
+     */
+    zCanvas.prototype.preventEventBubbling = function( value )
+    {
+        this._preventDefaults = value;
     };
 
     /**
@@ -757,8 +771,12 @@ if ( typeof module !== "undefined" )
                     break;
             }
         }
-        aEvent.stopPropagation();
-        aEvent.preventDefault();
+
+        if ( this._preventDefaults ) {
+
+            aEvent.stopPropagation();
+            aEvent.preventDefault();
+        }
 
         // update the Canvas contents
         this.invalidate();
