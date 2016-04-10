@@ -90,6 +90,16 @@ describe( "zCanvas", function()
         }).not.to.throw();
     });
 
+    it( "should be able to extend its prototype into new function references", function()
+    {
+        var newClass = function() {};
+
+        zCanvas.extend( newClass );
+
+        assert.ok( new newClass() instanceof zCanvas,
+            "expected an instance of newClass to equal the zCanvas prototype" );
+    });
+
     it( "should return the construction arguments unchanged", function()
     {
         var canvas = createCanvas( width, height, false, framerate );
@@ -210,6 +220,35 @@ describe( "zCanvas", function()
         canvas.update = done; // hijack update method
 
         canvas.invalidate();
+    });
+
+    it( "should be able to return all lowest level children in its display list", function()
+    {
+        var canvas  = createCanvas( width, height );
+        var sprite1 = new zSprite( 0, 0, 50, 50 );
+        var sprite2 = new zSprite( 0, 0, 50, 50 );
+
+        assert.ok( canvas.getChildren() instanceof Array,
+            "expected zCanvas to return all its children in an Array" );
+
+        assert.strictEqual( 0, canvas.getChildren().length,
+            "expected zCanvas not to contain children after construction" );
+
+        canvas.addChild( sprite1 );
+
+        assert.strictEqual( 1, canvas.getChildren().length,
+            "expected zCanvas child list to contain 1 zSprite" );
+
+        assert.ok( canvas.getChildren().indexOf( sprite1 ) === 0,
+            "expected zCanvas to contain added child in the first index of its children list" );
+
+        canvas.addChild( sprite2 );
+
+        assert.strictEqual( 2, canvas.getChildren().length,
+            "expected zCanvas child list to contain 2 zSprites" );
+
+        assert.ok( canvas.getChildren().indexOf( sprite2 ) === 1,
+            "expected zCanvas to contain added child in the second index of its children list" );
     });
 
     // TODO : getChildrenUnderPoint

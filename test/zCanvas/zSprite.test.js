@@ -118,6 +118,16 @@ describe( "zSprite", function()
         }).not.to.throw();
     });
 
+    it( "should be able to extend its prototype into new function references", function()
+    {
+        var newClass = function() {};
+
+        zSprite.extend( newClass );
+
+        assert.ok( new newClass() instanceof zSprite,
+            "expected an instance of newClass to equal the zSprite prototype" );
+    });
+
     it( "should return the construction arguments unchanged", function()
     {
         var sprite = new zSprite( x, y, width, height, bitmap, collidable );
