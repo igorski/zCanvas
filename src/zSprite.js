@@ -973,8 +973,11 @@ if ( typeof module !== "undefined" )
      * invoked when the user releases touch of this (previously pressed) Sprite
      *
      * @protected
+     *
+     * @param {number} aXPosition position of the touch / cursor
+     * @param {number} aYPosition position of the touch / cursor
      */
-    zSprite.prototype.handleRelease = function()
+    zSprite.prototype.handleRelease = function( aXPosition, aYPosition )
     {
         // override in prototype-extensions or instance
     };
@@ -1070,7 +1073,7 @@ if ( typeof module !== "undefined" )
                     this.handleClick();
                 }
 
-                this.handleRelease();
+                this.handleRelease( aEventX, aEventY );
                 return true;
             }
         }
