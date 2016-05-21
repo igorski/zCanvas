@@ -737,7 +737,7 @@ if ( typeof module !== "undefined" )
                 // all touch events
                 default:
 
-                    touches /** @type {TouchList} */  = aEvent.touches;
+                    touches /** @type {TouchList} */  = ( touches.length > 0 ) ? aEvent.touches : aEvent.changedTouches;
 
                     if ( touches.length > 0 )
                     {
