@@ -138,7 +138,7 @@
 
             var Hero = function( aX, aY, aWidth, aHeight, aImage )
             {
-                this.super( this, aX, aY, aWidth, aHeight, aImage ); // construct as a zSprite
+                Hero.super( this, "constructor", aX, aY, aWidth, aHeight, aImage ); // construct as a zSprite
 
                 this._maxIndexCount = 5; // hard coded, every 5 frames we step to the next tile in the sprite sheet
             };

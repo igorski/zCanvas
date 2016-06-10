@@ -20,6 +20,7 @@
  * IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
+"use strict"
 
 // resolve CommonJS dependencies
 
@@ -111,8 +112,12 @@ if ( typeof module !== "undefined" )
     /**
      * extend a given Function reference with the zSprite prototype, you
      * can use this to create custom zSprite extensions. From the extensions
-     * you can call "this.super( extensionInstance, var_args...)" to call
-     * zSprite prototype functions from overriding function declarations
+     * you can call:
+     *
+     * InheritingPrototype.super( extensionInstance, methodName, var_args...)
+     *
+     * to call zSprite prototype functions from overriding function declarations
+     * if you want to call the constructor, methodName is "constructor"
      *
      * @public
      * @param {!Function} extendingFunction reference to
@@ -121,7 +126,6 @@ if ( typeof module !== "undefined" )
     zSprite.extend = function( extendingFunction )
     {
         helpers.extend( extendingFunction, zSprite );
-        extendingFunction.prototype.super = helpers.super;
     };
 
     /* instance properties */

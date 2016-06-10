@@ -182,55 +182,35 @@ helpers.EventHandler.prototype.disposeInternal = function()
 *
 * adapted from source by The Closure Library Authors
 *
-* @param {!Function} subClass reference to the prototype that will inherit from superClass
-* @param {!Function} superClass reference to the prototype to inherit from
+* @param {!Function} aSubClass reference to the prototype that will inherit from superClass
+* @param {!Function} aSuperClass reference to the prototype to inherit from
 */
-helpers.extend = function( subClass, superClass )
+helpers.extend = function( aSubClass, aSuperClass )
 {
-    function ctor() {} // wrapper to act as a constructor
+    function tempCtor() {}
+    tempCtor.prototype = aSuperClass.prototype;
+    aSubClass.superClass_ = aSuperClass.prototype;
+    aSubClass.prototype = new tempCtor();
+    aSubClass.prototype.constructor = aSubClass;
 
-    ctor.prototype     = superClass.prototype;
-    subClass.super     = superClass.prototype;
-    subClass.prototype = new ctor();
-
-    /** @override */
-    subClass.prototype.constructor = subClass;
-};
-
-/**
-* convenience method to call the prototype constructor when instantiating
-* a function that has been extended (see helpers.extend), e.g. :
-*
-* helpers.super( this ); can be invoked from the child constructor to
-* apply the super class' constructor
-*
-* adapted from source by The Closure Library Authors
-*
-* @param {!Function} classInstance the instance of a child class calling this function
-* @param {string=} optMethodName optional, when null this invocation should act
-*                  as a super call from the constructor, when given it should match
-*                  a method name present on the prototype of the superclass
-* @param {...number} var_args optional arguments to pass to the super constructor
-*/
-helpers.super = function( classInstance, optMethodName, var_args )
-{
-    var caller = arguments.callee.caller;
-
-    if ( caller.super ) {
-        return caller.super.constructor.apply( classInstance,
-                                               Array.prototype.slice.call( arguments, 1 ));
-    }
-
-    var args = Array.prototype.slice.call( arguments, 2 ), foundCaller = false;
-
-    for ( var ctor = classInstance.constructor; ctor;
-          ctor = ctor.super && ctor.super.constructor )
-    {
-        if ( ctor.prototype[ optMethodName ] === caller )
-            foundCaller = true;
-        else if ( foundCaller )
-            return ctor.prototype[ optMethodName ].apply( classInstance, args );
-    }
+    /**
+     * Calls superclass constructor/method.
+     *
+     * @param {!Object} aCaller Should always be "this".
+     * @param {string} aMethodName The method name to call. Calling
+     *     superclass constructor can be done with the special string
+     *     'constructor'.
+     * @param {...*} var_args The arguments to pass to superclass
+     *     method/constructor.
+     * @return {*} The return value of the superclass method/constructor.
+     */
+    aSubClass.super = function( aCaller, aMethodName, var_args ) {
+      var args = new Array(arguments.length - 2);
+      for (var i = 2; i < arguments.length; i++) {
+        args[i - 2] = arguments[i];
+      }
+      return aSuperClass.prototype[aMethodName].apply(aCaller, args);
+    };
 };
 
 // export module

@@ -141,7 +141,7 @@
 
             var CircleSprite = function( aX, aY, aRadius, aColor )
             {
-                this.super( this, aX - aRadius * 2, aY - aRadius * 1.5, aRadius * 2, aRadius * 2 );
+                CircleSprite.super( this, "constructor", aX - aRadius * 2, aY - aRadius * 1.5, aRadius * 2, aRadius * 2 );
 
                 this.radius = aRadius;
                 this.color  = aColor;
@@ -155,8 +155,8 @@
 
             // here we override the getters and setters to accommodate for the radius of the circle as
             // the circles center point is the x- and y-coordinate to provide from-center-snapping
-            CircleSprite.prototype.getX = function() { return this.super( this, "getX" ) + this.radius; };
-            CircleSprite.prototype.getY = function() { return this.super( this, "getY" ) + this.radius; };
+            CircleSprite.prototype.getX = function() { return CircleSprite.super( this, "getX" ) + this.radius; };
+            CircleSprite.prototype.getY = function() { return CircleSprite.super( this, "getY" ) + this.radius; };
 
             // CircleSprite draw logic
             CircleSprite.prototype.draw = function( ctx )
@@ -174,7 +174,7 @@
                 }
                 ctx.closePath();
 
-                this.super( this, "draw", ctx ); // will invoke the drawing of nested child elements
+                CircleSprite.super( this, "draw", ctx ); // will invoke the drawing of nested child elements
             };
 
             // create the circle instances, note all circles beyond circle1 will be children of circle1
