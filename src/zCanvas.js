@@ -132,7 +132,7 @@ if ( typeof module !== "undefined" )
     /** @private @type {HTMLCanvasElement} */        zCanvas.prototype._element;
     /** @private @type {number} */                   zCanvas.prototype._width;
     /** @private @type {number} */                   zCanvas.prototype._height;
-    /** @private @type {string} */                   zCanvas.prototype._bgColor = "rgb(255,255,255)";
+    /** @private @type {string} */                   zCanvas.prototype._bgColor;
     /** @private @type {CanvasRenderingContext2D} */ zCanvas.prototype._canvasContext;
     /** @private @type {helpers.EventHandler} */     zCanvas.prototype._eventHandler;
     /** @private @type {Array.<zSprite>} */          zCanvas.prototype._children;
@@ -694,10 +694,16 @@ if ( typeof module !== "undefined" )
 
             if ( ctx )
             {
-                // clear previous canvas contents
+                // clear previous canvas contents either by flooding it
+                // with the optional background colour, or by clearing all pixel content
 
-                ctx.fillStyle = this._bgColor;
-                ctx.fillRect( 0, 0, this._width, this._height );
+                if ( this._bgColor ) {
+                    ctx.fillStyle = this._bgColor;
+                    ctx.fillRect( 0, 0, this._width, this._height );
+                }
+                else {
+                    ctx.clearRect( 0, 0, this._width, this._height );
+                }
 
                 // draw the children onto the canvas
 
