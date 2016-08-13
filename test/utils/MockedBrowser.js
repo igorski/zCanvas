@@ -21,17 +21,20 @@ module.exports = {
 
         global.document.createElement = function( tagName ) {
 
+            var noop = function() {};
             var out;
+
             if ( tagName === "canvas" ) {
                 out = {
                     style : {},
                     getContext : function( type ) {
                         return {
-                            scale                 : function( x, y ) {},
-                            imageSmoothingEnabled : function() {},
-                            fillRect              : function() {},
-                            save                  : function() {},
-                            restore               : function() {}
+                            scale                 : noop,
+                            imageSmoothingEnabled : noop,
+                            clearRect             : noop,
+                            fillRect              : noop,
+                            save                  : noop,
+                            restore               : noop
                         };
                     }
                 }
