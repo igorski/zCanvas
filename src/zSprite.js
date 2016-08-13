@@ -395,7 +395,6 @@ if ( typeof module !== "undefined" )
 
     /**
      * @public
-     *
      * @return {number}
      */
     zSprite.prototype.getWidth = function()
@@ -405,12 +404,43 @@ if ( typeof module !== "undefined" )
 
     /**
      * @public
-     *
+     * @param {number} aValue
+     */
+    zSprite.prototype.setWidth = function( aValue )
+    {
+        var prevWidth      = this._bounds.width || 0;
+        this._bounds.width = aValue;
+
+        // adjust the left offset so it remains relative to the
+        // previous left offset for the old width
+
+        if ( prevWidth !== 0 )
+            this._bounds.left -= ( aValue * .5 - prevWidth * .5 );
+    };
+
+    /**
+     * @public
      * @return {number}
      */
     zSprite.prototype.getHeight = function()
     {
         return this._bounds.height;
+    };
+
+    /**
+     * @public
+     * @param {number} aValue
+     */
+    zSprite.prototype.setHeight = function( aValue )
+    {
+        var prevHeight      = this._bounds.height || 0;
+        this._bounds.height = aValue;
+
+        // adjust the top offset so it remains relative to the
+        // previous top offset for the old height
+
+        if ( prevHeight !== 0 )
+            this._bounds.top -= ( aValue *.5 - prevHeight *.5 );
     };
 
     /**
@@ -682,33 +712,22 @@ if ( typeof module !== "undefined" )
      */
     zSprite.prototype.updateImage = function( aImage, aNewWidth, aNewHeight )
     {
-        if ( aImage )
-        {
-            if ( aImage instanceof Image )
-            {
+        if ( aImage ) {
+            if ( aImage instanceof Image ) {
                 this._image = aImage;
             }
-            else if ( typeof aImage === "string" )
-            {
+            else if ( typeof aImage === "string" ) {
                 this.createImageFromSource( aImage );
             }
         }
 
         // update width and height if defined
-        // reposition relatively from the center
 
-        if ( aNewWidth )
-        {
-            var prevWidth      = this._bounds.width || 0;
-            this._bounds.width = aNewWidth;
-            this._bounds.left -= ( aNewWidth * .5 - prevWidth * .5 );
-        }
-        if ( aNewHeight )
-        {
-            var prevHeight      = this._bounds.height || 0;
-            this._bounds.height = aNewHeight;
-            this._bounds.top   -= ( aNewHeight *.5 - prevHeight *.5 );
-        }
+        if ( typeof aNewWidth === "number" )
+            this.setWidth( aNewWidth );
+
+        if ( typeof aNewHeight === "number" )
+            this.setHeight( aNewHeight );
 
         // make sure the image is still in bounds
 
@@ -723,7 +742,6 @@ if ( typeof module !== "undefined" )
             else if ( this._bounds.left < minX ) {
                 this._bounds.left = minX;
             }
-
             if ( this._bounds.top > 0 ) {
                 this._bounds.top = 0;
             }

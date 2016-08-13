@@ -1,7 +1,7 @@
-var chai        = require( "chai" );
-var MockBrowser = require( "mock-browser" ).mocks.MockBrowser;
-var zCanvas     = require( "../../src/zCanvas" );
-var zSprite     = require( "../../src/zSprite" );
+var chai          = require( "chai" );
+var zCanvas       = require( "../../src/zCanvas" );
+var zSprite       = require( "../../src/zSprite" );
+var MockedBrowser = require( "../utils/MockedBrowser" );
 
 describe( "zCanvas", function()
 {
@@ -18,11 +18,7 @@ describe( "zCanvas", function()
     before( function()
     {
         // prepare mock browser
-        browser                      = new MockBrowser();
-        global.document              = browser.getDocument();
-        global.window                = browser.getWindow();
-        global.Image                 = global.window.Image;
-        global.requestAnimationFrame = function( c ) { setTimeout( c, 4 ); };
+        MockedBrowser.init();
     });
 
     // executed when all tests have finished running
@@ -48,24 +44,6 @@ describe( "zCanvas", function()
     {
 
     });
-
-    /* helper functions */
-
-    function createCanvas( width, height, animatable, framerate )
-    {
-        // prepare zCanvas
-        var canvas = new zCanvas( width, height, animatable, framerate );
-
-        // context2d not available in mock browser
-        canvas._canvasContext =
-        {
-            imageSmoothingEnabled : function() {},
-            fillRect              : function() {},
-            save                  : function() {},
-            restore               : function() {}
-        };
-        return canvas;
-    }
 
     /* actual unit tests */
 
@@ -102,7 +80,7 @@ describe( "zCanvas", function()
 
     it( "should return the construction arguments unchanged", function()
     {
-        var canvas = createCanvas( width, height, false, framerate );
+        var canvas = new zCanvas( width, height, false, framerate );
 
         assert.strictEqual( width, canvas.getWidth(),
             "expected width to be " + width + ", got " + canvas.getWidth() + " instead" );
@@ -116,7 +94,7 @@ describe( "zCanvas", function()
 
     it( "should be able to insert itself into DOM", function()
     {
-        var canvas  = createCanvas( width, height );
+        var canvas  = new zCanvas( width, height );
         var element = global.document.createElement( "div" );
 
         assert.notOk( canvas.getElement().parentNode === element,
@@ -130,7 +108,7 @@ describe( "zCanvas", function()
 
     it( "should be able to add/remove children from its display list", function()
     {
-        var canvas = createCanvas( width, height );
+        var canvas = new zCanvas( width, height );
         var child  = new zSprite( 0, 0, width, height );
 
         assert.notOk( canvas.contains( child ),
@@ -155,7 +133,7 @@ describe( "zCanvas", function()
 
     it( "should be able to add/remove children from specific indices in its display list", function()
     {
-        var canvas = createCanvas( width, height );
+        var canvas = new zCanvas( width, height );
         var child1 = new zSprite( 0, 0, width, height );
         var child2 = new zSprite( 0, 0, width, height );
         var child3 = new zSprite( 0, 0, width, height );
@@ -216,7 +194,7 @@ describe( "zCanvas", function()
 
     it( "should invoke an update of its contents when invalidation is requested", function( done )
     {
-        var canvas = createCanvas( width, height );
+        var canvas = new zCanvas( width, height );
         canvas.update = done; // hijack update method
 
         canvas.invalidate();
@@ -224,7 +202,7 @@ describe( "zCanvas", function()
 
     it( "should be able to return all lowest level children in its display list", function()
     {
-        var canvas  = createCanvas( width, height );
+        var canvas  = new zCanvas( width, height );
         var sprite1 = new zSprite( 0, 0, 50, 50 );
         var sprite2 = new zSprite( 0, 0, 50, 50 );
 
@@ -255,7 +233,7 @@ describe( "zCanvas", function()
 
     it( "should be able to update its dimensions", function()
     {
-        var canvas = createCanvas( width, height );
+        var canvas = new zCanvas( width, height );
 
         var newWidth  = width,
             newHeight = height;
@@ -277,12 +255,12 @@ describe( "zCanvas", function()
 
     it( "should know whether its animatable", function()
     {
-        var canvas = createCanvas( width, height, false );
+        var canvas = new zCanvas( width, height, false );
 
         assert.notOk( canvas.isAnimateable(),
             "expected canvas not to be animateable" );
 
-        canvas = createCanvas( width, height, true );
+        canvas = new zCanvas( width, height, true );
 
         assert.ok( canvas.isAnimateable(),
             "expected canvas to be animateable" );
@@ -300,7 +278,7 @@ describe( "zCanvas", function()
             done();
         };
 
-        var canvas = createCanvas( width, height, false );
+        var canvas = new zCanvas( width, height, false );
 
         canvas.update();
     });

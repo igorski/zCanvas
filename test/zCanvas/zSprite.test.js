@@ -1,7 +1,7 @@
-var chai        = require( "chai" );
-var MockBrowser = require( "mock-browser" ).mocks.MockBrowser;
-var zCanvas     = require( "../../src/zCanvas" );
-var zSprite     = require( "../../src/zSprite" );
+var chai          = require( "chai" );
+var MockedBrowser = require( "../utils/MockedBrowser" );
+var zCanvas       = require( "../../src/zCanvas" );
+var zSprite       = require( "../../src/zSprite" );
 
 describe( "zSprite", function()
 {
@@ -11,7 +11,7 @@ describe( "zSprite", function()
     var assert = chai.assert,
         expect = chai.expect;
 
-    var browser, canvas;
+    var canvas;
     var x, y, width, height, bitmap, collidable;
 
     // executed before the tests start running
@@ -19,21 +19,10 @@ describe( "zSprite", function()
     before( function()
     {
         // prepare mock browser
-        browser                      = new MockBrowser();
-        global.document              = browser.getDocument();
-        global.window                = browser.getWindow();
-        global.Image                 = global.window.Image;
-        global.requestAnimationFrame = function( c ) { setTimeout( c, 4 ); };
+        MockedBrowser.init();
 
-        // prepare zCanvas
+        // prepare Canvas
         canvas = new zCanvas( 200, 200 );
-        canvas._canvasContext =
-        {
-            imageSmoothingEnabled : function() {},
-            fillRect              : function() {},
-            save                  : function() {},
-            restore               : function() {}
-        };
 
         // prepare 1x1 red PNG as Bitmap
         bitmap = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP4z8DwHwAFAAH/VscvDQAAAABJRU5ErkJggg==";
@@ -600,5 +589,33 @@ describe( "zSprite", function()
 
         assert.strictEqual( expectedHeight, sprite.getHeight(),
             "expected sprite width to be " + expectedHeight + ", got " + sprite.getHeight() + " instead" );
+    });
+
+    it( "should be able to update its width", function()
+    {
+        var sprite = new zSprite( x, y, width, height, bitmap );
+        var newWidth = width;
+
+        while ( width === newWidth )
+            newWidth = Math.round( Math.random() * 1000 );
+
+        sprite.setWidth( newWidth );
+
+        assert.strictEqual( newWidth, sprite.getWidth(),
+            "expected sprite width to be " + newWidth + ", got " + sprite.getWidth() + " instead" );
+    });
+
+    it( "should be able to update its height", function()
+    {
+        var sprite = new zSprite( x, y, width, height, bitmap );
+        var newHeight = height;
+
+        while ( height === newHeight )
+            newHeight = Math.round( Math.random() * 1000 );
+
+        sprite.setHeight( newHeight );
+
+        assert.strictEqual( newHeight, sprite.getHeight(),
+            "expected sprite height to be " + newHeight + ", got " + sprite.getHeight() + " instead" );
     });
 });

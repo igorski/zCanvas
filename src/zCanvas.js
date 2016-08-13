@@ -63,8 +63,8 @@ if ( typeof module !== "undefined" )
      */
     var zCanvas = function( aWidth, aHeight, aAnimateable, aFrameRate )
     {
-        if ( typeof aWidth  !== "number" ||
-             typeof aHeight !== "number" )
+        if ( typeof aWidth  !== "number" || aWidth <= 0 ||
+             typeof aHeight !== "number" || aHeight <= 0 )
         {
             throw new Error( "cannot construct a zCanvas without valid dimensions" );
         }
@@ -74,20 +74,33 @@ if ( typeof module !== "undefined" )
         }
         this._fps            = aFrameRate;
         this._renderInterval = 1000 / aFrameRate;
-
         this._renderHandler  = this.render.bind( this );
 
         this._children = [];
-        this._animate = typeof aAnimateable === "boolean" ? aAnimateable : false;
+        this._animate  = ( typeof aAnimateable === "boolean" ) ? aAnimateable : false;
 
-        this._element       = /** @type {HTMLCanvasElement} */ ( document.createElement( "canvas" ));
-        this._canvasContext = this._element.getContext( "2d" );
+        this._element = /** @type {HTMLCanvasElement} */ ( document.createElement( "canvas" ));
+        var context   = this._element.getContext( "2d" );
+
+        // ensure all is crisp clear on HDPI screens
+
+        var devicePixelRatio  = window.devicePixelRatio || 1;
+        var backingStoreRatio = context.webkitBackingStorePixelRatio ||
+                                   context.mozBackingStorePixelRatio ||
+                                    context.msBackingStorePixelRatio ||
+                                     context.oBackingStorePixelRatio ||
+                                      context.backingStorePixelRatio || 1;
+
+        var ratio = devicePixelRatio / backingStoreRatio;
+
+        this._HDPIscaleRatio = ( devicePixelRatio !== backingStoreRatio ) ? ratio : 1;
+        this._canvasContext  = context;
+
         this.setDimensions( aWidth, aHeight );
-
         this.addListeners();
 
         if ( this._animate ) {
-            this.render();  // starts render loop
+            this.render();  // start render loop
         }
     };
 
@@ -127,6 +140,7 @@ if ( typeof module !== "undefined" )
     /** @private @type {boolean} */   zCanvas.prototype._disposed        = false;
     /** @private @type {boolean} */   zCanvas.prototype._animate         = false;
     /** @private @type {boolean} */   zCanvas.prototype._smoothing       = true;
+    /** @private @type {boolean} */   zCanvas.prototype._HDPIscaleRatio  = 1;
     /** @private @type {boolean} */   zCanvas.prototype._preventDefaults = false;
     /** @private @type {number} */    zCanvas.prototype._fps;
     /** @private @type {number} */    zCanvas.prototype._renderInterval;
@@ -457,8 +471,19 @@ if ( typeof module !== "undefined" )
      */
     zCanvas.prototype.setDimensions = function( aWidth, aHeight )
     {
-        this._element[ "width" ]  = this._width  = aWidth;
-        this._element[ "height" ] = this._height = aHeight;
+        // apply scale factor for HDPI screens
+        var scaleFactor = this._HDPIscaleRatio;
+
+        this._width  = aWidth;
+        this._height = aHeight;
+
+        this._element.width  = aWidth  * scaleFactor;
+        this._element.height = aHeight * scaleFactor;
+
+        this._element.style.width  = aWidth  + "px";
+        this._element.style.height = aHeight + "px";
+
+        this._canvasContext.scale( scaleFactor, scaleFactor );
 
         // non-smoothing must be re-applied when the canvas dimensions change...
 
