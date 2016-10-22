@@ -877,38 +877,28 @@ if ( typeof module !== "undefined" )
     {
         aChild.setParent( null );
         aChild.setCanvas( null );
-        //aChild.dispose(); // no, we might like to re-use the child at a later stage ?
 
-        var i = this._children.length;
+        //aChild.dispose(); // no, we might like to re-use the child at a later stage!
 
-        while ( i-- )
-        {
-            if ( this._children[ i ] == aChild )
-            {
-                this._children.splice( i, 1 );
-            }
+        var childIndex = this._children.indexOf( aChild );
+        if ( childIndex !== -1 ) {
+            this._children.splice( childIndex, 1 );
         }
 
         // update linked list
-        var l = this._children.length;
-        for ( i = 0; i < l; ++i )
-        {
-            var theSprite = this._children[ i ];
 
-            if ( i > 0 )
-            {
-                var prevSprite  = this._children[ i - 1 ];
-                theSprite.last  = prevSprite;
-                prevSprite.next = theSprite;
-            }
-            else {
-                theSprite.last = null;
-            }
+        var prevChild = aChild.last;
+        var nextChild = aChild.next;
 
-            if ( i == ( l - 1 )) {
-                theSprite.next = null;
-            }
+        if ( prevChild ) {
+            prevChild.next = nextChild;
         }
+
+        if ( nextChild ) {
+            nextChild.last = prevChild;
+        }
+
+        aChild.last = aChild.next = null;
 
         // request a render now the state of the canvas has changed
 
@@ -963,16 +953,7 @@ if ( typeof module !== "undefined" )
      */
     zSprite.prototype.contains = function( aChild )
     {
-        var i = this.numChildren();
-
-        while ( i-- )
-        {
-            if ( this._children[ i ] === aChild )
-            {
-                return true;
-            }
-        }
-        return false;
+        return this._children.indexOf( aChild ) > -1;
     };
 
     /* event handlers */

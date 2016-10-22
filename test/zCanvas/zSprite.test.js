@@ -515,47 +515,73 @@ describe( "zSprite", function()
             "expected removed child to equal the expected child" );
     });
 
-    it( "should create linked lists for all its child sprites", function()
+    it( "should be able to maintain the linked list of its child sprites", function()
     {
-        var sprite = new zSprite( x, y, width, height );
-        var child1 = new zSprite( x, y, width, height );
-        var child2 = new zSprite( x, y, width, height );
-        var child3 = new zSprite( x, y, width, height );
+        var canvas = new zCanvas( width, height );
+        var sprite1 = new zSprite( 0, 0, width, height );
+        var sprite2 = new zSprite( 0, 0, width, height );
+        var sprite3 = new zSprite( 0, 0, width, height );
 
-        assert.isNull( sprite.next, "expected next Sprite to be null after construction" );
-        assert.isNull( sprite.last, "expected last Sprite to be null after construction" );
+        assert.isNull( sprite1.next, "expected next Sprite to be null after construction" );
+        assert.isNull( sprite1.last, "expected last Sprite to be null after construction" );
+
+        // add first child
+
+        canvas.addChild( sprite1 );
+
+        assert.isNull( sprite1.last, "expected sprite1 not to have a last sibling" );
+        assert.isNull( sprite1.next, "expected sprite1 not to have a next sibling" );
+
+        // add second child
+
+        canvas.addChild( sprite2 );
+
+        assert.isNull( sprite1.last, "expected sprite1 not to have a previous sibling" );
+        assert.strictEqual( sprite2, sprite1.next, "expected sprite2 to be the next sibling of sprite1" );
+        assert.strictEqual( sprite1, sprite2.last, "expected sprite1 to be the last sibling of sprite2" );
+        assert.isNull( sprite2.next, "expected sprite2 not to have a next sibling" );
+
+        // add third child
+
+        canvas.addChild( sprite3 );
+
+        assert.isNull( sprite1.last, "expected sprite1 not to have a last sibling" );
+        assert.strictEqual( sprite2, sprite1.next, "expected sprite2 to be the next sibling of sprite1" );
+        assert.strictEqual( sprite1, sprite2.last, "expected sprite1 to be the last sibling of sprite2" );
+        assert.strictEqual( sprite3, sprite2.next, "expected sprite3 to be the next sibling of sprite2" );
+        assert.strictEqual( sprite2, sprite3.last, "expected sprite2 to be the last sibling of sprite3" );
+        assert.isNull( sprite3.next, "expected sprite3 not to have a next sibling" );
+    });
+
+    it( "should be able to update the linked list of its child sprites", function()
+    {
+        var canvas = new zCanvas( width, height );
+        var sprite1 = new zSprite( 0, 0, width, height );
+        var sprite2 = new zSprite( 0, 0, width, height );
+        var sprite3 = new zSprite( 0, 0, width, height );
 
         // add children
 
-        sprite.addChild( child1 );
-        sprite.addChild( child2 );
-        sprite.addChild( child3 );
+        canvas.addChild( sprite1 );
+        canvas.addChild( sprite2 );
+        canvas.addChild( sprite3 );
 
-        assert.strictEqual( child2, child1.next,
-            "expected next Sprite to equal the expected sprite" );
+        // assert list is updated when middle child is removed
 
-        assert.strictEqual( child1, child2.last,
-            "expected last Sprite to equal the expected sprite" );
+        canvas.removeChild( sprite2 );
 
-        // remove child and evaluate the linked list afterwards
+        assert.isNull( sprite2.last, "expected sprite2 not to have a last sibling as it was removed" );
+        assert.isNull( sprite2.next, "expected sprite2 not to have a next sibling as it was removed" );
+        assert.strictEqual( sprite3, sprite1.next, "expected sprite3 to be the next sibling of sprite1" );
+        assert.strictEqual( sprite1, sprite3.last, "expected sprite1 to be the last sibling of sprite3" );
 
-        sprite.removeChild( child2 );
+        // remove last child
 
-        assert.strictEqual( child3, child1.next,
-            "expected next Sprite to equal the expected sprite" );
+        canvas.removeChild( sprite3 );
 
-        assert.strictEqual( child1, child2.last,
-            "expected last Sprite to equal the expected sprite" );
-        
-        // remove child (single child remains)
-        
-        sprite.removeChild( child3 );
-
-        assert.isNull( child1.next,
-            "expected next Sprite to be null" );
-
-        assert.isNull( child1.last,
-            "expected last Sprite to be null" );
+        assert.isNull( sprite3.last, "expected sprite3 not to have a last sibling as it was removed" );
+        assert.isNull( sprite3.next, "expected sprite3 not to have a next sibling as it was removed" );
+        assert.isNull( sprite1.next, "expected sprite1 not to have a next sibling" );
     });
 
     // TODO: add updatePosition test
