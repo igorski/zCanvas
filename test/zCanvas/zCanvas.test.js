@@ -258,14 +258,6 @@ describe( "zCanvas", function()
         assert.isNull( sprite1.next, "expected sprite1 not to have a next sibling" );
     });
 
-    it( "should invoke an update of its contents when invalidation is requested", function( done )
-    {
-        var canvas = new zCanvas( width, height );
-        canvas.update = done; // hijack update method
-
-        canvas.invalidate();
-    });
-
     it( "should be able to return all lowest level children in its display list", function()
     {
         var canvas  = new zCanvas( width, height );
@@ -332,7 +324,7 @@ describe( "zCanvas", function()
             "expected canvas to be animateable" );
     });
 
-    it( "should invoke a render upon update request", function( done )
+    it( "should invoke a render upon invalidation request", function( done )
     {
         var orgRender = zCanvas.prototype.render;
 
@@ -346,6 +338,6 @@ describe( "zCanvas", function()
 
         var canvas = new zCanvas( width, height, false );
 
-        canvas.update();
+        canvas.invalidate();
     });
 });

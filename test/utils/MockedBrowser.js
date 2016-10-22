@@ -12,16 +12,23 @@ module.exports = {
 
     init: function() {
 
+        var noop = function() {};
+
         // prepare mock browser
-        browser                      = new MockBrowser();
-        global.document              = browser.getDocument();
-        global.window                = browser.getWindow();
-        global.Image                 = global.window.Image;
-        global.requestAnimationFrame = function( c ) { setTimeout( c, 4 ); };
+        browser         = new MockBrowser();
+        global.document = browser.getDocument();
+        global.window   = browser.getWindow();
+        global.Image    = global.window.Image;
+
+        // RAF
+
+        global.requestAnimationFrame =
+        global.window.requestAnimationFrame = function( c ) { setTimeout( c, 0 ); };
+        global.cancelAnimationFrame =
+        global.window.cancelAnimationFrame = noop;
 
         global.document.createElement = function( tagName ) {
 
-            var noop = function() {};
             var out;
 
             if ( tagName === "canvas" ) {

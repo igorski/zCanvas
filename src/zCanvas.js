@@ -20,7 +20,7 @@
  * IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-"use strict"
+"use strict";
 
 // resolve CommonJS dependencies
 
@@ -56,12 +56,12 @@ if ( typeof module !== "undefined" )
      *
      * @param {number}   aWidth desired canvas width
      * @param {number}   aHeight desired canvas height
-     * @param {boolean=} aAnimateable whether we will animate the Canvas (redraw it constantly), this defaults
+     * @param {boolean=} aAnimatable whether we will animate the Canvas (redraw it constantly), this defaults
      *                   to false to preserve resources (and will only (re)draw when adding/removing
      *                   zSprites from the display list) set to true, when creating animated content
      * @param {number=}  aFrameRate desired framerate, defaults to 60 fps
      */
-    var zCanvas = function( aWidth, aHeight, aAnimateable, aFrameRate )
+    var zCanvas = function( aWidth, aHeight, aAnimatable, aFrameRate )
     {
         if ( typeof aWidth  !== "number" || aWidth <= 0 ||
              typeof aHeight !== "number" || aHeight <= 0 )
@@ -77,7 +77,7 @@ if ( typeof module !== "undefined" )
         this._renderHandler  = this.render.bind( this );
 
         this._children = [];
-        this._animate  = ( typeof aAnimateable === "boolean" ) ? aAnimateable : false;
+        this._animate  = ( typeof aAnimatable === "boolean" ) ? aAnimatable : false;
 
         this._element = /** @type {HTMLCanvasElement} */ ( document.createElement( "canvas" ));
         var context   = this._element.getContext( "2d" );
@@ -313,11 +313,20 @@ if ( typeof module !== "undefined" )
      * the visual contents should change), this will invoke
      * a new render request
      *
+     * render requests are only executed when the UI is ready
+     * to render (on animationFrame), as such this method can be invoked
+     * repeatedly between render cycles without actually triggering
+     * multiple render executions (a single one will suffice)
+     *
      * @public
      */
     zCanvas.prototype.invalidate = function()
     {
-        this.update();
+        if ( !this._animate && !this._renderPending )
+        {
+            this._renderPending = true;
+            this._renderId = window.requestAnimationFrame( this._renderHandler );
+        }
     };
 
     /**
@@ -415,7 +424,7 @@ if ( typeof module !== "undefined" )
 
         // observed not to work during setup
 
-        requestAnimationFrame( function()
+        window.requestAnimationFrame( function()
         {
             props.forEach( function( prop )
             {
@@ -495,25 +504,6 @@ if ( typeof module !== "undefined" )
     zCanvas.prototype.isAnimateable = function()
     {
         return this._animate;
-    };
-
-    /**
-     * forces an update of the Canvas' contents
-     *
-     * render requests are only executed when the UI is ready
-     * to render (on animationFrame), as such this method can be invoked
-     * repeatedly between render cycles without actually triggering
-     * multiple render executions (a single one will suffice)
-     *
-     * @public
-     */
-    zCanvas.prototype.update = function()
-    {
-        if ( !this._animate && !this._renderPending )
-        {
-            this._renderPending = true;
-            this._renderId = requestAnimationFrame( this._renderHandler );
-        }
     };
 
     /**
@@ -706,7 +696,7 @@ if ( typeof module !== "undefined" )
         if ( !this._disposed && this._animate )
         {
             this._renderPending = true;
-            this._renderId = requestAnimationFrame( this._renderHandler );
+            this._renderId = window.requestAnimationFrame( this._renderHandler );
         }
     };
 
@@ -719,7 +709,7 @@ if ( typeof module !== "undefined" )
         this.removeListeners();
 
         this._animate = false;
-        cancelAnimationFrame( this._renderId ); // kill render loop
+        window.cancelAnimationFrame( this._renderId ); // kill render loop
 
         // dispose all sprites on Display List
 
