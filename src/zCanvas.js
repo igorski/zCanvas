@@ -489,7 +489,6 @@ if ( typeof module !== "undefined" )
      * or RGB/RGBA, e.g. "#FF0000" or "rgba(255,0,0,1)";
      *
      * @public
-     *
      * @param {string} aColor
      */
     zCanvas.prototype.setBackgroundColor = function( aColor )
@@ -499,9 +498,25 @@ if ( typeof module !== "undefined" )
 
     /**
      * @public
+     * @param {boolean} value
+     */
+    zCanvas.prototype.setAnimatable = function( value )
+    {
+        var oldValue = this._animate;
+
+        this._animate = value;
+
+        if ( value && !oldValue )
+        {
+            this._renderHandler();
+        }
+    };
+
+    /**
+     * @public
      * @return {boolean}
      */
-    zCanvas.prototype.isAnimateable = function()
+    zCanvas.prototype.isAnimatable = function()
     {
         return this._animate;
     };

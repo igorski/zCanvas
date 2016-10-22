@@ -315,13 +315,70 @@ describe( "zCanvas", function()
     {
         var canvas = new zCanvas( width, height, false );
 
-        assert.notOk( canvas.isAnimateable(),
-            "expected canvas not to be animateable" );
+        assert.notOk( canvas.isAnimatable(),
+            "expected canvas not to be animatable" );
 
         canvas = new zCanvas( width, height, true );
 
-        assert.ok( canvas.isAnimateable(),
-            "expected canvas to be animateable" );
+        assert.ok( canvas.isAnimatable(),
+            "expected canvas to be animatable" );
+    });
+    
+    it( "should be able to toggle its animatable state", function()
+    {
+        var canvas = new zCanvas( width, height, false );
+        
+        canvas.setAnimatable( true );
+        assert.ok( canvas.isAnimatable(), "expected canvas to be animatable" );
+
+        canvas.setAnimatable( false );
+        assert.notOk( canvas.isAnimatable(), "expected canvas not to be animatable" );
+    });
+
+    it( "should continuously render on each animation frame when animatable", function( done )
+    {
+        var canvas = new zCanvas( width, height, false );
+
+        // hijack bound render handlers
+
+        var hijackedHandler = canvas._renderHandler;
+        var renders = 0;
+
+        canvas._renderHandler = function() {
+            if ( ++renders === 5 )
+                done();
+            else
+                hijackedHandler();
+        };
+        canvas.setAnimatable( true );
+    });
+
+    it( "should only render on invalidation when not animatable", function( done )
+    {
+        // construct as animatable
+        var canvas = new zCanvas( width, height, true );
+
+        // now disable animation
+        canvas.setAnimatable(false);
+
+        // hijack bound render handlers
+
+        var hijackedHandler = canvas._renderHandler;
+        var renders = 0;
+
+        canvas._renderHandler = function() {
+            ++renders;
+            hijackedHandler();
+        };
+
+        setTimeout( function() {
+            assert.strictEqual( 0, renders,
+                "expected render count not to have incremented after disabling of animatable state" );
+
+            canvas._renderHandler = done; // hijack render to end test
+            canvas.invalidate(); // call invalidate to render and end this test
+
+        }, 25 );
     });
 
     it( "should invoke a render upon invalidation request", function( done )
