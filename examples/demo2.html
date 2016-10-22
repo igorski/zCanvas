@@ -16,9 +16,9 @@
         <p>
             Demo features : multiple nested Sprites (the circles), masking (the scrollable star layer) and restricted
             movement (the rectangle). The circles are movable by either mouse or touch, either individually or at once (dragging the large circle
-            will drag its child circles), while the rectangle is also draggable but constrained to the bottom right part of the canvas.
-            Note that you can drag the rectangle under the circle, but after release, the higher circle layer takes
-            precendence in responding to the mouse / touch events.
+            will drag its child circles), while the rectangle is also draggable but constrained to the bottom right part of the canvas
+            (illustrated by the thin red outline). Note that you can drag the rectangle under the circle, but after release, the
+            higher circle layer takes precendence in responding to the mouse / touch events.
         </p>
         <span id="debug">
 
@@ -196,8 +196,15 @@
             // Rectangle draw logic
             rectangle.draw = function( ctx )
             {
+                // draw rectangle
                 ctx.fillStyle = '#FF00FF';
                 ctx.fillRect( this.getX(), this.getY(), this.getWidth(), this.getHeight() );
+
+                // but also draw its bounding box just for demonstration purposes
+                var constraint = this.getConstraint();
+                ctx.lineWidth = 1;
+                ctx.strokeStyle = '#FF0000';
+                ctx.strokeRect( constraint.left, constraint.top, constraint.width, constraint.height );
             };
 
             // add all Sprites to the zCanvas display list so they are visible
