@@ -59,9 +59,12 @@ if ( typeof module !== "undefined" )
      * @param {boolean=} aAnimatable whether we will animate the Canvas (redraw it constantly), this defaults
      *                   to false to preserve resources (and will only (re)draw when adding/removing
      *                   zSprites from the display list) set to true, when creating animated content
-     * @param {number=}  aFrameRate desired framerate, defaults to 60 fps
+     * @param {number=}  aFrameRate optionally desired framerate, defaults to 60 fps
+     * @param {Function=} aUpdateHandler optional, callback method to execute when the canvas is about to
+     *                    render. This can be used to synchronize a game's model from a single spot (instead
+     *                    of having each zSprite's update()-method fire)
      */
-    var zCanvas = function( aWidth, aHeight, aAnimatable, aFrameRate )
+    var zCanvas = function( aWidth, aHeight, aAnimatable, aFrameRate, aUpdateHandler )
     {
         if ( typeof aWidth  !== "number" || aWidth <= 0 ||
              typeof aHeight !== "number" || aHeight <= 0 )
@@ -78,6 +81,7 @@ if ( typeof module !== "undefined" )
 
         this._children = [];
         this._animate  = ( typeof aAnimatable === "boolean" ) ? aAnimatable : false;
+        this._updateHandler = ( typeof aUpdateHandler === "function" ) ? aUpdateHandler : null;
 
         this._element = /** @type {HTMLCanvasElement} */ ( document.createElement( "canvas" ));
         var context   = this._element.getContext( "2d" );
@@ -665,19 +669,7 @@ if ( typeof module !== "undefined" )
         {
             this._lastRender = now - ( delta % this._renderInterval );
 
-            if ( this._children.length > 0 )
-            {
-                // update all child sprites
-                var theSprite = this._children[ 0 ];
-
-                while ( theSprite )
-                {
-                    theSprite.update( now );
-                    theSprite = theSprite.next;
-                }
-            }
-
-            var ctx = this._canvasContext;
+            var ctx = this._canvasContext, theSprite;
 
             if ( ctx )
             {
@@ -692,6 +684,11 @@ if ( typeof module !== "undefined" )
                     ctx.clearRect( 0, 0, this._width, this._height );
                 }
 
+                var useExternalUpdateHandler = ( typeof this._updateHandler === "function" );
+                if ( useExternalUpdateHandler ) {
+                    this._updateHandler( now );
+                }
+
                 // draw the children onto the canvas
 
                 if ( this._children.length > 0 )
@@ -700,6 +697,9 @@ if ( typeof module !== "undefined" )
 
                     while ( theSprite )
                     {
+                        if ( !useExternalUpdateHandler ) {
+                            theSprite.update( now );
+                        }
                         theSprite.draw( ctx );
                         theSprite = theSprite.next;
                     }

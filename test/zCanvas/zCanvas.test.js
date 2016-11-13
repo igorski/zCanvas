@@ -397,4 +397,33 @@ describe( "zCanvas", function()
 
         canvas.invalidate();
     });
+
+    it( "should invoke the update()-method of its children upon render", function( done )
+    {
+        var canvas = new zCanvas( width, height, false );
+        var sprite = new zSprite( 0, 0, 10, 10 );
+        canvas.addChild( sprite );
+
+        sprite.update = function() {
+            done();
+        };
+        canvas.invalidate();
+    });
+
+    it( "should not invoke the update()-method of its children if a custom external " +
+        "update handler was configured", function( done )
+    {
+        var handler = function() {
+            setTimeout( done, 10 );
+        };
+        var canvas = new zCanvas( width, height, false, 60, handler );
+        var sprite = new zSprite( 0, 0, 10, 10 );
+        canvas.addChild( sprite );
+
+        sprite.update = function() {
+            throw new Error( "zSprite update should not have been called" );
+        };
+
+        canvas.invalidate();
+    });
 });
