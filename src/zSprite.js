@@ -126,6 +126,9 @@ if ( typeof module !== "undefined" )
     zSprite.extend = function( extendingFunction )
     {
         helpers.extend( extendingFunction, zSprite );
+        extendingFunction.extend = function( extendingFunction2 ) {
+            helpers.extend( extendingFunction2, extendingFunction )
+        };
     };
 
     /* instance properties */
