@@ -44,9 +44,10 @@ module.exports = zCanvas;
  *        }} width when numerical (legacy 4 argument constructor), the desired width of the zCanvas,
  *        when Object it should contain required properties width and height, with others optional
  *        (see defaults for animate and framerate below)
- *        onUpdate callback method to execute when the canvas is about to render. This can be used to synchronize
- *                 a game's model from a single spot (instead of having each zSprite's update()-method fire)
- *        debug specifies whether or not all sprites should render their Bounding Box for debugging purposes
+ *        "onUpdate" callback method to execute when the canvas is about to render. This can be used to synchronize
+ *            a game's model from a single spot (instead of having each zSprite's update()-method fire)
+ *        "debug" specifies whether or not all sprites should render their Bounding Box for debugging purposes
+ *
  *        When object, no further arguments will be processed by this constructor
  *
  * @param {number=} height desired height of the zCanvas
@@ -669,6 +670,72 @@ zCanvas.prototype.dispose = function() {
     this._children = [];
 };
 
+/* event handlers */
+
+/**
+ * @protected
+ * @param {Event} aEvent
+ */
+zCanvas.prototype.handleInteraction = function( aEvent ) {
+
+    const numChildren  = this._children.length;
+    let eventOffsetX = 0, eventOffsetY = 0;
+    let theChild, touches, found;
+
+    if ( numChildren > 0 ) {
+
+        // reverse loop to first handle top layers
+        theChild = this._children[ numChildren - 1 ];
+
+        switch ( aEvent.type ) {
+
+            // all touch events
+            default:
+
+                touches /** @type {TouchList} */ = ( aEvent.touches.length > 0 ) ? aEvent.touches : aEvent.changedTouches;
+
+                if ( touches.length > 0 ) {
+
+                    const offset = this.getCoordinate();
+
+                    eventOffsetX = touches[ 0 ].pageX - offset.x;
+                    eventOffsetY = touches[ 0 ].pageY - offset.y;
+                }
+
+                while ( theChild ) {
+                    theChild.handleInteraction( eventOffsetX, eventOffsetY, aEvent );
+                    theChild = theChild.last; // note we don't break this loop for multi touch purposes
+                }
+                break;
+
+            // all mouse events
+            case "mousedown":
+            case "mousemove":
+            case "mouseup":
+
+                while ( theChild ) {
+
+                    found = theChild.handleInteraction( aEvent.offsetX, aEvent.offsetY, aEvent );
+
+                    if ( found )
+                        break;
+
+                    theChild = theChild.last;
+                }
+                break;
+        }
+    }
+
+    if ( this._preventDefaults ) {
+
+        aEvent.stopPropagation();
+        aEvent.preventDefault();
+    }
+
+    // update the Canvas contents
+    this.invalidate();
+};
+
 /* protected methods */
 
 /**
@@ -738,74 +805,6 @@ zCanvas.prototype.render = function() {
         this._renderId = window.requestAnimationFrame( this._renderHandler );
     }
 };
-
-/* event handlers */
-
-/**
- * @protected
- * @param {Event} aEvent
- */
-zCanvas.prototype.handleInteraction = function( aEvent ) {
-
-    const numChildren  = this._children.length;
-    let eventOffsetX = 0, eventOffsetY = 0;
-    let theChild, touches, found;
-
-    if ( numChildren > 0 ) {
-
-        // reverse loop to first handle top layers
-        theChild = this._children[ numChildren - 1 ];
-
-        switch ( aEvent.type ) {
-
-            // all touch events
-            default:
-
-                touches /** @type {TouchList} */ = ( aEvent.touches.length > 0 ) ? aEvent.touches : aEvent.changedTouches;
-
-                if ( touches.length > 0 ) {
-
-                    const offset = this.getCoordinate();
-
-                    eventOffsetX = touches[ 0 ].pageX - offset.x;
-                    eventOffsetY = touches[ 0 ].pageY - offset.y;
-                }
-
-                while ( theChild ) {
-                    theChild.handleInteraction( eventOffsetX, eventOffsetY, aEvent );
-                    theChild = theChild.last; // note we don't break this loop for multi touch purposes
-                }
-                break;
-
-            // all mouse events
-            case "mousedown":
-            case "mousemove":
-            case "mouseup":
-
-                while ( theChild ) {
-
-                    found = theChild.handleInteraction( aEvent.offsetX, aEvent.offsetY, aEvent );
-
-                    if ( found )
-                        break;
-
-                    theChild = theChild.last;
-                }
-                break;
-        }
-    }
-
-    if ( this._preventDefaults ) {
-
-        aEvent.stopPropagation();
-        aEvent.preventDefault();
-    }
-
-    // update the Canvas contents
-    this.invalidate();
-};
-
-/* protected methods */
 
 /**
  * zSprites have no HTML elements, the actual HTML listeners are

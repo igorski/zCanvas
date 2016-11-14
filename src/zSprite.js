@@ -47,11 +47,18 @@ module.exports = zSprite;
  *            height: number,
  *            bitmap: Image|HTMLCanvasElement|string,
  *            collidable: boolean,
- *            mask: boolean
+ *            mask: boolean,
+ *            sheet: Array.<{ row: number, col: number, amount: number, fpt: 5 }>
+ *
  *        }} x when numerical (legacy 7 argument constructor) the x-coordinate of this zSprite,
  *        when Object it should contain required properties width and height, with others optional
- *        (x and y will default to 0, 0 coordinate). When object, no further arguments will be
- *        processed by this constructor
+ *        (x and y will default to 0, 0 coordinate) see the description for width, height, bitmap,
+ *        collidable and mask below)
+ *
+ *        "sheet" describes a list of separate animations inside given "bitmap"
+ *
+ *        When object, no further arguments will be
+ *        processed by this constructor.
  *
  * @param {number=} y the y-coordinate of this zSprite, required when x is number
  * @param {number=} width of this zSprite's bounding box, required when x is number
@@ -227,11 +234,37 @@ function zSprite( x, y, width, height, bitmap, collidable, mask ) {
 
     /* initialization */
 
+    this.setX( opts.x );
+    this.setY( opts.y );
+
     if ( opts.bitmap )
         this.setBitmap( opts.bitmap );
 
-    this.setX( opts.x );
-    this.setY( opts.y );
+    if ( Array.isArray( opts.sheet ) && opts.sheet.length > 0 ) {
+
+        if ( !opts.bitmap )
+            throw new Error( "cannot use a spritesheet without a valid Bitmap" );
+
+        /**
+         * @protected
+         * @type {Array.<{ row: number, col: number, amount: number, fpt: 5 }>}
+         */
+        this._sheet = opts.sheet;
+
+        /**
+         * @protected
+         * @type {Object}
+         */
+        this._animation = {
+            type    : null,
+            col     : 0,  // which horizontal tile in the sprite sheet is current
+            maxCol  : 0,  // the maximum horizontal index that is allowed before the animation should loop
+            fpt     : 0,  // "frames per tile" what is the max number of count before we switch tile
+            counter : 0   // the frame counter that is increased on each frame render
+        };
+
+        this.switchAnimation( this._sheet[ 0 ]); // by default select first animation from list
+    }
 }
 
 /* static methods */
@@ -471,6 +504,11 @@ zSprite.prototype.update = function( aCurrentTimestamp ) {
             theSprite = theSprite.next;
         }
     }
+
+    // if this sprite has a spritesheet, progress its animation
+
+    if ( this._animation )
+        this.updateAnimation();
 };
 
 /**
@@ -562,14 +600,34 @@ zSprite.prototype.draw = function( aCanvasContext ) {
 
 
     if ( this._bitmapReady ) {
-        const bounds = this._bounds;
-        aCanvasContext.drawImage(
-            this._bitmap,
-            bounds.left,
-            bounds.top,
-            bounds.width,
-            bounds.height
-        );
+
+        const bounds   = this._bounds,
+              aniProps = this._animation;
+
+        if ( !aniProps ) {
+
+            // no spritesheet defined, draw entire Bitmap
+
+            aCanvasContext.drawImage(
+                this._bitmap,
+                bounds.left,
+                bounds.top,
+                bounds.width,
+                bounds.height
+            );
+        }
+        else {
+
+            // spritesheet defined, draw tile
+
+            aCanvasContext.drawImage(
+                this._bitmap,
+                aniProps.col      * bounds.width,         // tile x offset
+                aniProps.type.row * bounds.height,        // tile y offset
+                bounds.width, bounds.height,              // tile width and height
+                bounds.left, bounds.top, bounds.width, bounds.height
+            );
+        }
     }
 
     // draw this Sprites children onto the canvas
@@ -956,6 +1014,33 @@ zSprite.prototype.contains = function( aChild ) {
     return this._children.indexOf( aChild ) > -1;
 };
 
+/**
+ * @public
+ */
+zSprite.prototype.dispose = function() {
+
+    if ( this._disposed )
+        return;
+
+    this._disposed = true;
+
+    // in case this ZSprite was still on the ZCanvas, remove it
+
+    if ( this._parent )
+        this._parent.removeChild( this );
+
+    // dispose the children
+    let i = this._children.length;
+
+    while ( i-- ) {
+        const theChild = this._children[ i ];
+        theChild.dispose();
+        theChild.next =
+        theChild.last = null; // break references
+    }
+    this._children = [];
+};
+
 /* event handlers */
 
 /**
@@ -1147,30 +1232,42 @@ zSprite.prototype.handleInteraction = function( aEventX, aEventY, aEvent ) {
 /* protected methods */
 
 /**
+ * switch the current animation that should be playing
+ * from this zSprite tile sheet
+ *
  * @public
+ * @param {Object} tileObject present in the _tileSheet Object
  */
-zSprite.prototype.dispose = function() {
+zSprite.prototype.switchAnimation = function( tileObject ) {
 
-    if ( this._disposed )
-        return;
+    const aniProps = this._animation;
 
-    this._disposed = true;
+    aniProps.type    = tileObject;
+    aniProps.fpt     = tileObject.fpt;
+    aniProps.maxCol  = tileObject.col + ( tileObject.amount - 1 );
+    aniProps.col     = tileObject.col;
+    aniProps.counter = 0;
+};
 
-    // in case this ZSprite was still on the ZCanvas, remove it
+/**
+ * invoked by the update()-method prior to rendering
+ * this will step between the frames in the tilesheet
+ *
+ * @protected
+ */
+zSprite.prototype.updateAnimation = function() {
 
-    if ( this._parent )
-        this._parent.removeChild( this );
+    const aniProps = this._animation;
 
-    // dispose the children
-    let i = this._children.length;
-
-    while ( i-- ) {
-        const theChild = this._children[ i ];
-        theChild.dispose();
-        theChild.next =
-        theChild.last = null; // break references
+    if ( ++aniProps.counter === aniProps.fpt ) {
+        ++aniProps.col;
+        aniProps.counter = 0;
     }
-    this._children = [];
+
+    // loop animation by starting from first column
+
+    if ( aniProps.col > aniProps.maxCol )
+        aniProps.col = aniProps.type.col;
 };
 
 /**
@@ -1178,7 +1275,6 @@ zSprite.prototype.dispose = function() {
  * be used when debugging
  *
  * @protected
- *
  * @param {CanvasRenderingContext2D} aCanvasContext to draw on
  */
 zSprite.prototype.drawOutline = function( aCanvasContext ) {

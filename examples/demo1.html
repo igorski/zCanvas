@@ -151,29 +151,18 @@
 
                 Hero.super( this, "constructor", opts ); // construct as a zSprite
 
-                this._maxIndexCount = 5; // hard coded, every 5 frames we step to the next tile in the sprite sheet
+                /* Hero instance properties */
+
+                this.direction    = 0;     // 0 = left, 1 = right
+                this.running      = false; // is the hero running ?
+                this.jumping      = false; // is the hero jumping ?
+                this.falling      = true;  // is the hero falling ? (set to true for gravity)
+                this.xSpeed       = 0;     // horizontal speed (i.e. walking)
+                this.MAX_X_SPEED  = 5;     // maximum horizontal speed in pixels per frame
+                this.ySpeed       = 0;     // vertical speed (i.e. jumping/falling)
+                this._jumpCount   = 0;     // internal : countdown for determining max jump height reached
             };
             zSprite.extend( Hero ); // Hero extends zSprite
-
-            // Hero class variables
-            Hero.prototype.direction    = 0;     // 0 = left, 1 = right
-            Hero.prototype.running      = false; // is the hero running ?
-            Hero.prototype.jumping      = false; // is the hero jumping ?
-            Hero.prototype.falling      = true;  // is the hero falling ? (set to true for gravity)
-            Hero.prototype.xSpeed       = 0;     // horizontal speed (i.e. walking)
-            Hero.prototype.MAX_X_SPEED  = 5;     // maximum horizontal speed in pixels per frame
-            Hero.prototype.ySpeed       = 0;     // vertical speed (i.e. jumping/falling)
-            Hero.prototype._jumpCount   = 0;     // internal : countdown for determining max jump height reached
-
-            // Hero tile / spritesheet variables
-            Hero.prototype._standingTiles = 2;   // three slides for the "standing" animation
-            Hero.prototype._runningTiles  = 9;   // ten slides for the "running" animation
-
-            // Hero rendering variables
-            Hero.prototype._spriteIndex   = 0;   // internal : which horizontal tile in the sprite sheet is current
-            Hero.prototype._spriteRow     = 0;   // internal : which vertical row in the sprite sheet is current
-            Hero.prototype._indexCounter  = 0;   // internal : the frame counter that is increased on each frame render
-            Hero.prototype._maxIndexCount = 0;   // internal : what is the max number of count before we switch tile
 
             // public methods
             // --------------
@@ -195,15 +184,23 @@
 
             Hero.prototype.run = function( direction ) {
 
-                hero.direction = direction;
-                hero.running   = true;
+                this.direction = direction;
+                this.running   = true;
+                // switch spritesheet animation now we're starting to run
+                this.switchAnimation(
+                    ( this.direction === 0 ) ? this._sheet[ 2 ] : this._sheet[ 3 ]
+                );
             };
 
             // stops the hero (will slowly move to a halt)
 
             Hero.prototype.stop = function() {
 
-                hero.running = false;
+                this.running = false;
+                // switch spritesheet animation now we're stopping the running
+                this.switchAnimation(
+                    ( this.direction === 0 ) ? this._sheet[ 0 ] : this._sheet[ 1 ]
+                );
             };
 
             // overridden methods
@@ -213,22 +210,8 @@
             Hero.prototype.update = function( timestamp ) {
 
                 // animation update operations (i.e. switch tile in sheet)
-                if ( ++this._indexCounter == this._maxIndexCount ) {
-                    ++this._spriteIndex;
-                    this._indexCounter = 0;
-                }
 
-                var maxIndex = ( this.running ) ? this._runningTiles : this._standingTiles;
-
-                // loop animation
-                if ( this._spriteIndex > maxIndex )
-                    this._spriteIndex = 0;
-
-                // select the right tile row depending on direction and action
-
-                this._spriteRow = hero.direction;
-                if ( this.running )
-                    this._spriteRow += 2;
+                this.updateAnimation();
 
                 // movement
 
@@ -350,24 +333,10 @@
                     this.falling = true;
             };
 
-            // override draw-method for custom logic
-            Hero.prototype.draw = function( ctx ) {
-
-                var bounds = this._bounds;
-
-                ctx.drawImage(
-                    this._bitmap,
-                    this._spriteIndex * bounds.width,         // tile x offset
-                    this._spriteRow   * bounds.height,        // tile y offset
-                    bounds.width, bounds.height,              // tile width and height
-                    bounds.left, bounds.top, bounds.width, bounds.height
-                );
-            };
-
             // create a new Hero and add it to the stage
             // our spritesheet is 380 x 70 pixels with each individual tile
-            // in the sheet being 38 x 35 pixels
-            // (see included "images.js"-file for the assetSpriteSheet-image data)
+            // in the sheet being 38 x 35 pixels. There is one row for each animation, there
+            // are four rows in total. (see included "images.js"-file for the assetSpriteSheet-image data)
 
             var tileWidth = 38, tileHeight = 35; // height of a single tile
 
@@ -376,7 +345,13 @@
                 y: cvsHeight / 2,
                 width: tileWidth,
                 height: tileHeight,
-                bitmap: assetSpriteSheet
+                bitmap: assetSpriteSheet,
+                sheet: [
+                    { row: 0, col: 0, fpt: 5, amount: 3 },  // standing still, facing left
+                    { row: 1, col: 0, fpt: 5, amount: 3 },  // standing still, facing right
+                    { row: 2, col: 0, fpt: 5, amount: 10 }, // running, facing left
+                    { row: 3, col: 0, fpt: 5, amount: 10 }  // running facing right
+                ]
             });
             cvs.addChild( hero );
 

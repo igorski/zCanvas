@@ -174,6 +174,18 @@ describe( "zSprite", () => {
         }).not.to.throw();
     });
 
+    it( "should not construct with a spritesheet if no Bitmap was specified", () => {
+
+        expect(() => {
+            new zSprite({ width: width, height: height, sheet: [ {} ] });
+        }).to.throw( /cannot use a spritesheet without a valid Bitmap/ );
+
+
+        expect(() => {
+            new zSprite({ width: width, height: height, bitmap: imgSource, sheet: [ {} ] });
+        }).not.to.throw();
+    });
+
     it( "should be able to extend its prototype into new function references", () => {
 
         const newClass = function() {};
@@ -829,5 +841,40 @@ describe( "zSprite", () => {
 
         assert.strictEqual( newHeight, sprite.getHeight(),
             "expected sprite height to be " + newHeight + ", got " + sprite.getHeight() + " instead" );
+    });
+
+    it( "should render its Bitmap in tiles when a spritesheet is defined", () => {
+
+        const sheet = [
+            { row: 0, col: 0, amount: 5, fpt: 5 }
+        ];
+        const sprite = new zSprite({ width: width, height: height, bitmap: imgSource, sheet: sheet });
+        const aniProps = sprite._animation;
+        const animation = sheet[ 0 ];
+
+        assert.strictEqual( animation.col, aniProps.col );
+        assert.strictEqual( animation.col + ( animation.amount - 1 ), aniProps.maxCol );
+        assert.strictEqual( animation.fpt, aniProps.fpt );
+        assert.strictEqual( 0, aniProps.counter );
+
+        for ( let i = 0; i < animation.fpt; ++i ) {
+            sprite.update( Date.now() + i );
+
+            if ( i < animation.fpt - 1 )
+                 assert.strictEqual( i + 1, aniProps.counter );
+            else
+                assert.strictEqual( 0, aniProps.counter,
+                    "expected counter to have reset after having met the max frames per tile" );
+        }
+        assert.strictEqual( 1, aniProps.col,
+            "expected column to have advanced after having met the max frames per tile" );
+
+        aniProps.col = sheet.amount - 1;
+        aniProps.counter = sheet.fpt - 1;
+
+        sprite.update( Date.now() );
+        return;
+        assert.strictEqual( animation.col, aniProps.col,
+            "expected column to have jumped back to the first index after having played all tile frames" );
     });
 });
