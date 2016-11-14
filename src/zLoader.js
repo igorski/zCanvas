@@ -64,10 +64,7 @@ module.exports = {
 
         if ( aOptImage instanceof window.Image && isReady( aOptImage )) {
 
-            aCallback({
-                image: aOptImage,
-                size: getSize( aOptImage )
-            });
+            aCallback( wrapOutput( aOptImage ));
             return;
         }
 
@@ -78,15 +75,12 @@ module.exports = {
 
         const errorHandler = ( aError ) => {
             handler.dispose();
-            aCallback({ image: out, size: null }, new Error( aError.type ));
+            aCallback( wrapOutput( out ), new Error( aError.type ));
         };
 
         const loadHandler = () => {
             handler.dispose();
-            onReady( out, () => aCallback({
-                image: out,
-                size: getSize( out )
-            }));
+            onReady( out, () => aCallback( wrapOutput( out )) );
         };
 
         // no load handler required for base64 data, it is immediately ready
@@ -115,7 +109,7 @@ module.exports = {
         out.src = aSource;
 
         if ( isDataURL )
-            aCallback( out ); // as stated above, invoke callback immediately for data strings
+            aCallback( wrapOutput( out )); // as stated above, invoke callback immediately for data strings
 
         return out;
     }
@@ -266,4 +260,17 @@ function isLocalURL( aURL ) {
     // at this point we know we're likely dealing with a data URL, which is local
 
     return true;
+}
+
+function wrapOutput( image ) {
+
+    const out = {
+        image: image,
+        size: null
+    };
+
+    if ( image instanceof window.HTMLImageElement )
+        out.size = getSize( image );
+
+    return out;
 }

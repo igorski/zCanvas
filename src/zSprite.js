@@ -687,12 +687,12 @@ zSprite.prototype.setBitmap = function( aImage ) {
 
                     // update width and height if defined
 
-                    self.setWidth ( aResult.width );
-                    self.setHeight( aResult.height );
+                    self.setWidth ( aResult.size.width );
+                    self.setHeight( aResult.size.height );
 
                     // make sure the image is still within bounds
 
-                    if ( self._keepInBounds ) {
+                    if ( self._keepInBounds && self.canvas ) {
 
                         const minX = -( self._bounds.width  - self.canvas.getWidth() );
                         const minY = -( self._bounds.height - self.canvas.getHeight() );

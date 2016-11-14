@@ -118,7 +118,7 @@ function zCanvas( opts ) {
     if ( this._animate ) {
         this.render();  // start render loop
     }
-};
+}
 
 /**
  * extend a given Function reference with the zCanvas prototype, you

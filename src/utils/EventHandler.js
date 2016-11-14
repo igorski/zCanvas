@@ -45,7 +45,7 @@ function EventHandler() {
      * @type {boolean}
      */
     this._disposed = false;
-};
+}
 
 /* public methods */
 

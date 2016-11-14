@@ -28,16 +28,17 @@ zCanvas is compatible with CommonJS, AMD/RequireJS or can be included in the bro
 
 CommonJS:
 
-    var zCanvas = require( "zcanvas" ).zCanvas;
-    var zSprite = require( "zcanvas" ).zSprite;
+    const zCanvas = require( "zcanvas" ).zCanvas;
+    const zSprite = require( "zcanvas" ).zSprite;
 
 (you can subsequently use a tool like Browserify to build for the browser).
 
 RequireJS:
 
-    require( [ "helpers", "zCanvas", "zSprite" ], function( helpers, zCanvas, zSprite )
-    {
-        // do something...
+    require( [ "zcanvas.amd" ], function( zCanvasLibrary ) {
+    
+        // do something with zCanvasLibary-properties:
+        // "zCanvas", "zSprite", "zLoader"        
     });
 
 Browser:
@@ -85,6 +86,22 @@ Easily animatable
 
 As all rendering logic resides in a single method of your zSprite, you can easily attach tweening libraries such as
 the excellent TweenMax by Greensock to alter the visible properties of your zSprite for maximum eye candy.
+
+Build instructions
+==================
+
+The project dependencies are maintained by NPM, you can resolve them using:
+
+    npm install
+
+When using CommonJS for your project, it is recommended to require the source
+code directly. However, the project can also be built directly for the browser
+using a simple Gulp task:
+
+    gulp amd
+    
+After which a folder _dist/_ is created which contains the _zcanvas.amd.js_ file. The
+source code is transpiled from ES6 to ES5 for maximum compatibility.
 
 Unit testing
 ============

@@ -25,24 +25,26 @@
 
         // resolve dependencies
 
+        var zLoader, zCanvas, zSprite;
+
         requirejs.config({
-            baseUrl : "../src/",
+            baseUrl : "../dist/",
             urlArgs : "bust=" + Date.now()
         });
 
-        require( [ "helpers", "zCanvas", "zSprite" ], function( helpers, zCanvas, zSprite )
-        {
-            // cheap way to make deps global
-            
-            window.helpers = helpers;
-            window.zCanvas = zCanvas;
-            window.zSprite = zSprite;
+        require( [ "zcanvas.amd" ], function( zCanvasLibrary ) {
+
+            // cheap way to make deps global, just for the sake of this demo's simplicity
+            // this is of course not the way to use the AMD require pattern ;)
+
+            zLoader = zCanvasLibrary.zLoader;
+            zCanvas = zCanvasLibrary.zCanvas;
+            zSprite = zCanvasLibrary.zSprite;
 
             demo(); // start the actual demo
         });
 
-        function demo()
-        {
+        function demo() {
 
             // STEP 1 : SETUP
             // --------------------------------------
@@ -72,7 +74,12 @@
             var cvsWidth  = w < 800 ? w * .93 : 800;
             var cvsHeight = h < 350 ? h : 350;
 
-            var cvs = new zCanvas( cvsWidth, cvsHeight, true, 60 );
+            var cvs = new zCanvas({
+                width: cvsWidth,
+                height: cvsHeight,
+                animate: true,
+                fps: 60
+            });
             cvs.preventEventBubbling( true );
 
             // append zCanvas to DOM
@@ -85,7 +92,11 @@
             // first sprite will acts as a background
             // (see included "assets.js"-file for the assetBackground-image data)
             var bgWidth  = 800, bgHeight = 1067;
-            var bgSprite = new zSprite( 0, 0, bgWidth, bgHeight, assetBackground );
+            var bgSprite = new zSprite({
+                width: bgWidth,
+                height: bgHeight,
+                bitmap: assetBackground
+            });
 
             // custom overrides, to demonstrate a simple custom behaviour
             // where animation is perfectly timed (test by switching tabs in
@@ -99,8 +110,8 @@
             var renderInterval = cvs.getRenderInterval();
             var maxYPosition   = bgHeight - cvsHeight;
 
-            bgSprite.update = function( aCurrentTimestamp )
-            {
+            bgSprite.update = function( aCurrentTimestamp ) {
+
                 var delta = ( aCurrentTimestamp - prevStamp ); // should roughly equal the render interval of the zCanvas
                 prevStamp = aCurrentTimestamp;                 // store last timestamp
 
@@ -136,9 +147,9 @@
             // when writing your application using OOP-paradigms, it makes
             // more sense to create new "classes" for custom zSprite Objects, like such:
 
-            var Hero = function( aX, aY, aWidth, aHeight, aImage )
-            {
-                Hero.super( this, "constructor", aX, aY, aWidth, aHeight, aImage ); // construct as a zSprite
+            var Hero = function( opts ) {
+
+                Hero.super( this, "constructor", opts ); // construct as a zSprite
 
                 this._maxIndexCount = 5; // hard coded, every 5 frames we step to the next tile in the sprite sheet
             };
@@ -169,8 +180,8 @@
 
             // makes the hero jump
 
-            Hero.prototype.jump = function()
-            {
+            Hero.prototype.jump = function() {
+
                 if ( this.jumping )
                     return;
 
@@ -182,16 +193,16 @@
 
             // makes the hero run left (0) or right (1) at incremental speed
 
-            Hero.prototype.run = function( direction )
-            {
+            Hero.prototype.run = function( direction ) {
+
                 hero.direction = direction;
                 hero.running   = true;
             };
 
             // stops the hero (will slowly move to a halt)
 
-            Hero.prototype.stop = function()
-            {
+            Hero.prototype.stop = function() {
+
                 hero.running = false;
             };
 
@@ -199,16 +210,15 @@
             // ------------------
 
             // update-method for custom logic
-            Hero.prototype.update = function( timestamp )
-            {
+            Hero.prototype.update = function( timestamp ) {
+
                 // animation update operations (i.e. switch tile in sheet)
-                if ( ++this._indexCounter == this._maxIndexCount )
-                {
+                if ( ++this._indexCounter == this._maxIndexCount ) {
                     ++this._spriteIndex;
                     this._indexCounter = 0;
                 }
 
-                var maxIndex = this.running ? this._runningTiles : this._standingTiles;
+                var maxIndex = ( this.running ) ? this._runningTiles : this._standingTiles;
 
                 // loop animation
                 if ( this._spriteIndex > maxIndex )
@@ -222,10 +232,10 @@
 
                 // movement
 
-                if ( this.running )
-                {
-                    switch ( this.direction )
-                    {
+                if ( this.running ) {
+
+                    switch ( this.direction ) {
+
                         case 0:
                             // left
                             if ( hero.xSpeed > -hero.MAX_X_SPEED )
@@ -241,64 +251,58 @@
                     }
                 }
 
-                var prevX = this.getX(), prevY = this.getY(), thisWidth = this.getWidth(), thisHeight = this.getHeight();
+                var prevX     = this.getX(), prevY = this.getY(),
+                    thisWidth = tileWidth, thisHeight = tileHeight;
 
                 // are we moving horizontally ?
 
-                if ( this.xSpeed !== 0 )
-                {
+                if ( this.xSpeed !== 0 ) {
+
                     this.setX( Math.round( prevX + this.xSpeed ));
 
                     // keep in bounds (exiting screen on left/right result in appearing on right/left)
 
                     var myPos = this.getX();
 
-                    if ( myPos > ( cvsWidth + thisWidth )) {
+                    if ( myPos > ( cvsWidth + thisWidth ))
                         this.setX( -thisWidth );
-                    }
-                    if ( myPos < -thisWidth) {
+
+                    if ( myPos < -thisWidth )
                         this.setX( cvsWidth + thisWidth - 1 );
-                    }
                 }
 
                 // updating movement : are we moving vertically ? (currently only a jump up )
 
                 if ( !this.falling && this.jumping )
-                {
                     this.setY( prevY - this.ySpeed );
-                }
-                else {
+                else
                     this.setY( prevY + 7 ); // 7 = default gravity
-                }
 
                 // keep in vertical bounds
                 if ( this.getY() > this.canvas.getHeight() + thisHeight )
-                {
                     this.setY( -thisHeight );
-                }
 
                 // collision detection : first up get all collidable objects in our direct vicinity
                 var sprites = this.canvas.getChildrenUnderPoint( this.getX(), this.getY(), thisWidth, thisHeight, true );
 
-                if ( sprites.length > 0 )
-                {
+                if ( sprites.length > 0 ) {
+
                     var amt = sprites.length;
 
-                    while ( amt-- )
-                    {
+                    while ( amt-- ) {
+
                         // use faster (but less precise) bounding box check as it suffices for this example
                         var sprite          = sprites[ amt ];
                         var checkHorizontal = true;
 
-                        if ( this.collidesWithEdge( sprite, 3 ))
-                        {
+                        if ( this.collidesWithEdge( sprite, 3 )) {
+
                             var targetY = sprite.getY() - thisHeight; // perfect align on top / i.e. "standing on floor"
 
-                            if ( targetY < prevY )
-                            {
+                            if ( targetY < prevY ) {
+
                                 if ( !this.collidesWithEdge( sprite, 1 ) &&
-                                     !this.collidesWithEdge( sprite, 0 ))
-                                {
+                                     !this.collidesWithEdge( sprite, 0 )) {
                                     // we're jumping INTO another object
                                     targetY = sprite.getY() + sprite.getHeight() - thisHeight;
                                 }
@@ -321,8 +325,7 @@
                             continue;
 
                         if ( this.collidesWithEdge( sprite, 2 ) ||
-                             this.collidesWithEdge( sprite, 0 ))
-                        {
+                             this.collidesWithEdge( sprite, 0 )) {
                             this.setX( prevX );
                         }
                     }
@@ -331,34 +334,34 @@
                 // in case the user has stopped moving the hero, we
                 // slowly reduce the heros speed so he doesn't stop at once
 
-                if ( !this.running )
-                {
-                    if ( this.xSpeed < 0 ) {
+                if ( !this.running ) {
+
+                    if ( this.xSpeed < 0 )
                         this.xSpeed += .25;
-                    }
-                    else if ( this.xSpeed > 0 ) {
+
+                    else if ( this.xSpeed > 0 )
                         this.xSpeed -= .25;
-                    }
                 }
 
                 // in case the user has stopped holding the jump button down, we
                 // slowly reduce the heros speed so he falls back down
+
                 if ( this.jumping && !this.falling && --this._jumpCount <= 0 )
-                {
                     this.falling = true;
-                }
             };
 
             // override draw-method for custom logic
-            Hero.prototype.draw = function( ctx )
-            {
+            Hero.prototype.draw = function( ctx ) {
+
                 var bounds = this._bounds;
 
-                ctx.drawImage( this._image,
-                               this._spriteIndex * bounds.width,            // tile x offset
-                               this._spriteRow   * bounds.height,           // tile y offset
-                               bounds.width, bounds.height,                 // tile width and height
-                               bounds.left, bounds.top, bounds.width, bounds.height );
+                ctx.drawImage(
+                    this._bitmap,
+                    this._spriteIndex * tileWidth,            // tile x offset
+                    this._spriteRow   * tileHeight,           // tile y offset
+                    tileWidth, tileHeight,                    // tile width and height
+                    this._bounds.left, this._bounds.top, tileWidth, tileHeight
+                );
             };
 
             // create a new Hero and add it to the stage
@@ -366,7 +369,15 @@
             // in the sheet being 38 x 35 pixels
             // (see included "images.js"-file for the assetSpriteSheet-image data)
 
-            var hero = new Hero( cvsWidth / 2, cvsHeight / 2, 38, 35, assetSpriteSheet );
+            var tileWidth = 38, tileHeight = 35; // height of a single tile
+
+            var hero = new Hero({
+                x: cvsWidth / 2,
+                y: cvsHeight / 2,
+                width: tileWidth,
+                height: tileHeight,
+                bitmap: assetSpriteSheet
+            });
             cvs.addChild( hero );
 
             // STEP 4 : HOW ABOUT COLLISION DETECTION
@@ -377,22 +388,33 @@
             // how you do this (for instance use an unique color for walls and use a single bitmap
             // along with pixel collision detection)
 
-            var wallLeft = new zSprite( 50, Math.round( cvsHeight / 1.75 ), 10, 100, null, true );
+            var wallLeft = new zSprite({
+                x: 50, y: Math.round( cvsHeight / 1.75 ), width: 10, height: 100, collidable: true
+            });
             cvs.addChild( wallLeft );
 
-            var wallBottom = new zSprite( 50, wallLeft.getY() + wallLeft.getHeight(), cvsWidth / 1.5, 10, null, true );
+            var wallBottom = new zSprite({
+                x: 50, y: wallLeft.getY() + wallLeft.getHeight(), width: cvsWidth / 1.5, height: 10, collidable: true
+            });
             cvs.addChild( wallBottom );
 
-            var wallRight = new zSprite( wallBottom.getWidth() + wallLeft.getX() - 10, wallBottom.getY() - hero.getHeight(), 10, hero.getHeight(), null, true );
+            var wallRight = new zSprite({
+                x: wallBottom.getWidth() + wallLeft.getX() - 10,
+                y: wallBottom.getY() - tileHeight,
+                width: 10, height: tileHeight, collidable: true
+            });
+
             cvs.addChild( wallRight );
 
             // something we can jump on
-            var wallTopRight = new zSprite( wallRight.getX(), wallRight.getY(), 100, 10, null, true );
+            var wallTopRight = new zSprite({
+                x: wallRight.getX(), y: wallRight.getY(), width: 100, height: 10, collidable: true
+            });
             cvs.addChild( wallTopRight );
 
             // custom render logic for each wall
-            var wallDrawFn = function( ctx )
-            {
+            var wallDrawFn = function( ctx ) {
+
                 ctx.fillStyle = 'rgb(255,128,0)';
                 ctx.fillRect( this.getX(), this.getY(), this.getWidth(), this.getHeight());
             };
@@ -400,9 +422,6 @@
 
             // STEP 5 : ADDING KEYBOARD OR TOUCH INTERACTION
             // ---------------------------------------------
-
-            var heroHandler  = new helpers.EventHandler(); // create a handler for the required listeners
-            var touchHandler = new helpers.EventHandler(); // separate for touch controls
 
             // we add on-screen controls buttons for touch screens (we cannot test for
             // touchscreens reliably as most browsers support touch events though the DEVICE
@@ -424,25 +443,24 @@
             container.appendChild( rightBtn );
             container.appendChild( jumpBtn );
 
-            var cancelHandler = function( e )
-            {
+            var cancelHandler = function( e ) {
                 hero.stop();
             };
 
-            touchHandler.addEventListener( leftBtn,  "touchstart",  function( e ) { hero.run( 0 ); });
-            touchHandler.addEventListener( rightBtn, "touchstart",  function( e ) { hero.run( 1 ); });
-            touchHandler.addEventListener( jumpBtn,  "touchstart",  function( e ) { hero.jump(); });
-            touchHandler.addEventListener( leftBtn,  "touchcancel", cancelHandler );
-            touchHandler.addEventListener( leftBtn,  "touchcancel", cancelHandler );
-            touchHandler.addEventListener( leftBtn,  "touchend",    cancelHandler );
-            touchHandler.addEventListener( rightBtn, "touchend",    cancelHandler );
+            leftBtn.addEventListener ( "touchstart",  function( e ) { hero.run( 0 ); });
+            rightBtn.addEventListener( "touchstart",  function( e ) { hero.run( 1 ); });
+            jumpBtn.addEventListener ( "touchstart",  function( e ) { hero.jump(); });
+            leftBtn.addEventListener ( "touchcancel", cancelHandler );
+            leftBtn.addEventListener ( "touchcancel", cancelHandler );
+            leftBtn.addEventListener ( "touchend",    cancelHandler );
+            rightBtn.addEventListener( "touchend",    cancelHandler );
 
             // keyboard control for desktop devices
 
-            heroHandler.addEventListener( window, "keydown", function( e )
-            {
-                switch ( e.keyCode )
-                {
+            window.addEventListener( "keydown", function( e ) {
+
+                switch ( e.keyCode ) {
+
                     // move up (jump)
                     case 38:
                         hero.jump();
@@ -460,24 +478,12 @@
                             hero.run( 0 );
                         break;
                 }
-
-                // remove the touch handler and buttons, we now
-                // know the user has a keyboard
-
-                if ( touchHandler != null )
-                {
-                    touchHandler.dispose();
-                    touchHandler = null;
-                    container.removeChild( leftBtn );
-                    container.removeChild( rightBtn );
-                    container.removeChild( jumpBtn );
-                }
             });
 
             // add a listener for key up (release) so we can tell the hero to stop running
 
-            heroHandler.addEventListener( window, "keyup", function( e )
-            {
+            window.addEventListener( "keyup", function( e ) {
+
                 if ( e.keyCode == 39 || e.keyCode == 37 ) {
                     hero.stop();
                 }

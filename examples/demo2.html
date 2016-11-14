@@ -28,24 +28,26 @@
 
         // resolve dependencies
 
+        var zLoader, zCanvas, zSprite;
+
         requirejs.config({
-            baseUrl : "../src/",
+            baseUrl : "../dist/",
             urlArgs : "bust=" + Date.now()
         });
 
-        require( [ "helpers", "zCanvas", "zSprite" ], function( helpers, zCanvas, zSprite )
-        {
-            // cheap way to make deps global
-            
-            window.helpers = helpers;
-            window.zCanvas = zCanvas;
-            window.zSprite = zSprite;
-            
+        require( [ "zcanvas.amd" ], function( zCanvasLibrary ) {
+
+            // cheap way to make deps global, just for the sake of this demo's simplicity
+            // this is of course not the way to use the AMD require pattern ;)
+
+            zLoader = zCanvasLibrary.zLoader;
+            zCanvas = zCanvasLibrary.zCanvas;
+            zSprite = zCanvasLibrary.zSprite;
+
             demo(); // start the actual demo
         });
 
-        function demo()
-        {
+        function demo() {
 
             // STEP 1 : SETUP
             // --------------------------------------
@@ -74,7 +76,12 @@
             // keep it within the device / browser bounds
             var cvsWidth  = w < 800 ? w * .93 : 800;
             var cvsHeight = h < 500 ? h : 500;
-            var cvs       = new zCanvas( cvsWidth, cvsHeight, true, 60 );
+            var cvs       = new zCanvas({
+                width: cvsWidth,
+                height: cvsHeight,
+                animate: true,
+                fps: 60
+            });
 
             // append zCanvas to DOM
             cvs.insertInPage( container );
@@ -85,7 +92,7 @@
             // first sprite will acts as a background
             // (see included "assets.js"-file for the assetBackground-image data)
             var bgWidth  = 800, bgHeight = 1067;
-            var bgSprite = new zSprite( 0, 0, bgWidth, bgHeight, assetBackground );
+            var bgSprite = new zSprite({ width: bgWidth, height: bgHeight, bitmap: assetBackground });
             cvs.addChild( bgSprite );   // add the background to the zCanvas so it is visible
 
             // SCROLLING MASK SPRITE
@@ -95,7 +102,7 @@
 
             var starSize = cvsWidth * .3; // make the star slightly smaller than the canvas
 
-            var spriteMask = new zSprite( 0, 0, starSize, starSize, assetStar, false, true );
+            var spriteMask = new zSprite({ width: starSize, height: starSize, bitmap: assetStar, mask: true });
 
             // custom overrides, to demonstrate a simple custom behaviour
             // where animation is perfectly timed (test by switching tabs in
@@ -109,8 +116,8 @@
             var renderInterval = cvs.getRenderInterval();
             var maxXPosition   = cvsWidth - starSize;
 
-            spriteMask.update = function( aCurrentTimestamp )
-            {
+            spriteMask.update = function( aCurrentTimestamp ) {
+
                 var delta = ( aCurrentTimestamp - prevStamp ); // should roughly equal the render interval of the zCanvas
                 prevStamp = aCurrentTimestamp;                 // store last timestamp
 
@@ -118,12 +125,11 @@
 
                 var amount = speed / renderInterval * delta;
 
-                if ( direction == 0 ) {
+                if ( direction == 0 )
                     this.setX( this.getX() - amount );
-                }
-                else {
+                else
                     this.setX( this.getX() + amount );
-                }
+
                 var currentPosition = this.getX();
 
                 // keep movement within canvas bounds
@@ -139,9 +145,16 @@
             // custom zSprite extension we use to draw a circle that highlights
             // when it is hovered by the mouse cursor
 
-            var CircleSprite = function( aX, aY, aRadius, aColor )
-            {
-                CircleSprite.super( this, "constructor", aX - aRadius * 2, aY - aRadius * 1.5, aRadius * 2, aRadius * 2 );
+            var CircleSprite = function( x, y, aRadius, aColor ) {
+
+                var opts = {
+                    x: x - aRadius * 2,
+                    y: y - aRadius * 1.5,
+                    width: aRadius * 2,
+                    height: aRadius * 2
+                };
+
+                CircleSprite.super( this, "constructor", opts );
 
                 this.radius = aRadius;
                 this.color  = aColor;
@@ -159,8 +172,8 @@
             CircleSprite.prototype.getY = function() { return CircleSprite.super( this, "getY" ) + this.radius; };
 
             // CircleSprite draw logic
-            CircleSprite.prototype.draw = function( ctx )
-            {
+            CircleSprite.prototype.draw = function( ctx ) {
+
                 ctx.beginPath();
                 ctx.arc( this.getX() + this.radius, this.getY() + this.radius, this.radius, 0, 2 * Math.PI, false );
                 ctx.fillStyle = this.hover ? '#FFFFFF' : this.color; // when hovering the circle is white
@@ -189,13 +202,18 @@
             // ----------------------------
 
             var rectSize  = bgHeight / 15;
-            var rectangle = new zSprite( cvsWidth * .75, cvsHeight * .5, rectSize, rectSize );
+            var rectangle = new zSprite({
+                x: cvsWidth * .75,
+                y: cvsHeight * .5,
+                width: rectSize,
+                height: rectSize
+            });
             rectangle.setConstraint( cvsWidth / 2, cvsHeight / 2, cvsWidth / 2, cvsHeight / 2 ); // add a constraint
             rectangle.setDraggable( true, true ); // we'd like to be able to drag the Rectangle but restrict its movements
 
             // Rectangle draw logic
-            rectangle.draw = function( ctx )
-            {
+            rectangle.draw = function( ctx ) {
+
                 // draw rectangle
                 ctx.fillStyle = '#FF00FF';
                 ctx.fillRect( this.getX(), this.getY(), this.getWidth(), this.getHeight() );
