@@ -1,44 +1,61 @@
-var chai          = require( "chai" );
-var MockedBrowser = require( "../utils/MockedBrowser" );
-var zCanvas       = require( "../../src/zCanvas" );
-var zSprite       = require( "../../src/zSprite" );
+"use strict";
 
-describe( "zSprite", function()
-{
+const chai          = require( "chai" );
+const sinon         = require( "sinon" );
+const MockedBrowser = require( "../utils/MockedBrowser" );
+const zCanvas       = require( "../../src/zCanvas" );
+const zSprite       = require( "../../src/zSprite" );
+const zLoader       = require( "../../src/zLoader" );
+
+describe( "zSprite", () => {
+
     /* setup */
 
     // use Chai assertion library
-    var assert = chai.assert,
-        expect = chai.expect;
+    const assert = chai.assert,
+          expect = chai.expect;
 
-    var canvas;
-    var x, y, width, height, bitmap, collidable;
+    let canvas, x, y, width, height, imgSource, collidable;
 
     // executed before the tests start running
 
-    before( function()
-    {
+    before( () => {
+
         // prepare mock browser
         MockedBrowser.init();
 
         // prepare Canvas
-        canvas = new zCanvas( 200, 200 );
+        canvas = new zCanvas({ width: 200, height: 200 });
 
-        // prepare 1x1 red PNG as Bitmap
-        bitmap = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP4z8DwHwAFAAH/VscvDQAAAABJRU5ErkJggg==";
+        // stub the loader process
+        sinon.stub( zLoader, "loadImage", ( src, handler, optImage ) => {
+
+            const out = optImage ? optImage : new window.Image();
+            out.src = src;
+
+            handler({
+                image: out,
+                size: {
+                    width: 1,
+                    height: 1
+                }
+            });
+        });
+
+        // prepare 1x1 red PNG as Bitmap Image source
+        imgSource = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP4z8DwHwAFAAH/VscvDQAAAABJRU5ErkJggg==";
     });
 
     // executed when all tests have finished running
 
-    after( function()
-    {
-
+    after( () => {
+        zLoader.loadImage.restore();
     });
 
     // executed before each individual test
 
-    beforeEach( function()
-    {
+    beforeEach( () => {
+
         // generate random values for coordinates and dimensions
         x      = Math.round( Math.random() * 100 ) + 1;
         y      = Math.round( Math.random() * 100 ) + 1;
@@ -46,70 +63,70 @@ describe( "zSprite", function()
         height = Math.round( Math.random() * 100 ) + 10;
 
         // random values for optional properties
-        collidable = Math.random() > .5;
+        collidable = ( Math.random() > .5 );
     });
 
     // executed after each individual test
 
-    afterEach( function()
-    {
-        while ( canvas.numChildren() > 0 )
-        {
-            var sprite = canvas.removeChildAt( 0 );
+    afterEach( () => {
+
+        while ( canvas.numChildren() > 0 ) {
+            const sprite = canvas.removeChildAt( 0 );
             sprite.dispose();
         }
     });
 
     /* actual unit tests */
 
-    it( "should not construct without valid arguments", function()
-    {
-        expect( function()
-        {
+    it( "should not construct without valid dimensions specified", () => {
+
+        expect( () => {
+
             new zSprite();
 
-        }).to.throw( /cannot construct a zSprite without valid coordinates and dimensions/ );
+        }).to.throw( /cannot construct a zSprite without valid dimensions/ );
 
-        expect( function()
-        {
-            new zSprite( x );
+        expect( () => {
 
-        }).to.throw( /cannot construct a zSprite without valid coordinates and dimensions/ );
+            new zSprite({ width: width });
 
-        expect( function()
-        {
-            new zSprite( x, y );
+        }).to.throw( /cannot construct a zSprite without valid dimensions/ );
 
-        }).to.throw( /cannot construct a zSprite without valid coordinates and dimensions/ );
+        expect( () => {
 
-        expect( function()
-        {
-            new zSprite( x, y, width );
-
-        }).to.throw( /cannot construct a zSprite without valid coordinates and dimensions/ );
-
-        expect( function()
-        {
-            new zSprite( x, y, width, height );
-
-        }).not.to.throw();
-
-        expect( function()
-        {
-            new zSprite( x, y, width, height, {} );
-
-        }).to.throw( /expected Image or String for Image source/ );
-
-        expect( function()
-        {
-            new zSprite( x, y, width, height, bitmap );
+            new zSprite({ width: width, height: height });
 
         }).not.to.throw();
     });
 
-    it( "should be able to extend its prototype into new function references", function()
-    {
-        var newClass = function() {};
+    it( "should not construct when providing an invalid Image type", () => {
+
+        expect( () => {
+
+            new zSprite({ width: width, height: height, bitmap: {} });
+
+        }).to.throw( /expected HTMLImageElement, HTMLCanvasElement or String for Image source/ );
+
+
+        // this sadly fails in the MockedBrowser environment... can only test with Strings
+        /*
+        expect( () => {
+
+            new zSprite({ width: width, height: height, bitmap: new window.Image() });
+
+        }).not.to.throw();
+        */
+
+        expect( () => {
+
+            new zSprite({ width: width, height: height, bitmap: imgSource });
+
+        }).not.to.throw();
+    });
+
+    it( "should be able to extend its prototype into new function references", () => {
+
+        const newClass = function() {};
 
         zSprite.extend( newClass );
 
@@ -117,9 +134,29 @@ describe( "zSprite", function()
             "expected an instance of newClass to equal the zSprite prototype" );
     });
 
-    it( "should return the construction arguments unchanged", function()
-    {
-        var sprite = new zSprite( x, y, width, height, bitmap, collidable );
+    it( "should by default construct for a 0, 0 coordinate", () => {
+
+        const sprite = new zSprite({
+            width: width,
+            height: height
+        });
+
+        assert.strictEqual( 0, sprite.getX(),
+            "expected zSprite x-coordinate to equal the expected default" );
+
+        assert.strictEqual( 0, sprite.getY(),
+            "expected zSprite y-coordinate to equal the expected default" );
+    });
+
+    it( "should return the construction arguments unchanged", () => {
+
+        const sprite = new zSprite({
+            x: x,
+            y: y,
+            width: width,
+            height: height,
+            collidable: collidable
+        });
 
         assert.strictEqual( x, sprite.getX(),
             "expected x to be " + x + " got " + sprite.getX() + " instead" );
@@ -137,9 +174,12 @@ describe( "zSprite", function()
             "expected collidable to be " + collidable + " got " + sprite.collidable + " instead");
     });
 
-    it( "should be able to toggle its draggable state", function()
-    {
-        var sprite = new zSprite( x, y, width, height );
+    it( "should be able to toggle its draggable state", () => {
+
+        const sprite = new zSprite({
+            width: width,
+            height: height
+        });
 
         assert.strictEqual( false, sprite.getDraggable(),
             "expected sprite not to be draggable after construction" );
@@ -166,9 +206,12 @@ describe( "zSprite", function()
             "expected sprite to be kept within bounds without explicit invocation" );
     });
 
-    it( "should be able to toggle its interactive state", function()
-    {
-        var sprite = new zSprite( x, y, width, height );
+    it( "should be able to toggle its interactive state", () => {
+
+        const sprite = new zSprite({
+            width: width,
+            height: height
+        });
 
         assert.strictEqual( false, sprite.getInteractive(),
             "expected sprite not to be interactive after construction" );
@@ -184,12 +227,17 @@ describe( "zSprite", function()
             "expected sprite not to be interactive after setInteractive( false )-invocation" );
     });
 
-    it( "should be able to update its coordinates", function()
-    {
-        var sprite = new zSprite( x, y, width, height );
+    it( "should be able to update its coordinates", () => {
 
-        var newX = Math.round( Math.random() * 100 ) + 10;
-        var newY = Math.round( Math.random() * 100 ) + 10;
+        const sprite = new zSprite({
+            x: x,
+            y: y,
+            width: width,
+            height: height
+        });
+
+        const newX = Math.round( Math.random() * 100 ) + 10;
+        const newY = Math.round( Math.random() * 100 ) + 10;
 
         sprite.setX( newX );
         sprite.setY( newY );
@@ -201,28 +249,44 @@ describe( "zSprite", function()
             "expected y to be " + newY + ", got " + sprite.getY() + " instead" );
     });
 
-    it( "should be able to update its coordinates and its child coordinates recursively", function()
-    {
-        var sprite = new zSprite( x, y, width, height );
+    it( "should be able to update its coordinates and its child coordinates recursively", () => {
 
-        var child1X = Math.round( Math.random() * 100 ) + 10;
-        var child1Y = Math.round( Math.random() * 100 ) + 10;
-        var child2X = Math.round( Math.random() * 100 ) + 10;
-        var child2Y = Math.round( Math.random() * 100 ) + 10;
+        const sprite = new zSprite({
+            x: x,
+            y: y,
+            width: width,
+            height: height
+        });
 
-        var child1  = new zSprite( child1X, child1Y, width, height );
-        var child2  = new zSprite( child2X, child2Y, width, height );
+        const child1X = Math.round( Math.random() * 100 ) + 10;
+        const child1Y = Math.round( Math.random() * 100 ) + 10;
+        const child2X = Math.round( Math.random() * 100 ) + 10;
+        const child2Y = Math.round( Math.random() * 100 ) + 10;
+
+        const child1  = new zSprite({
+            x: child1X,
+            y: child1Y,
+            width: width,
+            height: height
+        });
+
+        const child2 = new zSprite({
+            x: child2X,
+            y: child2Y,
+            width: width,
+            height: height
+        });
 
         // add child1 onto parent, add child2 onto child1
         sprite.addChild( child1 );
         child1.addChild( child2 );
 
-        var newX            = Math.round( Math.random() * 100 ) + 10;
-        var newY            = Math.round( Math.random() * 100 ) + 10;
-        var expectedChild1X = child1X + ( newX - sprite.getX() );
-        var expectedChild1Y = child1Y + ( newY - sprite.getY() );
-        var expectedChild2X = child2X + ( expectedChild1X - child1.getX() );
-        var expectedChild2Y = child2Y + ( expectedChild1Y - child1.getY() );
+        const newX            = Math.round( Math.random() * 100 ) + 10;
+        const newY            = Math.round( Math.random() * 100 ) + 10;
+        const expectedChild1X = child1X + ( newX - sprite.getX() );
+        const expectedChild1Y = child1Y + ( newY - sprite.getY() );
+        const expectedChild2X = child2X + ( expectedChild1X - child1.getX() );
+        const expectedChild2Y = child2Y + ( expectedChild1Y - child1.getY() );
 
         // update coordinates
         sprite.setX( newX );
@@ -245,10 +309,16 @@ describe( "zSprite", function()
             "expected child 2 y to be " + expectedChild2Y + ", got " + child2.getY() + " instead" );
     });
 
-    it( "should have a bounds rectangle describing its offset and dimensions", function()
-    {
-        var sprite = new zSprite( x, y, width, height );
-        var bounds = sprite.getBounds();
+    it( "should have a bounds rectangle describing its offset and dimensions", () => {
+
+        const sprite = new zSprite({
+            x: x,
+            y: y,
+            width: width,
+            height: height
+        });
+
+        const bounds = sprite.getBounds();
 
         assert.strictEqual( x, bounds.left,
             "expected left to be " + x + ", got " + bounds.left + " instead" );
@@ -263,23 +333,22 @@ describe( "zSprite", function()
             "expected height to be " + height + ", got " + bounds.height + " instead" );
     });
 
-    it( "should invoke the update() method on its children recursively", function()
-    {
-        var updated         = 0;
-        var expectedUpdates = 3;
+    it( "should invoke the update() method on its children recursively", () => {
+
+        const expectedUpdates = 3;
+        let updated = 0;
 
         // hijack update Function
 
-        var orgUpdateFn = zSprite.prototype.update;
-        zSprite.prototype.update = function()
-        {
+        const orgUpdateFn = zSprite.prototype.update;
+        zSprite.prototype.update = function() {
             ++updated;
             orgUpdateFn.call( this );
         };
 
-        var sprite = new zSprite( x, y, width, height );
-        var child1 = new zSprite( x, y, width, height );
-        var child2 = new zSprite( x, y, width, height );
+        const sprite = new zSprite({ width: width, height: height });
+        const child1 = new zSprite({ width: width, height: height });
+        const child2 = new zSprite({ width: width, height: height });
 
         sprite.addChild( child1 );
         child1.addChild( child2 );
@@ -297,16 +366,33 @@ describe( "zSprite", function()
         zSprite.prototype.update = orgUpdateFn;
     });
 
-    it( "should be able to determine when it collides with another sprite", function()
-    {
-        var withinX = x + ( width  / 2 );
-        var withinY = y + ( height / 2 );
-        var outX    = x - width;
-        var outY    = y + height;
+    it( "should be able to determine when it collides with another sprite", () => {
 
-        var sprite            = new zSprite( x, y, width, height );
-        var spriteInBounds    = new zSprite( withinX, withinY, width, height );
-        var spriteOutOfBounds = new zSprite( outX, outY, width, height );
+        const withinX = x + ( width  / 2 );
+        const withinY = y + ( height / 2 );
+        const outX    = x - width;
+        const outY    = y + height;
+
+        const sprite = new zSprite({
+            x: x,
+            y: y,
+            width: width,
+            height: height
+        });
+
+        const spriteInBounds = new zSprite({
+            x: withinX,
+            y: withinY,
+            width: width,
+            height: height
+        });
+
+        const spriteOutOfBounds = new zSprite({
+            x: outX,
+            y: outY,
+            width: width,
+            height: height
+        });
 
         assert.ok( sprite.collidesWith( spriteInBounds ),
             "expected sprite to have collided with a within bounds Object, but it didn't" );
@@ -315,18 +401,28 @@ describe( "zSprite", function()
             "expected sprite not to have collided with an out of bounds Object, but it did" );
     });
 
-    it( "should be able to determine whether it collides with the edge of another sprite", function()
-    {
-        var sprite = new zSprite( x, y, width, height );
+    it( "should be able to determine whether it collides with the edge of another sprite", () => {
+
+        const sprite = new zSprite({
+            x: x,
+            y: y,
+            width: width,
+            height: height
+        });
 
         assert.notOk( sprite.collidesWithEdge( sprite ),
             "expected sprite not collide with itself" );
 
-        var sprite2 = new zSprite( x, y, width, height );
+        const sprite2 = new zSprite({
+            x: x,
+            y: y,
+            width: width,
+            height: height
+        });
         canvas.addChild( sprite2 );
 
-        expect( function()
-        {
+        expect( () => {
+
             sprite.collidesWithEdge( sprite2 );
 
         }).to.throw( /invalid argument for edge/ );
@@ -361,10 +457,21 @@ describe( "zSprite", function()
             "expected sprite to collide below given sprite for coordinates: " + sprite.getY() + " vs " + sprite2.getY() );
     });
 
-    it( "should be able to set a parent Sprite", function()
-    {
-        var sprite = new zSprite( x, y, width, height );
-        var child  = new zSprite( x, y, width, height );
+    it( "should be able to set a parent Sprite", () => {
+
+        const sprite = new zSprite({
+            x: x,
+            y: y,
+            width: width,
+            height: height
+        });
+
+        const child = new zSprite({
+            x: x,
+            y: y,
+            width: width,
+            height: height
+        });
 
         assert.isNull( child.getParent(),
             "expected Sprite not have a parent after construction" );
@@ -380,12 +487,17 @@ describe( "zSprite", function()
             "expected Sprite not have a parent after removal from display list" );
     });
 
-    it( "should by default set its constraints to the Canvas bounds", function()
-    {
-        var sprite = new zSprite( x, y, width, height );
+    it( "should by default set its constraints to the Canvas bounds", () => {
+
+        const sprite = new zSprite({
+            x: x,
+            y: y,
+            width: width,
+            height: height
+        });
         canvas.addChild( sprite );
 
-        var constraint = sprite.getConstraint();
+        const constraint = sprite.getConstraint();
 
         assert.strictEqual( 0, constraint.left,
             "expected left constraint to be 0, got " + constraint.left );
@@ -400,14 +512,19 @@ describe( "zSprite", function()
             "expected constraints height to be " + canvas.getHeight() + ", got " + constraint.height );
     });
 
-    it( "should be able to define parent constraints", function()
-    {
-        var sprite  = new zSprite( x, y, width, height );
+    it( "should be able to define parent constraints", () => {
 
-        var cX      = x - width;
-        var cY      = y + height;
-        var cWidth  = Math.round( width / 2 );
-        var cHeight = Math.round( height / 2 );
+        const sprite = new zSprite({
+            x: x,
+            y: y,
+            width: width,
+            height: height
+        });
+
+        const cX      = x - width;
+        const cY      = y + height;
+        const cWidth  = Math.round( width / 2 );
+        const cHeight = Math.round( height / 2 );
 
         assert.notOk( sprite._keepInBounds,
             "expected sprite not be kept constraint o bounds prior to setting a constraint" );
@@ -417,7 +534,7 @@ describe( "zSprite", function()
         assert.ok( sprite._keepInBounds,
             "expected sprite to be kept within bounds after setting of constraint" );
 
-        var constraint = sprite.getConstraint();
+        const constraint = sprite.getConstraint();
 
         assert.strictEqual( cX, constraint.left,
             "expected constraint left to be " + cX + ", got " + constraint.left + " instead" );
@@ -432,10 +549,21 @@ describe( "zSprite", function()
             "expected constraint height to be " + cHeight + ", got " + constraint.height + " instead" );
     });
 
-    it( "should be able to add/remove children from its display list", function()
-    {
-        var sprite = new zSprite( x, y, width, height );
-        var child  = new zSprite( x, y, width, height );
+    it( "should be able to add/remove children from its display list", () => {
+
+        const sprite = new zSprite({
+            x: x,
+            y: y,
+            width: width,
+            height: height
+        });
+
+        const child = new zSprite({
+            x: x,
+            y: y,
+            width: width,
+            height: height
+        });
 
         assert.notOk( sprite.contains( child ),
             "expected sprite not to contain the child in its display list" );
@@ -445,7 +573,7 @@ describe( "zSprite", function()
         assert.ok( sprite.contains( child ),
             "expected sprite to contain the child in its display list after addition" );
 
-        var removed = sprite.removeChild( child );
+        const removed = sprite.removeChild( child );
 
         assert.notOk( sprite.contains( child ),
             "expected sprite not to contain the child in its display list after removal" );
@@ -454,12 +582,32 @@ describe( "zSprite", function()
             "expected removed sprite to equal the requested sprite" );
     });
 
-    it( "should be able to add/remove children from specific indices in its display list", function()
-    {
-        var sprite = new zSprite( x, y, width, height );
-        var child1 = new zSprite( x, y, width, height );
-        var child2 = new zSprite( x, y, width, height );
-        var child3 = new zSprite( x, y, width, height );
+    it( "should be able to add/remove children from specific indices in its display list", () => {
+
+        const sprite = new zSprite({
+            x: x,
+            y: y,
+            width: width,
+            height: height
+        });
+        const child1 = new zSprite({
+            x: x,
+            y: y,
+            width: width,
+            height: height
+        });
+        const child2 = new zSprite({
+            x: x,
+            y: y,
+            width: width,
+            height: height
+        });
+        const child3 = new zSprite({
+            x: x,
+            y: y,
+            width: width,
+            height: height
+        });
 
         assert.strictEqual( 0, sprite.numChildren(),
             "expected the amount of children to be 0 after construction, got " + sprite.numChildren() + " instead" );
@@ -484,7 +632,7 @@ describe( "zSprite", function()
 
         // test removals
 
-        var removed = sprite.removeChildAt( 2 );
+        let removed = sprite.removeChildAt( 2 );
 
         assert.strictEqual( 2, sprite.numChildren(),
             "expected the amount of children to be 2 after removal of 1 sprite, got " + sprite.numChildren() + " instead" );
@@ -515,12 +663,12 @@ describe( "zSprite", function()
             "expected removed child to equal the expected child" );
     });
 
-    it( "should be able to maintain the linked list of its child sprites", function()
-    {
-        var canvas = new zCanvas( width, height );
-        var sprite1 = new zSprite( 0, 0, width, height );
-        var sprite2 = new zSprite( 0, 0, width, height );
-        var sprite3 = new zSprite( 0, 0, width, height );
+    it( "should be able to maintain the linked list of its child sprites", () => {
+
+        const canvas  = new zCanvas({ width: width, height: height });
+        const sprite1 = new zSprite({ width: width, height: height });
+        const sprite2 = new zSprite({ width: width, height: height });
+        const sprite3 = new zSprite({ width: width, height: height });
 
         assert.isNull( sprite1.next, "expected next Sprite to be null after construction" );
         assert.isNull( sprite1.last, "expected last Sprite to be null after construction" );
@@ -553,12 +701,12 @@ describe( "zSprite", function()
         assert.isNull( sprite3.next, "expected sprite3 not to have a next sibling" );
     });
 
-    it( "should be able to update the linked list of its child sprites", function()
-    {
-        var canvas = new zCanvas( width, height );
-        var sprite1 = new zSprite( 0, 0, width, height );
-        var sprite2 = new zSprite( 0, 0, width, height );
-        var sprite3 = new zSprite( 0, 0, width, height );
+    it( "should be able to update the linked list of its child sprites", () => {
+
+        const canvas  = new zCanvas({ width: width, height: height });
+        const sprite1 = new zSprite({ width: width, height: height });
+        const sprite2 = new zSprite({ width: width, height: height });
+        const sprite3 = new zSprite({ width: width, height: height });
 
         // add children
 
@@ -586,41 +734,26 @@ describe( "zSprite", function()
 
     // TODO: add updatePosition test
 
-    it( "should be able to update its bitmap", function()
-    {
-        var sprite   = new zSprite( x, y, width, height, bitmap );
-        var newImage = "foobaar";
+    it( "should be able to update its bitmap", () => {
 
-        sprite.updateImage( newImage );
+        const sprite = new zSprite({ x: x, y: y, width: width, height: height, bitmap: imgSource });
+        const newImage = imgSource;
 
-        assert.strictEqual( newImage, sprite._image.src,
+        sprite.setBitmap( newImage );
+
+        assert.strictEqual( newImage, sprite._bitmap.src,
            "expected sprites image to equal the new Image" );
 
-        assert.strictEqual( width, sprite.getWidth(),
-            "expected sprite width to be " + width + ", got " + sprite.getWidth() + " instead" );
+        sprite.setBitmap( null );
 
-        assert.strictEqual( height, sprite.getHeight(),
-            "expected sprite width to be " + height + ", got " + sprite.getHeight() + " instead" );
-
-        var expectedWidth  = width * 2;
-        var expectedHeight = height * 2;
-
-        sprite.updateImage( null, expectedWidth, expectedHeight );
-
-        assert.strictEqual( newImage, sprite._image.src,
-            "expected sprites image to equal the last set Image" );
-
-        assert.strictEqual( expectedWidth, sprite.getWidth(),
-            "expected sprite width to be " + expectedWidth + ", got " + sprite.getWidth() + " instead" );
-
-        assert.strictEqual( expectedHeight, sprite.getHeight(),
-            "expected sprite width to be " + expectedHeight + ", got " + sprite.getHeight() + " instead" );
+        assert.strictEqual( null, sprite._bitmap,
+            "expected sprites Bitmap to have been cleared" );
     });
 
-    it( "should be able to update its width", function()
+    it( "should be able to update its width", () =>
     {
-        var sprite = new zSprite( x, y, width, height, bitmap );
-        var newWidth = width;
+        const sprite = new zSprite({ x: x, y: y, width: width, height: height, bitmap: imgSource });
+        let newWidth = width;
 
         while ( width === newWidth )
             newWidth = Math.round( Math.random() * 1000 );
@@ -631,10 +764,10 @@ describe( "zSprite", function()
             "expected sprite width to be " + newWidth + ", got " + sprite.getWidth() + " instead" );
     });
 
-    it( "should be able to update its height", function()
-    {
-        var sprite = new zSprite( x, y, width, height, bitmap );
-        var newHeight = height;
+    it( "should be able to update its height", () => {
+
+        const sprite = new zSprite({ x: x, y: y, width: width, height: height, bitmap: imgSource });
+        let newHeight = height;
 
         while ( height === newHeight )
             newHeight = Math.round( Math.random() * 1000 );

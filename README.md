@@ -59,6 +59,20 @@ zCanvas follows the concept of the DisplayList (familiar to those knowledgeable 
 become visible on screen once they have been added to a container. zSprites are also containers, so you can stack zSprites
 onto other zSprites, without having to worry about z indices. If you're familiar with addChild and removeChild, you're good to go.
 
+Works practically everywhere
+----------------------------
+
+zCanvas has been written in ES6 and CommonJS users can enjoy this directly. zCanvas however
+transpiles nicely back into ES5 and works in browsers from IE9 up. It has been tested and
+verified to work on:
+
+ * Internet Explorer 9+
+ * Chrome for Windows, OS X and Linux
+ * Apple Safari 6+ (including Mobile Safari)
+ * Firefox 3.6+
+ * Android browser 4+
+ * Chrome for Android 4+
+
 Optimized for high performance
 ------------------------------
 
