@@ -40,35 +40,59 @@ module.exports = zSprite;
  *
  * @constructor
  *
- * @param {{
+ * @param {number|{
  *            x: number,
- *            y: number
+ *            y: number,
  *            width: number,
- *            height: number
- *            bitmap: Image|HTMLCanvasElement|string=,
- *            collidable: boolean=,
- *            mask: boolean=
+ *            height: number,
+ *            bitmap: Image|HTMLCanvasElement|string,
+ *            collidable: boolean,
+ *            mask: boolean
+ *        }} x when numerical (legacy 7 argument constructor) the x-coordinate of this zSprite,
+ *        when Object it should contain required properties width and height, with others optional
+ *        (x and y will default to 0, 0 coordinate). When object, no further arguments will be
+ *        processed by this constructor
  *
- *        }} opts
- *
- *        dimensions (width, height) are required, the remaining properties are optional:
- *
- *        x, y, determine the start coordinate of the zSprite, will default to 0
- *        bitmap: optional image, when given, no override of the "draw"-method is
- *            required, as it will render the image by default at the current coordinates
- *            and at the given width and height. aImageSource can be either:
- *            HTMLImageElement, HTMLCanvasElement or a string describing an Image.src
+ * @param {number=} y the y-coordinate of this zSprite, required when x is number
+ * @param {number=} width of this zSprite's bounding box, required when x is number
+ * @param {number=} height of this zSprite's bounding box, required when x is number
+ * @param {Image|HTMLCanvasElement|string=} bitmap optional image, when given, no override of the "draw"-method is
+ *            required, as it will render the image by default at the current coordinates and at the given width and
+ *            height. value can be either: HTMLImageElement, HTMLCanvasElement or a string describing an Image.src
  *            (e.g. hyperlink to remote Image, base64 encoded String or Blob URL)
  *            when not defined, you must override the "draw"-method as otherwise this
  *            sprite won't render anything onto the zCanvas! *
- *        collidable: whether this Sprite can collide with others
- *        mask: whether to use this sprite as a mask
+ * @param {boolean=} collidable whether this zSprite can cause collisions with other Sprites
+ * @param {boolean=} mask whether to use this zSprite as a mask for underlying content
  */
-function zSprite( opts ) {
+function zSprite( x, y, width, height, bitmap, collidable, mask ) {
 
     /* assertions */
 
-    opts = opts || {};
+    let opts;
+
+    if ( typeof x === "number" ) {
+
+        // legacy API
+
+        opts = {
+            x: x, y: y,
+            width: width, height: height,
+            bitmap: bitmap,
+            collidable: collidable,
+            mask: mask
+        };
+    }
+    else if ( typeof x === "object" ) {
+
+        // new API : Object based
+
+        opts = x;
+    }
+    else {
+        throw new Error( "zSprite must either be constructed using a definitions Object {} " +
+            "or x, y, width, height, bitmap (optional), collidable (optional), mask (optional)" );
+    }
 
     if ( typeof opts.width  !== "number" || typeof opts.height !== "number" )
         throw new Error( "cannot construct a zSprite without valid dimensions" );
@@ -109,14 +133,14 @@ function zSprite( opts ) {
      * @protected
      * @type {boolean}
      */
-    this._mask  = ( typeof opts.mask === "boolean" ) ? opts.mask : false;
+    this._mask = ( typeof opts.mask === "boolean" ) ? opts.mask : false;
 
     /**
      * rectangle describing this sprites bounds relative to the zCanvas
      * basically this describes its x- and y- coordinates and its dimensions
      *
      * @protected
-     * @type {{left: number, top: number, width: number, height: *}}
+     * @type {{ left: number, top: number, width: number, height: number }}
      */
     this._bounds = { "left" : 0, "top" : 0, "width" : opts.width, "height" : opts.height };
 
@@ -654,8 +678,10 @@ zSprite.prototype.collidesWithEdge = function( aSprite, aEdge ) {
  * @public
  * @param {Image|HTMLCanvasElement|string=} aImage image, can be either HTMLImageElement, HTMLCanvasElement
  *        or String (remote URL, base64 encoded string or Blob URL)
+ * @param {number=} aOptWidth optional new width to use for this Sprites bounds
+ * @param {number=} aOptHeight optional new width to use for this Sprites bounds
  */
-zSprite.prototype.setBitmap = function( aImage ) {
+zSprite.prototype.setBitmap = function( aImage, aOptWidth, aOptHeight ) {
 
     // swapping Bitmaps ? unset the ready state
 
@@ -685,10 +711,16 @@ zSprite.prototype.setBitmap = function( aImage ) {
                     self._bitmap      = aResult.image;
                     self._bitmapReady = true;
 
-                    // update width and height if defined
+                    // update width and height
 
-                    self.setWidth ( aResult.size.width );
-                    self.setHeight( aResult.size.height );
+                    /** @protected @type {number} */ this._bitmapWidth  = aResult.size.width;
+                    /** @protected @type {number} */ this._bitmapHeight = aResult.size.height;
+
+                    if ( typeof aOptWidth === "number" )
+                        this.setWidth( aOptWidth );
+
+                    if ( typeof aOptHeight === "number" )
+                        this.setHeight( aOptHeight );
 
                     // make sure the image is still within bounds
 

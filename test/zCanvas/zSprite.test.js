@@ -15,7 +15,7 @@ describe( "zSprite", () => {
     const assert = chai.assert,
           expect = chai.expect;
 
-    let canvas, x, y, width, height, imgSource, collidable;
+    let canvas, x, y, width, height, imgSource, collidable, mask;
 
     // executed before the tests start running
 
@@ -30,14 +30,16 @@ describe( "zSprite", () => {
         // stub the loader process
         sinon.stub( zLoader, "loadImage", ( src, handler, optImage ) => {
 
-            const out = optImage ? optImage : new window.Image();
-            out.src = src;
+            const out  = optImage ? optImage : new window.Image();
+            out.src    = src;
+            out.width  = 1;
+            out.height = 1;
 
             handler({
                 image: out,
                 size: {
-                    width: 1,
-                    height: 1
+                    width: out.width,
+                    height: out.height
                 }
             });
         });
@@ -64,6 +66,7 @@ describe( "zSprite", () => {
 
         // random values for optional properties
         collidable = ( Math.random() > .5 );
+        mask       = ( Math.random() > .5 );
     });
 
     // executed after each individual test
@@ -78,25 +81,72 @@ describe( "zSprite", () => {
 
     /* actual unit tests */
 
+    it( "should construct with the legacy multi-argument list", () => {
+
+        const sprite = new zSprite( x, y, width, height, imgSource, collidable, mask );
+
+        assert.strictEqual( x, sprite.getX() );
+        assert.strictEqual( y, sprite.getY() );
+        assert.strictEqual( width, sprite.getWidth() );
+        assert.strictEqual( height, sprite.getHeight() );
+        assert.strictEqual( imgSource, sprite._bitmap.src );
+        assert.strictEqual( collidable, sprite.collidable );
+        assert.strictEqual( mask, sprite._mask );
+    });
+
+    it( "should construct with a single data Object", () => {
+
+        const isMask = ( Math.random() > .5 );
+        const sprite = new zSprite({
+            x: x,
+            y: y,
+            width: width,
+            height: height,
+            bitmap: imgSource,
+            collidable: collidable,
+            mask: mask
+        });
+
+        assert.strictEqual( x, sprite.getX() );
+        assert.strictEqual( y, sprite.getY() );
+        assert.strictEqual( width, sprite.getWidth() );
+        assert.strictEqual( height, sprite.getHeight() );
+        assert.strictEqual( imgSource, sprite._bitmap.src );
+        assert.strictEqual( collidable, sprite.collidable );
+        assert.strictEqual( mask, sprite._mask );
+    });
+
     it( "should not construct without valid dimensions specified", () => {
 
+        // legacy multi-argument constructor
+
         expect( () => {
 
-            new zSprite();
+            new zSprite( x, y );
 
         }).to.throw( /cannot construct a zSprite without valid dimensions/ );
 
         expect( () => {
 
-            new zSprite({ width: width });
+            new zSprite( x, y, width );
 
         }).to.throw( /cannot construct a zSprite without valid dimensions/ );
 
         expect( () => {
 
-            new zSprite({ width: width, height: height });
+            new zSprite( x, y, width, height);
 
         }).not.to.throw();
+
+        // new Object based constructor
+
+        expect( () => {
+
+            new zSprite({
+                x: x, y: y
+            })
+        }).to.throw( /cannot construct a zSprite without valid dimensions/ );
+
     });
 
     it( "should not construct when providing an invalid Image type", () => {
@@ -136,10 +186,7 @@ describe( "zSprite", () => {
 
     it( "should by default construct for a 0, 0 coordinate", () => {
 
-        const sprite = new zSprite({
-            width: width,
-            height: height
-        });
+        const sprite = new zSprite({ width: width, height: height });
 
         assert.strictEqual( 0, sprite.getX(),
             "expected zSprite x-coordinate to equal the expected default" );
@@ -148,38 +195,9 @@ describe( "zSprite", () => {
             "expected zSprite y-coordinate to equal the expected default" );
     });
 
-    it( "should return the construction arguments unchanged", () => {
-
-        const sprite = new zSprite({
-            x: x,
-            y: y,
-            width: width,
-            height: height,
-            collidable: collidable
-        });
-
-        assert.strictEqual( x, sprite.getX(),
-            "expected x to be " + x + " got " + sprite.getX() + " instead" );
-
-        assert.strictEqual( y, sprite.getY(),
-            "expected y to be " + y + " got " + sprite.getY() + " instead" );
-
-        assert.strictEqual( width, sprite.getWidth(),
-            "expected width to be " + width + " got " + sprite.getWidth() + " instead" );
-
-        assert.strictEqual( height, sprite.getHeight(),
-            "expected height to be " + height + " got " + sprite.getHeight() + " instead" );
-
-        assert.strictEqual( collidable, sprite.collidable,
-            "expected collidable to be " + collidable + " got " + sprite.collidable + " instead");
-    });
-
     it( "should be able to toggle its draggable state", () => {
 
-        const sprite = new zSprite({
-            width: width,
-            height: height
-        });
+        const sprite = new zSprite({ width: width, height: height });
 
         assert.strictEqual( false, sprite.getDraggable(),
             "expected sprite not to be draggable after construction" );
@@ -208,10 +226,7 @@ describe( "zSprite", () => {
 
     it( "should be able to toggle its interactive state", () => {
 
-        const sprite = new zSprite({
-            width: width,
-            height: height
-        });
+        const sprite = new zSprite({ width: width, height: height });
 
         assert.strictEqual( false, sprite.getInteractive(),
             "expected sprite not to be interactive after construction" );
@@ -736,18 +751,56 @@ describe( "zSprite", () => {
 
     it( "should be able to update its bitmap", () => {
 
-        const sprite = new zSprite({ x: x, y: y, width: width, height: height, bitmap: imgSource });
+        const sprite = new zSprite({ x: x, y: y, width: width, height: height });
         const newImage = imgSource;
+
+        sprite._bitmapWidth  =
+        sprite._bitmapHeight = 100;
 
         sprite.setBitmap( newImage );
 
         assert.strictEqual( newImage, sprite._bitmap.src,
            "expected sprites image to equal the new Image" );
 
+        assert.strictEqual( 1, sprite._bitmapWidth,
+            "expected bitmapwidth to have updated" );
+
+        assert.strictEqual( 1, sprite._bitmapHeight,
+            "expected bitmapHeight to have updated" );
+
         sprite.setBitmap( null );
 
         assert.strictEqual( null, sprite._bitmap,
             "expected sprites Bitmap to have been cleared" );
+    });
+
+    it( "should by default keep its current size when updating Bitmaps", () => {
+
+        const sprite = new zSprite({ x: x, y: y, width: width, height: height });
+
+        sprite.setBitmap( imgSource );
+
+        assert.strictEqual( width, sprite.getWidth(),
+            "expected sprite width to have remained the same after switching bitmaps" );
+
+        assert.strictEqual( height, sprite.getHeight(),
+            "expected sprite width to have remained the same after switching bitmaps" );
+    });
+
+    it( "should be able to update its bitmap and size", () => {
+
+        const sprite = new zSprite({ x: x, y: y, width: width, height: height });
+        const newImage = imgSource;
+
+        const newWidth = 10, newHeight = 10;
+
+        sprite.setBitmap( newImage, newWidth, newHeight );
+
+        assert.strictEqual( newWidth, sprite.getWidth(),
+            "expected sprite width to have updated after explicitly setting it in the setBitmap()-method" );
+
+        assert.strictEqual( newHeight, sprite.getHeight(),
+            "expected sprite width to have updated after explicitly setting it in the setBitmap()-method" );
     });
 
     it( "should be able to update its width", () =>

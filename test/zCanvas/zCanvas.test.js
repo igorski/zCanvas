@@ -13,7 +13,7 @@ describe( "zCanvas", () => {
     const assert = chai.assert,
           expect = chai.expect;
 
-    let width, height, framerate;
+    let width, height, framerate, animate;
 
     // executed before the tests start running
 
@@ -35,6 +35,7 @@ describe( "zCanvas", () => {
         width     = Math.round( Math.random() * 100 ) + 10;
         height    = Math.round( Math.random() * 100 ) + 10;
         framerate = Math.round( Math.random() * 50 )  + 10;
+        animate   = ( Math.random() > .5 );
     });
 
     // executed after each individual test
@@ -44,6 +45,31 @@ describe( "zCanvas", () => {
     });
 
     /* actual unit tests */
+
+    it( "should construct with the legacy multi-argument list", () => {
+
+        const canvas = new zCanvas( width, height, animate, framerate );
+
+        assert.strictEqual( width, canvas.getWidth() );
+        assert.strictEqual( height, canvas.getHeight() );
+        assert.strictEqual( animate, canvas.isAnimatable() );
+        assert.strictEqual( framerate, canvas.getFrameRate() );
+    });
+
+    it( "should construct with a single data Object", () => {
+
+        const canvas = new zCanvas({
+            width: width,
+            height: height,
+            animate: animate,
+            fps: framerate
+        });
+
+        assert.strictEqual( width, canvas.getWidth() );
+        assert.strictEqual( height, canvas.getHeight() );
+        assert.strictEqual( animate, canvas.isAnimatable() );
+        assert.strictEqual( framerate, canvas.getFrameRate() );
+    });
 
     it( "should not construct with zero or negative dimensions specified", () => {
 
@@ -267,8 +293,8 @@ describe( "zCanvas", () => {
     it( "should be able to return all lowest level children in its display list", () => {
 
         const canvas  = new zCanvas({ width: width, height: height });
-        const sprite1 = new zSprite({ width: 50, height: 50 });
-        const sprite2 = new zSprite({ width: 50, height: 50 });
+        const sprite1 = new zSprite({ width: width, height: height });
+        const sprite2 = new zSprite({ width: width, height: height });
 
         assert.ok( canvas.getChildren() instanceof Array,
             "expected zCanvas to return all its children in an Array" );

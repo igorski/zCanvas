@@ -28,45 +28,66 @@ const OOP          = require( "./utils/OOP" );
 module.exports = zCanvas;
 
 /**
- * creates an API for a HTML Canvas element similar to the Flash Stage Object
- * its "children" are zCanvass which can be "added" and "removed"
- * from a DisplayList. Each child is drawn onto the canvas on each render cycle
+ * creates an API for an HTMLCanvasElement where all drawables are treated as
+ * self-contained Objects that can add/remove themselves from the DisplayList, rather
+ * than having a single function aggregating all drawing instructions
  *
  * @constructor
  *
- * @param {{
- *             width: number=,
-  *            height: number=,
-  *            animate: boolean=,
-  *            fps: number=,
-  *            onUpdate: Function=,
-  *            debug: boolean=
-  *
- *        }} opts
- *
- *        all values are optional:
- *        width and height describe the desired canvas width (default to 300)
- *        animate specifies whether we will animate the Canvas (redraw it constantly on each
- *            animationFrame), this defaults to false to preserve resources (and will only (re)draw when
- *            adding/removing zSprites from the display list) set this to true, when creating animated
- *            content / games
- *        fps specifies the framerate (defaults to 60), only useful when animate is true
+ * @param {number|{
+ *            width: number,
+ *            height: number,
+ *            animate: boolean,
+ *            fps: number,
+ *            onUpdate: Function,
+ *            debug: boolean
+ *        }} width when numerical (legacy 4 argument constructor), the desired width of the zCanvas,
+ *        when Object it should contain required properties width and height, with others optional
+ *        (see defaults for animate and framerate below)
  *        onUpdate callback method to execute when the canvas is about to render. This can be used to synchronize
- *            a game's model from a single spot (instead of having each zSprite's update()-method fire)
+ *                 a game's model from a single spot (instead of having each zSprite's update()-method fire)
  *        debug specifies whether or not all sprites should render their Bounding Box for debugging purposes
+ *        When object, no further arguments will be processed by this constructor
+ *
+ * @param {number=} height desired height of the zCanvas
+ * @param {boolean=} animate specifies whether we will animate the Canvas (redraw it constantly on each
+ *            animationFrame), this defaults to false to preserve resources (and will only (re)draw when
+ *            adding/removing zSprites from the display list) set this to true when creating animated
+ *            content / games
+ * @param {number=} framerate  (defaults to 60), only useful when animate is true
  */
-function zCanvas( opts ) {
+function zCanvas( width, height, animate, framerate ) {
 
     /* assertions */
 
-    opts = opts || {};
+    let opts;
 
-    const width  = ( typeof opts.width  === "number" ) ? opts.width  : 300;
-    const height = ( typeof opts.height === "number" ) ? opts.height : 300;
+    if ( typeof width === "number" ) {
 
-    if ( width <= 0 || height <= 0 ) {
-        throw new Error( "cannot construct a zCanvas without valid dimensions" );
+        // legacy API
+
+        opts = {
+            width: width,
+            height: height,
+            animate: animate,
+            fps: framerate
+        };
     }
+    else if ( typeof width === "object" ) {
+
+        // new API : Object based
+
+        opts = width;
+    }
+    else {
+        opts = {};
+    }
+
+    width  = ( typeof opts.width  === "number" ) ? opts.width  : 300;
+    height = ( typeof opts.height === "number" ) ? opts.height : 300;
+
+    if ( width <= 0 || height <= 0 )
+        throw new Error( "cannot construct a zCanvas without valid dimensions" );
 
     /* instance properties */
 

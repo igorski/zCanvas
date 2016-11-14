@@ -123,11 +123,11 @@ You can view some basic features in the down-and-dirty demos here :
 
 Game-like demo showcasing the use of sprite sheets for animating characters:
 
-https://rawgithub.com/igorski/zCanvas/master/examples/demo1.html
+[Demo #1: Spritesheets and collisions](https://rawgithub.com/igorski/zCanvas/master/examples/demo1.html)
 
 Demo showcasing the layering and masking effects, both mouse and touch responsive.
 
-https://rawgithub.com/igorski/zCanvas/master/examples/demo2.html
+[Demo #2: Layers and interactions](https://rawgithub.com/igorski/zCanvas/master/examples/demo2.html)
 
 The API / Documentation
 =======================

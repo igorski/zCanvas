@@ -11,7 +11,7 @@
 </head>
 <body>
     <div id="container">
-        <h1>zCanvas spritesheet demo</h1>
+        <h1>zCanvas demo #1: Spritesheets and collisions</h1>
         <div id="demo"><!-- x --></div>
         <p>
             Demo features : auto scrolling background and a keyboard / touchscreen-controllable spritesheet animation
@@ -252,7 +252,7 @@
                 }
 
                 var prevX     = this.getX(), prevY = this.getY(),
-                    thisWidth = tileWidth, thisHeight = tileHeight;
+                    thisWidth = this.getWidth(), thisHeight = this.getHeight();
 
                 // are we moving horizontally ?
 
@@ -357,10 +357,10 @@
 
                 ctx.drawImage(
                     this._bitmap,
-                    this._spriteIndex * tileWidth,            // tile x offset
-                    this._spriteRow   * tileHeight,           // tile y offset
-                    tileWidth, tileHeight,                    // tile width and height
-                    this._bounds.left, this._bounds.top, tileWidth, tileHeight
+                    this._spriteIndex * bounds.width,         // tile x offset
+                    this._spriteRow   * bounds.height,        // tile y offset
+                    bounds.width, bounds.height,              // tile width and height
+                    bounds.left, bounds.top, bounds.width, bounds.height
                 );
             };
 
