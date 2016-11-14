@@ -110,8 +110,6 @@ module.exports = {
 
         if ( isDataURL )
             aCallback( wrapOutput( out )); // as stated above, invoke callback immediately for data strings
-
-        return out;
     }
 
 };

@@ -7,6 +7,7 @@ const gulp        = require( "gulp" ),
       rename      = require( "gulp-rename" ),
       uglify      = require( "gulp-uglify" ),
       amdOptimize = require( "amd-optimize" ),
+      runSeq      = require( "run-sequence" ),
       del         = require( "del" );
 
 const SRC_FOLDER      = "src";
@@ -16,7 +17,14 @@ const TEMP_ES5_FOLDER = "temp/es5";
 
 /* tasks */
 
-gulp.task("amd", ["es6-amd"], () => {
+gulp.task("build", ( complete ) => {
+
+    // builds both for AMD/RequireJS and globally scoped lib
+
+    runSeq( "clean", [ "amd", "browser" ], complete );
+});
+
+gulp.task("amd", ["transpile-amd"], () => {
 
     return gulp.src( TEMP_ES5_FOLDER + "/**/*.js")
         .pipe( amdOptimize( "zcanvas.amd" ))
@@ -25,10 +33,11 @@ gulp.task("amd", ["es6-amd"], () => {
         .pipe( gulp.dest( OUTPUT_FOLDER ));
 });
 
-gulp.task("browser", ["es6-commonjs"], () => {
+gulp.task("browser", ["browserify-commonjs"], () => {
 
-    return gulp.src( TEMP_ES5_FOLDER + "/**/*.js")
-        .pipe( concat( "zcanvas.browser.js" ))
+    return gulp.src( TEMP_ES5_FOLDER + "/zcanvas.browser.js")
+        .pipe( babel({ presets: "es2015" }))
+        .pipe( concat( "zcanvas.min.js" ))
         .pipe( uglify() )
         .pipe( gulp.dest( OUTPUT_FOLDER ));
 });
@@ -47,7 +56,7 @@ gulp.task("clean", () => {
  * copy the wrapper file that acts as the entry
  * point for the AMD/RequireJS output
  */
-gulp.task("copy-amd-src", ["clean"], () => {
+gulp.task("copy-amd-src", [], () => {
 
     return gulp.src([ SRC_FOLDER + "/**/*.js", "export/zcanvas.amd.js" ])
         .pipe( gulp.dest( TEMP_FOLDER ));
@@ -57,7 +66,7 @@ gulp.task("copy-amd-src", ["clean"], () => {
  * copy the wrapper file that acts as the entry
  * point for direct browser usage
  */
-gulp.task("copy-browser-src", ["clean"], () => {
+gulp.task("copy-browser-src", [], () => {
 
     return gulp.src([ SRC_FOLDER + "/**/*.js", "export/zcanvas.browser.js" ])
         .pipe( gulp.dest( TEMP_FOLDER ));
@@ -67,7 +76,7 @@ gulp.task("copy-browser-src", ["clean"], () => {
  * transform CommonJS modules into AMD/RequireJS format
  * while transpiling the ES6 to ES5 for browser usage
  */
-gulp.task("es6-amd", ["copy-amd-src"], () => {
+gulp.task("transpile-amd", ["copy-amd-src"], () => {
 
     return gulp.src([ TEMP_FOLDER + "/**/*.js"])
         .pipe( babel({ presets: "es2015", plugins: "transform-es2015-modules-amd" }))
@@ -75,12 +84,12 @@ gulp.task("es6-amd", ["copy-amd-src"], () => {
 });
 
 /**
- * transform CommonJS modules from
- * ES6 to ES5 for browser usage
+ * transform CommonJS modules into globally scoped library
  */
-gulp.task("es6-commonjs", ["copy-browser-src"], () => {
+gulp.task("browserify-commonjs", ["copy-browser-src"], () => {
 
-    return gulp.src([ SRC_FOLDER + "/**/*.js" ])
-        .pipe( babel({ presets: "es2015" }))
+    return browserify([ TEMP_FOLDER + "/zcanvas.browser.js" ])
+        .bundle()
+        .pipe( source( "zcanvas.browser.js" ))
         .pipe( gulp.dest( TEMP_ES5_FOLDER ));
 });

@@ -24,16 +24,18 @@ You can get zCanvas via NPM:
     
 ## Project Integration
 
-zCanvas is compatible with CommonJS, AMD/RequireJS or can be included in the browser via script tags:
+zCanvas is compatible with CommonJS, AMD/RequireJS or can be included in a document via script tags:
 
 CommonJS:
 
     const zCanvas = require( "zcanvas" ).zCanvas;
     const zSprite = require( "zcanvas" ).zSprite;
 
-(you can subsequently use a tool like Browserify to build for the browser).
+After which you can subsequently use a tool like Browserify to build your application for the browser.
 
 RequireJS:
+
+Use _zcanvas.amd.js_ inside the _dist/_-folder for a prebuilt, minimized RequireJS library
 
     require( [ "zcanvas.amd" ], function( zCanvasLibrary ) {
     
@@ -43,11 +45,13 @@ RequireJS:
 
 Browser:
 
-    <script type="text/javascript" src="./src/helpers.js"></script>
-    <script type="text/javascript" src="./src/zCanvas.js"></script>
-    <script type="text/javascript" src="./src/zSprite.js"></script>
-
-Note that RequireJS and script tag injection requires "helpers.js" for shared functionalities.
+    <script type="text/javascript" src="./dist/zcanvas.min.js"></script>
+    <script type="text/javascript">
+    
+        // do something with globally available actors:
+        // "zCanvas", "zSprite", "zLoader"
+    
+    </script>
 
 DisplayList convention
 ----------------------
@@ -98,10 +102,10 @@ When using CommonJS for your project, it is recommended to require the source
 code directly. However, the project can also be built directly for the browser
 using a simple Gulp task:
 
-    gulp amd
+    gulp build
     
-After which a folder _dist/_ is created which contains the _zcanvas.amd.js_ file. The
-source code is transpiled from ES6 to ES5 for maximum compatibility.
+After which a folder _dist/_ is created which contains the prebuilt AMD/RequireJS library as well as a script
+that can be included directly in a document. The source code is transpiled from ES6 to ES5 for maximum compatibility.
 
 Unit testing
 ============
