@@ -153,6 +153,33 @@ function zSprite( x, y, width, height, bitmap, collidable, mask ) {
     this._parent = null;
 
     /**
+     * we use a linked list to quickly traverse the DisplayList
+     * of the zCanvas, this property points to the previous sprite on the list
+     *
+     * @public
+     * @type {zSprite}
+     */
+    this.last = null;
+
+    /**
+     * we use a linked list to quickly traverse the DisplayList
+     * of the zCanvas, this property points to the next sprite on the list
+     *
+     * @public
+     * @type {zSprite}
+     */
+    this.next = null;
+
+    /**
+     * reference to the zCanvas holding this zSprite
+     * is null if the zSprite isn't present on the zCanvas' display list
+     *
+     * @public
+     * @type {zCanvas}
+     */
+    zSprite.prototype.canvas = null;
+
+    /**
      * @protected
      * @type {Image}
      */
@@ -227,36 +254,6 @@ zSprite.extend = function( extendingFunction ) {
 
     OOP.extend( extendingFunction, zSprite );
 };
-
-/* instance properties */
-
-/**
- * we use a linked list to quickly traverse the DisplayList
- * of the zCanvas
- *
- * @public
- * @type {zSprite|null}
- */
-zSprite.prototype.last = null;
-
-/**
- * we use a linked list to quickly traverse the DisplayList
- * of the zCanvas
- *
- * @public
- * @type {zSprite|null}
- */
-zSprite.prototype.next = null;
-
-/**
- * reference to the zCanvas holding this zSprite
- * NOTE : will be null if the zSprite isn't present on
- * the ZCanvas' display list
- *
- * @public
- * @type {zCanvas}
- */
-zSprite.prototype.canvas = null;
 
 /* public methods */
 
@@ -970,8 +967,8 @@ zSprite.prototype.contains = function( aChild ) {
  * @param {number} aXPosition position of the touch / cursor
  * @param {number} aYPosition position of the touch / cursor
  */
-zSprite.prototype.handlePress = function( aXPosition, aYPosition )
-{
+zSprite.prototype.handlePress = function( aXPosition, aYPosition ) {
+
     // override in prototype-extensions or instance
 };
 
@@ -983,8 +980,8 @@ zSprite.prototype.handlePress = function( aXPosition, aYPosition )
  * @param {number} aXPosition position of the touch / cursor
  * @param {number} aYPosition position of the touch / cursor
  */
-zSprite.prototype.handleRelease = function( aXPosition, aYPosition )
-{
+zSprite.prototype.handleRelease = function( aXPosition, aYPosition ) {
+
     // override in prototype-extensions or instance
 };
 
@@ -994,8 +991,8 @@ zSprite.prototype.handleRelease = function( aXPosition, aYPosition )
  *
  * @protected
  */
-zSprite.prototype.handleClick = function()
-{
+zSprite.prototype.handleClick = function() {
+
     // override in prototype-extensions or instance
 };
 
@@ -1008,8 +1005,8 @@ zSprite.prototype.handleClick = function()
  * @param {number} aXPosition
  * @param {number} aYPosition
  */
-zSprite.prototype.handleMove = function( aXPosition, aYPosition )
-{
+zSprite.prototype.handleMove = function( aXPosition, aYPosition ) {
+
     const theX = this._dragStartOffset.x + ( aXPosition - this._dragStartEventCoordinates.x );
     const theY = this._dragStartOffset.y + ( aYPosition - this._dragStartEventCoordinates.y );
 
@@ -1032,8 +1029,8 @@ zSprite.prototype.handleMove = function( aXPosition, aYPosition )
  *
  * @return {boolean} whether this zSprite has handled the event
  */
-zSprite.prototype.handleInteraction = function( aEventX, aEventY, aEvent )
-{
+zSprite.prototype.handleInteraction = function( aEventX, aEventY, aEvent ) {
+
     // first traverse the children of this sprite
     let foundInteractionInChild = false, theChild;
 
