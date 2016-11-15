@@ -8,12 +8,14 @@
 
 const zCanvas = require( "./zCanvas"),
       zSprite = require( "./zSprite"),
-      zLoader = require( "./zLoader" );
+      zLoader = require( "./zLoader" ),
+      zUtil   = require( "./zUtil" );
 
 (function( scope ) {
 
     scope.zCanvas = zCanvas;
     scope.zSprite = zSprite;
     scope.zLoader = zLoader;
+    scope.zUtil   = zUtil;
 
 })( self );

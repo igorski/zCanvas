@@ -25,7 +25,7 @@
 
         // resolve dependencies
 
-        var zLoader, zCanvas, zSprite;
+        var zLoader, zCanvas, zSprite, zUtil;
 
         requirejs.config({
             baseUrl : "../dist/",
@@ -40,6 +40,7 @@
             zLoader = zCanvasLibrary.zLoader;
             zCanvas = zCanvasLibrary.zCanvas;
             zSprite = zCanvasLibrary.zSprite;
+            zUtil   = zCanvasLibrary.zUtil;
 
             demo(); // start the actual demo
         });
@@ -188,7 +189,7 @@
                 this.running   = true;
                 // switch spritesheet animation now we're starting to run
                 this.switchAnimation(
-                    ( this.direction === 0 ) ? this._sheet[ 2 ] : this._sheet[ 3 ]
+                    ( this.direction === 0 ) ? this.sheet[ 2 ] : this.sheet[ 3 ]
                 );
             };
 
@@ -199,7 +200,7 @@
                 this.running = false;
                 // switch spritesheet animation now we're stopping the running
                 this.switchAnimation(
-                    ( this.direction === 0 ) ? this._sheet[ 0 ] : this._sheet[ 1 ]
+                    ( this.direction === 0 ) ? this.sheet[ 0 ] : this.sheet[ 1 ]
                 );
             };
 
@@ -234,84 +235,57 @@
                     }
                 }
 
-                var prevX     = this.getX(), prevY = this.getY(),
-                    thisWidth = this.getWidth(), thisHeight = this.getHeight();
+                var prevX = this.getX(), prevY = this.getY();
+                var targetX = this.getX(), targetY = this.getY();
+                var thisWidth = this.getWidth(), thisHeight = this.getHeight();
 
                 // are we moving horizontally ?
 
                 if ( this.xSpeed !== 0 ) {
 
-                    this.setX( Math.round( prevX + this.xSpeed ));
+                    targetX += this.xSpeed;
 
                     // keep in bounds (exiting screen on left/right result in appearing on right/left)
 
-                    var myPos = this.getX();
+                    if ( targetX > ( cvsWidth + thisWidth ))
+                        targetX = -thisWidth;
 
-                    if ( myPos > ( cvsWidth + thisWidth ))
-                        this.setX( -thisWidth );
-
-                    if ( myPos < -thisWidth )
-                        this.setX( cvsWidth + thisWidth - 1 );
+                    if ( targetX < -thisWidth )
+                        targetX = cvsWidth + thisWidth - 1;
                 }
 
                 // updating movement : are we moving vertically ? (currently only a jump up )
 
                 if ( !this.falling && this.jumping )
-                    this.setY( prevY - this.ySpeed );
+                    targetY -= this.ySpeed;
                 else
-                    this.setY( prevY + 7 ); // 7 = default gravity
+                    targetY += GRAVITY;
 
                 // keep in vertical bounds
-                if ( this.getY() > this.canvas.getHeight() + thisHeight )
-                    this.setY( -thisHeight );
+                if ( targetY > this.canvas.getHeight() + thisHeight )
+                    targetY = -thisHeight;
 
                 // collision detection : first up get all collidable objects in our direct vicinity
-                var sprites = this.canvas.getChildrenUnderPoint( this.getX(), this.getY(), thisWidth, thisHeight, true );
 
-                if ( sprites.length > 0 ) {
+                // check horizontalCollision first
+                var horCollision, verCollision;
+                this.setX( targetX );
+                if ( horCollision = zUtil.pixelCollision(this, wallSprite, true)) {
+                    // horizontal collision, e.g. touched wall
+                    // link to wall by taking the current position plus the
+                    // x-index of the collision minus the total width of the sprite
+                    targetX = this.getX() + horCollision.x - this.getWidth();
+                    this.setX( targetX < prevX ? prevX : targetX );
+                }
 
-                    var amt = sprites.length;
-
-                    while ( amt-- ) {
-
-                        // use faster (but less precise) bounding box check as it suffices for this example
-                        var sprite          = sprites[ amt ];
-                        var checkHorizontal = true;
-
-                        if ( this.collidesWithEdge( sprite, 3 )) {
-
-                            var targetY = sprite.getY() - thisHeight; // perfect align on top / i.e. "standing on floor"
-
-                            if ( targetY < prevY ) {
-
-                                if ( !this.collidesWithEdge( sprite, 1 ) &&
-                                     !this.collidesWithEdge( sprite, 0 )) {
-                                    // we're jumping INTO another object
-                                    targetY = sprite.getY() + sprite.getHeight() - thisHeight;
-                                }
-                                else {
-                                    targetY = prevY; // jumped against, halt movement
-                                }
-                            }
-                            else {
-                                // we're allowed to "jump", horizontal blocking not applicable for THIS collision
-                                checkHorizontal = false;
-                            }
-                            this.setY( targetY );
-                            this.jumping = false;
-                        }
-                        else if ( this.collidesWithEdge( sprite, 1 )) {
-                            this.setY( prevY );
-                        }
-
-                        if ( !checkHorizontal )
-                            continue;
-
-                        if ( this.collidesWithEdge( sprite, 2 ) ||
-                             this.collidesWithEdge( sprite, 0 )) {
-                            this.setX( prevX );
-                        }
-                    }
+                this.setY( targetY );
+                if ( verCollision = zUtil.pixelCollision(this, wallSprite, true)) {
+                    // vertical collision, e.g. touched ground
+                    // link to ground by taking the current position plus the
+                    // y-index of the collision minus the total height of the sprite
+                    targetY = this.getY() + verCollision.y - this.getHeight();
+                    this.setY( targetY < prevY ? prevY : targetY );
+                    this.jumping = false;
                 }
 
                 // in case the user has stopped moving the hero, we
@@ -358,6 +332,13 @@
             // STEP 4 : HOW ABOUT COLLISION DETECTION
             // --------------------------------------
 
+            var GRAVITY = 7;
+
+            var walls = document.createElement( "canvas" );
+            walls.width = cvs.getWidth();
+            walls.height = cvs.getHeight();
+            var ctx = walls.getContext( "2d" );
+
             // we test using the super-fast bounding box collision detection, as such we can
             // afford to make separate sprites of each wall, it's up to your applications needs
             // how you do this (for instance use an unique color for walls and use a single bitmap
@@ -366,12 +347,10 @@
             var wallLeft = new zSprite({
                 x: 50, y: Math.round( cvsHeight / 1.75 ), width: 10, height: 100, collidable: true
             });
-            cvs.addChild( wallLeft );
 
             var wallBottom = new zSprite({
                 x: 50, y: wallLeft.getY() + wallLeft.getHeight(), width: cvsWidth / 1.5, height: 10, collidable: true
             });
-            cvs.addChild( wallBottom );
 
             var wallRight = new zSprite({
                 x: wallBottom.getWidth() + wallLeft.getX() - 10,
@@ -379,13 +358,10 @@
                 width: 10, height: tileHeight, collidable: true
             });
 
-            cvs.addChild( wallRight );
-
             // something we can jump on
             var wallTopRight = new zSprite({
                 x: wallRight.getX(), y: wallRight.getY(), width: 100, height: 10, collidable: true
             });
-            cvs.addChild( wallTopRight );
 
             // custom render logic for each wall
             var wallDrawFn = function( ctx ) {
@@ -394,6 +370,23 @@
                 ctx.fillRect( this.getX(), this.getY(), this.getWidth(), this.getHeight());
             };
             wallBottom.draw = wallRight.draw = wallTopRight.draw = wallLeft.draw = wallDrawFn;
+
+            wallLeft.draw( ctx );
+            wallRight.draw( ctx );
+            wallTopRight.draw( ctx );
+            wallBottom.draw( ctx );
+
+            ctx.beginPath();
+            ctx.arc( 300, 305, 25, 0, 2 * Math.PI, false);
+            ctx.fill();
+
+            ctx.save();
+            ctx.rotate(15 * Math.PI / 180 );
+            ctx.fillRect( 400, 125, 100, 10 );
+            ctx.restore();
+
+            var wallSprite = new zSprite({ x: 0, y: 0, width: walls.width, height: walls.height, bitmap: walls });
+            cvs.addChild( wallSprite );
 
             // STEP 5 : ADDING KEYBOARD OR TOUCH INTERACTION
             // ---------------------------------------------

@@ -246,10 +246,10 @@ function zSprite( x, y, width, height, bitmap, collidable, mask ) {
             throw new Error( "cannot use a spritesheet without a valid Bitmap" );
 
         /**
-         * @protected
+         * @public
          * @type {Array.<{ row: number, col: number, amount: number, fpt: 5 }>}
          */
-        this._sheet = opts.sheet;
+        this.sheet = opts.sheet;
 
         /**
          * @protected
@@ -263,7 +263,7 @@ function zSprite( x, y, width, height, bitmap, collidable, mask ) {
             counter : 0   // the frame counter that is increased on each frame render
         };
 
-        this.switchAnimation( this._sheet[ 0 ]); // by default select first animation from list
+        this.switchAnimation( this.sheet[ 0 ]); // by default select first animation from list
     }
 }
 
@@ -447,6 +447,80 @@ zSprite.prototype.setHeight = function( aValue ) {
 };
 
 /**
+ * update the position of this Sprite, where setX and setY operate directly on the
+ * Sprites coordinates, this method validates the requested coordinates against the
+ * defined constraints of this Sprite to ensure it remains within the constraints
+ *
+ * @public
+ *
+ * @param {number=} left optionally desired x-coordinate, defaults to current position
+ * @param {number=} top optionally desired y-coordinate, defaults to current position
+ * @param {number=} width optionally desired width, defaults to current size
+ * @param {number=} height optionally desired width, defaults to current size
+ */
+zSprite.prototype.setBounds = function( left, top, width, height ) {
+
+    if ( typeof left !== "number" )
+        left = this._bounds.left;
+
+    if ( typeof top !== "number" )
+        top = this._bounds.top;
+
+    if ( this._constraint ) {
+        left -= this._constraint.left;
+        top -= this._constraint.top;
+    }
+    else if ( !this.canvas ) {
+        throw new Error( "cannot update position of a zSprite that has no constraint or is not added to a zCanvas" );
+    }
+
+    if ( typeof width === "number" )
+        this._bounds.width = width;
+
+    if ( typeof height === "number" )
+        this._bounds.height = height;
+
+    const thisWidth   = this._bounds.width;
+    const thisHeight  = this._bounds.height;
+    const stageWidth  = this._constraint ? this._constraint.width  : this.canvas.width;
+    const stageHeight = this._constraint ? this._constraint.height : this.canvas.height;
+
+    // keep within bounds ?
+
+    if ( this._keepInBounds ) {
+
+        // There is a very small chance that the bounds width/height compared to stage width/height
+        // is only very slightly different, which will produce a positive numeric result very close to,
+        // but not quite zero. To play it safe, we will limit it to a maximum of 0.
+        const minX = Math.min( 0, -( thisWidth  - stageWidth  ));
+        const minY = Math.min( 0, -( thisHeight - stageHeight ));
+        const maxX = stageWidth  - thisWidth;
+        const maxY = stageHeight - thisHeight;
+
+        left = Math.min( maxX, Math.max( left, minX ));
+        top = Math.min( maxY, Math.max( top, minY ));
+    }
+    else {
+
+        /*if ( aXPosition < 0 ) {
+         aXPosition = aXPosition - ( thisWidth  * .5 );
+         }
+         else*/ if ( left > stageWidth ) {
+            left = left + ( thisWidth  * .5 );
+        }
+
+        /*if ( aYPosition < 0 ) {
+         aYPosition = aYPosition - ( thisHeight * .5 );
+         }
+         else*/ if ( top > stageHeight ) {
+            top = top + ( thisHeight * .5 );
+        }
+    }
+    this.setX( left );
+    this.setY( top );
+};
+
+/**
  * @public
  * @return {{ left: number, top: number, width: number, height: number }}
  */
@@ -509,72 +583,6 @@ zSprite.prototype.update = function( aCurrentTimestamp ) {
 
     if ( this._animation )
         this.updateAnimation();
-};
-
-/**
- * update the position of this Sprite, where setX and setY operate directly on the
- * Sprites coordinates, this method validates the requested coordinates against the
- * defined constraints of this Sprite to ensure it remains within bounds
- *
- * @public
- *
- * @param {number=} aXPosition optionally desired x-coordinate, defaults to current position
- * @param {number=} aYPosition optionally desired y-coordinate, defaults to current position
- */
-zSprite.prototype.updatePosition = function( aXPosition, aYPosition ) {
-
-    if ( typeof aXPosition !== "number" )
-        aXPosition = this._bounds.left;
-
-    if ( typeof aYPosition !== "number" )
-        aYPosition = this._bounds.top;
-
-    if ( this._constraint ) {
-        aXPosition -= this._constraint.left;
-        aYPosition -= this._constraint.top;
-    }
-    else if ( !this.canvas ) {
-        throw new Error( "cannot update position of a zSprite that has no constraint or is not added to a zCanvas" );
-    }
-
-    const thisWidth   = this._bounds.width;
-    const thisHeight  = this._bounds.height;
-    const stageWidth  = this._constraint ? this._constraint.width  : this.canvas.width;
-    const stageHeight = this._constraint ? this._constraint.height : this.canvas.height;
-
-    // keep within bounds ?
-
-    if ( this._keepInBounds ) {
-
-        // There is a very small chance that the bounds width/height compared to stage width/height
-        // is only very slightly different, which will produce a positive numeric result very close to,
-        // but not quite zero. To play it safe, we will limit it to a maximum of 0.
-        const minX = Math.min( 0, -( thisWidth  - stageWidth  ));
-        const minY = Math.min( 0, -( thisHeight - stageHeight ));
-        const maxX = stageWidth  - thisWidth;
-        const maxY = stageHeight - thisHeight;
-
-        aXPosition = Math.min( maxX, Math.max( aXPosition, minX ));
-        aYPosition = Math.min( maxY, Math.max( aYPosition, minY ));
-    }
-    else {
-
-        /*if ( aXPosition < 0 ) {
-         aXPosition = aXPosition - ( thisWidth  * .5 );
-         }
-         else*/ if ( aXPosition > stageWidth ) {
-            aXPosition = aXPosition + ( thisWidth  * .5 );
-        }
-
-        /*if ( aYPosition < 0 ) {
-         aYPosition = aYPosition - ( thisHeight * .5 );
-         }
-         else*/ if ( aYPosition > stageHeight ) {
-            aYPosition = aYPosition + ( thisHeight * .5 );
-        }
-    }
-    this.setX( aXPosition );
-    this.setY( aYPosition );
 };
 
 /**
@@ -659,31 +667,49 @@ zSprite.prototype.draw = function( aCanvasContext ) {
 /**
  * queries the bounding box of another sprite to check whether it overlaps the bounding box of this sprite, this
  * can be used as a fast method to detect collisions, though note it is less accurate than checking at the pixel
- * level via the zCanvas "checkCollision"-method as it will match the entire bounding box, and omit checking for
- * transparent areas !
+ * level as it will match the entire bounding box, and omit checking for (for instance) transparent areas!
  *
  * @public
  * @param {zSprite} aSprite the sprite to check against *
  * @return {boolean} whether a collision has been detected
  */
-zSprite.prototype.collidesWith = function( aSprite )
-{
-    // checking ourselves are we ?
+zSprite.prototype.collidesWith = function( aSprite ) {
 
-    if ( aSprite == this )
+    if ( aSprite === this )
         return false;
+    
+    const self = this._bounds, compare = aSprite.getBounds();
+    
+    return !(
+        (( self.top + self.height ) < ( compare.top )) ||
+        ( self.top > ( compare.top + compare.height )) ||
+        (( self.left + self.width ) < compare.left ) ||
+        ( self.left > ( compare.left + compare.width ))
+    );
+};
 
-    const otherX      = aSprite.getX(),
-          otherY      = aSprite.getY(),
-          otherWidth  = aSprite.getWidth(),
-          otherHeight = aSprite.getHeight(),
-          myX         = this.getX(),
-          myY         = this.getY(),
-          myWidth     = this.getWidth(),
-          myHeight    = this.getHeight();
+/**
+ * get the intersection area where given aSprite collides with this sprite
+ * returns null if no intersection occurs
+ *
+ * @public
+ * @param {zSprite} aSprite
+ * @return {{ left: number, top: number, width: number, height: number }|null}
+ */
+zSprite.prototype.getIntersection = function( aSprite ) {
 
-    return ( otherX < myX + myWidth  && otherX + otherWidth  > myX &&
-             otherY < myY + myHeight && otherY + otherHeight > myY );
+    if ( this.collidesWith( aSprite )) {
+
+        const self = this._bounds, compare = aSprite.getBounds();
+
+        let x = Math.max( self.left, compare.left );
+        let y = Math.max( self.top,  compare.top );
+        let w = Math.min( self.left + self.width,  compare.width + compare.height ) - x;
+        let h = Math.min( self.top  + self.height, compare.top   + compare.height ) - y;
+
+        return { left: x, top: y, width: w, height: h };
+    }
+    return null;
 };
 
 /**
@@ -724,6 +750,15 @@ zSprite.prototype.collidesWithEdge = function( aSprite, aEdge ) {
             return ( this.getY() + this.getHeight() >= aSprite.getY() );
     }
     return false;
+};
+
+/**
+ * @public
+ * @return {Image|HTMLCanvasElement|string}
+ */
+zSprite.prototype.getBitmap = function() {
+
+    return this._bitmap;
 };
 
 /**
@@ -1097,7 +1132,7 @@ zSprite.prototype.handleMove = function( aXPosition, aYPosition ) {
     const theX = this._dragStartOffset.x + ( aXPosition - this._dragStartEventCoordinates.x );
     const theY = this._dragStartOffset.y + ( aYPosition - this._dragStartEventCoordinates.y );
 
-    this.updatePosition( theX, theY );
+    this.setBounds( theX, theY );
 };
 
 /**

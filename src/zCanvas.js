@@ -587,28 +587,28 @@ zCanvas.prototype.checkCollision = function( aSprite, aRedValue, aGreenValue, aB
             // check red value (if specified)
 
             if ( typeof aRedValue === "number" ) {
-                match = ( bitmap.data[ i ] == aRedValue );
+                match = ( bitmap.data[ i ] === aRedValue );
                 if ( !match ) return false;
             }
 
             // check green value (if specified)
 
             if ( typeof aGreenValue === "number" ) {
-                match = ( bitmap.data[ i + 1 ] == aGreenValue );
+                match = ( bitmap.data[ i + 1 ] === aGreenValue );
                 if ( !match ) return false;
             }
 
             // check blue value (if specified)
 
             if ( typeof aBlueValue === "number" ) {
-                match = ( bitmap.data[ i + 2 ] == aBlueValue );
+                match = ( bitmap.data[ i + 2 ] === aBlueValue );
                 if ( !match ) return false;
             }
 
             // check alpha value (if specified)
 
             if ( typeof aAlphaValue === "number" ) {
-                match = ( bitmap.data[ i + 3 ] == aAlphaValue );
+                match = ( bitmap.data[ i + 3 ] === aAlphaValue );
                 if ( !match ) return false;
             }
 

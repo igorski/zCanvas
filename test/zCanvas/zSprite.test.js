@@ -759,7 +759,7 @@ describe( "zSprite", () => {
         assert.isNull( sprite1.next, "expected sprite1 not to have a next sibling" );
     });
 
-    // TODO: add updatePosition test
+    // TODO: add setBounds test
 
     it( "should be able to update its bitmap", () => {
 

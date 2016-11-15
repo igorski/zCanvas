@@ -9,11 +9,13 @@
 
 const zCanvas = require( "./zCanvas"),
       zSprite = require( "./zSprite"),
-      zLoader = require( "./zLoader" );
+      zLoader = require( "./zLoader"),
+      zUtil   = require( "./zUtil" );
 
 module.exports = {
 
     zCanvas : zCanvas,
     zSprite : zSprite,
-    zLoader : zLoader
+    zLoader : zLoader,
+    zUtil   : zUtil
 };
