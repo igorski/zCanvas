@@ -72,8 +72,8 @@
 
             // create a new zCanvas that renders at 60 fps
             // keep it within the device / browser bounds
-            var cvsWidth  = w < 800 ? w * .93 : 800;
-            var cvsHeight = h < 350 ? h : 350;
+            var cvsWidth  = ( w < 800 ) ? w * .93 : 800;
+            var cvsHeight = ( h < 350 ) ? h : 350;
 
             var cvs = new zCanvas({
                 width: cvsWidth,
@@ -92,6 +92,7 @@
 
             // first sprite will acts as a background
             // (see included "assets.js"-file for the assetBackground-image data)
+
             var bgWidth  = 800, bgHeight = 1067;
             var bgSprite = new zSprite({
                 width: bgWidth,
@@ -160,6 +161,7 @@
                 this.falling      = true;  // is the hero falling ? (set to true for gravity)
                 this.xSpeed       = 0;     // horizontal speed (i.e. walking)
                 this.MAX_X_SPEED  = 5;     // maximum horizontal speed in pixels per frame
+                this.GRAVITY      = 7;     // the vertical "pull" exerted on the Hero
                 this.ySpeed       = 0;     // vertical speed (i.e. jumping/falling)
                 this._jumpCount   = 0;     // internal : countdown for determining max jump height reached
             };
@@ -259,7 +261,7 @@
                 if ( !this.falling && this.jumping )
                     targetY -= this.ySpeed;
                 else
-                    targetY += GRAVITY;
+                    targetY += this.GRAVITY;
 
                 // keep in vertical bounds
                 if ( targetY > this.canvas.getHeight() + thisHeight )
@@ -316,7 +318,7 @@
 
             var hero = new Hero({
                 x: cvsWidth / 2,
-                y: cvsHeight / 2,
+                y: cvsHeight / 3,
                 width: tileWidth,
                 height: tileHeight,
                 bitmap: assetSpriteSheet,
@@ -329,64 +331,10 @@
             });
             cvs.addChild( hero );
 
-            // STEP 4 : HOW ABOUT COLLISION DETECTION
-            // --------------------------------------
+            // STEP 4 : ADD SOME WALLS AND FLOORS
+            // ----------------------------------
 
-            var GRAVITY = 7;
-
-            var walls = document.createElement( "canvas" );
-            walls.width = cvs.getWidth();
-            walls.height = cvs.getHeight();
-            var ctx = walls.getContext( "2d" );
-
-            // we test using the super-fast bounding box collision detection, as such we can
-            // afford to make separate sprites of each wall, it's up to your applications needs
-            // how you do this (for instance use an unique color for walls and use a single bitmap
-            // along with pixel collision detection)
-
-            var wallLeft = new zSprite({
-                x: 50, y: Math.round( cvsHeight / 1.75 ), width: 10, height: 100, collidable: true
-            });
-
-            var wallBottom = new zSprite({
-                x: 50, y: wallLeft.getY() + wallLeft.getHeight(), width: cvsWidth / 1.5, height: 10, collidable: true
-            });
-
-            var wallRight = new zSprite({
-                x: wallBottom.getWidth() + wallLeft.getX() - 10,
-                y: wallBottom.getY() - tileHeight,
-                width: 10, height: tileHeight, collidable: true
-            });
-
-            // something we can jump on
-            var wallTopRight = new zSprite({
-                x: wallRight.getX(), y: wallRight.getY(), width: 100, height: 10, collidable: true
-            });
-
-            // custom render logic for each wall
-            var wallDrawFn = function( ctx ) {
-
-                ctx.fillStyle = 'rgb(255,128,0)';
-                ctx.fillRect( this.getX(), this.getY(), this.getWidth(), this.getHeight());
-                this.drawOutline(ctx);
-            };
-            wallBottom.draw = wallRight.draw = wallTopRight.draw = wallLeft.draw = wallDrawFn;
-            cvs.DEBUG = true;
-            wallLeft.draw( ctx );
-            wallRight.draw( ctx );
-            wallTopRight.draw( ctx );
-            wallBottom.draw( ctx );
-
-            ctx.beginPath();
-            ctx.arc( 300, 305, 25, 0, 2 * Math.PI, false);
-            ctx.fill();
-
-            ctx.save();
-            ctx.rotate(15 * Math.PI / 180 );
-            ctx.fillRect( 400, 125, 100, 10 );
-            ctx.restore();
-
-            var wallSprite = new zSprite({ x: 0, y: 0, width: walls.width, height: walls.height, bitmap: walls });
+            var wallSprite = new zSprite({ x: 15, y: 120, width: 743, height: 199, bitmap: LEVEL });
             cvs.addChild( wallSprite );
 
             // STEP 5 : ADDING KEYBOARD OR TOUCH INTERACTION

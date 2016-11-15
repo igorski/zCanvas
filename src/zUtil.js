@@ -56,19 +56,8 @@ const zUtil = module.exports = {
         if ( rect === null )
             return false;
 
-        const pixels1 = zUtil.getPixelArray(
-            sprite1.getBitmap(),
-            rect.left - sprite1.getX(),
-            rect.top  - sprite1.getY(),
-            rect.width, rect.height
-        );
-
-        const pixels2 = zUtil.getPixelArray(
-            sprite2.getBitmap(),
-            rect.left - sprite2.getX(),
-            rect.top  - sprite2.getY(),
-            rect.width, rect.height
-        );
+        const pixels1 = zUtil.getPixelArray( sprite1, rect );
+        const pixels2 = zUtil.getPixelArray( sprite2, rect );
 
         let i = 0;
 
@@ -78,6 +67,7 @@ const zUtil = module.exports = {
 
             for ( let y = 0; y < rect.height; ++y ) {
                 for ( let x = 0; x < rect.width; ++x ) {
+
                     if ( pixels1[ i ] !== 0 && pixels2[ i ] !== 0 )
                         return { x : x, y: y };
                     ++i;
@@ -98,26 +88,26 @@ const zUtil = module.exports = {
     },
 
     /**
-     * Get an Array of pixels for the rectangle described at position left, top with
-     * dimensions width and height within given image
+     * Get an Array of pixels for the area described by given rect
+     * inside the Bitmap of given zSprite
      *
      * @public
      *
-     * @param {HTMLImageElement|HTMLCanvasElement} image
-     * @param {number} left
-     * @param {number} top
-     * @param {number} width
-     * @param {number} height
+     * @param {zSprite} sprite
+     * @param {{ left: number, top: number, width: number, height: number }} rect
      * @return {Array.<number>}
      */
-    getPixelArray( image, left, top, width, height ) {
+    getPixelArray( sprite, rect ) {
+
+        const image  = sprite.getBitmap(),
+              bounds = sprite.getBounds();
 
         // round and sanitize rectangle values
 
-        left   = parseInt( left );
-        top    = parseInt( top );
-        width  = parseInt( width );
-        height = parseInt( height );
+        const left = parseInt( rect.left - bounds.left );
+        const top  = parseInt( rect.top  - bounds.top );
+        let width  = parseInt( rect.width );
+        let height = parseInt( rect.height );
 
         if ( width === 0 )
             width = 1;
@@ -125,20 +115,21 @@ const zUtil = module.exports = {
         if ( height === 0 )
             height = 1;
 
-        // if given Image wasn't HTMLCanvasElement, draw given Image onto temporary canvas
+        // if given Sprites Bitmap wasn't of HTMLCanvasElement-type,
+        // draw the Sprites Image onto temporary canvas
 
         const createCanvas = !( image instanceof window.HTMLCanvasElement );
         const cvs = ( createCanvas ) ? tempCanvas  : image;
         const ctx = ( createCanvas ) ? tempContext : image.getContext( "2d" );
 
         if ( createCanvas ) {
-            cvs.width  = image.width;
-            cvs.height = image.height;
+            cvs.width  = bounds.width;
+            cvs.height = bounds.height;
             ctx.clearRect( 0, 0, tempCanvas.width, tempCanvas.height );
-            ctx.drawImage( image, 0, 0) ;
+            ctx.drawImage( image, 0, 0, bounds.width, bounds.height );
         }
 
-        // collect all pixels
+        // collect all pixels for described area
 
         const imageData = ctx.getImageData( left, top, width, height );
         const rgb       = imageData.data;

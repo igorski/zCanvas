@@ -1,9 +1,9 @@
 "use strict";
 
 const chai          = require( "chai" );
-const zCanvas       = require( "../../src/zCanvas" );
-const zSprite       = require( "../../src/zSprite" );
-const MockedBrowser = require( "../utils/MockedBrowser" );
+const MockedBrowser = require( "./utils/MockedBrowser" );
+const zCanvas       = require( "../src/zCanvas" );
+const zSprite       = require( "../src/zSprite" );
 
 describe( "zCanvas", () => {
     

@@ -612,16 +612,19 @@ zSprite.prototype.draw = function( aCanvasContext ) {
         const bounds   = this._bounds,
               aniProps = this._animation;
 
+        // note we use a fast rounding operation on the
+        // optionally floating point Bounds values
+
         if ( !aniProps ) {
 
             // no spritesheet defined, draw entire Bitmap
 
             aCanvasContext.drawImage(
                 this._bitmap,
-                bounds.left,
-                bounds.top,
-                bounds.width,
-                bounds.height
+                ( .5 + bounds.left ) << 0,
+                ( .5 + bounds.top ) << 0,
+                ( .5 + bounds.width ) << 0,
+                ( .5 + bounds.height ) << 0
             );
         }
         else {
@@ -630,10 +633,14 @@ zSprite.prototype.draw = function( aCanvasContext ) {
 
             aCanvasContext.drawImage(
                 this._bitmap,
-                aniProps.col      * bounds.width,         // tile x offset
-                aniProps.type.row * bounds.height,        // tile y offset
-                bounds.width, bounds.height,              // tile width and height
-                bounds.left, bounds.top, bounds.width, bounds.height
+                ( .5 + aniProps.col      * bounds.width ) << 0,  // tile x offset
+                ( .5 + aniProps.type.row * bounds.height ) << 0, // tile y offset
+                ( .5 + bounds.width ) << 0,                      // tile width
+                ( .5 + bounds.height ) << 0,                     // tile height
+                ( .5 + bounds.left )   << 0,
+                ( .5 + bounds.top )    << 0,
+                ( .5 + bounds.width )  << 0,
+                ( .5 + bounds.height ) << 0
             );
         }
     }
@@ -796,22 +803,22 @@ zSprite.prototype.setBitmap = function( aImage, aOptWidth, aOptHeight ) {
 
     // make sure the image is still within bounds
 
-    if ( self._keepInBounds && self.canvas && ( hasWidth || hasHeight )) {
+    if ( this._keepInBounds && this.canvas && ( hasWidth || hasHeight )) {
 
-        const minX = -( self._bounds.width  - self.canvas.getWidth() );
-        const minY = -( self._bounds.height - self.canvas.getHeight() );
+        const minX = -( this._bounds.width  - this.canvas.getWidth() );
+        const minY = -( this._bounds.height - this.canvas.getHeight() );
 
-        if ( self._bounds.left > 0 )
-            self._bounds.left = 0;
+        if ( this._bounds.left > 0 )
+            this._bounds.left = 0;
 
-        else if ( self._bounds.left < minX )
-            self._bounds.left = minX;
+        else if ( this._bounds.left < minX )
+            this._bounds.left = minX;
 
-        if ( self._bounds.top > 0 )
-            self._bounds.top = 0;
+        if ( this._bounds.top > 0 )
+            this._bounds.top = 0;
 
-        else if ( self._bounds.top < minY )
-            self._bounds.top = minY;
+        else if ( this._bounds.top < minY )
+            this._bounds.top = minY;
     }
 
     if ( aImage instanceof window.HTMLCanvasElement ) {

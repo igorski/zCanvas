@@ -2,10 +2,10 @@
 
 const chai          = require( "chai" );
 const sinon         = require( "sinon" );
-const MockedBrowser = require( "../utils/MockedBrowser" );
-const zCanvas       = require( "../../src/zCanvas" );
-const zSprite       = require( "../../src/zSprite" );
-const zLoader       = require( "../../src/zLoader" );
+const MockedBrowser = require( "./utils/MockedBrowser" );
+const zCanvas       = require( "../src/zCanvas" );
+const zSprite       = require( "../src/zSprite" );
+const zLoader       = require( "../src/zLoader" );
 
 describe( "zSprite", () => {
 
@@ -397,8 +397,8 @@ describe( "zSprite", () => {
 
         const withinX = x + ( width  / 2 );
         const withinY = y + ( height / 2 );
-        const outX    = x - width;
-        const outY    = y + height;
+        const outX    = x - width + 1;
+        const outY    = y + height + 1;
 
         const sprite = new zSprite({
             x: x,
