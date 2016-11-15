@@ -743,69 +743,71 @@ zSprite.prototype.setBitmap = function( aImage, aOptWidth, aOptHeight ) {
     if ( this._bitmap !== aImage )
         this._bitmapReady = false;
 
-    if ( !aImage )
+    if ( !aImage ) {
         this._bitmap = null;
+        return;
+    }
 
-    if ( aImage ) {
+    // update dimensions, when given
 
-        if ( aImage instanceof window.HTMLCanvasElement ) {
+    const hasWidth  = ( typeof aOptWidth === "number" );
+    const hasHeight = ( typeof aOptHeight === "number" );
 
-            // nothing to load, HTMLCanvasElement is ready for rendering
+    if ( hasWidth )
+        this.setWidth( aOptWidth );
 
-            this._bitmap      = aImage;
-            this._bitmapReady = true;
-        }
-        else if ( aImage instanceof window.HTMLImageElement || typeof aImage === "string" ) {
-            
-            const self = this;
-            
-            zLoader.loadImage( aImage, ( aResult, aOptError ) => {
+    if ( hasHeight )
+        this.setHeight( aOptHeight );
 
-                if ( !( aOptError instanceof Error )) {
+    // make sure the image is still within bounds
 
-                    self._bitmap      = aResult.image;
-                    self._bitmapReady = true;
+    if ( self._keepInBounds && self.canvas && ( hasWidth || hasHeight )) {
 
-                    // update width and height
+        const minX = -( self._bounds.width  - self.canvas.getWidth() );
+        const minY = -( self._bounds.height - self.canvas.getHeight() );
 
-                    /** @protected @type {number} */ this._bitmapWidth  = aResult.size.width;
-                    /** @protected @type {number} */ this._bitmapHeight = aResult.size.height;
+        if ( self._bounds.left > 0 )
+            self._bounds.left = 0;
 
-                    if ( typeof aOptWidth === "number" )
-                        this.setWidth( aOptWidth );
+        else if ( self._bounds.left < minX )
+            self._bounds.left = minX;
 
-                    if ( typeof aOptHeight === "number" )
-                        this.setHeight( aOptHeight );
+        if ( self._bounds.top > 0 )
+            self._bounds.top = 0;
 
-                    // make sure the image is still within bounds
+        else if ( self._bounds.top < minY )
+            self._bounds.top = minY;
+    }
 
-                    if ( self._keepInBounds && self.canvas ) {
+    if ( aImage instanceof window.HTMLCanvasElement ) {
 
-                        const minX = -( self._bounds.width  - self.canvas.getWidth() );
-                        const minY = -( self._bounds.height - self.canvas.getHeight() );
+        // nothing to load, HTMLCanvasElement is ready for rendering
 
-                        if ( self._bounds.left > 0 )
-                            self._bounds.left = 0;
+        this._bitmap      = aImage;
+        this._bitmapReady = true;
+    }
+    else if ( aImage instanceof window.HTMLImageElement || typeof aImage === "string" ) {
 
-                        else if ( self._bounds.left < minX )
-                            self._bounds.left = minX;
+        const self = this;
 
-                        if ( self._bounds.top > 0 )
-                            self._bounds.top = 0;
+        zLoader.loadImage( aImage, ( aResult, aOptError ) => {
 
-                        else if ( self._bounds.top < minY )
-                            self._bounds.top = minY;
-                    }
-                }
-                else {
-                    console.error( aOptError.message + " occurred. Could not setBitmap()" );
-                }
-            });
-        }
-        else {
-            throw new Error( "expected HTMLImageElement, HTMLCanvasElement or String for Image source, " +
-                "got " + aImage + " instead" );
-        }
+            if ( !( aOptError instanceof Error )) {
+
+                self._bitmap      = aResult.image;
+                self._bitmapReady = true;
+
+                /** @protected @type {number} */ this._bitmapWidth  = aResult.size.width;
+                /** @protected @type {number} */ this._bitmapHeight = aResult.size.height;
+            }
+            else {
+                console.error( aOptError.message + " occurred. Could not setBitmap()" );
+            }
+        });
+    }
+    else {
+        throw new Error( "expected HTMLImageElement, HTMLCanvasElement or String for Image source, " +
+            "got " + aImage + " instead" );
     }
 };
 
