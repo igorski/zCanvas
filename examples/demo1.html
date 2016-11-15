@@ -368,9 +368,10 @@
 
                 ctx.fillStyle = 'rgb(255,128,0)';
                 ctx.fillRect( this.getX(), this.getY(), this.getWidth(), this.getHeight());
+                this.drawOutline(ctx);
             };
             wallBottom.draw = wallRight.draw = wallTopRight.draw = wallLeft.draw = wallDrawFn;
-
+            cvs.DEBUG = true;
             wallLeft.draw( ctx );
             wallRight.draw( ctx );
             wallTopRight.draw( ctx );
@@ -395,17 +396,14 @@
             // touchscreens reliably as most browsers support touch events though the DEVICE
             // it is running on hasn't got touch support !
 
-            var leftBtn       = document.createElement( "div" );
-            leftBtn.id        = "left-btn";
-            leftBtn.innerHTML = "<";
+            var leftBtn = document.createElement( "div" );
+            leftBtn.id  = "left-btn";
 
-            var rightBtn       = document.createElement( "div" );
-            rightBtn.id        = "right-btn";
-            rightBtn.innerHTML = ">";
+            var rightBtn = document.createElement( "div" );
+            rightBtn.id  = "right-btn";
 
-            var jumpBtn       = document.createElement( "div" );
-            jumpBtn.id        = "jump-btn";
-            jumpBtn.innerHTML = "A";
+            var jumpBtn = document.createElement( "div" );
+            jumpBtn.id  = "jump-btn";
 
             container.appendChild( leftBtn );
             container.appendChild( rightBtn );
