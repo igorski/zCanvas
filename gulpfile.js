@@ -27,17 +27,17 @@ gulp.task("build", ( complete ) => {
 gulp.task("amd", ["transpile-amd"], () => {
 
     return gulp.src( TEMP_ES5_FOLDER + "/**/*.js")
-        .pipe( amdOptimize( "canvas.amd" ))
-        .pipe( concat( "canvas.amd.js" ))
+        .pipe( amdOptimize( "zcanvas.amd" ))
+        .pipe( concat( "zcanvas.amd.js" ))
         .pipe( uglify() )
         .pipe( gulp.dest( OUTPUT_FOLDER ));
 });
 
 gulp.task("browser", ["browserify-commonjs"], () => {
 
-    return gulp.src( TEMP_ES5_FOLDER + "/canvas.browser.js")
+    return gulp.src( TEMP_ES5_FOLDER + "/zcanvas.browser.js")
         .pipe( babel({ presets: "es2015" }))
-        .pipe( concat( "canvas.min.js" ))
+        .pipe( concat( "zcanvas.min.js" ))
         .pipe( uglify() )
         .pipe( gulp.dest( OUTPUT_FOLDER ));
 });
@@ -58,7 +58,7 @@ gulp.task("clean", () => {
  */
 gulp.task("copy-amd-src", [], () => {
 
-    return gulp.src([ SRC_FOLDER + "/**/*.js", "export/canvas.amd.js" ])
+    return gulp.src([ SRC_FOLDER + "/**/*.js", "export/zcanvas.amd.js" ])
         .pipe( gulp.dest( TEMP_FOLDER ));
 });
 
@@ -68,7 +68,7 @@ gulp.task("copy-amd-src", [], () => {
  */
 gulp.task("copy-browser-src", [], () => {
 
-    return gulp.src([ SRC_FOLDER + "/**/*.js", "export/canvas.browser.js" ])
+    return gulp.src([ SRC_FOLDER + "/**/*.js", "export/zcanvas.browser.js" ])
         .pipe( gulp.dest( TEMP_FOLDER ));
 });
 
@@ -88,8 +88,8 @@ gulp.task("transpile-amd", ["copy-amd-src"], () => {
  */
 gulp.task("browserify-commonjs", ["copy-browser-src"], () => {
 
-    return browserify([ TEMP_FOLDER + "/canvas.browser.js" ])
+    return browserify([ TEMP_FOLDER + "/zcanvas.browser.js" ])
         .bundle()
-        .pipe( source( "canvas.browser.js" ))
+        .pipe( source( "zcanvas.browser.js" ))
         .pipe( gulp.dest( TEMP_ES5_FOLDER ));
 });

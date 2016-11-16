@@ -28,26 +28,12 @@
 
         // resolve dependencies
 
-        var loader, canvas, sprite;
-
         requirejs.config({
             baseUrl : "../dist/",
             urlArgs : "bust=" + Date.now()
         });
 
-        require( [ "canvas.amd" ], function( canvasLibrary ) {
-
-            // cheap way to make deps global, just for the sake of this demo's simplicity
-            // this is of course not the way to use the AMD require pattern ;)
-
-            loader = canvasLibrary.loader;
-            canvas = canvasLibrary.canvas;
-            sprite = canvasLibrary.sprite;
-
-            demo(); // start the actual demo
-        });
-
-        function demo() {
+        require( [ "zcanvas.amd" ], function( zCanvas ) {
 
             // STEP 1 : SETUP
             // --------------------------------------
@@ -76,7 +62,7 @@
             // keep it within the device / browser bounds
             var cvsWidth  = w < 800 ? w * .93 : 800;
             var cvsHeight = h < 500 ? h : 500;
-            var cvs       = new canvas({
+            var cvs       = new zCanvas.canvas({
                 width: cvsWidth,
                 height: cvsHeight,
                 animate: true,
@@ -92,7 +78,7 @@
             // first sprite will acts as a background
             // (see included "assets.js"-file for the assetBackground-image data)
             var bgWidth  = 800, bgHeight = 1067;
-            var bgSprite = new sprite({ width: bgWidth, height: bgHeight, bitmap: assetBackground });
+            var bgSprite = new zCanvas.sprite({ width: bgWidth, height: bgHeight, bitmap: assetBackground });
             cvs.addChild( bgSprite );   // add the background to the canvas so it is visible
 
             // SCROLLING MASK SPRITE
@@ -102,7 +88,7 @@
 
             var starSize = cvsWidth * .3; // make the star slightly smaller than the canvas
 
-            var spriteMask = new sprite({ width: starSize, height: starSize, bitmap: assetStar, mask: true });
+            var spriteMask = new zCanvas.sprite({ width: starSize, height: starSize, bitmap: assetStar, mask: true });
 
             // custom overrides, to demonstrate a simple custom behaviour
             // where animation is perfectly timed (test by switching tabs in
@@ -160,7 +146,7 @@
                 this.color  = aColor;
                 this.setDraggable( true );
             };
-            sprite.extend( CircleSprite ); // CircleSprite extends sprite
+            zCanvas.sprite.extend( CircleSprite ); // CircleSprite extends sprite
 
             // CircleSprite class variables
             CircleSprite.prototype.radius = 0;
@@ -202,7 +188,7 @@
             // ----------------------------
 
             var rectSize  = bgHeight / 15;
-            var rectangle = new sprite({
+            var rectangle = new zCanvas.sprite({
                 x: cvsWidth * .75,
                 y: cvsHeight * .5,
                 width: rectSize,
@@ -234,7 +220,7 @@
             // add all additional circles to the display list of circle1 so they are nested
             circle1.addChild( circle2 );
             circle1.addChild( circle3 );
-        }
+        });
 
     </script>
 </body>

@@ -3,11 +3,11 @@
 const chai          = require( "chai" );
 const sinon         = require( "sinon" );
 const MockedBrowser = require( "./utils/MockedBrowser" );
-const canvas       = require( "../src/canvas" );
-const sprite       = require( "../src/sprite" );
-const loader       = require( "../src/loader" );
+const Canvas        = require( "../src/Canvas" );
+const Sprite        = require( "../src/Sprite" );
+const Loader        = require( "../src/Loader" );
 
-describe( "canvas.sprite", () => {
+describe( "zCanvas.sprite", () => {
 
     /* setup */
 
@@ -25,10 +25,10 @@ describe( "canvas.sprite", () => {
         MockedBrowser.init();
 
         // prepare Canvas
-        canvas = new canvas({ width: 200, height: 200 });
+        canvas = new Canvas({ width: 200, height: 200 });
 
         // stub the loader process
-        sinon.stub( loader, "loadImage", ( src, handler, optImage ) => {
+        sinon.stub( Loader, "loadImage", ( src, handler, optImage ) => {
 
             const out  = optImage ? optImage : new window.Image();
             out.src    = src;
@@ -51,7 +51,7 @@ describe( "canvas.sprite", () => {
     // executed when all tests have finished running
 
     after( () => {
-        loader.loadImage.restore();
+        Loader.loadImage.restore();
     });
 
     // executed before each individual test
@@ -83,7 +83,7 @@ describe( "canvas.sprite", () => {
 
     it( "should construct with the legacy multi-argument list", () => {
 
-        const sprite = new sprite( x, y, width, height, imgSource, collidable, mask );
+        const sprite = new Sprite( x, y, width, height, imgSource, collidable, mask );
 
         assert.strictEqual( x, sprite.getX() );
         assert.strictEqual( y, sprite.getY() );
@@ -97,7 +97,7 @@ describe( "canvas.sprite", () => {
     it( "should construct with a single data Object", () => {
 
         const isMask = ( Math.random() > .5 );
-        const sprite = new sprite({
+        const sprite = new Sprite({
             x: x,
             y: y,
             width: width,
@@ -122,19 +122,19 @@ describe( "canvas.sprite", () => {
 
         expect( () => {
 
-            new sprite( x, y );
+            new Sprite( x, y );
 
-        }).to.throw( /cannot construct a sprite without valid dimensions/ );
-
-        expect( () => {
-
-            new sprite( x, y, width );
-
-        }).to.throw( /cannot construct a sprite without valid dimensions/ );
+        }).to.throw( /cannot construct a zSprite without valid dimensions/ );
 
         expect( () => {
 
-            new sprite( x, y, width, height);
+            new Sprite( x, y, width );
+
+        }).to.throw( /cannot construct a zSprite without valid dimensions/ );
+
+        expect( () => {
+
+            new Sprite( x, y, width, height);
 
         }).not.to.throw();
 
@@ -142,10 +142,10 @@ describe( "canvas.sprite", () => {
 
         expect( () => {
 
-            new sprite({
+            new Sprite({
                 x: x, y: y
             })
-        }).to.throw( /cannot construct a sprite without valid dimensions/ );
+        }).to.throw( /cannot construct a zSprite without valid dimensions/ );
 
     });
 
@@ -153,7 +153,7 @@ describe( "canvas.sprite", () => {
 
         expect( () => {
 
-            new sprite({ width: width, height: height, bitmap: {} });
+            new Sprite({ width: width, height: height, bitmap: {} });
 
         }).to.throw( /expected HTMLImageElement, HTMLCanvasElement or String for Image source/ );
 
@@ -162,14 +162,14 @@ describe( "canvas.sprite", () => {
         /*
         expect( () => {
 
-            new sprite({ width: width, height: height, bitmap: new window.Image() });
+            new Sprite({ width: width, height: height, bitmap: new window.Image() });
 
         }).not.to.throw();
         */
 
         expect( () => {
 
-            new sprite({ width: width, height: height, bitmap: imgSource });
+            new Sprite({ width: width, height: height, bitmap: imgSource });
 
         }).not.to.throw();
     });
@@ -177,12 +177,12 @@ describe( "canvas.sprite", () => {
     it( "should not construct with a spritesheet if no Bitmap was specified", () => {
 
         expect(() => {
-            new sprite({ width: width, height: height, sheet: [ {} ] });
+            new Sprite({ width: width, height: height, sheet: [ {} ] });
         }).to.throw( /cannot use a spritesheet without a valid Bitmap/ );
 
 
         expect(() => {
-            new sprite({ width: width, height: height, bitmap: imgSource, sheet: [ {} ] });
+            new Sprite({ width: width, height: height, bitmap: imgSource, sheet: [ {} ] });
         }).not.to.throw();
     });
 
@@ -190,15 +190,15 @@ describe( "canvas.sprite", () => {
 
         const newClass = function() {};
 
-        sprite.extend( newClass );
+        Sprite.extend( newClass );
 
-        assert.ok( new newClass() instanceof sprite,
+        assert.ok( new newClass() instanceof Sprite,
             "expected an instance of newClass to equal the sprite prototype" );
     });
 
     it( "should by default construct for a 0, 0 coordinate", () => {
 
-        const sprite = new sprite({ width: width, height: height });
+        const sprite = new Sprite({ width: width, height: height });
 
         assert.strictEqual( 0, sprite.getX(),
             "expected sprite x-coordinate to equal the expected default" );
@@ -209,7 +209,7 @@ describe( "canvas.sprite", () => {
 
     it( "should be able to toggle its draggable state", () => {
 
-        const sprite = new sprite({ width: width, height: height });
+        const sprite = new Sprite({ width: width, height: height });
 
         assert.strictEqual( false, sprite.getDraggable(),
             "expected sprite not to be draggable after construction" );
@@ -238,7 +238,7 @@ describe( "canvas.sprite", () => {
 
     it( "should be able to toggle its interactive state", () => {
 
-        const sprite = new sprite({ width: width, height: height });
+        const sprite = new Sprite({ width: width, height: height });
 
         assert.strictEqual( false, sprite.getInteractive(),
             "expected sprite not to be interactive after construction" );
@@ -256,7 +256,7 @@ describe( "canvas.sprite", () => {
 
     it( "should be able to update its coordinates", () => {
 
-        const sprite = new sprite({
+        const sprite = new Sprite({
             x: x,
             y: y,
             width: width,
@@ -278,7 +278,7 @@ describe( "canvas.sprite", () => {
 
     it( "should be able to update its coordinates and its child coordinates recursively", () => {
 
-        const sprite = new sprite({
+        const sprite = new Sprite({
             x: x,
             y: y,
             width: width,
@@ -290,14 +290,14 @@ describe( "canvas.sprite", () => {
         const child2X = Math.round( Math.random() * 100 ) + 10;
         const child2Y = Math.round( Math.random() * 100 ) + 10;
 
-        const child1  = new sprite({
+        const child1  = new Sprite({
             x: child1X,
             y: child1Y,
             width: width,
             height: height
         });
 
-        const child2 = new sprite({
+        const child2 = new Sprite({
             x: child2X,
             y: child2Y,
             width: width,
@@ -338,7 +338,7 @@ describe( "canvas.sprite", () => {
 
     it( "should have a bounds rectangle describing its offset and dimensions", () => {
 
-        const sprite = new sprite({
+        const sprite = new Sprite({
             x: x,
             y: y,
             width: width,
@@ -367,15 +367,15 @@ describe( "canvas.sprite", () => {
 
         // hijack update Function
 
-        const orgUpdateFn = sprite.prototype.update;
-        sprite.prototype.update = function() {
+        const orgUpdateFn = Sprite.prototype.update;
+        Sprite.prototype.update = function() {
             ++updated;
             orgUpdateFn.call( this );
         };
 
-        const sprite = new sprite({ width: width, height: height });
-        const child1 = new sprite({ width: width, height: height });
-        const child2 = new sprite({ width: width, height: height });
+        const sprite = new Sprite({ width: width, height: height });
+        const child1 = new Sprite({ width: width, height: height });
+        const child2 = new Sprite({ width: width, height: height });
 
         sprite.addChild( child1 );
         child1.addChild( child2 );
@@ -390,7 +390,7 @@ describe( "canvas.sprite", () => {
             "expected " + expectedUpdates + " updates, got " + updated + " instead" );
 
         // restore update Function
-        sprite.prototype.update = orgUpdateFn;
+        Sprite.prototype.update = orgUpdateFn;
     });
 
     it( "should be able to determine when it collides with another sprite", () => {
@@ -400,21 +400,21 @@ describe( "canvas.sprite", () => {
         const outX    = x - width + 1;
         const outY    = y + height + 1;
 
-        const sprite = new sprite({
+        const sprite = new Sprite({
             x: x,
             y: y,
             width: width,
             height: height
         });
 
-        const spriteInBounds = new sprite({
+        const spriteInBounds = new Sprite({
             x: withinX,
             y: withinY,
             width: width,
             height: height
         });
 
-        const spriteOutOfBounds = new sprite({
+        const spriteOutOfBounds = new Sprite({
             x: outX,
             y: outY,
             width: width,
@@ -430,7 +430,7 @@ describe( "canvas.sprite", () => {
 
     it( "should be able to determine whether it collides with the edge of another sprite", () => {
 
-        const sprite = new sprite({
+        const sprite = new Sprite({
             x: x,
             y: y,
             width: width,
@@ -440,7 +440,7 @@ describe( "canvas.sprite", () => {
         assert.notOk( sprite.collidesWithEdge( sprite ),
             "expected sprite not collide with itself" );
 
-        const sprite2 = new sprite({
+        const sprite2 = new Sprite({
             x: x,
             y: y,
             width: width,
@@ -486,14 +486,14 @@ describe( "canvas.sprite", () => {
 
     it( "should be able to set a parent Sprite", () => {
 
-        const sprite = new sprite({
+        const sprite = new Sprite({
             x: x,
             y: y,
             width: width,
             height: height
         });
 
-        const child = new sprite({
+        const child = new Sprite({
             x: x,
             y: y,
             width: width,
@@ -516,7 +516,7 @@ describe( "canvas.sprite", () => {
 
     it( "should by default set its constraints to the Canvas bounds", () => {
 
-        const sprite = new sprite({
+        const sprite = new Sprite({
             x: x,
             y: y,
             width: width,
@@ -541,7 +541,7 @@ describe( "canvas.sprite", () => {
 
     it( "should be able to define parent constraints", () => {
 
-        const sprite = new sprite({
+        const sprite = new Sprite({
             x: x,
             y: y,
             width: width,
@@ -578,14 +578,14 @@ describe( "canvas.sprite", () => {
 
     it( "should be able to add/remove children from its display list", () => {
 
-        const sprite = new sprite({
+        const sprite = new Sprite({
             x: x,
             y: y,
             width: width,
             height: height
         });
 
-        const child = new sprite({
+        const child = new Sprite({
             x: x,
             y: y,
             width: width,
@@ -611,25 +611,25 @@ describe( "canvas.sprite", () => {
 
     it( "should be able to add/remove children from specific indices in its display list", () => {
 
-        const sprite = new sprite({
+        const sprite = new Sprite({
             x: x,
             y: y,
             width: width,
             height: height
         });
-        const child1 = new sprite({
+        const child1 = new Sprite({
             x: x,
             y: y,
             width: width,
             height: height
         });
-        const child2 = new sprite({
+        const child2 = new Sprite({
             x: x,
             y: y,
             width: width,
             height: height
         });
-        const child3 = new sprite({
+        const child3 = new Sprite({
             x: x,
             y: y,
             width: width,
@@ -692,10 +692,10 @@ describe( "canvas.sprite", () => {
 
     it( "should be able to maintain the linked list of its child sprites", () => {
 
-        const canvas  = new canvas({ width: width, height: height });
-        const sprite1 = new sprite({ width: width, height: height });
-        const sprite2 = new sprite({ width: width, height: height });
-        const sprite3 = new sprite({ width: width, height: height });
+        const canvas  = new Canvas({ width: width, height: height });
+        const sprite1 = new Sprite({ width: width, height: height });
+        const sprite2 = new Sprite({ width: width, height: height });
+        const sprite3 = new Sprite({ width: width, height: height });
 
         assert.isNull( sprite1.next, "expected next Sprite to be null after construction" );
         assert.isNull( sprite1.last, "expected last Sprite to be null after construction" );
@@ -730,10 +730,10 @@ describe( "canvas.sprite", () => {
 
     it( "should be able to update the linked list of its child sprites", () => {
 
-        const canvas  = new canvas({ width: width, height: height });
-        const sprite1 = new sprite({ width: width, height: height });
-        const sprite2 = new sprite({ width: width, height: height });
-        const sprite3 = new sprite({ width: width, height: height });
+        const canvas  = new Canvas({ width: width, height: height });
+        const sprite1 = new Sprite({ width: width, height: height });
+        const sprite2 = new Sprite({ width: width, height: height });
+        const sprite3 = new Sprite({ width: width, height: height });
 
         // add children
 
@@ -763,7 +763,7 @@ describe( "canvas.sprite", () => {
 
     it( "should be able to update its bitmap", () => {
 
-        const sprite = new sprite({ x: x, y: y, width: width, height: height });
+        const sprite = new Sprite({ x: x, y: y, width: width, height: height });
         const newImage = imgSource;
 
         sprite._bitmapWidth  =
@@ -788,7 +788,7 @@ describe( "canvas.sprite", () => {
 
     it( "should by default keep its current size when updating Bitmaps", () => {
 
-        const sprite = new sprite({ x: x, y: y, width: width, height: height });
+        const sprite = new Sprite({ x: x, y: y, width: width, height: height });
 
         sprite.setBitmap( imgSource );
 
@@ -801,7 +801,7 @@ describe( "canvas.sprite", () => {
 
     it( "should be able to update its bitmap and size", () => {
 
-        const sprite = new sprite({ x: x, y: y, width: width, height: height });
+        const sprite = new Sprite({ x: x, y: y, width: width, height: height });
         const newImage = imgSource;
 
         const newWidth = 10, newHeight = 10;
@@ -817,7 +817,7 @@ describe( "canvas.sprite", () => {
 
     it( "should be able to update its width", () =>
     {
-        const sprite = new sprite({ x: x, y: y, width: width, height: height, bitmap: imgSource });
+        const sprite = new Sprite({ x: x, y: y, width: width, height: height, bitmap: imgSource });
         let newWidth = width;
 
         while ( width === newWidth )
@@ -831,7 +831,7 @@ describe( "canvas.sprite", () => {
 
     it( "should be able to update its height", () => {
 
-        const sprite = new sprite({ x: x, y: y, width: width, height: height, bitmap: imgSource });
+        const sprite = new Sprite({ x: x, y: y, width: width, height: height, bitmap: imgSource });
         let newHeight = height;
 
         while ( height === newHeight )
@@ -848,7 +848,7 @@ describe( "canvas.sprite", () => {
         const sheet = [
             { row: 0, col: 0, amount: 5, fpt: 5 }
         ];
-        const sprite = new sprite({ width: width, height: height, bitmap: imgSource, sheet: sheet });
+        const sprite = new Sprite({ width: width, height: height, bitmap: imgSource, sheet: sheet });
         const aniProps = sprite._animation;
         const animation = sheet[ 0 ];
 

@@ -88,7 +88,7 @@ function Canvas( width, height, animate, framerate ) {
     height = ( typeof opts.height === "number" ) ? opts.height : 300;
 
     if ( width <= 0 || height <= 0 )
-        throw new Error( "cannot construct a Canvas without valid dimensions" );
+        throw new Error( "cannot construct a zCanvas without valid dimensions" );
 
     /* instance properties */
 

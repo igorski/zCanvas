@@ -6,18 +6,18 @@
  */
 "use strict";
 
-const canvas    = require( "./canvas"),
-      sprite    = require( "./sprite"),
-      loader    = require( "./loader"),
-      collision = require( "./collision" );
+const Canvas    = require( "./Canvas"),
+      Sprite    = require( "./Sprite"),
+      Loader    = require( "./Loader"),
+      Collision = require( "./Collision" );
 
 (function( scope ) {
 
     scope.canvas = {
-        canvas:    canvas,
-        sprite:    sprite,
-        loader:    loader,
-        collision: collision
+        canvas:    Canvas,
+        sprite:    Sprite,
+        loader:    Loader,
+        collision: Collision
     };
 
 })( self );

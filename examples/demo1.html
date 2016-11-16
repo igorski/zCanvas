@@ -25,27 +25,12 @@
 
         // resolve dependencies
 
-        var loader, canvas, sprite, zUtil;
-
         requirejs.config({
             baseUrl : "../dist/",
             urlArgs : "bust=" + Date.now()
         });
 
-        require( [ "canvas.amd" ], function( canvasLibrary ) {
-
-            // cheap way to make deps global, just for the sake of this demo's simplicity
-            // this is of course not the way to use the AMD require pattern ;)
-
-            loader = canvasLibrary.loader;
-            canvas = canvasLibrary.canvas;
-            sprite = canvasLibrary.sprite;
-            zUtil   = canvasLibrary.zUtil;
-
-            demo(); // start the actual demo
-        });
-
-        function demo() {
+        require( [ "zcanvas.amd" ], function( zCanvas ) {
 
             // STEP 1 : SETUP
             // --------------------------------------
@@ -75,7 +60,7 @@
             var cvsWidth  = ( w < 800 ) ? w * .93 : 800;
             var cvsHeight = ( h < 350 ) ? h : 350;
 
-            var cvs = new canvas({
+            var cvs = new zCanvas.canvas({
                 width: cvsWidth,
                 height: cvsHeight,
                 animate: true,
@@ -94,7 +79,7 @@
             // (see included "assets.js"-file for the assetBackground-image data)
 
             var bgWidth  = 800, bgHeight = 1067;
-            var bgSprite = new sprite({
+            var bgSprite = new zCanvas.sprite({
                 width: bgWidth,
                 height: bgHeight,
                 bitmap: assetBackground
@@ -165,7 +150,7 @@
                 this.ySpeed       = 0;     // vertical speed (i.e. jumping/falling)
                 this._jumpCount   = 0;     // internal : countdown for determining max jump height reached
             };
-            sprite.extend( Hero ); // Hero extends sprite
+            zCanvas.sprite.extend( Hero ); // Hero extends sprite
 
             // public methods
             // --------------
@@ -272,7 +257,7 @@
                 // check horizontalCollision first
                 var horCollision, verCollision;
                 this.setX( targetX );
-                if ( horCollision = zUtil.pixelCollision(this, wallSprite, true)) {
+                if ( horCollision = zCanvas.collision.pixelCollision(this, wallSprite, true)) {
                     // horizontal collision, e.g. touched wall
                     // link to wall by taking the current position plus the
                     // x-index of the collision minus the total width of the sprite
@@ -281,7 +266,7 @@
                 }
 
                 this.setY( targetY );
-                if ( verCollision = zUtil.pixelCollision(this, wallSprite, true)) {
+                if ( verCollision = zCanvas.collision.pixelCollision(this, wallSprite, true)) {
                     // vertical collision, e.g. touched ground
                     // link to ground by taking the current position plus the
                     // y-index of the collision minus the total height of the sprite
@@ -334,7 +319,7 @@
             // STEP 4 : ADD SOME WALLS AND FLOORS
             // ----------------------------------
 
-            var wallSprite = new sprite({ x: 15, y: 120, width: 743, height: 199, bitmap: LEVEL });
+            var wallSprite = new zCanvas.sprite({ x: 15, y: 120, width: 743, height: 199, bitmap: LEVEL });
             cvs.addChild( wallSprite );
 
             // STEP 5 : ADDING KEYBOARD OR TOUCH INTERACTION
@@ -402,7 +387,7 @@
                     hero.stop();
                 }
             });
-        }
+        });
 
     </script>
 </body>

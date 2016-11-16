@@ -2,10 +2,10 @@
 
 const chai          = require( "chai" );
 const MockedBrowser = require( "./utils/MockedBrowser" );
-const canvas       = require( "../src/canvas" );
-const sprite       = require( "../src/sprite" );
+const Canvas        = require( "../src/Canvas" );
+const Sprite        = require( "../src/Sprite" );
 
-describe( "canvas.canvas", () => {
+describe( "zCanvas.canvas", () => {
     
     /* setup */
 
@@ -48,7 +48,7 @@ describe( "canvas.canvas", () => {
 
     it( "should construct with the legacy multi-argument list", () => {
 
-        const canvas = new canvas( width, height, animate, framerate );
+        const canvas = new Canvas( width, height, animate, framerate );
 
         assert.strictEqual( width, canvas.getWidth() );
         assert.strictEqual( height, canvas.getHeight() );
@@ -58,7 +58,7 @@ describe( "canvas.canvas", () => {
 
     it( "should construct with a single data Object", () => {
 
-        const canvas = new canvas({
+        const canvas = new Canvas({
             width: width,
             height: height,
             animate: animate,
@@ -75,20 +75,20 @@ describe( "canvas.canvas", () => {
 
         expect( () => {
 
-            new canvas({ width: 0, height: 0 });
+            new Canvas({ width: 0, height: 0 });
 
-        }).to.throw( /cannot construct a canvas without valid dimensions/ );
+        }).to.throw( /cannot construct a zCanvas without valid dimensions/ );
 
         expect( () => {
 
-            new canvas({ width: -100, height: -100 });
+            new Canvas({ width: -100, height: -100 });
 
-        }).to.throw( /cannot construct a canvas without valid dimensions/ );
+        }).to.throw( /cannot construct a zCanvas without valid dimensions/ );
     });
 
     it( "should by default construct with 300 x 300 dimensions", () => {
 
-        const canvas = new canvas();
+        const canvas = new Canvas();
 
         assert.strictEqual( 300, canvas.getWidth(),
             "expected canvas width to equal the expected default" );
@@ -100,15 +100,15 @@ describe( "canvas.canvas", () => {
     it( "should be able to extend its prototype into new function references", () => {
 
         const newClass = function() {};
-        canvas.extend( newClass );
+        Canvas.extend( newClass );
 
-        assert.ok( new newClass() instanceof canvas,
+        assert.ok( new newClass() instanceof Canvas,
             "expected an instance of newClass to equal the canvas prototype" );
     });
 
     it( "should return the construction arguments unchanged", () => {
 
-        const canvas = new canvas({
+        const canvas = new Canvas({
             width: width,
             height: height,
             fps: framerate
@@ -126,7 +126,7 @@ describe( "canvas.canvas", () => {
 
     it( "should be able to insert itself into DOM", () =>
     {
-        const canvas  = new canvas();
+        const canvas  = new Canvas();
         const element = global.document.createElement( "div" );
 
         assert.notOk( canvas.getElement().parentNode === element,
@@ -140,8 +140,8 @@ describe( "canvas.canvas", () => {
 
     it( "should be able to add/remove children from its display list", () =>
     {
-        const canvas = new canvas({ width: width, height: height });
-        const child  = new sprite({ width: width, height: height });
+        const canvas = new Canvas({ width: width, height: height });
+        const child  = new Sprite({ width: width, height: height });
 
         assert.notOk( canvas.contains( child ),
             "expected canvas not to contain the child in its display list" );
@@ -165,10 +165,10 @@ describe( "canvas.canvas", () => {
 
     it( "should be able to add/remove children from specific indices in its display list", () => {
 
-        const canvas = new canvas({ width: width, height: height });
-        const child1 = new sprite({ width: width, height: height });
-        const child2 = new sprite({ width: width, height: height });
-        const child3 = new sprite({ width: width, height: height });
+        const canvas = new Canvas({ width: width, height: height });
+        const child1 = new Sprite({ width: width, height: height });
+        const child2 = new Sprite({ width: width, height: height });
+        const child3 = new Sprite({ width: width, height: height });
 
         assert.strictEqual( 0, canvas.numChildren(),
             "expected the amount of children to be 0 after construction, got " + canvas.numChildren() + " instead" );
@@ -226,10 +226,10 @@ describe( "canvas.canvas", () => {
 
     it( "should be able to maintain the linked list of its children", () => {
 
-        const canvas  = new canvas({ width: width, height: height });
-        const sprite1 = new sprite({ width: width, height: height });
-        const sprite2 = new sprite({ width: width, height: height });
-        const sprite3 = new sprite({ width: width, height: height });
+        const canvas  = new Canvas({ width: width, height: height });
+        const sprite1 = new Sprite({ width: width, height: height });
+        const sprite2 = new Sprite({ width: width, height: height });
+        const sprite3 = new Sprite({ width: width, height: height });
 
         // add first child
 
@@ -261,10 +261,10 @@ describe( "canvas.canvas", () => {
 
     it( "should be able to update the linked list of its children", () => {
 
-        const canvas  = new canvas({ width: width, height: height });
-        const sprite1 = new sprite({ width: width, height: height });
-        const sprite2 = new sprite({ width: width, height: height });
-        const sprite3 = new sprite({ width: width, height: height });
+        const canvas  = new Canvas({ width: width, height: height });
+        const sprite1 = new Sprite({ width: width, height: height });
+        const sprite2 = new Sprite({ width: width, height: height });
+        const sprite3 = new Sprite({ width: width, height: height });
 
         // add children
 
@@ -292,9 +292,9 @@ describe( "canvas.canvas", () => {
 
     it( "should be able to return all lowest level children in its display list", () => {
 
-        const canvas  = new canvas({ width: width, height: height });
-        const sprite1 = new sprite({ width: width, height: height });
-        const sprite2 = new sprite({ width: width, height: height });
+        const canvas  = new Canvas({ width: width, height: height });
+        const sprite1 = new Sprite({ width: width, height: height });
+        const sprite2 = new Sprite({ width: width, height: height });
 
         assert.ok( canvas.getChildren() instanceof Array,
             "expected canvas to return all its children in an Array" );
@@ -323,7 +323,7 @@ describe( "canvas.canvas", () => {
 
     it( "should be able to update its dimensions", () => {
 
-        const canvas = new canvas({ width: width, height: height });
+        const canvas = new Canvas({ width: width, height: height });
 
         let newWidth  = width,
             newHeight = height;
@@ -345,7 +345,7 @@ describe( "canvas.canvas", () => {
 
     it( "should know whether its animatable", () => {
 
-        let canvas = new canvas({
+        let canvas = new Canvas({
             width: width,
             height: height,
             animate: false
@@ -354,7 +354,7 @@ describe( "canvas.canvas", () => {
         assert.notOk( canvas.isAnimatable(),
             "expected canvas not to be animatable" );
 
-        canvas = new canvas({
+        canvas = new Canvas({
             width: width,
             height: height,
             animate: true
@@ -366,7 +366,7 @@ describe( "canvas.canvas", () => {
     
     it( "should be able to toggle its animatable state", () => {
 
-        const canvas = new canvas({
+        const canvas = new Canvas({
             width: width,
             height: height,
             animate: false
@@ -381,7 +381,7 @@ describe( "canvas.canvas", () => {
 
     it( "should continuously render on each animation frame when animatable", function( done ) {
 
-        const canvas = new canvas({
+        const canvas = new Canvas({
             width: width,
             height: height,
             animate: false
@@ -405,7 +405,7 @@ describe( "canvas.canvas", () => {
     it( "should only render on invalidation when not animatable", function( done ) {
 
         // construct as animatable
-        const canvas = new canvas({
+        const canvas = new Canvas({
             width: width,
             height: height,
             animate: true
@@ -437,16 +437,16 @@ describe( "canvas.canvas", () => {
 
     it( "should invoke a render upon invalidation request", function( done ) {
 
-        const orgRender = canvas.prototype.render;
+        const orgRender = Canvas.prototype.render;
 
         // hijack render method
 
-        canvas.prototype.render = () => {
-            canvas.prototype.render = orgRender; // restore hijacked method
+        Canvas.prototype.render = () => {
+            Canvas.prototype.render = orgRender; // restore hijacked method
             done();
         };
 
-        const canvas = new canvas({
+        const canvas = new Canvas({
             width: width,
             height: height,
             animate: false
@@ -457,12 +457,12 @@ describe( "canvas.canvas", () => {
 
     it( "should invoke the update()-method of its children upon render", function( done ) {
 
-        const canvas = new canvas({
+        const canvas = new Canvas({
             width: width,
             height: height,
             animate: false
         });
-        const sprite = new sprite({ width: 10, height: 10 });
+        const sprite = new Sprite({ width: 10, height: 10 });
         canvas.addChild( sprite );
 
         sprite.update = () => {
@@ -478,14 +478,14 @@ describe( "canvas.canvas", () => {
             setTimeout( done, 10 );
         };
 
-        const canvas = new canvas({
+        const canvas = new Canvas({
             width: width,
             height: height,
             animate: false,
             onUpdate: handler
         });
 
-        const sprite = new sprite({ width: 10, height: 10 });
+        const sprite = new Sprite({ width: 10, height: 10 });
         canvas.addChild( sprite );
 
         sprite.update = () => {

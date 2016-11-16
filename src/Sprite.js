@@ -23,7 +23,7 @@
 "use strict";
 
 const OOP    = require( "./utils/OOP" );
-const Loader = require( "./loader" );
+const Loader = require( "./Loader" );
 
 module.exports = Sprite;
 
@@ -102,7 +102,7 @@ function Sprite( x, y, width, height, bitmap, collidable, mask ) {
     }
 
     if ( typeof opts.width  !== "number" || typeof opts.height !== "number" )
-        throw new Error( "cannot construct a Sprite without valid dimensions" );
+        throw new Error( "cannot construct a zSprite without valid dimensions" );
 
     if ( typeof opts.x !== "number" )
         opts.x = 0;
