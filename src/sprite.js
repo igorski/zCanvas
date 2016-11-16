@@ -22,21 +22,21 @@
  */
 "use strict";
 
-const OOP     = require( "./utils/OOP" );
-const zLoader = require( "./zLoader" );
+const OOP    = require( "./utils/OOP" );
+const Loader = require( "./loader" );
 
-module.exports = zSprite;
+module.exports = Sprite;
 
 /**
  * provides an API equivalent to the Flash Sprite / Display Object for manipulating "Objects" on a canvas element.
  *
- * the basic zSprite renders an Image onto a zCanvas and can capture interaction events, and be draggable
+ * the basic Sprite renders an Image onto a canvas and can capture interaction events, and be draggable
  *
  * inheriting classes that require custom logic should override the public "update"-method which is
- * invoked prior before the contents of this Sprite are rendered onto the zCanvas
+ * invoked prior before the contents of this Sprite are rendered onto the canvas
  *
  * inheriting classes that have custom draw logic, should also override the public "draw"-method which is used
- * for drawing the zSprite's visual representation onto the zCanvas. This method is invoked on each draw cycle.
+ * for drawing the Sprite's visual representation onto the canvas. This method is invoked on each draw cycle.
  *
  * @constructor
  *
@@ -50,7 +50,7 @@ module.exports = zSprite;
  *            mask: boolean,
  *            sheet: Array.<{ row: number, col: number, amount: number, fpt: 5 }>
  *
- *        }} x when numerical (legacy 7 argument constructor) the x-coordinate of this zSprite,
+ *        }} x when numerical (legacy 7 argument constructor) the x-coordinate of this Sprite,
  *        when Object it should contain required properties width and height, with others optional
  *        (x and y will default to 0, 0 coordinate) see the description for width, height, bitmap,
  *        collidable and mask below)
@@ -60,19 +60,19 @@ module.exports = zSprite;
  *        When object, no further arguments will be
  *        processed by this constructor.
  *
- * @param {number=} y the y-coordinate of this zSprite, required when x is number
- * @param {number=} width of this zSprite's bounding box, required when x is number
- * @param {number=} height of this zSprite's bounding box, required when x is number
+ * @param {number=} y the y-coordinate of this Sprite, required when x is number
+ * @param {number=} width of this Sprite's bounding box, required when x is number
+ * @param {number=} height of this Sprite's bounding box, required when x is number
  * @param {Image|HTMLCanvasElement|string=} bitmap optional image, when given, no override of the "draw"-method is
  *            required, as it will render the image by default at the current coordinates and at the given width and
  *            height. value can be either: HTMLImageElement, HTMLCanvasElement or a string describing an Image.src
  *            (e.g. hyperlink to remote Image, base64 encoded String or Blob URL)
  *            when not defined, you must override the "draw"-method as otherwise this
- *            sprite won't render anything onto the zCanvas! *
- * @param {boolean=} collidable whether this zSprite can cause collisions with other Sprites
- * @param {boolean=} mask whether to use this zSprite as a mask for underlying content
+ *            sprite won't render anything onto the canvas! *
+ * @param {boolean=} collidable whether this Sprite can cause collisions with other Sprites
+ * @param {boolean=} mask whether to use this Sprite as a mask for underlying content
  */
-function zSprite( x, y, width, height, bitmap, collidable, mask ) {
+function Sprite( x, y, width, height, bitmap, collidable, mask ) {
 
     /* assertions */
 
@@ -97,12 +97,12 @@ function zSprite( x, y, width, height, bitmap, collidable, mask ) {
         opts = x;
     }
     else {
-        throw new Error( "zSprite must either be constructed using a definitions Object {} " +
+        throw new Error( "Sprite must either be constructed using a definitions Object {} " +
             "or x, y, width, height, bitmap (optional), collidable (optional), mask (optional)" );
     }
 
     if ( typeof opts.width  !== "number" || typeof opts.height !== "number" )
-        throw new Error( "cannot construct a zSprite without valid dimensions" );
+        throw new Error( "cannot construct a Sprite without valid dimensions" );
 
     if ( typeof opts.x !== "number" )
         opts.x = 0;
@@ -112,7 +112,7 @@ function zSprite( x, y, width, height, bitmap, collidable, mask ) {
 
     /* instance properties */
 
-    /** @protected @type {Array.<zSprite>} */ this._children   = [];
+    /** @protected @type {Array.<Sprite>} */ this._children   = [];
     /** @protected @type {boolean} */         this._disposed = false;
 
     /**
@@ -126,7 +126,7 @@ function zSprite( x, y, width, height, bitmap, collidable, mask ) {
     /**
      * indicates the user is currently hovering over this Sprite, note
      * this DOES NOT mean we are dragging (see _dragging) this value
-     * will ALWAYS be false if the zSprite is not interactive
+     * will ALWAYS be false if the Sprite is not interactive
      *
      * @public
      * @type {boolean}
@@ -134,8 +134,8 @@ function zSprite( x, y, width, height, bitmap, collidable, mask ) {
     this.hover = false;
 
     /**
-     *  whether this zSprites image contents should function as a mask
-     * (for instance to obscure the contents of underlying zSprites)
+     *  whether this Sprites image contents should function as a mask
+     * (for instance to obscure the contents of underlying Sprites)
      * 
      * @protected
      * @type {boolean}
@@ -143,7 +143,7 @@ function zSprite( x, y, width, height, bitmap, collidable, mask ) {
     this._mask = ( typeof opts.mask === "boolean" ) ? opts.mask : false;
 
     /**
-     * rectangle describing this sprites bounds relative to the zCanvas
+     * rectangle describing this sprites bounds relative to the canvas
      * basically this describes its x- and y- coordinates and its dimensions
      *
      * @protected
@@ -153,38 +153,38 @@ function zSprite( x, y, width, height, bitmap, collidable, mask ) {
 
     /**
      * @protected
-     * @type {zSprite|zCanvas}
+     * @type {Sprite|canvas}
      *
-     * stores a reference to the parent zSprite/zCanvas containing this sprite
+     * stores a reference to the parent Sprite/canvas containing this sprite
      */
     this._parent = null;
 
     /**
      * we use a linked list to quickly traverse the DisplayList
-     * of the zCanvas, this property points to the previous sprite on the list
+     * of the canvas, this property points to the previous sprite on the list
      *
      * @public
-     * @type {zSprite}
+     * @type {Sprite}
      */
     this.last = null;
 
     /**
      * we use a linked list to quickly traverse the DisplayList
-     * of the zCanvas, this property points to the next sprite on the list
+     * of the canvas, this property points to the next sprite on the list
      *
      * @public
-     * @type {zSprite}
+     * @type {Sprite}
      */
     this.next = null;
 
     /**
-     * reference to the zCanvas holding this zSprite
-     * is null if the zSprite isn't present on the zCanvas' display list
+     * reference to the canvas holding this Sprite
+     * is null if the Sprite isn't present on the canvas' display list
      *
      * @public
-     * @type {zCanvas}
+     * @type {canvas}
      */
-    zSprite.prototype.canvas = null;
+    Sprite.prototype.canvas = null;
 
     /**
      * @protected
@@ -193,7 +193,7 @@ function zSprite( x, y, width, height, bitmap, collidable, mask ) {
     this._bitmap;
 
     /**
-     * whether this zSprite is ready for drawing (will be false
+     * whether this Sprite is ready for drawing (will be false
      * when an Image source is used and the Image is still loading its data)
      *
      * @protected
@@ -208,7 +208,7 @@ function zSprite( x, y, width, height, bitmap, collidable, mask ) {
     this._draggable = false;
 
     /**
-     * whether this zSprite can receive user interaction events, when
+     * whether this Sprite can receive user interaction events, when
      * false this Sprite is omitted from "handleInteraction"-queries
      * executed when the user interacts with the parent StageCanvas element
      *
@@ -218,8 +218,8 @@ function zSprite( x, y, width, height, bitmap, collidable, mask ) {
     this._interactive = false;
     
     /**
-     * whether to restrict this zSprites movement
-     * to its constraints / zCanvas dimensions
+     * whether to restrict this Sprites movement
+     * to its constraints / canvas dimensions
      *
      * @protected
      * @type {boolean}
@@ -270,39 +270,39 @@ function zSprite( x, y, width, height, bitmap, collidable, mask ) {
 /* static methods */
 
 /**
- * extend a given Function reference with the zSprite prototype, you
- * can use this to create custom zSprite extensions. From the extensions
+ * extend a given Function reference with the Sprite prototype, you
+ * can use this to create custom Sprite extensions. From the extensions
  * you can call:
  *
  * InheritingPrototype.super( extensionInstance, methodName, var_args...)
  *
- * to call zSprite prototype functions from overriding function declarations
+ * to call Sprite prototype functions from overriding function declarations
  * if you want to call the constructor, methodName is "constructor"
  *
  * @public
  * @param {!Function} extendingFunction reference to
- *        function which should inherit the zSprite prototype
+ *        function which should inherit the Sprite prototype
  */
-zSprite.extend = function( extendingFunction ) {
+Sprite.extend = function( extendingFunction ) {
 
-    OOP.extend( extendingFunction, zSprite );
+    OOP.extend( extendingFunction, Sprite );
 };
 
 /* public methods */
 
 /**
- * whether the zSprite is draggable
+ * whether the Sprite is draggable
  *
  * @public
  * @return {boolean}
  */
-zSprite.prototype.getDraggable = function() {
+Sprite.prototype.getDraggable = function() {
 
     return this._draggable;
 };
 
 /**
- * toggle the draggable mode of this zSprite
+ * toggle the draggable mode of this Sprite
  *
  * @public
  *
@@ -311,13 +311,13 @@ zSprite.prototype.getDraggable = function() {
  *                   this will default to the bounds of the canvas, or can be a custom
  *                   restraint (see "setConstraint")
  */
-zSprite.prototype.setDraggable = function( aValue, aKeepInBounds ) {
+Sprite.prototype.setDraggable = function( aValue, aKeepInBounds ) {
 
     this._draggable    = aValue;
     this._keepInBounds = aKeepInBounds || false;
 
-    // if we want to drag this zSprite and it isn't interactive, set it as interactive
-    // otherwise it will not receive any interaction events from the zCanvas
+    // if we want to drag this Sprite and it isn't interactive, set it as interactive
+    // otherwise it will not receive any interaction events from the canvas
 
     if ( aValue && !this._interactive )
         this.setInteractive( true );
@@ -328,7 +328,7 @@ zSprite.prototype.setDraggable = function( aValue, aKeepInBounds ) {
  *
  * @return {number}
  */
-zSprite.prototype.getX = function() {
+Sprite.prototype.getX = function() {
 
     return this._bounds.left;
 };
@@ -338,7 +338,7 @@ zSprite.prototype.getX = function() {
  *
  * @param {number} aValue
  */
-zSprite.prototype.setX = function( aValue ) {
+Sprite.prototype.setX = function( aValue ) {
 
     const delta       = aValue - this._bounds.left;
     this._bounds.left = this._constraint ? aValue + this._constraint.left : aValue;
@@ -364,7 +364,7 @@ zSprite.prototype.setX = function( aValue ) {
  *
  * @return {number}
  */
-zSprite.prototype.getY = function() {
+Sprite.prototype.getY = function() {
 
     return this._bounds.top;
 };
@@ -374,7 +374,7 @@ zSprite.prototype.getY = function() {
  *
  * @param {number} aValue
  */
-zSprite.prototype.setY = function( aValue ) {
+Sprite.prototype.setY = function( aValue ) {
 
     const delta        = aValue - this._bounds.top;
     this._bounds.top = this._constraint ? aValue + this._constraint.top : aValue;
@@ -400,7 +400,7 @@ zSprite.prototype.setY = function( aValue ) {
  * @public
  * @return {number}
  */
-zSprite.prototype.getWidth = function() {
+Sprite.prototype.getWidth = function() {
 
     return this._bounds.width;
 };
@@ -409,7 +409,7 @@ zSprite.prototype.getWidth = function() {
  * @public
  * @param {number} aValue
  */
-zSprite.prototype.setWidth = function( aValue ) {
+Sprite.prototype.setWidth = function( aValue ) {
 
     const prevWidth    = this._bounds.width || 0;
     this._bounds.width = aValue;
@@ -425,7 +425,7 @@ zSprite.prototype.setWidth = function( aValue ) {
  * @public
  * @return {number}
  */
-zSprite.prototype.getHeight = function() {
+Sprite.prototype.getHeight = function() {
 
     return this._bounds.height;
 };
@@ -434,7 +434,7 @@ zSprite.prototype.getHeight = function() {
  * @public
  * @param {number} aValue
  */
-zSprite.prototype.setHeight = function( aValue ) {
+Sprite.prototype.setHeight = function( aValue ) {
 
     const prevHeight    = this._bounds.height || 0;
     this._bounds.height = aValue;
@@ -458,7 +458,7 @@ zSprite.prototype.setHeight = function( aValue ) {
  * @param {number=} width optionally desired width, defaults to current size
  * @param {number=} height optionally desired width, defaults to current size
  */
-zSprite.prototype.setBounds = function( left, top, width, height ) {
+Sprite.prototype.setBounds = function( left, top, width, height ) {
 
     if ( typeof left !== "number" )
         left = this._bounds.left;
@@ -471,7 +471,7 @@ zSprite.prototype.setBounds = function( left, top, width, height ) {
         top -= this._constraint.top;
     }
     else if ( !this.canvas ) {
-        throw new Error( "cannot update position of a zSprite that has no constraint or is not added to a zCanvas" );
+        throw new Error( "cannot update position of a Sprite that has no constraint or is not added to a canvas" );
     }
 
     if ( typeof width === "number" )
@@ -524,7 +524,7 @@ zSprite.prototype.setBounds = function( left, top, width, height ) {
  * @public
  * @return {{ left: number, top: number, width: number, height: number }}
  */
-zSprite.prototype.getBounds = function() {
+Sprite.prototype.getBounds = function() {
 
     return this._bounds;
 };
@@ -536,19 +536,19 @@ zSprite.prototype.getBounds = function() {
  * @public
  * @return {boolean}
  */
-zSprite.prototype.getInteractive = function() {
+Sprite.prototype.getInteractive = function() {
 
     return this._interactive;
 };
 
 /**
- * toggle the interactive state of this zSprite
+ * toggle the interactive state of this Sprite
  *
  * @public
  *
  * @param {boolean} aValue
  */
-zSprite.prototype.setInteractive = function( aValue ) {
+Sprite.prototype.setInteractive = function( aValue ) {
 
     this._interactive = aValue;
 };
@@ -557,14 +557,14 @@ zSprite.prototype.setInteractive = function( aValue ) {
  * invoked on each render cycle before the draw-method is invoked, you can override this in your subclass
  * for custom logic / animation such as updating the state of this Object (like position, size, etc.)
  *
- * (!) this method will NOT fire if "onUpdate" was provided to the zCanvas, onUpdate can be used to
+ * (!) this method will NOT fire if "onUpdate" was provided to the canvas, onUpdate can be used to
  * centralize all update logic (e.g. for game loops)
  *
  * @public
  * @param {number} aCurrentTimestamp the current timestamp
  *                 which can be used to create strict timed animations
  */
-zSprite.prototype.update = function( aCurrentTimestamp ) {
+Sprite.prototype.update = function( aCurrentTimestamp ) {
 
     // override in prototype-extensions or instance
     // recursively update this sprites children :
@@ -586,22 +586,22 @@ zSprite.prototype.update = function( aCurrentTimestamp ) {
 };
 
 /**
- * invoked by the zCanvas whenever it renders a new frame / updates the on-screen contents
- * this is where the zSprite is responsible for rendering its contents onto the screen
+ * invoked by the canvas whenever it renders a new frame / updates the on-screen contents
+ * this is where the Sprite is responsible for rendering its contents onto the screen
  * By default, it will render it's Bitmap image at its described coordinates and dimensions but
  * you can override this method for your own custom rendering logic (e.g. draw custom shapes)
  *
  * @public
  * @param {CanvasRenderingContext2D} aCanvasContext to draw on
  */
-zSprite.prototype.draw = function( aCanvasContext ) {
+Sprite.prototype.draw = function( aCanvasContext ) {
 
     // extend in subclass if you're drawing a custom object instead of a graphical Image asset
     // don't forget to draw the child display list when overriding this method!
 
     aCanvasContext.save();
 
-    // zSprite acts as a mask for underlying Sprites ?
+    // Sprite acts as a mask for underlying Sprites ?
 
     if ( this._mask )
         aCanvasContext.globalCompositeOperation = 'destination-in';
@@ -677,10 +677,10 @@ zSprite.prototype.draw = function( aCanvasContext ) {
  * level as it will match the entire bounding box, and omit checking for (for instance) transparent areas!
  *
  * @public
- * @param {zSprite} aSprite the sprite to check against *
+ * @param {Sprite} aSprite the sprite to check against *
  * @return {boolean} whether a collision has been detected
  */
-zSprite.prototype.collidesWith = function( aSprite ) {
+Sprite.prototype.collidesWith = function( aSprite ) {
 
     if ( aSprite === this )
         return false;
@@ -700,10 +700,10 @@ zSprite.prototype.collidesWith = function( aSprite ) {
  * returns null if no intersection occurs
  *
  * @public
- * @param {zSprite} aSprite
+ * @param {Sprite} aSprite
  * @return {{ left: number, top: number, width: number, height: number }|null}
  */
-zSprite.prototype.getIntersection = function( aSprite ) {
+Sprite.prototype.getIntersection = function( aSprite ) {
 
     if ( this.collidesWith( aSprite )) {
 
@@ -724,18 +724,18 @@ zSprite.prototype.getIntersection = function( aSprite ) {
  * with the edges of this sprite, this can be used as a fast method to detect whether
  * movement should be impaired on either side of this sprite (for instance wall collision detection)
  *
- * NOTE : ONLY query against results of ZCanvas' "getChildrenUnderPoint"-method as for brevity (and speeds)
+ * NOTE : ONLY query against results of canvas' "getChildrenUnderPoint"-method as for brevity (and speeds)
  * sake, we only check the desired plane, and not against the other axis.
  *
  * @public
  *
- * @param {zSprite} aSprite the sprite to check against
+ * @param {Sprite} aSprite the sprite to check against
  * @param {number} aEdge the edge to check 0 = left, 1 = above, 2 = right, 3 = below this is relative
  *                 to the edge of THIS sprite
  *
  * @return {boolean} whether collision with the given edge has been detected
  */
-zSprite.prototype.collidesWithEdge = function( aSprite, aEdge ) {
+Sprite.prototype.collidesWithEdge = function( aSprite, aEdge ) {
 
     if ( aSprite === this )
         return false;
@@ -763,13 +763,13 @@ zSprite.prototype.collidesWithEdge = function( aSprite, aEdge ) {
  * @public
  * @return {Image|HTMLCanvasElement|string}
  */
-zSprite.prototype.getBitmap = function() {
+Sprite.prototype.getBitmap = function() {
 
     return this._bitmap;
 };
 
 /**
- * update / replace the Image contents of this zSprite, can be used
+ * update / replace the Image contents of this Sprite, can be used
  * to swap spritesheets (for instance)
  *
  * @public
@@ -778,7 +778,7 @@ zSprite.prototype.getBitmap = function() {
  * @param {number=} aOptWidth optional new width to use for this Sprites bounds
  * @param {number=} aOptHeight optional new width to use for this Sprites bounds
  */
-zSprite.prototype.setBitmap = function( aImage, aOptWidth, aOptHeight ) {
+Sprite.prototype.setBitmap = function( aImage, aOptWidth, aOptHeight ) {
 
     // swapping Bitmaps ? unset the ready state
 
@@ -832,7 +832,7 @@ zSprite.prototype.setBitmap = function( aImage, aOptWidth, aOptHeight ) {
 
         const self = this;
 
-        zLoader.loadImage( aImage, ( aResult, aOptError ) => {
+        Loader.loadImage( aImage, ( aResult, aOptError ) => {
 
             if ( !( aOptError instanceof Error )) {
 
@@ -859,30 +859,30 @@ zSprite.prototype.setBitmap = function( aImage, aOptWidth, aOptHeight ) {
  * @override
  * @public
  *
- * @param {zSprite|zCanvas} aParent
+ * @param {Sprite|canvas} aParent
  */
-zSprite.prototype.setParent = function( aParent ) {
+Sprite.prototype.setParent = function( aParent ) {
 
     this._parent = aParent;
 };
 
 /**
  * @public
- * @return {zSprite|zCanvas} parent
+ * @return {Sprite|canvas} parent
  */
-zSprite.prototype.getParent = function() {
+Sprite.prototype.getParent = function() {
 
     return this._parent;
 };
 
 /**
- * set a reference to the zCanvas that is rendering this sprite
+ * set a reference to the canvas that is rendering this sprite
  *
  * @public
  *
- * @param {zCanvas} aCanvas
+ * @param {canvas} aCanvas
  */
-zSprite.prototype.setCanvas = function( aCanvas ) {
+Sprite.prototype.setCanvas = function( aCanvas ) {
 
     this.canvas = aCanvas;
 
@@ -893,12 +893,12 @@ zSprite.prototype.setCanvas = function( aCanvas ) {
 };
 
 /**
- * a zSprite can be constrained in its movement (when dragging) to ensure it remains
+ * a Sprite can be constrained in its movement (when dragging) to ensure it remains
  * within desired boundaries
  *
- * a parent constraint specifies the boundaries of this zSprites "container"
+ * a parent constraint specifies the boundaries of this Sprites "container"
  * which can be used when dragging this sprite within boundaries. this constraint
- * will by default be equal to the zCanvas' dimensions (when "setCanvas" is invoked)
+ * will by default be equal to the canvas' dimensions (when "setCanvas" is invoked)
  * but this method can be invoked to override it to a custom Rectangle
  *
  * @public
@@ -910,11 +910,11 @@ zSprite.prototype.setCanvas = function( aCanvas ) {
  *
  * @return {{ left: number, top: number, width: number, height: number }} the generated constraint Rectangle
  */
-zSprite.prototype.setConstraint = function( aLeft, aTop, aWidth, aHeight ) {
+Sprite.prototype.setConstraint = function( aLeft, aTop, aWidth, aHeight ) {
 
     /**
      * rectangle describing this sprites restrictions (only applicable
-     * to draggable zSprites to ensure they remain within these bounds)
+     * to draggable Sprites to ensure they remain within these bounds)
      *
      * @protected
      * @type {{ left: number, top: number, width: number, height: number }}
@@ -934,20 +934,20 @@ zSprite.prototype.setConstraint = function( aLeft, aTop, aWidth, aHeight ) {
  *
  * @return {{ left: number, top: number, width: number, height: number }}
  */
-zSprite.prototype.getConstraint = function() {
+Sprite.prototype.getConstraint = function() {
 
     return this._constraint;
 };
 
 /**
- * append another zSprite to the display list of this sprite
+ * append another Sprite to the display list of this sprite
  *
  * @public
  *
- * @param {zSprite} aChild to append
- * @return {zSprite} this object - for chaining purposes
+ * @param {Sprite} aChild to append
+ * @return {Sprite} this object - for chaining purposes
  */
-zSprite.prototype.addChild = function( aChild ) {
+Sprite.prototype.addChild = function( aChild ) {
 
     // create a linked list
     const numChildren = this._children.length;
@@ -971,14 +971,14 @@ zSprite.prototype.addChild = function( aChild ) {
 };
 
 /**
- * remove a child zSprite from this sprites display list
+ * remove a child Sprite from this sprites display list
  *
  * @public
  *
- * @param {zSprite} aChild the child to remove
- * @return {zSprite} the removed child
+ * @param {Sprite} aChild the child to remove
+ * @return {Sprite} the removed child
  */
-zSprite.prototype.removeChild = function( aChild ) {
+Sprite.prototype.removeChild = function( aChild ) {
 
     aChild.setParent( null );
     aChild.setCanvas( null );
@@ -1016,9 +1016,9 @@ zSprite.prototype.removeChild = function( aChild ) {
  * @public
  *
  * @param {number} index of the object in the Display List
- * @return {zSprite} the zSprite present at the given index
+ * @return {Sprite} the Sprite present at the given index
  */
-zSprite.prototype.getChildAt = function( index ) {
+Sprite.prototype.getChildAt = function( index ) {
 
     return this._children[ index ];
 };
@@ -1029,9 +1029,9 @@ zSprite.prototype.getChildAt = function( index ) {
  * @public
  *
  * @param {number} index of the object to remove
- * @return {zSprite} the zSprite removed at the given index
+ * @return {Sprite} the Sprite removed at the given index
  */
-zSprite.prototype.removeChildAt = function( index ) {
+Sprite.prototype.removeChildAt = function( index ) {
 
     return this.removeChild( this.getChildAt( index ));
 };
@@ -1040,7 +1040,7 @@ zSprite.prototype.removeChildAt = function( index ) {
  * @public
  * @return {number} the amount of children in this object's Display List
  */
-zSprite.prototype.numChildren = function() {
+Sprite.prototype.numChildren = function() {
 
     return this._children.length;
 };
@@ -1050,10 +1050,10 @@ zSprite.prototype.numChildren = function() {
  *
  * @public
  *
- * @param {zSprite} aChild
+ * @param {Sprite} aChild
  * @return {boolean}
  */
-zSprite.prototype.contains = function( aChild ) {
+Sprite.prototype.contains = function( aChild ) {
 
     return this._children.indexOf( aChild ) > -1;
 };
@@ -1061,14 +1061,14 @@ zSprite.prototype.contains = function( aChild ) {
 /**
  * @public
  */
-zSprite.prototype.dispose = function() {
+Sprite.prototype.dispose = function() {
 
     if ( this._disposed )
         return;
 
     this._disposed = true;
 
-    // in case this ZSprite was still on the ZCanvas, remove it
+    // in case this Sprite was still on the canvas, remove it
 
     if ( this._parent )
         this._parent.removeChild( this );
@@ -1096,7 +1096,7 @@ zSprite.prototype.dispose = function() {
  * @param {number} aXPosition position of the touch / cursor
  * @param {number} aYPosition position of the touch / cursor
  */
-zSprite.prototype.handlePress = function( aXPosition, aYPosition ) {
+Sprite.prototype.handlePress = function( aXPosition, aYPosition ) {
 
     // override in prototype-extensions or instance
 };
@@ -1109,7 +1109,7 @@ zSprite.prototype.handlePress = function( aXPosition, aYPosition ) {
  * @param {number} aXPosition position of the touch / cursor
  * @param {number} aYPosition position of the touch / cursor
  */
-zSprite.prototype.handleRelease = function( aXPosition, aYPosition ) {
+Sprite.prototype.handleRelease = function( aXPosition, aYPosition ) {
 
     // override in prototype-extensions or instance
 };
@@ -1120,7 +1120,7 @@ zSprite.prototype.handleRelease = function( aXPosition, aYPosition ) {
  *
  * @protected
  */
-zSprite.prototype.handleClick = function() {
+Sprite.prototype.handleClick = function() {
 
     // override in prototype-extensions or instance
 };
@@ -1134,7 +1134,7 @@ zSprite.prototype.handleClick = function() {
  * @param {number} aXPosition
  * @param {number} aYPosition
  */
-zSprite.prototype.handleMove = function( aXPosition, aYPosition ) {
+Sprite.prototype.handleMove = function( aXPosition, aYPosition ) {
 
     const theX = this._dragStartOffset.x + ( aXPosition - this._dragStartEventCoordinates.x );
     const theY = this._dragStartOffset.y + ( aYPosition - this._dragStartEventCoordinates.y );
@@ -1143,7 +1143,7 @@ zSprite.prototype.handleMove = function( aXPosition, aYPosition ) {
 };
 
 /**
- * invoked when the user interacts with the zCanvas, this method evaluates
+ * invoked when the user interacts with the canvas, this method evaluates
  * the event data and checks whether it applies to this sprite and
  * when it does, applicable delegate handlers will be invoked on this Object
  * (see "handlePress", "handleRelease", "handleClick", "handleMove")
@@ -1156,9 +1156,9 @@ zSprite.prototype.handleMove = function( aXPosition, aYPosition ) {
  * @param {number} aEventY the events Y offset, passed for quick evaluation of position updates
  * @param {Event} aEvent the original event that triggered this action
  *
- * @return {boolean} whether this zSprite has handled the event
+ * @return {boolean} whether this Sprite has handled the event
  */
-zSprite.prototype.handleInteraction = function( aEventX, aEventY, aEvent ) {
+Sprite.prototype.handleInteraction = function( aEventX, aEventY, aEvent ) {
 
     // first traverse the children of this sprite
     let foundInteractionInChild = false, theChild;
@@ -1277,12 +1277,12 @@ zSprite.prototype.handleInteraction = function( aEventX, aEventY, aEvent ) {
 
 /**
  * switch the current animation that should be playing
- * from this zSprite tile sheet
+ * from this Sprite tile sheet
  *
  * @public
  * @param {Object} tileObject present in the _tileSheet Object
  */
-zSprite.prototype.switchAnimation = function( tileObject ) {
+Sprite.prototype.switchAnimation = function( tileObject ) {
 
     const aniProps = this._animation;
 
@@ -1299,7 +1299,7 @@ zSprite.prototype.switchAnimation = function( tileObject ) {
  *
  * @protected
  */
-zSprite.prototype.updateAnimation = function() {
+Sprite.prototype.updateAnimation = function() {
 
     const aniProps = this._animation;
 
@@ -1321,7 +1321,7 @@ zSprite.prototype.updateAnimation = function() {
  * @protected
  * @param {CanvasRenderingContext2D} aCanvasContext to draw on
  */
-zSprite.prototype.drawOutline = function( aCanvasContext ) {
+Sprite.prototype.drawOutline = function( aCanvasContext ) {
 
     aCanvasContext.lineWidth   = 1;
     aCanvasContext.strokeStyle = '#FF0000';

@@ -25,7 +25,7 @@
 const EventHandler = require( "./utils/EventHandler" );
 const OOP          = require( "./utils/OOP" );
 
-module.exports = zCanvas;
+module.exports = Canvas;
 
 /**
  * creates an API for an HTMLCanvasElement where all drawables are treated as
@@ -41,23 +41,23 @@ module.exports = zCanvas;
  *            fps: number,
  *            onUpdate: Function,
  *            debug: boolean
- *        }} width when numerical (legacy 4 argument constructor), the desired width of the zCanvas,
+ *        }} width when numerical (legacy 4 argument constructor), the desired width of the Canvas,
  *        when Object it should contain required properties width and height, with others optional
  *        (see defaults for animate and framerate below)
  *        "onUpdate" callback method to execute when the canvas is about to render. This can be used to synchronize
- *            a game's model from a single spot (instead of having each zSprite's update()-method fire)
+ *            a game's model from a single spot (instead of having each sprite's update()-method fire)
  *        "debug" specifies whether or not all sprites should render their Bounding Box for debugging purposes
  *
  *        When object, no further arguments will be processed by this constructor
  *
- * @param {number=} height desired height of the zCanvas
+ * @param {number=} height desired height of the Canvas
  * @param {boolean=} animate specifies whether we will animate the Canvas (redraw it constantly on each
  *            animationFrame), this defaults to false to preserve resources (and will only (re)draw when
- *            adding/removing zSprites from the display list) set this to true when creating animated
+ *            adding/removing sprites from the display list) set this to true when creating animated
  *            content / games
  * @param {number=} framerate  (defaults to 60), only useful when animate is true
  */
-function zCanvas( width, height, animate, framerate ) {
+function Canvas( width, height, animate, framerate ) {
 
     /* assertions */
 
@@ -88,7 +88,7 @@ function zCanvas( width, height, animate, framerate ) {
     height = ( typeof opts.height === "number" ) ? opts.height : 300;
 
     if ( width <= 0 || height <= 0 )
-        throw new Error( "cannot construct a zCanvas without valid dimensions" );
+        throw new Error( "cannot construct a Canvas without valid dimensions" );
 
     /* instance properties */
 
@@ -104,7 +104,7 @@ function zCanvas( width, height, animate, framerate ) {
     /** @protected @type {boolean} */  this._renderPending = false;
     /** @protected @type {boolean} */  this._disposed = false;
 
-    /** @protected @type {Array.<zSprite>} */ this._children = [];
+    /** @protected @type {Array.<sprite>} */ this._children = [];
 
     /* initialization */
 
@@ -143,64 +143,64 @@ function zCanvas( width, height, animate, framerate ) {
 }
 
 /**
- * extend a given Function reference with the zCanvas prototype, you
- * can use this to create custom zCanvas extensions. From the extensions
+ * extend a given Function reference with the Canvas prototype, you
+ * can use this to create custom Canvas extensions. From the extensions
  * you can call:
  *
  * InheritingPrototype.super( extensionInstance, methodName, var_args...)
  *
- * to call zCanvas prototype functions from overriding function declarations
+ * to call Canvas prototype functions from overriding function declarations
  * if you want to call the constructor, methodName is "constructor"
  *
  * @public
  * @param {!Function} extendingFunction reference to
- *        function which should inherit the zCanvas prototype
+ *        function which should inherit the Canvas prototype
  */
-zCanvas.extend = function( extendingFunction ) {
-    OOP.extend( extendingFunction, zCanvas );
+Canvas.extend = function( extendingFunction ) {
+    OOP.extend( extendingFunction, Canvas );
 };
 
 /* public methods */
 
 /**
- * appends this zCanvas to the DOM (i.e. adds the references <canvas>-
+ * appends this Canvas to the DOM (i.e. adds the references <canvas>-
  * element into the supplied container
  *
  * @public
- * @param {Element} aContainer DOM node to append the zCanvas to
+ * @param {Element} aContainer DOM node to append the Canvas to
  */
-zCanvas.prototype.insertInPage = function( aContainer ) {
+Canvas.prototype.insertInPage = function( aContainer ) {
 
     if ( this._element.parentNode )
-        throw new Error( "zCanvas already present in DOM" );
+        throw new Error( "Canvas already present in DOM" );
 
     aContainer.appendChild( this._element );
 };
 
 /**
  * get the <canvas>-element inside the DOM that is used
- * to render this zCanvas' contents
+ * to render this Canvas' contents
  *
  * @override
  * @public
  *
  * @return {Element}
  */
-zCanvas.prototype.getElement = function() {
+Canvas.prototype.getElement = function() {
 
     return this._element;
 };
 
 /**
- * whether or not all events captured by the zCanvas can
+ * whether or not all events captured by the Canvas can
  * bubble down in the document, when true, DOM events that
- * have interacted with the zCanvas will stop their propagation
+ * have interacted with the Canvas will stop their propagation
  * and prevent their default behaviour
  *
  * @public
  * @param {boolean} value
  */
-zCanvas.prototype.preventEventBubbling = function( value ) {
+Canvas.prototype.preventEventBubbling = function( value ) {
 
     /**
      * @protected
@@ -211,11 +211,11 @@ zCanvas.prototype.preventEventBubbling = function( value ) {
 
 /**
  * @public
- * @param {zSprite} aChild
+ * @param {sprite} aChild
  *
- * @return {zCanvas} this zCanvas - for chaining purposes
+ * @return {Canvas} this Canvas - for chaining purposes
  */
-zCanvas.prototype.addChild = function( aChild ) {
+Canvas.prototype.addChild = function( aChild ) {
 
     // create a linked list
     const numChildren = this._children.length;
@@ -236,11 +236,11 @@ zCanvas.prototype.addChild = function( aChild ) {
 
 /**
  * @public
- * @param {zSprite} aChild the child to remove from this zCanvas
+ * @param {sprite} aChild the child to remove from this Canvas
  *
- * @return {zSprite} the removed child - for chaining purposes
+ * @return {sprite} the removed child - for chaining purposes
  */
-zCanvas.prototype.removeChild = function( aChild ) {
+Canvas.prototype.removeChild = function( aChild ) {
 
     aChild.setParent( null );
     aChild.setCanvas( null );
@@ -273,26 +273,26 @@ zCanvas.prototype.removeChild = function( aChild ) {
 };
 
 /**
- * retrieve a child of this zCanvas by its index in the Display List
+ * retrieve a child of this Canvas by its index in the Display List
  *
  * @public
  *
  * @param {number} index of the object in the Display List
- * @return {zSprite} the referenced object
+ * @return {sprite} the referenced object
  */
-zCanvas.prototype.getChildAt = function( index ) {
+Canvas.prototype.getChildAt = function( index ) {
 
     return this._children[ index ];
 };
 
 /**
- * remove a child from this zCanvas' Display List at the given index
+ * remove a child from this Canvas' Display List at the given index
  *
  * @public
  * @param {number} index of the object to remove
- * @return {zSprite} the removed zSprite
+ * @return {sprite} the removed sprite
  */
-zCanvas.prototype.removeChildAt = function( index ) {
+Canvas.prototype.removeChildAt = function( index ) {
 
     return this.removeChild( this.getChildAt( index ));
 };
@@ -301,16 +301,16 @@ zCanvas.prototype.removeChildAt = function( index ) {
  * @public
  * @return {number} the amount of children in this object's Display List
  */
-zCanvas.prototype.numChildren = function() {
+Canvas.prototype.numChildren = function() {
 
     return this._children.length;
 };
 
 /**
  * @public
- * @return {Array.<zSprite>}
+ * @return {Array.<sprite>}
  */
-zCanvas.prototype.getChildren = function() {
+Canvas.prototype.getChildren = function() {
 
     return this._children;
 };
@@ -319,17 +319,17 @@ zCanvas.prototype.getChildren = function() {
  * check whether a given display object is present in this object's display list
  *
  * @public
- * @param {zSprite} aChild
+ * @param {sprite} aChild
  *
  * @return {boolean}
  */
-zCanvas.prototype.contains = function( aChild ) {
+Canvas.prototype.contains = function( aChild ) {
 
     return this._children.indexOf( aChild ) > -1;
 };
 
 /**
- * invoke when the state of the zCanvas has changed (i.e.
+ * invoke when the state of the Canvas has changed (i.e.
  * the visual contents should change), this will invoke
  * a new render request
  *
@@ -340,7 +340,7 @@ zCanvas.prototype.contains = function( aChild ) {
  *
  * @public
  */
-zCanvas.prototype.invalidate = function() {
+Canvas.prototype.invalidate = function() {
 
     if ( !this._animate && !this._renderPending ) {
         this._renderPending = true;
@@ -349,8 +349,8 @@ zCanvas.prototype.invalidate = function() {
 };
 
 /**
- * retrieve all children of this zCanvas that are currently residing at
- * a given coordinate and rectangle, can be used in conjunction with zSprite
+ * retrieve all children of this Canvas that are currently residing at
+ * a given coordinate and rectangle, can be used in conjunction with sprite
  * "collidesWith"-method to query only the objects that are in its vicinity, greatly
  * freeing up CPU resources by not checking against out of bounds objects
  *
@@ -362,9 +362,9 @@ zCanvas.prototype.invalidate = function() {
  * @param {number} aHeight rectangle height
  * @param {boolean=} aOnlyCollidables optionally only return children that are collidable defaults to false
  *
- * @return {Array.<zSprite>}
+ * @return {Array.<sprite>}
  */
-zCanvas.prototype.getChildrenUnderPoint = function( aX, aY, aWidth, aHeight, aOnlyCollidables ) {
+Canvas.prototype.getChildrenUnderPoint = function( aX, aY, aWidth, aHeight, aOnlyCollidables ) {
 
     const out = [];
     let i = this._children.length, theChild, childX, childY, childWidth, childHeight;
@@ -389,26 +389,26 @@ zCanvas.prototype.getChildrenUnderPoint = function( aX, aY, aWidth, aHeight, aOn
 };
 
 /**
- * return the framerate of the zCanvas, can be queried by
- * child zSprites to calculate strictly timed animated operations
+ * return the framerate of the Canvas, can be queried by
+ * child sprites to calculate strictly timed animated operations
  *
  * @public
  * @return {number}
  */
-zCanvas.prototype.getFrameRate = function() {
+Canvas.prototype.getFrameRate = function() {
 
     return this._fps;
 };
 
 /**
- * retrieve the render interval for this zCanvas, this basically
+ * retrieve the render interval for this Canvas, this basically
  * describes the elapsed time in milliseconds between each successive
  * render at the current framerate
  *
  * @public
  * @return {number}
  */
-zCanvas.prototype.getRenderInterval = function() {
+Canvas.prototype.getRenderInterval = function() {
 
     return this._renderInterval;
 };
@@ -421,7 +421,7 @@ zCanvas.prototype.getRenderInterval = function() {
  * @public
  * @param {boolean} aValue
  */
-zCanvas.prototype.setSmoothing = function( aValue ) {
+Canvas.prototype.setSmoothing = function( aValue ) {
 
     const props = [ "imageSmoothingEnabled",  "mozImageSmoothingEnabled",
                   "oImageSmoothingEnabled", "webkitImageSmoothingEnabled" ];
@@ -445,7 +445,7 @@ zCanvas.prototype.setSmoothing = function( aValue ) {
  * @public
  * @return {number}
  */
-zCanvas.prototype.getWidth = function() {
+Canvas.prototype.getWidth = function() {
 
     return this._width;
 };
@@ -454,20 +454,20 @@ zCanvas.prototype.getWidth = function() {
  * @public
  * @return {number}
  */
-zCanvas.prototype.getHeight = function() {
+Canvas.prototype.getHeight = function() {
 
     return this._height;
 };
 
 /**
- * updates the dimensions of the zCanvas
+ * updates the dimensions of the Canvas
  *
  * @public
  *
  * @param {number} aWidth
  * @param {number} aHeight
  */
-zCanvas.prototype.setDimensions = function( aWidth, aHeight ) {
+Canvas.prototype.setDimensions = function( aWidth, aHeight ) {
 
     // apply scale factor for HDPI screens
     const scaleFactor = this._HDPIscaleRatio;
@@ -492,13 +492,13 @@ zCanvas.prototype.setDimensions = function( aWidth, aHeight ) {
 };
 
 /**
- * set the background color for the zCanvas, either hexadecimal
+ * set the background color for the Canvas, either hexadecimal
  * or RGB/RGBA, e.g. "#FF0000" or "rgba(255,0,0,1)";
  *
  * @public
  * @param {string} aColor
  */
-zCanvas.prototype.setBackgroundColor = function( aColor ) {
+Canvas.prototype.setBackgroundColor = function( aColor ) {
 
     /**
      * @protected
@@ -511,7 +511,7 @@ zCanvas.prototype.setBackgroundColor = function( aColor ) {
  * @public
  * @param {boolean} value
  */
-zCanvas.prototype.setAnimatable = function( value ) {
+Canvas.prototype.setAnimatable = function( value ) {
 
     const oldValue = this._animate;
     this._animate  = value;
@@ -524,24 +524,24 @@ zCanvas.prototype.setAnimatable = function( value ) {
  * @public
  * @return {boolean}
  */
-zCanvas.prototype.isAnimatable = function() {
+Canvas.prototype.isAnimatable = function() {
     return this._animate;
 };
 
 /**
  * high precision pixel-based collision detection, can be queried to check whether the given
- * zSprite collides with another drawable object. By supplying specific RGBA values it is
+ * sprite collides with another drawable object. By supplying specific RGBA values it is
  * possible to check for collision with a specific object as long as its colour is unique
  * (for instance a fully black "wall" (R = 0, G = 0, B = 0) or a purple "bullet"
  * (R = 255, G = 0, B = 128), etc. Note this method requires more from the CPU than
- * simply checking overlapping bounding boxes (see zSprite "collidesWith"-method).
+ * simply checking overlapping bounding boxes (see sprite "collidesWith"-method).
  *
- * NOTE : invoke this in "update"-method of a zSprite as this requires existing pixel data
+ * NOTE : invoke this in "update"-method of a sprite as this requires existing pixel data
  * being onscreen !
  *
  * @public
  *
- * @param {zSprite} aSprite to check collisions for
+ * @param {sprite} aSprite to check collisions for
  * @param {number|null=} aRedValue optional value between 0 - 255 the red channel must hold
  * @param {number|null=} aGreenValue optional value between 0 - 255 the green channel must hold
  * @param {number|null=} aBlueValue optional value between 0 - 255 the blue channel must hold
@@ -557,7 +557,7 @@ zCanvas.prototype.isAnimatable = function() {
  *
  * @return {number} 0 = no collision, 1 = horizontal collision, 2 = vertical collision, 3 = horizontal and vertical collisions
  */
-zCanvas.prototype.checkCollision = function( aSprite, aRedValue, aGreenValue, aBlueValue, aAlphaValue,
+Canvas.prototype.checkCollision = function( aSprite, aRedValue, aGreenValue, aBlueValue, aAlphaValue,
                                              aX, aY, aWidth, aHeight ) {
 
     aX = aX || aSprite.getX();
@@ -650,7 +650,7 @@ zCanvas.prototype.checkCollision = function( aSprite, aRedValue, aGreenValue, aB
 /**
  * @public
  */
-zCanvas.prototype.dispose = function() {
+Canvas.prototype.dispose = function() {
 
     if ( this._disposed )
         return;
@@ -676,7 +676,7 @@ zCanvas.prototype.dispose = function() {
  * @protected
  * @param {Event} aEvent
  */
-zCanvas.prototype.handleInteraction = function( aEvent ) {
+Canvas.prototype.handleInteraction = function( aEvent ) {
 
     const numChildren  = this._children.length;
     let eventOffsetX = 0, eventOffsetY = 0;
@@ -744,7 +744,7 @@ zCanvas.prototype.handleInteraction = function( aEvent ) {
  *
  * @protected
  */
-zCanvas.prototype.render = function() {
+Canvas.prototype.render = function() {
 
     const now   = Date.now();  // current timestamp
     const delta = now - this._lastRender;
@@ -798,7 +798,7 @@ zCanvas.prototype.render = function() {
         }
     }
 
-    // keep render loop going if zCanvas is animatable
+    // keep render loop going if Canvas is animatable
 
     if ( !this._disposed && this._animate ) {
         this._renderPending = true;
@@ -807,13 +807,13 @@ zCanvas.prototype.render = function() {
 };
 
 /**
- * zSprites have no HTML elements, the actual HTML listeners are
- * added onto the canvas, the zCanvas will delegate events onto
+ * sprites have no HTML elements, the actual HTML listeners are
+ * added onto the canvas, the Canvas will delegate events onto
  * the "children" of the canvas' Display List
  *
  * @protected
  */
-zCanvas.prototype.addListeners = function() {
+Canvas.prototype.addListeners = function() {
 
     if ( !this._eventHandler ) {
 
@@ -843,13 +843,13 @@ zCanvas.prototype.addListeners = function() {
 };
 
 /**
- * zSprites have no HTML elements, the actual HTML listeners are
- * added onto the canvas, the zCanvas will delegate events onto
+ * sprites have no HTML elements, the actual HTML listeners are
+ * added onto the canvas, the Canvas will delegate events onto
  * the "children" of the canvas' Display List
  *
  * @protected
  */
-zCanvas.prototype.removeListeners = function() {
+Canvas.prototype.removeListeners = function() {
 
     if ( this._eventHandler ) {
         this._eventHandler.dispose();
@@ -864,7 +864,7 @@ zCanvas.prototype.removeListeners = function() {
  * @protected
  * @return {Object} w/ x and y properties
  */
-zCanvas.prototype.getCoordinate = function() {
+Canvas.prototype.getCoordinate = function() {
 
     let left = 0;
     let top  = 0;

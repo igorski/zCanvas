@@ -3,7 +3,7 @@
 <head>
     <meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable = no" name="viewport">
     <meta charset="utf-8" />
-    <title>zCanvas animated spritesheet example</title>
+    <title>canvas animated spritesheet example</title>
     <link rel="stylesheet" href="./assets/styles.css">
     <script type="text/javascript" src="./assets/images.js"></script>
     <!-- include RequireJS to resolve dependencies -->
@@ -11,7 +11,7 @@
 </head>
 <body>
     <div id="container">
-        <h1>zCanvas demo #1: Spritesheets and collisions</h1>
+        <h1>canvas demo #1: Spritesheets and collisions</h1>
         <div id="demo"><!-- x --></div>
         <p>
             Demo features : auto scrolling background and a keyboard / touchscreen-controllable spritesheet animation
@@ -25,22 +25,22 @@
 
         // resolve dependencies
 
-        var zLoader, zCanvas, zSprite, zUtil;
+        var loader, canvas, sprite, zUtil;
 
         requirejs.config({
             baseUrl : "../dist/",
             urlArgs : "bust=" + Date.now()
         });
 
-        require( [ "zcanvas.amd" ], function( zCanvasLibrary ) {
+        require( [ "canvas.amd" ], function( canvasLibrary ) {
 
             // cheap way to make deps global, just for the sake of this demo's simplicity
             // this is of course not the way to use the AMD require pattern ;)
 
-            zLoader = zCanvasLibrary.zLoader;
-            zCanvas = zCanvasLibrary.zCanvas;
-            zSprite = zCanvasLibrary.zSprite;
-            zUtil   = zCanvasLibrary.zUtil;
+            loader = canvasLibrary.loader;
+            canvas = canvasLibrary.canvas;
+            sprite = canvasLibrary.sprite;
+            zUtil   = canvasLibrary.zUtil;
 
             demo(); // start the actual demo
         });
@@ -70,12 +70,12 @@
                 h = document.body.clientHeight;
             }
 
-            // create a new zCanvas that renders at 60 fps
+            // create a new canvas that renders at 60 fps
             // keep it within the device / browser bounds
             var cvsWidth  = ( w < 800 ) ? w * .93 : 800;
             var cvsHeight = ( h < 350 ) ? h : 350;
 
-            var cvs = new zCanvas({
+            var cvs = new canvas({
                 width: cvsWidth,
                 height: cvsHeight,
                 animate: true,
@@ -83,7 +83,7 @@
             });
             cvs.preventEventBubbling( true );
 
-            // append zCanvas to DOM
+            // append canvas to DOM
             cvs.insertInPage( container );
             cvs.setSmoothing( false );  // pixel art example, make crisp.
 
@@ -94,7 +94,7 @@
             // (see included "assets.js"-file for the assetBackground-image data)
 
             var bgWidth  = 800, bgHeight = 1067;
-            var bgSprite = new zSprite({
+            var bgSprite = new sprite({
                 width: bgWidth,
                 height: bgHeight,
                 bitmap: assetBackground
@@ -114,7 +114,7 @@
 
             bgSprite.update = function( aCurrentTimestamp ) {
 
-                var delta = ( aCurrentTimestamp - prevStamp ); // should roughly equal the render interval of the zCanvas
+                var delta = ( aCurrentTimestamp - prevStamp ); // should roughly equal the render interval of the canvas
                 prevStamp = aCurrentTimestamp;                 // store last timestamp
 
                 // slide the background either up or down
@@ -147,11 +147,11 @@
             // STEP 3 : NEW SUBCLASS / SPRITESHEET EXAMPLE
             // -------------------------------------------
             // when writing your application using OOP-paradigms, it makes
-            // more sense to create new "classes" for custom zSprite Objects, like such:
+            // more sense to create new "classes" for custom sprite Objects, like such:
 
             var Hero = function( opts ) {
 
-                Hero.super( this, "constructor", opts ); // construct as a zSprite
+                Hero.super( this, "constructor", opts ); // construct as a sprite
 
                 /* Hero instance properties */
 
@@ -165,7 +165,7 @@
                 this.ySpeed       = 0;     // vertical speed (i.e. jumping/falling)
                 this._jumpCount   = 0;     // internal : countdown for determining max jump height reached
             };
-            zSprite.extend( Hero ); // Hero extends zSprite
+            sprite.extend( Hero ); // Hero extends sprite
 
             // public methods
             // --------------
@@ -334,7 +334,7 @@
             // STEP 4 : ADD SOME WALLS AND FLOORS
             // ----------------------------------
 
-            var wallSprite = new zSprite({ x: 15, y: 120, width: 743, height: 199, bitmap: LEVEL });
+            var wallSprite = new sprite({ x: 15, y: 120, width: 743, height: 199, bitmap: LEVEL });
             cvs.addChild( wallSprite );
 
             // STEP 5 : ADDING KEYBOARD OR TOUCH INTERACTION

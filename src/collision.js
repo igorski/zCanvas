@@ -30,17 +30,17 @@ const tempCanvas  = document.createElement( "canvas" ),
 /**
  * @type {Object}
  */
-const zUtil = module.exports = {
+const Collision = module.exports = {
 
     /**
      * query whether the current position of given sprite1 and sprite2
      * result in a collision at the pixel level. This method increases
      * accuracy when transparency should be taken into account. While it is
-     * reasonably fast, rely on zSprite.getIntersection() when rectangular, non-
+     * reasonably fast, rely on sprite.getIntersection() when rectangular, non-
      * transparent bounding boxes suffice
      *
-     * @param {zSprite} sprite1
-     * @param {zSprite} sprite2
+     * @param {sprite} sprite1
+     * @param {sprite} sprite2
      * @param {boolean=} returnCoordinate optional (defaults to false), when false
      *        boolean value is returned for the collision, when true an Object with
      *        x- and y-coordinates is returned to specify at which x- and y-coordinate
@@ -56,8 +56,8 @@ const zUtil = module.exports = {
         if ( rect === null )
             return false;
 
-        const pixels1 = zUtil.getPixelArray( sprite1, rect );
-        const pixels2 = zUtil.getPixelArray( sprite2, rect );
+        const pixels1 = Collision.getPixelArray( sprite1, rect );
+        const pixels2 = Collision.getPixelArray( sprite2, rect );
 
         let i = 0;
 
@@ -89,11 +89,11 @@ const zUtil = module.exports = {
 
     /**
      * Get an Array of pixels for the area described by given rect
-     * inside the Bitmap of given zSprite
+     * inside the Bitmap of given sprite
      *
      * @public
      *
-     * @param {zSprite} sprite
+     * @param {sprite} sprite
      * @param {{ left: number, top: number, width: number, height: number }} rect
      * @return {Array.<number>}
      */

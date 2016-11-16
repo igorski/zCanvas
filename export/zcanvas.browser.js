@@ -6,16 +6,18 @@
  */
 "use strict";
 
-const zCanvas = require( "./zCanvas"),
-      zSprite = require( "./zSprite"),
-      zLoader = require( "./zLoader" ),
-      zUtil   = require( "./zUtil" );
+const canvas    = require( "./canvas"),
+      sprite    = require( "./sprite"),
+      loader    = require( "./loader"),
+      collision = require( "./collision" );
 
 (function( scope ) {
 
-    scope.zCanvas = zCanvas;
-    scope.zSprite = zSprite;
-    scope.zLoader = zLoader;
-    scope.zUtil   = zUtil;
+    scope.canvas = {
+        canvas:    canvas,
+        sprite:    sprite,
+        loader:    loader,
+        collision: collision
+    };
 
 })( self );

@@ -2,10 +2,10 @@
 
 const chai          = require( "chai" );
 const MockedBrowser = require( "./utils/MockedBrowser" );
-const zCanvas       = require( "../src/zCanvas" );
-const zSprite       = require( "../src/zSprite" );
+const canvas       = require( "../src/canvas" );
+const sprite       = require( "../src/sprite" );
 
-describe( "zCanvas", () => {
+describe( "canvas.canvas", () => {
     
     /* setup */
 
@@ -48,7 +48,7 @@ describe( "zCanvas", () => {
 
     it( "should construct with the legacy multi-argument list", () => {
 
-        const canvas = new zCanvas( width, height, animate, framerate );
+        const canvas = new canvas( width, height, animate, framerate );
 
         assert.strictEqual( width, canvas.getWidth() );
         assert.strictEqual( height, canvas.getHeight() );
@@ -58,7 +58,7 @@ describe( "zCanvas", () => {
 
     it( "should construct with a single data Object", () => {
 
-        const canvas = new zCanvas({
+        const canvas = new canvas({
             width: width,
             height: height,
             animate: animate,
@@ -75,40 +75,40 @@ describe( "zCanvas", () => {
 
         expect( () => {
 
-            new zCanvas({ width: 0, height: 0 });
+            new canvas({ width: 0, height: 0 });
 
-        }).to.throw( /cannot construct a zCanvas without valid dimensions/ );
+        }).to.throw( /cannot construct a canvas without valid dimensions/ );
 
         expect( () => {
 
-            new zCanvas({ width: -100, height: -100 });
+            new canvas({ width: -100, height: -100 });
 
-        }).to.throw( /cannot construct a zCanvas without valid dimensions/ );
+        }).to.throw( /cannot construct a canvas without valid dimensions/ );
     });
 
     it( "should by default construct with 300 x 300 dimensions", () => {
 
-        const canvas = new zCanvas();
+        const canvas = new canvas();
 
         assert.strictEqual( 300, canvas.getWidth(),
-            "expected zCanvas width to equal the expected default" );
+            "expected canvas width to equal the expected default" );
 
         assert.strictEqual( 300, canvas.getHeight(),
-            "expected zCanvas height to equal the expected default" );
+            "expected canvas height to equal the expected default" );
     });
 
     it( "should be able to extend its prototype into new function references", () => {
 
         const newClass = function() {};
-        zCanvas.extend( newClass );
+        canvas.extend( newClass );
 
-        assert.ok( new newClass() instanceof zCanvas,
-            "expected an instance of newClass to equal the zCanvas prototype" );
+        assert.ok( new newClass() instanceof canvas,
+            "expected an instance of newClass to equal the canvas prototype" );
     });
 
     it( "should return the construction arguments unchanged", () => {
 
-        const canvas = new zCanvas({
+        const canvas = new canvas({
             width: width,
             height: height,
             fps: framerate
@@ -126,22 +126,22 @@ describe( "zCanvas", () => {
 
     it( "should be able to insert itself into DOM", () =>
     {
-        const canvas  = new zCanvas();
+        const canvas  = new canvas();
         const element = global.document.createElement( "div" );
 
         assert.notOk( canvas.getElement().parentNode === element,
-            "expected zCanvas not to be attached to element prior to insertion" );
+            "expected canvas not to be attached to element prior to insertion" );
 
         canvas.insertInPage( element );
 
         assert.strictEqual( element, canvas.getElement().parentNode,
-            "expected zCanvas to be inserted into given expected DOM element" );
+            "expected canvas to be inserted into given expected DOM element" );
     });
 
     it( "should be able to add/remove children from its display list", () =>
     {
-        const canvas = new zCanvas({ width: width, height: height });
-        const child  = new zSprite({ width: width, height: height });
+        const canvas = new canvas({ width: width, height: height });
+        const child  = new sprite({ width: width, height: height });
 
         assert.notOk( canvas.contains( child ),
             "expected canvas not to contain the child in its display list" );
@@ -152,7 +152,7 @@ describe( "zCanvas", () => {
             "expected canvas to contain the child in its display list after addition" );
 
         assert.strictEqual( canvas, child.canvas,
-            "expected the child to reference to given zCanvas" );
+            "expected the child to reference to given canvas" );
 
         const removed = canvas.removeChild( child );
 
@@ -165,10 +165,10 @@ describe( "zCanvas", () => {
 
     it( "should be able to add/remove children from specific indices in its display list", () => {
 
-        const canvas = new zCanvas({ width: width, height: height });
-        const child1 = new zSprite({ width: width, height: height });
-        const child2 = new zSprite({ width: width, height: height });
-        const child3 = new zSprite({ width: width, height: height });
+        const canvas = new canvas({ width: width, height: height });
+        const child1 = new sprite({ width: width, height: height });
+        const child2 = new sprite({ width: width, height: height });
+        const child3 = new sprite({ width: width, height: height });
 
         assert.strictEqual( 0, canvas.numChildren(),
             "expected the amount of children to be 0 after construction, got " + canvas.numChildren() + " instead" );
@@ -226,10 +226,10 @@ describe( "zCanvas", () => {
 
     it( "should be able to maintain the linked list of its children", () => {
 
-        const canvas  = new zCanvas({ width: width, height: height });
-        const sprite1 = new zSprite({ width: width, height: height });
-        const sprite2 = new zSprite({ width: width, height: height });
-        const sprite3 = new zSprite({ width: width, height: height });
+        const canvas  = new canvas({ width: width, height: height });
+        const sprite1 = new sprite({ width: width, height: height });
+        const sprite2 = new sprite({ width: width, height: height });
+        const sprite3 = new sprite({ width: width, height: height });
 
         // add first child
 
@@ -261,10 +261,10 @@ describe( "zCanvas", () => {
 
     it( "should be able to update the linked list of its children", () => {
 
-        const canvas  = new zCanvas({ width: width, height: height });
-        const sprite1 = new zSprite({ width: width, height: height });
-        const sprite2 = new zSprite({ width: width, height: height });
-        const sprite3 = new zSprite({ width: width, height: height });
+        const canvas  = new canvas({ width: width, height: height });
+        const sprite1 = new sprite({ width: width, height: height });
+        const sprite2 = new sprite({ width: width, height: height });
+        const sprite3 = new sprite({ width: width, height: height });
 
         // add children
 
@@ -292,38 +292,38 @@ describe( "zCanvas", () => {
 
     it( "should be able to return all lowest level children in its display list", () => {
 
-        const canvas  = new zCanvas({ width: width, height: height });
-        const sprite1 = new zSprite({ width: width, height: height });
-        const sprite2 = new zSprite({ width: width, height: height });
+        const canvas  = new canvas({ width: width, height: height });
+        const sprite1 = new sprite({ width: width, height: height });
+        const sprite2 = new sprite({ width: width, height: height });
 
         assert.ok( canvas.getChildren() instanceof Array,
-            "expected zCanvas to return all its children in an Array" );
+            "expected canvas to return all its children in an Array" );
 
         assert.strictEqual( 0, canvas.getChildren().length,
-            "expected zCanvas not to contain children after construction" );
+            "expected canvas not to contain children after construction" );
 
         canvas.addChild( sprite1 );
 
         assert.strictEqual( 1, canvas.getChildren().length,
-            "expected zCanvas child list to contain 1 zSprite" );
+            "expected canvas child list to contain 1 sprite" );
 
         assert.ok( canvas.getChildren().indexOf( sprite1 ) === 0,
-            "expected zCanvas to contain added child in the first index of its children list" );
+            "expected canvas to contain added child in the first index of its children list" );
 
         canvas.addChild( sprite2 );
 
         assert.strictEqual( 2, canvas.getChildren().length,
-            "expected zCanvas child list to contain 2 zSprites" );
+            "expected canvas child list to contain 2 sprites" );
 
         assert.ok( canvas.getChildren().indexOf( sprite2 ) === 1,
-            "expected zCanvas to contain added child in the second index of its children list" );
+            "expected canvas to contain added child in the second index of its children list" );
     });
 
     // TODO : getChildrenUnderPoint
 
     it( "should be able to update its dimensions", () => {
 
-        const canvas = new zCanvas({ width: width, height: height });
+        const canvas = new canvas({ width: width, height: height });
 
         let newWidth  = width,
             newHeight = height;
@@ -345,7 +345,7 @@ describe( "zCanvas", () => {
 
     it( "should know whether its animatable", () => {
 
-        let canvas = new zCanvas({
+        let canvas = new canvas({
             width: width,
             height: height,
             animate: false
@@ -354,7 +354,7 @@ describe( "zCanvas", () => {
         assert.notOk( canvas.isAnimatable(),
             "expected canvas not to be animatable" );
 
-        canvas = new zCanvas({
+        canvas = new canvas({
             width: width,
             height: height,
             animate: true
@@ -366,7 +366,7 @@ describe( "zCanvas", () => {
     
     it( "should be able to toggle its animatable state", () => {
 
-        const canvas = new zCanvas({
+        const canvas = new canvas({
             width: width,
             height: height,
             animate: false
@@ -381,7 +381,7 @@ describe( "zCanvas", () => {
 
     it( "should continuously render on each animation frame when animatable", function( done ) {
 
-        const canvas = new zCanvas({
+        const canvas = new canvas({
             width: width,
             height: height,
             animate: false
@@ -405,7 +405,7 @@ describe( "zCanvas", () => {
     it( "should only render on invalidation when not animatable", function( done ) {
 
         // construct as animatable
-        const canvas = new zCanvas({
+        const canvas = new canvas({
             width: width,
             height: height,
             animate: true
@@ -437,16 +437,16 @@ describe( "zCanvas", () => {
 
     it( "should invoke a render upon invalidation request", function( done ) {
 
-        const orgRender = zCanvas.prototype.render;
+        const orgRender = canvas.prototype.render;
 
         // hijack render method
 
-        zCanvas.prototype.render = () => {
-            zCanvas.prototype.render = orgRender; // restore hijacked method
+        canvas.prototype.render = () => {
+            canvas.prototype.render = orgRender; // restore hijacked method
             done();
         };
 
-        const canvas = new zCanvas({
+        const canvas = new canvas({
             width: width,
             height: height,
             animate: false
@@ -457,12 +457,12 @@ describe( "zCanvas", () => {
 
     it( "should invoke the update()-method of its children upon render", function( done ) {
 
-        const canvas = new zCanvas({
+        const canvas = new canvas({
             width: width,
             height: height,
             animate: false
         });
-        const sprite = new zSprite({ width: 10, height: 10 });
+        const sprite = new sprite({ width: 10, height: 10 });
         canvas.addChild( sprite );
 
         sprite.update = () => {
@@ -478,18 +478,18 @@ describe( "zCanvas", () => {
             setTimeout( done, 10 );
         };
 
-        const canvas = new zCanvas({
+        const canvas = new canvas({
             width: width,
             height: height,
             animate: false,
             onUpdate: handler
         });
 
-        const sprite = new zSprite({ width: 10, height: 10 });
+        const sprite = new sprite({ width: 10, height: 10 });
         canvas.addChild( sprite );
 
         sprite.update = () => {
-            throw new Error( "zSprite update should not have been called" );
+            throw new Error( "sprite update should not have been called" );
         };
         canvas.invalidate();
     });

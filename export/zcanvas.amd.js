@@ -7,15 +7,15 @@
  */
 "use strict";
 
-const zCanvas = require( "./zCanvas"),
-      zSprite = require( "./zSprite"),
-      zLoader = require( "./zLoader"),
-      zUtil   = require( "./zUtil" );
+const canvas    = require( "./canvas"),
+      sprite    = require( "./sprite"),
+      loader    = require( "./loader"),
+      collision = require( "./collision" );
 
 module.exports = {
 
-    zCanvas : zCanvas,
-    zSprite : zSprite,
-    zLoader : zLoader,
-    zUtil   : zUtil
+    canvas:    canvas,
+    sprite:    sprite,
+    loader:    loader,
+    collision: collision
 };

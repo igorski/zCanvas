@@ -1,5 +1,5 @@
 {
-  "name": "zcanvas",
+  "name": "canvas",
   "homepage": "http://www.igorski.nl/",
   "version": "3.0.0",
   "license": "MIT",
@@ -8,13 +8,13 @@
     "url": "http://github.com/igorski/"
   },
   "directories": {},
-  "main": "zcanvas.js",
+  "main": "src/canvas.js",
   "bugs": {
-    "url": "https://github.com/igorski/zCanvas/issues/"
+    "url": "https://github.com/igorski/canvas/issues/"
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/igorski/zCanvas.git"
+    "url": "https://github.com/igorski/canvas.git"
   },
   "description": "Compact JavaScript library that provides an Object based solution for working with HTMLCanvas drawables as if they were tangible, separate objects. Good for lightweight game engines and mobile friendly.",
   "keywords": [

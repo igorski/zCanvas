@@ -25,7 +25,7 @@
 const EventHandler = require( "./utils/EventHandler" );
 
 /**
- * zLoader provides an interface that allows the loading of Images
+ * loader provides an interface that allows the loading of Images
  * regardless of their source type (e.g. path to (cross origin) image, Blob URL)
  * and always ensures Image content is actually ready for rendering
  *
