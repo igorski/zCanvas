@@ -3,7 +3,7 @@
 <head>
     <meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable = no" name="viewport">
     <meta charset="utf-8" />
-    <title>zCanvas animated spritesheet example</title>
+    <title>canvas animated spritesheet example</title>
     <link rel="stylesheet" href="./assets/styles.css">
     <script type="text/javascript" src="./assets/images.js"></script>
     <!-- include RequireJS to resolve dependencies -->
@@ -11,7 +11,7 @@
 </head>
 <body>
     <div id="container">
-        <h1>zCanvas demo</h1>
+        <h1>canvas demo #2: Layers and interactions</h1>
         <div id="demo"><!-- x --></div>
         <p>
             Demo features : multiple nested Sprites (the circles), masking (the scrollable star layer) and restricted
@@ -29,23 +29,11 @@
         // resolve dependencies
 
         requirejs.config({
-            baseUrl : "../src/",
+            baseUrl : "../dist/",
             urlArgs : "bust=" + Date.now()
         });
 
-        require( [ "helpers", "zCanvas", "zSprite" ], function( helpers, zCanvas, zSprite )
-        {
-            // cheap way to make deps global
-            
-            window.helpers = helpers;
-            window.zCanvas = zCanvas;
-            window.zSprite = zSprite;
-            
-            demo(); // start the actual demo
-        });
-
-        function demo()
-        {
+        require( [ "zcanvas.amd" ], function( zCanvas ) {
 
             // STEP 1 : SETUP
             // --------------------------------------
@@ -70,13 +58,18 @@
                 h = document.body.clientHeight;
             }
 
-            // create a new zCanvas that renders at 60 fps
+            // create a new canvas that renders at 60 fps
             // keep it within the device / browser bounds
             var cvsWidth  = w < 800 ? w * .93 : 800;
             var cvsHeight = h < 500 ? h : 500;
-            var cvs       = new zCanvas( cvsWidth, cvsHeight, true, 60 );
+            var cvs       = new zCanvas.canvas({
+                width: cvsWidth,
+                height: cvsHeight,
+                animate: true,
+                fps: 60
+            });
 
-            // append zCanvas to DOM
+            // append canvas to DOM
             cvs.insertInPage( container );
 
             // STEP 2 : ADDING THE SPRITES
@@ -85,8 +78,8 @@
             // first sprite will acts as a background
             // (see included "assets.js"-file for the assetBackground-image data)
             var bgWidth  = 800, bgHeight = 1067;
-            var bgSprite = new zSprite( 0, 0, bgWidth, bgHeight, assetBackground );
-            cvs.addChild( bgSprite );   // add the background to the zCanvas so it is visible
+            var bgSprite = new zCanvas.sprite({ width: bgWidth, height: bgHeight, bitmap: assetBackground });
+            cvs.addChild( bgSprite );   // add the background to the canvas so it is visible
 
             // SCROLLING MASK SPRITE
             // ---------------------
@@ -95,7 +88,7 @@
 
             var starSize = cvsWidth * .3; // make the star slightly smaller than the canvas
 
-            var spriteMask = new zSprite( 0, 0, starSize, starSize, assetStar, false, true );
+            var spriteMask = new zCanvas.sprite({ width: starSize, height: starSize, bitmap: assetStar, mask: true });
 
             // custom overrides, to demonstrate a simple custom behaviour
             // where animation is perfectly timed (test by switching tabs in
@@ -109,21 +102,20 @@
             var renderInterval = cvs.getRenderInterval();
             var maxXPosition   = cvsWidth - starSize;
 
-            spriteMask.update = function( aCurrentTimestamp )
-            {
-                var delta = ( aCurrentTimestamp - prevStamp ); // should roughly equal the render interval of the zCanvas
+            spriteMask.update = function( aCurrentTimestamp ) {
+
+                var delta = ( aCurrentTimestamp - prevStamp ); // should roughly equal the render interval of the canvas
                 prevStamp = aCurrentTimestamp;                 // store last timestamp
 
                 // slide the background either up or down
 
                 var amount = speed / renderInterval * delta;
 
-                if ( direction == 0 ) {
+                if ( direction == 0 )
                     this.setX( this.getX() - amount );
-                }
-                else {
+                else
                     this.setX( this.getX() + amount );
-                }
+
                 var currentPosition = this.getX();
 
                 // keep movement within canvas bounds
@@ -136,18 +128,25 @@
 
             // NESTED CIRCLE SPRITES
             // ---------------------
-            // custom zSprite extension we use to draw a circle that highlights
+            // custom sprite extension we use to draw a circle that highlights
             // when it is hovered by the mouse cursor
 
-            var CircleSprite = function( aX, aY, aRadius, aColor )
-            {
-                CircleSprite.super( this, "constructor", aX - aRadius * 2, aY - aRadius * 1.5, aRadius * 2, aRadius * 2 );
+            var CircleSprite = function( x, y, aRadius, aColor ) {
+
+                var opts = {
+                    x: x - aRadius * 2,
+                    y: y - aRadius * 1.5,
+                    width: aRadius * 2,
+                    height: aRadius * 2
+                };
+
+                CircleSprite.super( this, "constructor", opts );
 
                 this.radius = aRadius;
                 this.color  = aColor;
                 this.setDraggable( true );
             };
-            zSprite.extend( CircleSprite ); // CircleSprite extends zSprite
+            zCanvas.sprite.extend( CircleSprite ); // CircleSprite extends sprite
 
             // CircleSprite class variables
             CircleSprite.prototype.radius = 0;
@@ -159,8 +158,8 @@
             CircleSprite.prototype.getY = function() { return CircleSprite.super( this, "getY" ) + this.radius; };
 
             // CircleSprite draw logic
-            CircleSprite.prototype.draw = function( ctx )
-            {
+            CircleSprite.prototype.draw = function( ctx ) {
+
                 ctx.beginPath();
                 ctx.arc( this.getX() + this.radius, this.getY() + this.radius, this.radius, 0, 2 * Math.PI, false );
                 ctx.fillStyle = this.hover ? '#FFFFFF' : this.color; // when hovering the circle is white
@@ -189,13 +188,18 @@
             // ----------------------------
 
             var rectSize  = bgHeight / 15;
-            var rectangle = new zSprite( cvsWidth * .75, cvsHeight * .5, rectSize, rectSize );
+            var rectangle = new zCanvas.sprite({
+                x: cvsWidth * .75,
+                y: cvsHeight * .5,
+                width: rectSize,
+                height: rectSize
+            });
             rectangle.setConstraint( cvsWidth / 2, cvsHeight / 2, cvsWidth / 2, cvsHeight / 2 ); // add a constraint
             rectangle.setDraggable( true, true ); // we'd like to be able to drag the Rectangle but restrict its movements
 
             // Rectangle draw logic
-            rectangle.draw = function( ctx )
-            {
+            rectangle.draw = function( ctx ) {
+
                 // draw rectangle
                 ctx.fillStyle = '#FF00FF';
                 ctx.fillRect( this.getX(), this.getY(), this.getWidth(), this.getHeight() );
@@ -207,7 +211,7 @@
                 ctx.strokeRect( constraint.left, constraint.top, constraint.width, constraint.height );
             };
 
-            // add all Sprites to the zCanvas display list so they are visible
+            // add all Sprites to the canvas display list so they are visible
 
             cvs.addChild( spriteMask );
             cvs.addChild( rectangle );
@@ -216,7 +220,7 @@
             // add all additional circles to the display list of circle1 so they are nested
             circle1.addChild( circle2 );
             circle1.addChild( circle3 );
-        }
+        });
 
     </script>
 </body>
