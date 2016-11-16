@@ -38,15 +38,17 @@ module.exports = Canvas;
  *            width: number,
  *            height: number,
  *            animate: boolean,
+ *            smoothing: boolean,
  *            fps: number,
  *            onUpdate: Function,
  *            debug: boolean
  *        }} width when numerical (legacy 4 argument constructor), the desired width of the Canvas,
  *        when Object it should contain required properties width and height, with others optional
- *        (see defaults for animate and framerate below)
+ *        (see description on the default values for animate and framerate below)
+ *        "smoothing" specifies whether or not to use smoothing (default, better for photos) or not (better for pixel art)
  *        "onUpdate" callback method to execute when the canvas is about to render. This can be used to synchronize
  *            a game's model from a single spot (instead of having each sprite's update()-method fire)
- *        "debug" specifies whether or not all sprites should render their Bounding Box for debugging purposes
+ *        "debug" specifies whether or not all sprites should render their bounding box for debugging purposes
  *
  *        When object, no further arguments will be processed by this constructor
  *
@@ -134,6 +136,10 @@ function Canvas( width, height, animate, framerate ) {
     /** @protected @type {number} */ this._HDPIscaleRatio = ( devicePixelRatio !== backingStoreRatio ) ? ratio : 1;
 
     this.setDimensions( width, height );
+
+    if ( typeof opts.smoothing === "boolean" )
+        this.setSmoothing( opts.smoothing );
+
     this.preventEventBubbling( false );
     this.addListeners();
 
@@ -526,125 +532,6 @@ Canvas.prototype.setAnimatable = function( value ) {
  */
 Canvas.prototype.isAnimatable = function() {
     return this._animate;
-};
-
-/**
- * high precision pixel-based collision detection, can be queried to check whether the given
- * sprite collides with another drawable object. By supplying specific RGBA values it is
- * possible to check for collision with a specific object as long as its colour is unique
- * (for instance a fully black "wall" (R = 0, G = 0, B = 0) or a purple "bullet"
- * (R = 255, G = 0, B = 128), etc. Note this method requires more from the CPU than
- * simply checking overlapping bounding boxes (see sprite "collidesWith"-method).
- *
- * NOTE : invoke this in "update"-method of a sprite as this requires existing pixel data
- * being onscreen !
- *
- * @public
- *
- * @param {sprite} aSprite to check collisions for
- * @param {number|null=} aRedValue optional value between 0 - 255 the red channel must hold
- * @param {number|null=} aGreenValue optional value between 0 - 255 the green channel must hold
- * @param {number|null=} aBlueValue optional value between 0 - 255 the blue channel must hold
- * @param {number|null=} aAlphaValue optional value between 0 - 255 the alpha channel must hold
- * @param {number=} aX optional x-coordinate of the collision, defaults to current x of given sprite
- * @param {number=} aY optional y-coordinate of the collision, defaults to current y of given sprite
- * @param {number=} aWidth optional width of the collision rectangle, will default
- *                  to one pixel (will check one pixel to the left of given sprite and
- *                  one pixel on the right side of given sprite)
- * @param {number=} aHeight optional height of the collision rectangle, will default
- *                  to one pixel (will check one pixel above given sprite and one
- *                  pixel below given sprite)
- *
- * @return {number} 0 = no collision, 1 = horizontal collision, 2 = vertical collision, 3 = horizontal and vertical collisions
- */
-Canvas.prototype.checkCollision = function( aSprite, aRedValue, aGreenValue, aBlueValue, aAlphaValue,
-                                             aX, aY, aWidth, aHeight ) {
-
-    aX = aX || aSprite.getX();
-    aY = aY || aSprite.getY();
-
-    aWidth  = aWidth  || 1;
-    aHeight = aHeight || 1;
-
-    const spriteWidth  = aSprite.getWidth();
-    const spriteHeight = aSprite.getHeight();
-    const ctx          = this._canvasContext;
-
-    // the inner collision check
-
-    const internalCheck = ( aX, aY, aWidth, aHeight ) => {
-
-        const bitmap = ctx.getImageData( aX, aY, aWidth, aHeight );
-        let match;
-
-        // Here we loop through the bitmap slice and its colors
-        // (maximum four, each representing a channel in the RGBA spectrum)
-
-        for ( let i = 0, l = ( aWidth * aHeight ) * 4; i < l; i += 4 ) {
-
-            match = false;
-
-            // check red value (if specified)
-
-            if ( typeof aRedValue === "number" ) {
-                match = ( bitmap.data[ i ] === aRedValue );
-                if ( !match ) return false;
-            }
-
-            // check green value (if specified)
-
-            if ( typeof aGreenValue === "number" ) {
-                match = ( bitmap.data[ i + 1 ] === aGreenValue );
-                if ( !match ) return false;
-            }
-
-            // check blue value (if specified)
-
-            if ( typeof aBlueValue === "number" ) {
-                match = ( bitmap.data[ i + 2 ] === aBlueValue );
-                if ( !match ) return false;
-            }
-
-            // check alpha value (if specified)
-
-            if ( typeof aAlphaValue === "number" ) {
-                match = ( bitmap.data[ i + 3 ] === aAlphaValue );
-                if ( !match ) return false;
-            }
-
-            if ( match )
-                return true;
-        }
-        return false;
-    };
-
-    let horizontalCollision, verticalCollision;
-
-    // check 1 : to the left
-    horizontalCollision = internalCheck( aX - aWidth, aY, aWidth, spriteHeight );
-
-    // check 2 : below
-    verticalCollision = internalCheck( aX, aY + spriteHeight + aHeight, spriteWidth, aHeight );
-
-    // check 3: to the right
-    if ( !horizontalCollision )
-        horizontalCollision = internalCheck( aX + spriteWidth + aWidth, aY, aWidth, spriteHeight );
-
-    // check 4 : above
-    if ( !verticalCollision )
-        verticalCollision = internalCheck( aX, aY - aHeight, spriteWidth, aHeight );
-
-    if ( !horizontalCollision && !verticalCollision )
-        return 0;
-
-    if ( horizontalCollision ) {
-
-        if ( verticalCollision )
-            return 3;
-
-        return 1;
-    }
-    return 2;
 };
 
 /**

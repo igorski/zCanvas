@@ -140,6 +140,6 @@ Demo showcasing the layering and masking effects, both mouse and touch responsiv
 The API / Documentation
 =======================
 
-Want to view the API? You can check the wiki here: https://github.com/igorski/zcanvas/wiki/zcanvas-overview
+Want to view the API? You can check the [zCanvas Wiki](https://github.com/igorski/zcanvas/wiki)
 
 (or view the source contents of the demos listed above).

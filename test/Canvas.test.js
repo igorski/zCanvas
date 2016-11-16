@@ -13,7 +13,7 @@ describe( "zCanvas.canvas", () => {
     const assert = chai.assert,
           expect = chai.expect;
 
-    let width, height, framerate, animate;
+    let width, height, framerate, animate, smoothing;
 
     // executed before the tests start running
 
@@ -36,6 +36,7 @@ describe( "zCanvas.canvas", () => {
         height    = Math.round( Math.random() * 100 ) + 10;
         framerate = Math.round( Math.random() * 50 )  + 10;
         animate   = ( Math.random() > .5 );
+        smoothing = ( Math.random() > .5 );
     });
 
     // executed after each individual test
@@ -111,7 +112,9 @@ describe( "zCanvas.canvas", () => {
         const canvas = new Canvas({
             width: width,
             height: height,
-            fps: framerate
+            fps: framerate,
+            smoothing: smoothing,
+            animate: animate
         });
 
         assert.strictEqual( width, canvas.getWidth(),
@@ -122,6 +125,12 @@ describe( "zCanvas.canvas", () => {
 
         assert.strictEqual( framerate, canvas.getFrameRate(),
             "expected framerate to be " + framerate + ", got " + canvas.getFrameRate() + " instead" );
+
+        assert.strictEqual( smoothing, canvas._smoothing,
+            "expected smoothing to equal the constructor value" );
+
+        assert.strictEqual( animate, canvas.isAnimatable(),
+            "expected animate to equal the constructor value" );
     });
 
     it( "should be able to insert itself into DOM", () =>
