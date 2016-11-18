@@ -11,7 +11,7 @@
 </head>
 <body>
     <div id="container">
-        <h1>canvas demo #1: Spritesheets and collisions</h1>
+        <h1>zCanvas demo #1: Spritesheets and collisions</h1>
         <div id="demo"><!-- x --></div>
         <p>
             Demo features : auto scrolling background and a keyboard / touchscreen-controllable spritesheet animation
@@ -84,47 +84,6 @@
                 height: bgHeight,
                 bitmap: assetBackground
             });
-
-            // custom overrides, to demonstrate a simple custom behaviour
-            // where animation is perfectly timed (test by switching tabs in
-            // the browser, animation stops when switching tabs, but by calculating
-            // position by verifying elapsed time, it appears as if the application
-            // hasn't been paused. Though you could actually prefer a "pause" depending on context...
-
-            var direction      = 0;    // 0 being down, 1 being up
-            var speed          = 2;    // the amount of pixels we move per frame
-            var prevStamp      = Date.now();
-            var renderInterval = cvs.getRenderInterval();
-            var maxYPosition   = bgHeight - cvsHeight;
-
-            bgSprite.update = function( aCurrentTimestamp ) {
-
-                var delta = ( aCurrentTimestamp - prevStamp ); // should roughly equal the render interval of the canvas
-                prevStamp = aCurrentTimestamp;                 // store last timestamp
-
-                // slide the background either up or down
-
-                var amount = speed / renderInterval * delta;
-
-                if ( direction == 0 ) {
-                    this.setY( this.getY() - amount );
-                }
-                else {
-                    this.setY( this.getY() + amount );
-                }
-                var currentPosition = this.getY();
-
-                // keep movement within canvas bounds
-
-                if ( currentPosition < -( maxYPosition )) {
-                    direction = 1;
-                    this.setY( -maxYPosition );
-                }
-                else if ( currentPosition > 0 ) {
-                    direction = 0;
-                    this.setY( 0 );
-                }
-            };
 
             // add the sprite onto the canvas so we can see it
             cvs.addChild( bgSprite );

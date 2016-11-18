@@ -45,7 +45,8 @@ const Collision = module.exports = {
      *        boolean value is returned for the collision, when true an Object with
      *        x- and y-coordinates is returned to specify at which x- and y-coordinate
      *        a pixel collision occurred. This can be verified against sprite1's bounds
-     *        to determine where the collision occurred (e.g. left, bottom, etc.)
+     *        to determine where the collision occurred (e.g. left, bottom, etc.) If no
+     *        collision occurred, boolean false is returned
      *
      * @return {boolean|{ x: number, y: number }}
      */

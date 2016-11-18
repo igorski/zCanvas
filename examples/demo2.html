@@ -11,7 +11,7 @@
 </head>
 <body>
     <div id="container">
-        <h1>canvas demo #2: Layers and interactions</h1>
+        <h1>zCanvas demo #2: Layers and interactions</h1>
         <div id="demo"><!-- x --></div>
         <p>
             Demo features : multiple nested Sprites (the circles), masking (the scrollable star layer) and restricted
@@ -68,6 +68,7 @@
                 animate: true,
                 fps: 60
             });
+            cvs.preventEventBubbling( true );
 
             // append canvas to DOM
             cvs.insertInPage( container );
@@ -142,39 +143,38 @@
 
                 CircleSprite.super( this, "constructor", opts );
 
+                /* instance properties */
+
                 this.radius = aRadius;
                 this.color  = aColor;
                 this.setDraggable( true );
+
+                /* overridden zCanvas.sprite methods */
+
+                // here we override the getters and setters to accommodate for the radius of the circle as
+                // the circles center point is the x- and y-coordinate to provide from-center-snapping
+
+                this.getX = function() { return CircleSprite.super( this, "getX" ) + this.radius; };
+                this.getY = function() { return CircleSprite.super( this, "getY" ) + this.radius; };
+                this.draw = function( ctx ) {
+
+                    ctx.beginPath();
+                    ctx.arc( this.getX() + this.radius, this.getY() + this.radius, this.radius, 0, 2 * Math.PI, false );
+                    ctx.fillStyle = this.hover ? '#FFFFFF' : this.color; // when hovering the circle is white
+                    ctx.fill();
+
+                    // when hovering, we add an outline to the circle
+                    if ( this.hover ) {
+                        ctx.lineWidth = 5;
+                        ctx.strokeStyle = "#FF9900";
+                        ctx.stroke();
+                    }
+                    ctx.closePath();
+
+                    CircleSprite.super( this, "draw", ctx ); // will invoke the drawing of nested child elements
+                };
             };
             zCanvas.sprite.extend( CircleSprite ); // CircleSprite extends sprite
-
-            // CircleSprite class variables
-            CircleSprite.prototype.radius = 0;
-            CircleSprite.prototype.color;
-
-            // here we override the getters and setters to accommodate for the radius of the circle as
-            // the circles center point is the x- and y-coordinate to provide from-center-snapping
-            CircleSprite.prototype.getX = function() { return CircleSprite.super( this, "getX" ) + this.radius; };
-            CircleSprite.prototype.getY = function() { return CircleSprite.super( this, "getY" ) + this.radius; };
-
-            // CircleSprite draw logic
-            CircleSprite.prototype.draw = function( ctx ) {
-
-                ctx.beginPath();
-                ctx.arc( this.getX() + this.radius, this.getY() + this.radius, this.radius, 0, 2 * Math.PI, false );
-                ctx.fillStyle = this.hover ? '#FFFFFF' : this.color; // when hovering the circle is white
-                ctx.fill();
-
-                // when hovering, we add an outline to the circle
-                if ( this.hover ) {
-                    ctx.lineWidth = 5;
-                    ctx.strokeStyle = "#FF9900";
-                    ctx.stroke();
-                }
-                ctx.closePath();
-
-                CircleSprite.super( this, "draw", ctx ); // will invoke the drawing of nested child elements
-            };
 
             // create the circle instances, note all circles beyond circle1 will be children of circle1
             // (and thus should move according to the mutations of circle1)
