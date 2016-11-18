@@ -30,13 +30,11 @@ CommonJS:
 
     const zCanvas = require( "zcanvas" );
     
-    const cvs = new zCanvas.canvas( opts );
-    const spr = new zCanvas.sprite( opts );
+    // do something with zCanvas-properties:
+    // "canvas", "sprite", "loader", "collision"
     
-    zCanvas.loader.loadImage( ... );
-    zCanvas.collision.pixelCollision( spr, spr2 );
-    
-After which you can subsequently use a tool like Browserify to build your application for the browser.
+After which you can subsequently use a tool like Browserify to build your application for the browser (note that
+a utility like Babel is necessary to transpile the ES6 code to ES5, if necessary).
 
 RequireJS:
 
@@ -129,8 +127,9 @@ Live Demo
 
 You can view some basic features in the down-and-dirty demos here :
 
-[Demo #1: Spritesheets and pixel-perfect collisions](https://rawgithub.com/igorski/zcanvas/master/examples/demo1.html)
-[Demo #2: Layers and interactions](https://rawgithub.com/igorski/zcanvas/master/examples/demo2.html)
+ * [Demo #1: Spritesheets and pixel-perfect collisions](https://rawgithub.com/igorski/zcanvas/master/examples/demo1.html)
+ * [Demo #2: Layers and interactions](https://rawgithub.com/igorski/zcanvas/master/examples/demo2.html)
+ * [Demo #3: Integrating 3rd party animation libraries](https://rawgithub.com/igorski/zcanvas/master/examples/demo3.html)
 
 The API / Documentation
 =======================
