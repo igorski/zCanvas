@@ -82,7 +82,7 @@
             // (see included "assets.js"-file for the assetBackground-image data)
 
             var bgWidth  = 800, bgHeight = 1067;
-            var bgSprite = new zCanvas.sprite({ width: bgWidth, height: bgHeight, bitmap: assetBackground });
+            var bgSprite = new zCanvas.sprite({ width: bgWidth, height: bgHeight, bitmap: IMAGE_BACKGROUND });
             cvs.addChild( bgSprite );   // add the background to the canvas so it is visible
 
             // RESIZING MASK SPRITE
@@ -96,7 +96,7 @@
                 y: cvsCenterY - starSize / 2,
                 width: starSize,
                 height: starSize,
-                bitmap: assetStar,
+                bitmap: IMAGE_STAR,
                 mask: true
             });
 

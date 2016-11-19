@@ -79,7 +79,7 @@
             // first sprite will acts as a background
             // (see included "assets.js"-file for the assetBackground-image data)
             var bgWidth  = 800, bgHeight = 1067;
-            var bgSprite = new zCanvas.sprite({ width: bgWidth, height: bgHeight, bitmap: assetBackground });
+            var bgSprite = new zCanvas.sprite({ width: bgWidth, height: bgHeight, bitmap: IMAGE_BACKGROUND });
             cvs.addChild( bgSprite );   // add the background to the canvas so it is visible
 
             // SCROLLING MASK SPRITE
@@ -89,7 +89,7 @@
 
             var starSize = cvsWidth * .3; // make the star slightly smaller than the canvas
 
-            var spriteMask = new zCanvas.sprite({ width: starSize, height: starSize, bitmap: assetStar, mask: true });
+            var spriteMask = new zCanvas.sprite({ width: starSize, height: starSize, bitmap: IMAGE_STAR, mask: true });
 
             // custom overrides, to demonstrate a simple custom behaviour
             // where animation is perfectly timed (test by switching tabs in
