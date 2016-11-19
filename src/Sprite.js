@@ -113,7 +113,7 @@ function Sprite( x, y, width, height, bitmap, collidable, mask ) {
     /* instance properties */
 
     /** @protected @type {Array.<Sprite>} */ this._children   = [];
-    /** @protected @type {boolean} */         this._disposed = false;
+    /** @protected @type {boolean} */        this._disposed = false;
 
     /**
      * whether this sprite can collide with others
@@ -245,25 +245,7 @@ function Sprite( x, y, width, height, bitmap, collidable, mask ) {
         if ( !opts.bitmap )
             throw new Error( "cannot use a spritesheet without a valid Bitmap" );
 
-        /**
-         * @public
-         * @type {Array.<{ row: number, col: number, amount: number, fpt: 5 }>}
-         */
-        this.sheet = opts.sheet;
-
-        /**
-         * @protected
-         * @type {Object}
-         */
-        this._animation = {
-            type    : null,
-            col     : 0,  // which horizontal tile in the sprite sheet is current
-            maxCol  : 0,  // the maximum horizontal index that is allowed before the animation should loop
-            fpt     : 0,  // "frames per tile" what is the max number of count before we switch tile
-            counter : 0   // the frame counter that is increased on each frame render
-        };
-
-        this.switchAnimation( this.sheet[ 0 ]); // by default select first animation from list
+        this.setSheet( opts.sheet );
     }
 }
 
@@ -599,6 +581,9 @@ Sprite.prototype.draw = function( aCanvasContext ) {
     // extend in subclass if you're drawing a custom object instead of a graphical Image asset
     // don't forget to draw the child display list when overriding this method!
 
+    if ( !this.canvas )
+        return;
+
     aCanvasContext.save();
 
     // Sprite acts as a mask for underlying Sprites ?
@@ -854,6 +839,52 @@ Sprite.prototype.setBitmap = function( aImage, aOptWidth, aOptHeight ) {
 };
 
 /**
+ * Define the sprite sheet for this Sprite to use tile based animation
+ * from its Bitmap, use in conjunction with setBitmap()
+ *
+ * @public
+ * @param {Array.<{ row: number, col: number, amount: number, fpt: 5, onComplete: Function= }>} sheet
+ */
+Sprite.prototype.setSheet = function( sheet ) {
+    /**
+     * @protected
+     * @type {Array.<{ row: number, col: number, amount: number, fpt: 5, onComplete: Function= }>}
+     */
+    this._sheet = sheet;
+
+    /**
+     * @protected
+     * @type {Object}
+     */
+    this._animation = {
+        type    : null,
+        col     : 0,  // which horizontal tile in the sprite sheet is current
+        maxCol  : 0,  // the maximum horizontal index that is allowed before the animation should loop
+        fpt     : 0,  // "frames per tile" what is the max number of count before we switch tile
+        counter : 0   // the frame counter that is increased on each frame render
+    };
+    this.switchAnimation( 0 ); // by default select first animation from list
+};
+
+/**
+ * switch the current animation that should be playing from this Sprites tile sheet
+ *
+ * @public
+ * @param {Object} sheetIndex index of the animation as defined in the _tileSheet Array
+ */
+Sprite.prototype.switchAnimation = function( sheetIndex ) {
+
+    const aniProps = this._animation, sheet = this._sheet[ sheetIndex ];
+
+    aniProps.type       = sheet;
+    aniProps.fpt        = sheet.fpt;
+    aniProps.maxCol     = sheet.col + ( sheet.amount - 1 );
+    aniProps.col        = sheet.col;
+    aniProps.counter    = 0;
+    aniProps.onComplete = sheet.onComplete;
+};
+
+/**
  * set a reference to the parent sprite containing this one
  *
  * @override
@@ -885,11 +916,12 @@ Sprite.prototype.getParent = function() {
 Sprite.prototype.setCanvas = function( aCanvas ) {
 
     this.canvas = aCanvas;
-
+    /*
     // no constraint specified ? use stage bounds
 
     if ( !this._constraint && aCanvas )
         this.setConstraint( 0, 0, aCanvas.getWidth(), aCanvas.getHeight() );
+    */
 };
 
 /**
@@ -1276,24 +1308,6 @@ Sprite.prototype.handleInteraction = function( aEventX, aEventY, aEvent ) {
 /* protected methods */
 
 /**
- * switch the current animation that should be playing
- * from this Sprite tile sheet
- *
- * @public
- * @param {Object} tileObject present in the _tileSheet Object
- */
-Sprite.prototype.switchAnimation = function( tileObject ) {
-
-    const aniProps = this._animation;
-
-    aniProps.type    = tileObject;
-    aniProps.fpt     = tileObject.fpt;
-    aniProps.maxCol  = tileObject.col + ( tileObject.amount - 1 );
-    aniProps.col     = tileObject.col;
-    aniProps.counter = 0;
-};
-
-/**
  * invoked by the update()-method prior to rendering
  * this will step between the frames in the tilesheet
  *
@@ -1310,8 +1324,13 @@ Sprite.prototype.updateAnimation = function() {
 
     // loop animation by starting from first column
 
-    if ( aniProps.col > aniProps.maxCol )
+    if ( aniProps.col > aniProps.maxCol ) {
         aniProps.col = aniProps.type.col;
+
+        // fire animation complete callback if defined
+        if ( typeof aniProps.onComplete === "function" )
+            aniProps.onComplete( this );
+    }
 };
 
 /**

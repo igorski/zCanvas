@@ -147,5 +147,46 @@ const Collision = module.exports = {
             }
         }
         return pixels;
+    },
+
+    /**
+     * retrieve all children in given Sprite list that are currently residing at
+     * a given coordinate and rectangle, can be used in conjunction with sprite
+     * "collidesWith"-method to query only the objects that are in its vicinity, greatly
+     * freeing up CPU resources by not checking against out of bounds objects
+     *
+     * @public
+     *
+     * @param {Array.<sprite>} aSpriteList
+     * @param {number} aX x-coordinate
+     * @param {number} aY y-coordinate
+     * @param {number} aWidth rectangle width
+     * @param {number} aHeight rectangle height
+     * @param {boolean=} aOnlyCollidables optionally only return children that are collidable defaults to false
+     *
+     * @return {Array.<sprite>}
+     */
+    getChildrenUnderPoint( aSpriteList, aX, aY, aWidth, aHeight, aOnlyCollidables ) {
+
+        const out = [];
+        let i = aSpriteList.length, theChild, childX, childY, childWidth, childHeight;
+
+        while ( i-- ) {
+
+            theChild = aSpriteList[ i ];
+
+            childX      = theChild.getX();
+            childY      = theChild.getY();
+            childWidth  = theChild.getWidth();
+            childHeight = theChild.getHeight();
+
+            if ( childX < aX + aWidth  && childX + childWidth  > aX &&
+                 childY < aY + aHeight && childY + childHeight > aY )
+            {
+                if ( !aOnlyCollidables || ( aOnlyCollidables && theChild.collidable ))
+                    out.push( theChild );
+            }
+        }
+        return out;
     }
 };

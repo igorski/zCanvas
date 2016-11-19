@@ -328,8 +328,6 @@ describe( "zCanvas.canvas", () => {
             "expected canvas to contain added child in the second index of its children list" );
     });
 
-    // TODO : getChildrenUnderPoint
-
     it( "should be able to update its dimensions", () => {
 
         const canvas = new Canvas({ width: width, height: height });

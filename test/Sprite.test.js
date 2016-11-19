@@ -513,7 +513,7 @@ describe( "zCanvas.sprite", () => {
         assert.isNull( child.getParent(),
             "expected Sprite not have a parent after removal from display list" );
     });
-
+    /*
     it( "should by default set its constraints to the Canvas bounds", () => {
 
         const sprite = new Sprite({
@@ -538,6 +538,7 @@ describe( "zCanvas.sprite", () => {
         assert.strictEqual( canvas.getHeight(), constraint.height,
             "expected constraints height to be " + canvas.getHeight() + ", got " + constraint.height );
     });
+    */
 
     it( "should be able to define parent constraints", () => {
 
@@ -876,5 +877,23 @@ describe( "zCanvas.sprite", () => {
         return;
         assert.strictEqual( animation.col, aniProps.col,
             "expected column to have jumped back to the first index after having played all tile frames" );
+    });
+
+    it( "should fire an animation callback if a sheet animation has completed", ( done ) => {
+
+        const sheet = [
+            { row: 0, col: 0, amount: 5, fpt: 5, onComplete: function( spriteRef ) {
+                assert.strictEqual( sprite, spriteRef, "expected animation complete handler " +
+                    "to have returned reference to its calling Sprite" );
+                done();
+            }}
+        ];
+        const sprite = new Sprite({ width: width, height: height, bitmap: imgSource, sheet: sheet });
+        const animation = sheet[ 0 ];
+
+        for ( let i = 0; i < animation.amount; ++i ) {
+            for ( let j = 0; j < animation.fpt; ++j )
+                sprite.update( Date.now() + i + j );
+        }
     });
 });

@@ -355,46 +355,6 @@ Canvas.prototype.invalidate = function() {
 };
 
 /**
- * retrieve all children of this Canvas that are currently residing at
- * a given coordinate and rectangle, can be used in conjunction with sprite
- * "collidesWith"-method to query only the objects that are in its vicinity, greatly
- * freeing up CPU resources by not checking against out of bounds objects
- *
- * @public
- *
- * @param {number} aX x-coordinate
- * @param {number} aY y-coordinate
- * @param {number} aWidth rectangle width
- * @param {number} aHeight rectangle height
- * @param {boolean=} aOnlyCollidables optionally only return children that are collidable defaults to false
- *
- * @return {Array.<sprite>}
- */
-Canvas.prototype.getChildrenUnderPoint = function( aX, aY, aWidth, aHeight, aOnlyCollidables ) {
-
-    const out = [];
-    let i = this._children.length, theChild, childX, childY, childWidth, childHeight;
-
-    while ( i-- ) {
-
-        theChild = this._children[ i ];
-
-        childX      = theChild.getX();
-        childY      = theChild.getY();
-        childWidth  = theChild.getWidth();
-        childHeight = theChild.getHeight();
-
-        if ( childX < aX + aWidth  && childX + childWidth  > aX &&
-             childY < aY + aHeight && childY + childHeight > aY )
-        {
-            if ( !aOnlyCollidables || ( aOnlyCollidables && theChild.collidable ))
-                out.push( theChild );
-        }
-    }
-    return out;
-};
-
-/**
  * return the framerate of the Canvas, can be queried by
  * child sprites to calculate strictly timed animated operations
  *

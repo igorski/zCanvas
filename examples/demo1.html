@@ -14,13 +14,9 @@
         <h1>zCanvas demo #1: Spritesheets and collisions</h1>
         <div id="demo"><!-- x --></div>
         <p>
-            Demo features : auto scrolling background and a keyboard / touchscreen-controllable spritesheet character
-            that uses the accurate (and slightly heavier) collision detection-variant (see API docs) to resolve
-            collisions with the environment.
+            Demo features : a keyboard / touchscreen-controllable spritesheet character that uses the pixel-accurate (and slightly heavier) collision
+            detection-variant (see API docs) to resolve collisions with the environment.
         </p>
-        <span id="debug">
-
-        </span>
     </div>
     <script type="text/javascript">
 
@@ -35,12 +31,6 @@
 
             // STEP 1 : SETUP
             // --------------------------------------
-
-            var debug = document.getElementById( "debug" );
-
-            function log( msg ) {
-                debug.innerHTML = msg;
-            }
 
             var container = document.getElementById( "demo" );
 
@@ -134,7 +124,7 @@
                     this.running   = true;
                     // switch spritesheet animation now we're starting to run
                     this.switchAnimation(
-                        ( this.direction === 0 ) ? this.sheet[ 2 ] : this.sheet[ 3 ]
+                        ( this.direction === 0 ) ? 2 : 3
                     );
                 };
 
@@ -145,7 +135,7 @@
                     this.running = false;
                     // switch spritesheet animation now we're stopping the running
                     this.switchAnimation(
-                        ( this.direction === 0 ) ? this.sheet[ 0 ] : this.sheet[ 1 ]
+                        ( this.direction === 0 ) ? 0 : 1
                     );
                 };
 

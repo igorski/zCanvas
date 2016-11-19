@@ -5,24 +5,18 @@
     <meta charset="utf-8" />
     <title>canvas animated spritesheet example</title>
     <link rel="stylesheet" href="./assets/styles.css">
-    <script type="text/javascript" src="./assets/images.js"></script>
+    <script type="text/javascript" src="./assets/demo2_images.js"></script>
     <!-- include RequireJS to resolve dependencies -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.1.14/require.min.js" type="text/javascript"></script>
 </head>
 <body>
     <div id="container">
-        <h1>zCanvas demo #2: Layers and interactions</h1>
+        <h1>zCanvas demo #2: Shoot 'em up with fast collision detection</h1>
         <div id="demo"><!-- x --></div>
         <p>
-            Demo features : multiple nested Sprites (the circles), masking (the scrollable star layer) and restricted
-            movement (the rectangle). The circles are movable by either mouse or touch, either individually or at once (dragging the large circle
-            will drag its child circles), while the rectangle is also draggable but constrained to the bottom right part of the canvas
-            (illustrated by the thin red outline). Note that you can drag the rectangle under the circle, but after release, the
-            higher circle layer takes precendence in responding to the mouse / touch events.
+            Demo features : multiple layers of parallax scrolling, endless waves of enemies, spritesheet explosions
+            and tons of bullets with the high performing collision detection routine (less precise).
         </p>
-        <span id="debug">
-
-        </span>
     </div>
     <script type="text/javascript">
 
@@ -36,13 +30,7 @@
         require( [ "zcanvas.amd" ], function( zCanvas ) {
 
             // STEP 1 : SETUP
-            // --------------------------------------
-
-            var debug = document.getElementById( "debug" );
-
-            function log( msg ) {
-                debug.innerHTML = msg;
-            }
+            // --------------
 
             var container = document.getElementById( "demo" );
 
@@ -57,169 +45,475 @@
                 w = document.body.clientWidth;
                 h = document.body.clientHeight;
             }
+            var cvsWidth  = ( w < 400 ) ? w * .93 : 400;
+            var cvsHeight = ( h < 400 ) ? h : 400;
+
+            // STEP 1 : DEFINING CUSTOM SPRITE CLASSES
+            // ---------------------------------------
+
+            var MAX_SPEED = 5, SPEED_INCREMENT = 0.125;
+
+            // 1.1 create a custom class for Actors (generic status Objects within this game)
+
+            var Actor = function( x, y, xSpeed, ySpeed ) {
+                // call zCanvas.sprite prototype, by default Actors are 5x5 in size
+                Actor.super( this, "constructor", { x: x, y: y, width: 5, height: 5 });
+
+                /* instance properties */
+
+                this.xSpeed = xSpeed; // horizontal movement speed
+                this.ySpeed = ySpeed; // vertical movement speed
+
+                /* public methods */
+
+                this.hit = function( actor ) {
+                    // will be overridden in derived prototypes
+                };
+
+                this.update = function() {
+                    // on each update the Actors update their position according to their speed
+                    this._bounds.left += this.xSpeed;
+                    this._bounds.top  += this.ySpeed;
+                };
+            };
+            zCanvas.sprite.extend( Actor ); // Actor extends zCanvas.sprite
+
+            // 1.2 custom class for Bullets, which inherits properties and actions from Actor
+
+            var Bullet = function( damage ) {
+                // call Actor prototype (no coordinates and speed during construction here)
+                Bullet.super( this, "constructor", 0, 0, 0, 0 );
+
+                /* instance properties */
+
+                this.damage = ( typeof damage === "number" ) ? damage : 1; // the damage this Bullet deals
+
+                /* public methods */
+
+                this.draw = function( canvasContext ) {
+
+                    // override draw()-method from zCanvas.sprite-prototype to draw custom graphics
+                    canvasContext.fillStyle = "#FF0000";
+                    canvasContext.fillRect( this._bounds.left, this._bounds.top, this._bounds.width, this._bounds.height );
+                }
+            };
+            Actor.extend( Bullet ); // Bullet extends Actor and in turn zCanvas.sprite
+
+            // 1.3 custom class for Ships, which inherits properties and actions from Actor
+
+            var Ship = function( x, y, energy ) {
+                // call Actor prototype (no speed during construction here)
+                Ship.super( this, "constructor", x, y, 0, 0 );
+                // set custom Bitmap for the Ship
+                this.setBitmap( IMAGE_SHIP_SHEET, 64, 64 ); // each tile is 64x64 pixels
+                this.setSheet([
+                    { row: 0, col: 0, fpt: 3, amount: 1 },  // Player ship, facing up
+                    { row: 1, col: 0, fpt: 3, amount: 1 },  // Enemy ship, facing down
+                    { row: 2, col: 0, fpt: 3, amount: 16, onComplete: disposeActor } // Explosion animation
+                ]);
+
+                /* instance properties */
+
+                this.energy = ( typeof energy === "number" ) ? energy : 1; // the energy (power bar) this actor has
+
+                /* public methods */
+
+                this.fire = function() {
+                    createBulletForActor( this );
+                };
+
+                this.hit = function( actor ) {
+
+                    if ( actor instanceof Bullet )
+                        disposeActor( actor ); // bullets are disposed after a hit
+
+                    if ( this.energy <= 0 || actor.energy <= 0 ) return; // ones of the Actor is already dead
+
+                    this.energy -= (( typeof actor.damage === "number" ) ? actor.damage : 1 );
+
+                    if ( this.energy <= 0 ) // all energy depleted, start explosion animation
+                        this.switchAnimation( 2 );
+                };
+
+                // set vertical thrusters (0 == idle, 1 == going left, 2 == going right)
+                this.setHorizontalThrust = function( thrusterState ) {
+                    this.horizontalThrust = thrusterState;
+                };
+
+                // set vertical thrusters (0 == idle, 1 == going up, 2 == going down)
+                this.setVerticalThrust = function( thrusterState ) {
+                    this.verticalThrust = thrusterState;
+                };
+
+                /* overridden methods */
+
+                this.update = function() {
+                    switch ( this.horizontalThrust ) {
+                        default:
+                        case 0: // no thrust, decrease speed
+                            if ( this.xSpeed < 0 )
+                                this.xSpeed += SPEED_INCREMENT;
+                            else if ( this.xSpeed > 0 )
+                                this.xSpeed -= SPEED_INCREMENT;
+                            break;
+                        case 1: // thrusting to move left
+                            if ( this.xSpeed > -MAX_SPEED ) this.xSpeed -= SPEED_INCREMENT;
+                            break;
+                        case 2: // thrusting to move right
+                            if ( this.xSpeed < MAX_SPEED ) this.xSpeed += SPEED_INCREMENT;
+                            break;
+                    }
+                    switch( this.verticalThrust ) {
+                        default:
+                        case 0: // no thrust, decrease speed
+                            if ( this.ySpeed < 0 )
+                                this.ySpeed += SPEED_INCREMENT;
+                            else if ( this.ySpeed > 0 )
+                                this.ySpeed -= SPEED_INCREMENT;
+                            break;
+                        case 1: // thrusting to move up
+                            if ( this.ySpeed > -MAX_SPEED ) this.ySpeed -= SPEED_INCREMENT;
+                            break;
+                        case 2: // thrusting to move down
+                            if ( this.ySpeed < MAX_SPEED ) this.ySpeed += SPEED_INCREMENT;
+                            break;
+                    }
+                    this._bounds.left += this.xSpeed;
+                    this._bounds.top  += this.ySpeed;
+                    this.updateAnimation(); // update spritesheet animation
+                }
+            };
+            Actor.extend( Ship ); // Ship extends Actor and in turn zCanvas.sprite
+
+            // STEP 2 : CREATING A POOL FOR HEAVILY REUSED OBJECTS
+            // ---------------------------------------------------
+
+            var bulletPool = new Array( 100 ); // Array size defines the maximum amount of bullets existing simultaneously
+            for ( var i = 0, total = bulletPool.length; i < total; ++i )
+                bulletPool[ i ] = new Bullet( 1 );
+
+            var enemyPool = new Array( 5 );
+            for ( i = 0, total = enemyPool.length; i < total; ++i )
+                enemyPool[ i ] = new Ship( 0, 0, 1 );
+
+            // helper function to calculate x, y coordinate within a circular shape
+
+            function calcPosition( originX, originY, radius, angle ) {
+                return {
+                    x: originX + radius * Math.cos( angle * Math.PI / 180 ),
+                    y: originY + radius * Math.sin( angle * Math.PI / 180 )
+                }
+            }
+
+            // helper function to retrieve an Actor from the pool and apply given properties onto it
+
+            function getActorFromPool( pool, x, y, xSpeed, ySpeed ) {
+                var actor = pool.shift(); // get first Actor from the pool (can be null if all pool Actors are in the game)
+                if ( actor ) {
+                    actor.setX( x );
+                    actor.setY( y );
+                    actor.xSpeed = xSpeed;
+                    actor.ySpeed = ySpeed;
+                }
+                return actor;
+            }
+
+            // STEP 3 : INITIALIZING THE GAME ENVIRONMENT
+            // ------------------------------------------
+
+            var player = new Ship( cvsWidth / 2, cvsHeight - 100, 10 );
+            var actors = []; // all actors currently in the game (this excludes the player!)
+
+            // create some scenery clouds
+            var cloud = new zCanvas.sprite({
+                x: Math.random() * cvsWidth,
+                y: -100,
+                width: 300,
+                height: 508,
+                bitmap: IMAGE_CLOUD
+            });
+            cloud.update = function( ctx ) {
+                if ( ++this._bounds.top > cvsHeight ) {
+                    this._bounds.top = -this._bounds.height;
+                    this._bounds.left = Math.random() * cvsWidth;
+                }
+            };
+
+            // STEP 4 : INITIALIZING THE CANVAS
+            // --------------------------------
 
             // create a new canvas that renders at 60 fps
-            // keep it within the device / browser bounds
-            var cvsWidth  = w < 800 ? w * .93 : 800;
-            var cvsHeight = h < 500 ? h : 500;
-            var cvs       = new zCanvas.canvas({
+            // for each update prior to rendering we invoke a custom handler
+            var cvs = new zCanvas.canvas({
                 width: cvsWidth,
                 height: cvsHeight,
                 animate: true,
-                fps: 60
+                fps: 60,
+                onUpdate: handleGameLoop // see below
             });
+            cvs.setBackgroundColor( "#000099" );
             cvs.preventEventBubbling( true );
 
             // append canvas to DOM
             cvs.insertInPage( container );
 
-            // STEP 2 : ADDING THE SPRITES
-            // ---------------------------
+            // add game actors to the display list
+            cvs.addChild( player );
+            for ( i = 0, total = enemyPool.length; i < total; ++i )
+                createEnemyFromPool();
 
-            // first sprite will acts as a background
-            // (see included "assets.js"-file for the assetBackground-image data)
-            var bgWidth  = 800, bgHeight = 1067;
-            var bgSprite = new zCanvas.sprite({ width: bgWidth, height: bgHeight, bitmap: IMAGE_BACKGROUND });
-            cvs.addChild( bgSprite );   // add the background to the canvas so it is visible
+            cvs.addChild( cloud );
 
-            // SCROLLING MASK SPRITE
-            // ---------------------
-            // a sprite that will acts as a mask for underlying content
-            // (see included "images.js"-file for the assetStar-image data)
+            // STEP 5 : CREATING A CUSTOM UPDATE HANDLER FOR UPDATING THE GAME ENVIRONMENT
+            // ---------------------------------------------------------------------------
 
-            var starSize = cvsWidth * .3; // make the star slightly smaller than the canvas
+            function handleGameLoop( timestamp ) {
 
-            var spriteMask = new zCanvas.sprite({ width: starSize, height: starSize, bitmap: IMAGE_STAR, mask: true });
+                player.update();
+                cloud.update();
 
-            // custom overrides, to demonstrate a simple custom behaviour
-            // where animation is perfectly timed (test by switching tabs in
-            // the browser, animation stops when switching tabs, but by calculating
-            // position by verifying elapsed time, it appears as if the application
-            // hasn't been paused. Though you could actually prefer a "pause" depending on context...
+                var i = actors.length, actor;
 
-            var direction      = 1;    // 0 being left, 1 being right
-            var speed          = 2;    // the amount of pixels we move per frame
-            var prevStamp      = Date.now();
-            var renderInterval = cvs.getRenderInterval();
-            var maxXPosition   = cvsWidth - starSize;
+                while ( i-- ) {
+                    actor = actors[ i ];
+                    actor.update();
 
-            spriteMask.update = function( aCurrentTimestamp ) {
+                    var actorBounds = actor.getBounds(),
+                        actorX      = actorBounds.left,
+                        actorY      = actorBounds.top,
+                        actorWidth  = actorBounds.width,
+                        actorHeight = actorBounds.height;
 
-                var delta = ( aCurrentTimestamp - prevStamp ); // should roughly equal the render interval of the canvas
-                prevStamp = aCurrentTimestamp;                 // store last timestamp
+                    // if Actor exceeds world bounds, remove it from the Actors list
+                    // note Bullets are also removed when they are out of the top vertical bounds
 
-                // slide the background either up or down
-
-                var amount = speed / renderInterval * delta;
-
-                if ( direction == 0 )
-                    this.setX( this.getX() - amount );
-                else
-                    this.setX( this.getX() + amount );
-
-                var currentPosition = this.getX();
-
-                // keep movement within canvas bounds
-
-                if ( currentPosition > maxXPosition )
-                    direction = 0;
-                else if ( currentPosition < 0 )
-                    direction = 1;
-            };
-
-            // NESTED CIRCLE SPRITES
-            // ---------------------
-            // custom sprite extension we use to draw a circle that highlights
-            // when it is hovered by the mouse cursor
-
-            var CircleSprite = function( x, y, aRadius, aColor ) {
-
-                var opts = {
-                    x: x - aRadius * 2,
-                    y: y - aRadius * 1.5,
-                    width: aRadius * 2,
-                    height: aRadius * 2
-                };
-
-                CircleSprite.super( this, "constructor", opts );
-
-                /* instance properties */
-
-                this.radius = aRadius;
-                this.color  = aColor;
-                this.setDraggable( true );
-
-                /* overridden zCanvas.sprite methods */
-
-                // here we override the getters and setters to accommodate for the radius of the circle as
-                // the circles center point is the x- and y-coordinate to provide from-center-snapping
-
-                this.getX = function() { return CircleSprite.super( this, "getX" ) + this.radius; };
-                this.getY = function() { return CircleSprite.super( this, "getY" ) + this.radius; };
-                this.draw = function( ctx ) {
-
-                    ctx.beginPath();
-                    ctx.arc( this.getX() + this.radius, this.getY() + this.radius, this.radius, 0, 2 * Math.PI, false );
-                    ctx.fillStyle = this.hover ? '#FFFFFF' : this.color; // when hovering the circle is white
-                    ctx.fill();
-
-                    // when hovering, we add an outline to the circle
-                    if ( this.hover ) {
-                        ctx.lineWidth = 5;
-                        ctx.strokeStyle = "#FF9900";
-                        ctx.stroke();
+                    if (( actor instanceof Bullet && actorY < 0 ) ||
+                          actorY > cvsHeight || actorX + actorWidth  < 0 || actorX > cvsWidth ) {
+                        disposeActor( actor );
+                        continue;
                     }
-                    ctx.closePath();
 
-                    CircleSprite.super( this, "draw", ctx ); // will invoke the drawing of nested child elements
-                };
-            };
-            zCanvas.sprite.extend( CircleSprite ); // CircleSprite extends sprite
+                    // resolve collisions with other Actors in its vicinity
 
-            // create the circle instances, note all circles beyond circle1 will be children of circle1
-            // (and thus should move according to the mutations of circle1)
-            var largeCircleSize = cvsHeight / 5, smallCircleSize = cvsHeight / 10;
+                    var others = zCanvas.collision.getChildrenUnderPoint( actors, actorX, actorY, actorWidth, actorHeight );
+                    if ( others.length > 0 ) {
+                        var j, l, other;
+                        for ( j = 0, l = others.length; j <l; ++j ) {
+                            other = others[ j ];
+                            if ( actor.collidesWith( other )) {
+                                other.hit( actor );
+                                actor.hit( other );
+                            }
+                        }
+                    }
+                }
+            }
 
-            var circle1 = new CircleSprite( cvsWidth / 2, cvsHeight / 2, largeCircleSize, "#FF0000" );
-            var circle2 = new CircleSprite( cvsWidth / 2, circle1.getY() - smallCircleSize / 2,               smallCircleSize, "#0000FF" );
-            var circle3 = new CircleSprite( cvsWidth / 2, circle1.getY() + largeCircleSize + smallCircleSize, smallCircleSize, "#00FF00" );
+            function createEnemyFromPool() {
+                var enemy = enemyPool.shift();
+                actors.push( enemy ); // add enemy to Actors list
+                enemy.setX( Math.random() * cvsWidth );
+                enemy.setY(( Math.random() * -cvsHeight ) - 300 );
+                enemy.setVerticalThrust( 2 );
+                enemy.switchAnimation( 1 ); // switch to Enemy tile
+                enemy.energy = 1;
+                cvs.addChild( enemy );
+            }
 
-            // CONSTRAINED RECTANGLE SPRITE
-            // ----------------------------
+            function createBulletForActor( actor ) {
+                var bullets = [], bullet;
+                actor.weapon = 1;
+                switch ( actor.weapon ) {
 
-            var rectSize  = bgHeight / 15;
-            var rectangle = new zCanvas.sprite({
-                x: cvsWidth * .75,
-                y: cvsHeight * .5,
-                width: rectSize,
-                height: rectSize
+                    default:
+                    case 0:
+                        // single Bullet fire
+                        bullet = getActorFromPool(
+                            bulletPool,
+                            actor.getX() + actor.getWidth() / 2,
+                            actor.getY() - 10,
+                            0,
+                            ( actor === player ) ? -5 : 5 // Player shoots up, enemies shoot down
+                        );
+                        if ( bullet )
+                            bullets.push( bullet );
+                        break;
+
+                    case 1:
+
+                        var angle, startPos, targetPos;
+                        var actorBounds = actor.getBounds();
+
+                        // spray Bullets
+                        for ( var i = 0, total = 16; i < total; ++i ) {
+                            angle = ( 360 / total ) * i;
+                            startPos = calcPosition(
+                                actorBounds.left + actorBounds.width / 2,
+                                actorBounds.top  + actorBounds.height / 2,
+                                actorBounds.width, angle
+                            );
+                            bullet = getActorFromPool( bulletPool, startPos.x, startPos.y, 0, 0 );
+
+                            if ( !bullet )
+                                break; // ran out of available bullets :(
+
+                            bullets.push( bullet );
+
+                            targetPos = calcPosition(
+                                actorBounds.left + actorBounds.width,
+                                actorBounds.top + actorBounds.height,
+                                cvsWidth, angle
+                            );
+                            // bullets move from their original to target position (out of screen) over the course of a single second
+                            bullet.xSpeed = ( targetPos.x - startPos.x ) / cvs.getFrameRate();
+                            bullet.ySpeed = ( targetPos.y - startPos.y ) / cvs.getFrameRate();
+                        }
+                        break;
+                }
+                // add Bullet(s) into the active Actors list and onto the Display List
+                for ( i = 0, total = bullets.length; i < total; ++i ) {
+                    bullet = bullets.shift();
+                    actors.push( bullet );
+                    cvs.addChild( bullet );
+                }
+            }
+
+            function disposeActor( actor ) {
+
+                var actorIndex = actors.indexOf( actor );
+                if ( actorIndex !== -1 )
+                    actors.splice( actorIndex, 1 ); // remove Actor from active Actors list
+
+                cvs.removeChild( actor ); // removes Actor from display list
+
+                // return Actor to the pool so it can be reused
+                if ( actor instanceof Bullet ) {
+                    bulletPool.push( actor );
+                }
+                else if ( actor !== player ) {
+                    enemyPool.push( actor ); // Actor isn't a Bullet nor the payer, so it's an enemy
+                    setTimeout( createEnemyFromPool, 1000 ); // reintroduce enemy after a short period
+                } else {
+                    alert( "PLAYER DIED!" );
+                    // "game over" reset player state
+                    player.energy = 25;
+                    player.switchAnimation( 0 );
+                    cvs.addChild( player );
+                }
+            }
+
+            // STEP 6 : ADDING KEYBOARD AND TOUCH INTERACTION
+            // ----------------------------------------------
+
+            var playerXmovement = false, playerYmovement = false;
+
+            // we add on-screen controls buttons for touch screens (we cannot test for
+            // touchscreens reliably as most browsers support touch events though the DEVICE
+            // it is running on hasn't got touch support !
+
+            var leftBtn = document.createElement( "div" );
+            leftBtn.id  = "left-btn";
+
+            var rightBtn = document.createElement( "div" );
+            rightBtn.id  = "right-btn";
+
+            var shootBtn = document.createElement( "div" );
+            shootBtn.id  = "action-btn";
+
+            container.appendChild( leftBtn );
+            container.appendChild( rightBtn );
+            container.appendChild( shootBtn );
+
+            leftBtn.addEventListener ( "touchstart",  handleLeft );
+            rightBtn.addEventListener( "touchstart",  handleRight );
+            leftBtn.addEventListener ( "touchcancel", horizontalEnd );
+            leftBtn.addEventListener ( "touchend",    horizontalEnd );
+            rightBtn.addEventListener( "touchcancel", horizontalEnd );
+            rightBtn.addEventListener( "touchend",    horizontalEnd );
+            shootBtn.addEventListener( "touchstart",  handleFire);
+
+            // keyboard control for desktop devices
+
+            window.addEventListener( "keydown", function( e ) {
+                var blockDefault = false;
+                switch ( e.keyCode ) {
+
+                    case 32: // spacebar
+                        handleFire();
+                        break;
+
+                    case 38: // up
+                        if ( !playerYmovement ) {
+                            player.setVerticalThrust( 1 );
+                            playerYmovement = true;
+                        }
+                        blockDefault = true;
+                        break;
+
+                    case 40: // down
+                        if ( !playerYmovement ) {
+                            player.setVerticalThrust( 2 );
+                            playerYmovement = true;
+                        }
+                        blockDefault = true;
+                        break;
+
+                    case 37: // left
+                        handleLeft();
+                        blockDefault = true;
+                        break;
+
+                    case 39: // right
+                        handleRight();
+                        blockDefault = true;
+                        break;
+                }
+                if ( blockDefault ) e.preventDefault(); // prevents page movement (if Canvas doesn't fit entirely)
             });
-            rectangle.setConstraint( cvsWidth / 2, cvsHeight / 2, cvsWidth / 2, cvsHeight / 2 ); // add a constraint
-            rectangle.setDraggable( true, true ); // we'd like to be able to drag the Rectangle but restrict its movements
 
-            // Rectangle draw logic
-            rectangle.draw = function( ctx ) {
+            window.addEventListener( "keyup", function( e ) {
+                switch ( e.keyCode ) {
+                    case 38:
+                    case 40:
+                        verticalEnd();
+                        break;
+                    case 37:
+                    case 39:
+                        horizontalEnd();
+                        break;
 
-                // draw rectangle
-                ctx.fillStyle = '#FF00FF';
-                ctx.fillRect( this.getX(), this.getY(), this.getWidth(), this.getHeight() );
+                }
+            });
+            var fireHandler = player.fire.bind( player ); // wait until RAF as bullet calculations can be expensive!
+            function handleFire() {
+                requestAnimationFrame( fireHandler );
+            }
 
-                // but also draw its bounding box just for demonstration purposes
-                var constraint = this.getConstraint();
-                ctx.lineWidth = 1;
-                ctx.strokeStyle = '#FF0000';
-                ctx.strokeRect( constraint.left, constraint.top, constraint.width, constraint.height );
-            };
+            function handleLeft() {
+                if ( !playerXmovement ) {
+                    player.setHorizontalThrust( 1 );
+                    playerXmovement = true;
+                }
+            }
 
-            // add all Sprites to the canvas display list so they are visible
+            function handleRight() {
+                if ( !playerXmovement ) {
+                    player.setHorizontalThrust( 2 );
+                    playerXmovement = true;
+                }
+            }
 
-            cvs.addChild( spriteMask );
-            cvs.addChild( rectangle );
-            cvs.addChild( circle1 );
+            // these handlers ensure we unset the thrust of the spaceship when we release the keys
 
-            // add all additional circles to the display list of circle1 so they are nested
-            circle1.addChild( circle2 );
-            circle1.addChild( circle3 );
+            function verticalEnd() {
+                playerYmovement = false;
+                player.setVerticalThrust( 0 ); // idle vertical thrust
+            }
+
+            function horizontalEnd() {
+                playerXmovement = false;
+                player.setHorizontalThrust( 0 ); // idle horizontal thrust
+            }
         });
 
     </script>

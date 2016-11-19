@@ -19,11 +19,7 @@ h1 {
     position: relative;
 }
 
-#debug {
-    color: red;
-}
-
-#left-btn, #right-btn, #jump-btn {
+#left-btn, #right-btn, #action-btn {
     position: absolute;
     bottom: 1em;
     width: 50px;
@@ -63,12 +59,12 @@ h1 {
         position: absolute;
     }
 
-#jump-btn {
+#action-btn {
     right: 10px;
     border-radius: 50%;
 }
 
-    #jump-btn:after {
+    #action-btn:after {
         content: "A";
         left: 20px;
         top: 15px;
