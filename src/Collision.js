@@ -41,7 +41,7 @@ const Collision = module.exports = {
      *
      * @param {sprite} sprite1
      * @param {sprite} sprite2
-     * @param {boolean=} returnCoordinate optional (defaults to false), when false
+     * @param {boolean=} optReturnAsCoordinate optional (defaults to false), when false
      *        boolean value is returned for the collision, when true an Object with
      *        x- and y-coordinates is returned to specify at which x- and y-coordinate
      *        a pixel collision occurred. This can be verified against sprite1's bounds
@@ -50,7 +50,7 @@ const Collision = module.exports = {
      *
      * @return {boolean|{ x: number, y: number }}
      */
-    pixelCollision( sprite1, sprite2, returnCoordinate ) {
+    pixelCollision( sprite1, sprite2, optReturnAsCoordinate ) {
 
         const rect = sprite1.getIntersection( sprite2 ); // check if sprites actually overlap
 
@@ -62,7 +62,7 @@ const Collision = module.exports = {
 
         let i = 0;
 
-        if ( returnCoordinate === true ) {
+        if ( optReturnAsCoordinate === true ) {
 
             // x, y-coordinate requested ? use alternate loop
 
