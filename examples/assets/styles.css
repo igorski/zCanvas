@@ -5,6 +5,10 @@ body {
     line-height: 1.5em;
 }
 
+h1 {
+    font-size: 150%;
+}
+
 #container {
     padding: 1em;
     max-width: 800px;
@@ -49,7 +53,7 @@ body {
     }
 
 #right-btn {
-    left: 75px;
+    left: 65px;
 }
 
     #right-btn:after {

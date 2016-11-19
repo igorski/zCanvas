@@ -211,26 +211,37 @@
                 if ( targetY > this.canvas.getHeight() + thisHeight )
                     targetY = -thisHeight;
 
+                var movingLeft = ( targetX < prevX ),
+                    movingUp   = ( targetY < prevY );
+
                 // collision detection : first up get all collidable objects in our direct vicinity
 
                 // check horizontalCollision first
                 var horCollision, verCollision;
                 this.setX( targetX );
-                if ( horCollision = zCanvas.collision.pixelCollision(this, wallSprite, true)) {
+                if ( horCollision = zCanvas.collision.pixelCollision( this, wallSprite, true )) {
                     // horizontal collision, e.g. touched wall
                     // link to wall by taking the current position plus the
                     // x-index of the collision minus the total width of the sprite
                     targetX = this.getX() + horCollision.x - this.getWidth();
-                    this.setX( targetX < prevX ? prevX : targetX );
+                    this.setX( movingLeft ? prevX : targetX );
+                    // horizontal collision during any kind of y displacement implies
+                    // Hero is jumping/falling against a wall
+                    if ( this.ySpeed !== 0 )
+                        this.setX( movingLeft ? prevX + 1 : prevX - 1 );
                 }
 
                 this.setY( targetY );
-                if ( verCollision = zCanvas.collision.pixelCollision(this, wallSprite, true)) {
+                if ( verCollision = zCanvas.collision.pixelCollision( this, wallSprite, true )) {
                     // vertical collision, e.g. touched ground
                     // link to ground by taking the current position plus the
                     // y-index of the collision minus the total height of the sprite
-                    targetY = this.getY() + verCollision.y - this.getHeight();
-                    this.setY( targetY < prevY ? prevY : targetY );
+                    if ( verCollision.y === 0 )
+                        targetY = prevY;
+                    else
+                        targetY = this.getY() + verCollision.y - this.getHeight();
+
+                    this.setY( movingUp ? prevY : targetY );
                     this.jumping = false;
                 }
 
