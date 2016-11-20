@@ -42,14 +42,15 @@
                 h = window.outerHeight;
             }
             else {
-                w = document.body.clientWidth;
-                h = document.body.clientHeight;
+                w = document.documentElement.clientWidth;
+                h = document.documentElement.clientHeight;
             }
 
             // create a new canvas that renders at 60 fps
             // keep it within the device / browser bounds
             var cvsWidth  = ( w < 800 ) ? w * .93 : 800;
             var cvsHeight = ( h < 350 ) ? h : 350;
+            container.style.width = cvsWidth + "px";
 
             var cvs = new zCanvas.canvas({
                 width: cvsWidth,
@@ -290,7 +291,7 @@
             rightBtn.id  = "right-btn";
 
             var jumpBtn = document.createElement( "div" );
-            jumpBtn.id  = "jump-btn";
+            jumpBtn.id  = "action-btn";
 
             container.appendChild( leftBtn );
             container.appendChild( rightBtn );
