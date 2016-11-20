@@ -1,14 +1,14 @@
 {
   "name": "zcanvas",
   "homepage": "http://www.igorski.nl/",
-  "version": "3.0.1",
+  "version": "3.0.2",
   "license": "MIT",
   "author": {
     "name": "Igor Zinken",
     "url": "http://github.com/igorski/"
   },
   "directories": {},
-  "main": "src/canvas.js",
+  "main": "zcanvas.js",
   "bugs": {
     "url": "https://github.com/igorski/canvas/issues/"
   },
