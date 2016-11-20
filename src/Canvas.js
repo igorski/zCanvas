@@ -482,7 +482,7 @@ Canvas.prototype.setAnimatable = function( value ) {
     const oldValue = this._animate;
     this._animate  = value;
 
-    if ( value && !oldValue )
+    if ( value && !oldValue && !this._renderPending )
         this._renderHandler();
 };
 
@@ -597,57 +597,50 @@ Canvas.prototype.render = function() {
     const delta = now - this._lastRender;
 
     this._renderPending = false;
+    this._lastRender    = now - ( delta % this._renderInterval );
 
-    // only execute render when the time for a single frame
-    // (at the requested framerate) has passed
+    const ctx = this._canvasContext;
+    let theSprite;
 
-    if ( delta > this._renderInterval ) {
+    if ( ctx ) {
 
-        this._lastRender = now - ( delta % this._renderInterval );
+        // clear previous canvas contents either by flooding it
+        // with the optional background colour, or by clearing all pixel content
 
-        const ctx = this._canvasContext;
-        let theSprite;
+        if ( this._bgColor ) {
+            ctx.fillStyle = this._bgColor;
+            ctx.fillRect( 0, 0, this._width, this._height );
+        }
+        else {
+            ctx.clearRect( 0, 0, this._width, this._height );
+        }
 
-        if ( ctx ) {
+        const useExternalUpdateHandler = ( typeof this._updateHandler === "function" );
 
-            // clear previous canvas contents either by flooding it
-            // with the optional background colour, or by clearing all pixel content
+        if ( useExternalUpdateHandler ) {
+            this._updateHandler( now );
+        }
 
-            if ( this._bgColor ) {
-                ctx.fillStyle = this._bgColor;
-                ctx.fillRect( 0, 0, this._width, this._height );
-            }
-            else {
-                ctx.clearRect( 0, 0, this._width, this._height );
-            }
+        // draw the children onto the canvas
 
-            const useExternalUpdateHandler = ( typeof this._updateHandler === "function" );
+        if ( this._children.length > 0 ) {
 
-            if ( useExternalUpdateHandler ) {
-                this._updateHandler( now );
-            }
+            theSprite = this._children[ 0 ];
 
-            // draw the children onto the canvas
+            while ( theSprite ) {
 
-            if ( this._children.length > 0 ) {
-
-                theSprite = this._children[ 0 ];
-
-                while ( theSprite ) {
-
-                    if ( !useExternalUpdateHandler ) {
-                        theSprite.update( now );
-                    }
-                    theSprite.draw( ctx );
-                    theSprite = theSprite.next;
+                if ( !useExternalUpdateHandler ) {
+                    theSprite.update( now );
                 }
+                theSprite.draw( ctx );
+                theSprite = theSprite.next;
             }
         }
     }
 
     // keep render loop going if Canvas is animatable
 
-    if ( !this._disposed && this._animate ) {
+    if ( !this._disposed && this._animate && !this._renderPending ) {
         this._renderPending = true;
         this._renderId = window.requestAnimationFrame( this._renderHandler );
     }

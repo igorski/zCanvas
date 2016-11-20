@@ -129,7 +129,7 @@
                     if ( actor instanceof Bullet )
                         disposeActor( actor ); // bullets are disposed after a hit
 
-                    if ( this.energy <= 0 || actor.energy <= 0 ) return; // ones of the Actor is already dead
+                    if ( this.energy <= 0 || actor.energy <= 0 ) return; // one of the Actors is already dead
 
                     this.energy -= (( typeof actor.damage === "number" ) ? actor.damage : 1 );
 
@@ -223,7 +223,7 @@
             // STEP 3 : INITIALIZING THE GAME ENVIRONMENT
             // ------------------------------------------
 
-            var player = new Ship( cvsWidth / 2, cvsHeight - 100, 10 );
+            var player = new Ship( cvsWidth / 2, cvsHeight - 100, 5 );
             var actors = []; // all actors currently in the game (this excludes the player!)
 
             // create some scenery clouds
@@ -235,6 +235,7 @@
                 bitmap: IMAGE_CLOUD
             });
             cloud.update = function( ctx ) {
+                // cloud moves slowly out of the screen and then resets it position to the top
                 if ( ++this._bounds.top > cvsHeight ) {
                     this._bounds.top = -this._bounds.height;
                     this._bounds.left = Math.random() * cvsWidth;
@@ -287,7 +288,7 @@
                         actorHeight = actorBounds.height;
 
                     // if Actor exceeds world bounds, remove it from the Actors list
-                    // note Bullets are also removed when they are out of the top vertical bounds
+                    // note: Bullets are also removed when they are out of the top vertical bounds
 
                     if (( actor instanceof Bullet && actorY < 0 ) ||
                           actorY > cvsHeight || actorX + actorWidth  < 0 || actorX > cvsWidth ) {
@@ -382,11 +383,11 @@
 
             function disposeActor( actor ) {
 
+                cvs.removeChild( actor ); // removes Actor from display list
+
                 var actorIndex = actors.indexOf( actor );
                 if ( actorIndex !== -1 )
                     actors.splice( actorIndex, 1 ); // remove Actor from active Actors list
-
-                cvs.removeChild( actor ); // removes Actor from display list
 
                 // return Actor to the pool so it can be reused
                 if ( actor instanceof Bullet ) {
@@ -436,8 +437,9 @@
 
             // keyboard control for desktop devices
 
+            var blockedCodes = [ 32, 38, 40, 37, 39 ]; // keycodes to block default behaviour of
+
             window.addEventListener( "keydown", function( e ) {
-                var blockDefault = false;
                 switch ( e.keyCode ) {
 
                     case 32: // spacebar
@@ -449,7 +451,6 @@
                             player.setVerticalThrust( 1 );
                             playerYmovement = true;
                         }
-                        blockDefault = true;
                         break;
 
                     case 40: // down
@@ -457,20 +458,18 @@
                             player.setVerticalThrust( 2 );
                             playerYmovement = true;
                         }
-                        blockDefault = true;
                         break;
 
                     case 37: // left
                         handleLeft();
-                        blockDefault = true;
                         break;
 
                     case 39: // right
                         handleRight();
-                        blockDefault = true;
                         break;
                 }
-                if ( blockDefault ) e.preventDefault(); // prevents page movement (if Canvas doesn't fit entirely)
+                if ( blockedCodes.indexOf( e.keyCode ) > -1 )
+                    e.preventDefault(); // prevents document panning (if Canvas doesn't fit entirely)
             });
 
             window.addEventListener( "keyup", function( e ) {
