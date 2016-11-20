@@ -6,6 +6,8 @@
     <title>canvas animated spritesheet example</title>
     <link rel="stylesheet" href="./assets/styles.css">
     <script type="text/javascript" src="./assets/images.js"></script>
+    <!-- requestAnimationFrame polyfill for IE9 -->
+    <script src="https://wzrd.in/standalone/raf@latest" type="text/javascript"></script>
     <!-- include RequireJS to resolve dependencies -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.1.14/require.min.js" type="text/javascript"></script>
 </head>
@@ -311,31 +313,30 @@
 
             // keyboard control for desktop devices
 
+            var blockedCodes = [ 32, 38, 40, 37, 39 ]; // keycodes to block default behaviour of
+
             window.addEventListener( "keydown", function( e ) {
-                var blockDefault = false;
                 switch ( e.keyCode ) {
 
                     // move up (jump)
                     case 38:
                         hero.jump();
-                        blockDefault = true;
                         break;
 
                     // move hero to the right
                     case 39:
                         if ( !hero.running )
                             hero.run( 1 );
-                        blockDefault = true;
                         break;
 
                     // move hero to the left
                     case 37:
                         if ( !hero.running )
                             hero.run( 0 );
-                        blockDefault = true;
                         break;
                 }
-                if ( blockDefault ) e.preventDefault(); // prevents page movement (if Canvas doesn't fit entirely)
+                if ( blockedCodes.indexOf( e.keyCode ) > -1 )
+                    e.preventDefault(); // prevents document panning (if Canvas doesn't fit entirely)
             });
 
             // add a listener for key up (release) so we can tell the hero to stop running

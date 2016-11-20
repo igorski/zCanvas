@@ -35,7 +35,7 @@ zCanvas has been written in ES6 and CommonJS users can enjoy this directly. zCan
 transpiles nicely back into ES5 and works in browsers from IE9 up. It has been tested and
 verified to work on:
 
- * Internet Explorer 9+
+ * Internet Explorer 9+ (note: requires polyfill for _requestAnimationFrame_)
  * Chrome for Windows, OS X and Linux
  * Apple Safari 6+ (including Mobile Safari)
  * Firefox 3.6+
