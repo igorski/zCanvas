@@ -48,7 +48,9 @@ module.exports = Sprite;
  *            bitmap: Image|HTMLCanvasElement|string,
  *            collidable: boolean,
  *            mask: boolean,
- *            sheet: Array.<{ row: number, col: number, amount: number, fpt: 5 }>
+ *            sheet: Array.<{ row: number, col: number, amount: number, fpt: 5 }>,
+ *            sheetTileWidth: number,
+ *            sheetTileHeight: number
  *
  *        }} x when numerical (legacy 7 argument constructor) the x-coordinate of this Sprite,
  *        when Object it should contain required properties width and height, with others optional
@@ -56,6 +58,7 @@ module.exports = Sprite;
  *        collidable and mask below)
  *
  *        "sheet" describes a list of separate animations inside given "bitmap"
+ *        "sheetTileWidth" and "sheetTileHeight" can specify dimensions for a single sheet tile
  *
  *        When object, no further arguments will be
  *        processed by this constructor.
@@ -245,7 +248,7 @@ function Sprite( x, y, width, height, bitmap, collidable, mask ) {
         if ( !opts.bitmap )
             throw new Error( "cannot use a spritesheet without a valid Bitmap" );
 
-        this.setSheet( opts.sheet );
+        this.setSheet( opts.sheet, opts.sheetTileWidth, opts.sheetTileHeight );
     }
 }
 
@@ -606,9 +609,9 @@ Sprite.prototype.draw = function( aCanvasContext ) {
 
             aCanvasContext.drawImage(
                 this._bitmap,
-                ( .5 + bounds.left ) << 0,
-                ( .5 + bounds.top ) << 0,
-                ( .5 + bounds.width ) << 0,
+                ( .5 + bounds.left )   << 0,
+                ( .5 + bounds.top )    << 0,
+                ( .5 + bounds.width )  << 0,
                 ( .5 + bounds.height ) << 0
             );
         }
@@ -618,10 +621,10 @@ Sprite.prototype.draw = function( aCanvasContext ) {
 
             aCanvasContext.drawImage(
                 this._bitmap,
-                ( .5 + aniProps.col      * bounds.width ) << 0,  // tile x offset
-                ( .5 + aniProps.type.row * bounds.height ) << 0, // tile y offset
-                ( .5 + bounds.width ) << 0,                      // tile width
-                ( .5 + bounds.height ) << 0,                     // tile height
+                aniProps.col      * aniProps.tileWidth,  // tile x offset
+                aniProps.type.row * aniProps.tileHeight, // tile y offset
+                aniProps.tileWidth,                      // tile width
+                aniProps.tileHeight,                     // tile height
                 ( .5 + bounds.left )   << 0,
                 ( .5 + bounds.top )    << 0,
                 ( .5 + bounds.width )  << 0,
@@ -844,8 +847,10 @@ Sprite.prototype.setBitmap = function( aImage, aOptWidth, aOptHeight ) {
  *
  * @public
  * @param {Array.<{ row: number, col: number, amount: number, fpt: 5, onComplete: Function= }>} sheet
+ * @param {number=} width optional width to use for a single tile, defaults to Sprite bounds width
+ * @param {number=} height optional height to use for a single tile, defaults to Sprite bounds height
  */
-Sprite.prototype.setSheet = function( sheet ) {
+Sprite.prototype.setSheet = function( sheet, width, height ) {
     /**
      * @protected
      * @type {Array.<{ row: number, col: number, amount: number, fpt: 5, onComplete: Function= }>}
@@ -857,11 +862,13 @@ Sprite.prototype.setSheet = function( sheet ) {
      * @type {Object}
      */
     this._animation = {
-        type    : null,
-        col     : 0,  // which horizontal tile in the sprite sheet is current
-        maxCol  : 0,  // the maximum horizontal index that is allowed before the animation should loop
-        fpt     : 0,  // "frames per tile" what is the max number of count before we switch tile
-        counter : 0   // the frame counter that is increased on each frame render
+        type       : null,
+        col        : 0,  // which horizontal tile in the sprite sheet is current
+        maxCol     : 0,  // the maximum horizontal index that is allowed before the animation should loop
+        fpt        : 0,  // "frames per tile" what is the max number of count before we switch tile
+        counter    : 0,  // the frame counter that is increased on each frame render
+        tileWidth  : ( typeof width  === "number" ) ? width  : this._bounds.width,
+        tileHeight : ( typeof height === "number" ) ? height : this._bounds.height
     };
     this.switchAnimation( 0 ); // by default select first animation from list
 };

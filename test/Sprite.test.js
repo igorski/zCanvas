@@ -879,6 +879,39 @@ describe( "zCanvas.sprite", () => {
             "expected column to have jumped back to the first index after having played all tile frames" );
     });
 
+    it( "should by default use the Sprite bounds for defining spritesheet dimensions", () => {
+
+        const sheet = [
+            { row: 0, col: 0, amount: 5, fpt: 5 }
+        ];
+        const sprite = new Sprite({ width: width, height: height, bitmap: imgSource, sheet: sheet });
+
+        assert.strictEqual( width, sprite._animation.tileWidth,
+            "expected animation tile width to equal size specified in Sprite bounds" );
+
+        assert.strictEqual( height, sprite._animation.tileHeight,
+            "expected animation tile height to equal size specified in Sprite bounds" );
+    });
+
+    it( "should accept alternate dimensions for the spritesheet tiles", () => {
+
+        const sheet = [
+            { row: 0, col: 0, amount: 5, fpt: 5 }
+        ];
+        const tileWidth  = Math.round( Math.random() * 100 );
+        const tileHeight = Math.round( Math.random() * 100 );
+        const sprite = new Sprite({
+            width: width, height: height, bitmap: imgSource,
+            sheet: sheet, sheetTileWidth: tileWidth, sheetTileHeight: tileHeight
+        });
+
+        assert.strictEqual( tileWidth, sprite._animation.tileWidth,
+            "expected animation tile width to equal size specified in constructor" );
+
+        assert.strictEqual( tileHeight, sprite._animation.tileHeight,
+            "expected animation tile height to equal size specified in constructor" );
+    });
+
     it( "should fire an animation callback if a sheet animation has completed", ( done ) => {
 
         const sheet = [
