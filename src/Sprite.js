@@ -619,12 +619,14 @@ Sprite.prototype.draw = function( aCanvasContext ) {
 
             // spritesheet defined, draw tile
 
+            const width  = ( aniProps.tileWidth )  ? aniProps.tileWidth  : ( .5 + bounds.width )  << 0;
+            const height = ( aniProps.tileHeight ) ? aniProps.tileHeight : ( .5 + bounds.height ) << 0;
+
             aCanvasContext.drawImage(
                 this._bitmap,
-                aniProps.col      * aniProps.tileWidth,  // tile x offset
-                aniProps.type.row * aniProps.tileHeight, // tile y offset
-                aniProps.tileWidth,                      // tile width
-                aniProps.tileHeight,                     // tile height
+                aniProps.col      * width,  // tile x offset
+                aniProps.type.row * height, // tile y offset
+                width, height,
                 ( .5 + bounds.left )   << 0,
                 ( .5 + bounds.top )    << 0,
                 ( .5 + bounds.width )  << 0,
@@ -857,19 +859,29 @@ Sprite.prototype.setSheet = function( sheet, width, height ) {
      */
     this._sheet = sheet;
 
+    if ( !sheet ) {
+        this._animation = null;
+        return;
+    }
+
     /**
      * @protected
      * @type {Object}
      */
     this._animation = {
         type       : null,
-        col        : 0,  // which horizontal tile in the sprite sheet is current
-        maxCol     : 0,  // the maximum horizontal index that is allowed before the animation should loop
-        fpt        : 0,  // "frames per tile" what is the max number of count before we switch tile
-        counter    : 0,  // the frame counter that is increased on each frame render
-        tileWidth  : ( typeof width  === "number" ) ? width  : this._bounds.width,
-        tileHeight : ( typeof height === "number" ) ? height : this._bounds.height
+        col        : 0, // which horizontal tile in the sprite sheet is current
+        maxCol     : 0, // the maximum horizontal index that is allowed before the animation should loop
+        fpt        : 0, // "frames per tile" what is the max number of count before we switch tile
+        counter    : 0  // the frame counter that is increased on each frame render
     };
+
+    if ( typeof width  === "number" )
+        this._animation.tileWidth = width;
+
+    if ( typeof height === "number" )
+        this._animation.tileHeight = height;
+
     this.switchAnimation( 0 ); // by default select first animation from list
 };
 
