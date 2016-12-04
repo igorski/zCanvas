@@ -39,6 +39,7 @@ module.exports = Canvas;
  *            height: number,
  *            animate: boolean,
  *            smoothing: boolean,
+ *            stretchToFit: boolean,
  *            fps: number,
  *            onUpdate: Function,
  *            debug: boolean
@@ -46,6 +47,8 @@ module.exports = Canvas;
  *        when Object it should contain required properties width and height, with others optional
  *        (see description on the default values for animate and framerate below)
  *        "smoothing" specifies whether or not to use smoothing (default, better for photos) or not (better for pixel art)
+ *        "stretchToFit" specifies whether or not to stretch the canvas to fit the window dimensions (defaults to false)
+ *                     note that the width is taken as the dominant factor, the height scales relative to the window ratio
  *        "onUpdate" callback method to execute when the canvas is about to render. This can be used to synchronize
  *            a game's model from a single spot (instead of having each sprite's update()-method fire)
  *        "debug" specifies whether or not all sprites should render their bounding box for debugging purposes
@@ -99,6 +102,7 @@ function Canvas( width, height, animate, framerate ) {
     /** @protected @type {number} */   this._renderInterval = 1000 / this._fps;
     /** @protected @type {boolean} */  this._animate = ( typeof opts.animate === "boolean" ) ? opts.animate : false;
     /** @protected @type {boolean} */  this._smoothing = true;
+    /** @protected @type {boolean} */  this._stretchToFit = ( typeof opts.stretchToFit === "boolean" ) ? opts.stretchToFit : false;
     /** @protected @type {Function} */ this._updateHandler = ( typeof opts.onUpdate === "function" ) ? opts.onUpdate : null;
     /** @protected type {Function} */  this._renderHandler  = this.render.bind( this );
     /** @protected @type {number} */   this._lastRender = 0;
@@ -143,9 +147,11 @@ function Canvas( width, height, animate, framerate ) {
     this.preventEventBubbling( false );
     this.addListeners();
 
-    if ( this._animate ) {
+    if ( this._stretchToFit )
+        this.stretchToFit( true );
+
+    if ( this._animate )
         this.render();  // start render loop
-    }
 }
 
 /**
@@ -390,7 +396,7 @@ Canvas.prototype.getRenderInterval = function() {
 Canvas.prototype.setSmoothing = function( aValue ) {
 
     const props = [ "imageSmoothingEnabled",  "mozImageSmoothingEnabled",
-                  "oImageSmoothingEnabled", "webkitImageSmoothingEnabled" ];
+                    "oImageSmoothingEnabled", "webkitImageSmoothingEnabled" ];
 
     const ctx = this._canvasContext;
 
@@ -432,14 +438,21 @@ Canvas.prototype.getHeight = function() {
  *
  * @param {number} aWidth
  * @param {number} aHeight
+ * @param {boolean=} setAsPreferredDimensions optional, defaults to true, stretchToFit handler
+ *        overrides this to ensure returning to correct dimensions when disabling stretchToFit
  */
-Canvas.prototype.setDimensions = function( aWidth, aHeight ) {
+Canvas.prototype.setDimensions = function( aWidth, aHeight, setAsPreferredDimensions ) {
 
     // apply scale factor for HDPI screens
     const scaleFactor = this._HDPIscaleRatio;
 
     /** @protected @type {number} */ this._width  = aWidth;
     /** @protected @type {number} */ this._height = aHeight;
+
+    if ( setAsPreferredDimensions !== false ) {
+        /** @protected @type {number} */ this._preferredWidth  = aWidth;
+        /** @protected @type {number} */ this._preferredHeight = aHeight;
+    }
 
     this._element.width  = aWidth  * scaleFactor;
     this._element.height = aHeight * scaleFactor;
@@ -492,6 +505,43 @@ Canvas.prototype.setAnimatable = function( value ) {
  */
 Canvas.prototype.isAnimatable = function() {
     return this._animate;
+};
+
+
+/**
+ * stretches the Canvas to fit the window
+ *
+ * @public
+ * @param {boolean=} value
+ */
+Canvas.prototype.stretchToFit = function( value ) {
+
+    const idealWidth   = this._preferredWidth;
+    const windowWidth  = document.documentElement.clientWidth;
+    const windowHeight = document.documentElement.clientHeight;
+    const scaledHeight = ( value === true ) ? Math.round(( windowHeight / windowWidth ) * idealWidth ) : this._preferredHeight;
+
+    this.setDimensions( idealWidth, scaledHeight, false );
+
+    // scale canvas element up/down accordingly using CSS
+
+    const xScale = windowWidth  / idealWidth;
+    const yScale = windowHeight / scaledHeight;
+    const canvasElement = this.getElement();
+
+    let transform = "scale(" + xScale + ", " + yScale + ")";
+
+    canvasElement.style[ "-webkit-transform-origin" ] =
+    canvasElement.style[ "transform-origin" ]         = "0 0";
+
+    if ( value === true ) {
+        canvasElement.style[ "-webkit-transform" ] =
+                canvasElement.style[ "transform" ] = "scale(" + xScale + ", " + yScale + ")";
+    }
+    else {
+        canvasElement.style[ "-webkit-transform" ] =
+                canvasElement.style[ "transform" ] = "";
+    }
 };
 
 /**
@@ -679,6 +729,13 @@ Canvas.prototype.addListeners = function() {
         this._eventHandler.addEventListener( this._element, "mousedown", theListener );
         this._eventHandler.addEventListener( this._element, "mousemove", theListener );
         this._eventHandler.addEventListener( window,        "mouseup",   theListener );   // yes, window!
+    }
+
+    if ( this._stretchToFit ) {
+        const resizeEvent = "onorientationchange" in window ? "orientationchange" : "resize";
+        this._eventHandler.addEventListener( window, resizeEvent, function() {
+            this.stretchToFit( true );
+        }.bind( this ));
     }
 };
 
