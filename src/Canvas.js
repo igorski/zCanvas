@@ -549,8 +549,8 @@ Canvas.prototype.drawImage = function( aSource, destX, destY, destWidth, destHei
         destWidth  = Math.min( this._canvasContext.canvas.width,  destWidth );
         destHeight = Math.min( this._canvasContext.canvas.height, destHeight );
 
-        var xScale = destWidth  / aOptSourceWidth;
-        var yScale = destHeight / aOptSourceHeight;
+        const xScale = destWidth  / aOptSourceWidth;
+        const yScale = destHeight / aOptSourceHeight;
 
         // when clipping the source region should remain within the image dimensions
 
