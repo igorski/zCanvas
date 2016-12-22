@@ -507,6 +507,74 @@ Canvas.prototype.isAnimatable = function() {
     return this._animate;
 };
 
+/**
+ * safe method to draw Image data onto canvas while sanitizing the destination values to
+ * overcome IndexSizeErrors and other nastiness
+ *
+ * @public
+ *
+ * @param {Image} aSource HTMLImageElement to draw
+ * @param {number} destX destination x-coordinate of given image
+ * @param {number} destY destination y-coordinate of given image
+ * @param {number} destWidth destination width of given image
+ * @param {number} destHeight destination width of given image
+ * @param {number=} aOptSourceX optional, whether to use an alternative x-coordinate for the source rectangle
+ * @param {number=} aOptSourceY optional, whether to use an alternative y-coordinate for the source rectangle
+ * @param {number=} aOptSourceWidth optional, whether to use an alternative width for the source rectangle
+ * @param {number=} aOptSourceHeight optional, whether to use an alternative height for the source rectangle
+ */
+Canvas.prototype.drawImage = function( aSource, destX, destY, destWidth, destHeight,
+    aOptSourceX, aOptSourceY, aOptSourceWidth, aOptSourceHeight ) {
+
+    // we add .5 to have a pixel perfect outline
+    // << 0 is a fast bitwise rounding operation (Firefox does not like fractions and we like speed ;)
+
+    destX      = ( .5 + destX ) << 0;
+    destY      = ( .5 + destY ) << 0;
+    destWidth  = ( .5 + destWidth )  << 0;
+    destHeight = ( .5 + destHeight ) << 0;
+
+    // INDEX_SIZE_ERR is thrown when target dimensions are zero or negative
+    // nothing worthwhile to render in that case, do nothing please.
+
+    if ( destWidth <= 0 || destHeight <= 0 ) {
+        return;
+    }
+
+    // use 9-arity draw method if source rectangle is defined
+
+    if ( typeof aOptSourceX === "number" ) {
+
+        // clipping rectangle doesn't have to exceed <canvas> dimensions
+        destWidth  = Math.min( this._canvasContext.canvas.width,  destWidth );
+        destHeight = Math.min( this._canvasContext.canvas.height, destHeight );
+
+        var xScale = destWidth  / aOptSourceWidth;
+        var yScale = destHeight / aOptSourceHeight;
+
+        // when clipping the source region should remain within the image dimensions
+
+        if ( aOptSourceX + aOptSourceWidth > aSource.width ) {
+            destWidth       -= xScale * (aOptSourceX + aOptSourceWidth - aSource.width);
+            aOptSourceWidth -= (aOptSourceX + aOptSourceWidth - aSource.width);
+        }
+        if ( aOptSourceY + aOptSourceHeight > aSource.height ) {
+            destHeight       -= yScale * (aOptSourceY + aOptSourceHeight - aSource.height);
+            aOptSourceHeight -= (aOptSourceY + aOptSourceHeight - aSource.height);
+        }
+
+        this._canvasContext.drawImage(
+            aSource,
+            // no rounding required here as these are integer values
+            aOptSourceX, aOptSourceY, aOptSourceWidth, aOptSourceHeight,
+            // but we do round the target coordinates
+            destX, destY, destWidth, destHeight
+        );
+    }
+    else {
+        this._canvasContext.drawImage( aSource, destX, destY, destWidth, destHeight );
+    }
+};
 
 /**
  * stretches the Canvas to fit the window

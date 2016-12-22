@@ -699,10 +699,10 @@ Sprite.prototype.getIntersection = function( aSprite ) {
 
         const self = this._bounds, compare = aSprite.getBounds();
 
-        let x = Math.max( self.left, compare.left );
-        let y = Math.max( self.top,  compare.top );
-        let w = Math.min( self.left + self.width,  compare.width + compare.height ) - x;
-        let h = Math.min( self.top  + self.height, compare.top   + compare.height ) - y;
+        const x = Math.max( self.left, compare.left );
+        const y = Math.max( self.top,  compare.top );
+        const w = Math.min( self.left + self.width,  compare.width + compare.height ) - x;
+        const h = Math.min( self.top  + self.height, compare.top   + compare.height ) - y;
 
         return { left: x, top: y, width: w, height: h };
     }
@@ -935,12 +935,6 @@ Sprite.prototype.getParent = function() {
 Sprite.prototype.setCanvas = function( aCanvas ) {
 
     this.canvas = aCanvas;
-    /*
-    // no constraint specified ? use stage bounds
-
-    if ( !this._constraint && aCanvas )
-        this.setConstraint( 0, 0, aCanvas.getWidth(), aCanvas.getHeight() );
-    */
 };
 
 /**
