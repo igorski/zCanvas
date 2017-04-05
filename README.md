@@ -55,9 +55,9 @@ the excellent TweenMax by Greensock to alter the visible properties of your spri
 
 ## Installation
 
-You can get canvas via NPM:
+You can get zcanvas via NPM:
 
-    npm install canvas
+    npm install zcanvas
     
 ## Project Integration
 
