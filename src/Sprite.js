@@ -1,7 +1,7 @@
 /**
  * The MIT License (MIT)
  *
- * Copyright (c) 2010-2016 Igor Zinken / igorski
+ * Copyright (c) 2010-2017 Igor Zinken / igorski
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of
  * this software and associated documentation files (the "Software"), to deal in
@@ -993,6 +993,9 @@ Sprite.prototype.getConstraint = function() {
  * @return {Sprite} this object - for chaining purposes
  */
 Sprite.prototype.addChild = function( aChild ) {
+
+    if ( this.contains( aChild ))
+        return this;
 
     // create a linked list
     const numChildren = this._children.length;

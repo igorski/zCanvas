@@ -233,6 +233,24 @@ describe( "zCanvas.canvas", () => {
             "expected removed child to equal the expected child" );
     });
 
+    it("should not append the same child twice", () => {
+        const canvas = new Canvas({ width: 10, height: 10 });
+        const sprite = new Sprite({ width: 10, height: 10 });
+
+        assert.strictEqual( 0, canvas.numChildren(),
+            "expected no children in the childs display list" );
+
+        canvas.addChild( sprite );
+
+        assert.strictEqual( 1, canvas.numChildren(),
+            "expected 1 child in the childs display list" );
+
+        canvas.addChild( sprite );
+
+        assert.strictEqual( 1, canvas.numChildren(),
+            "expected 1 child in the childs display list" );
+    });
+
     it( "should be able to maintain the linked list of its children", () => {
 
         const canvas  = new Canvas({ width: width, height: height });

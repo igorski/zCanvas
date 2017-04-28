@@ -513,6 +513,7 @@ describe( "zCanvas.sprite", () => {
         assert.isNull( child.getParent(),
             "expected Sprite not have a parent after removal from display list" );
     });
+
     /*
     it( "should by default set its constraints to the Canvas bounds", () => {
 
@@ -689,6 +690,24 @@ describe( "zCanvas.sprite", () => {
 
         assert.ok( removed, child2,
             "expected removed child to equal the expected child" );
+    });
+
+    it("should not append the same child twice", () => {
+        const sprite = new Sprite({ width: 10, height: 10 });
+        const child  = new Sprite({ width: 10, height: 10 });
+
+        assert.strictEqual( 0, sprite.numChildren(),
+            "expected no children in the childs display list" );
+
+        sprite.addChild( child );
+
+        assert.strictEqual( 1, sprite.numChildren(),
+            "expected 1 child in the childs display list" );
+
+        sprite.addChild( child );
+
+        assert.strictEqual( 1, sprite.numChildren(),
+            "expected 1 child in the childs display list" );
     });
 
     it( "should be able to maintain the linked list of its child sprites", () => {

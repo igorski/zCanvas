@@ -229,6 +229,9 @@ Canvas.prototype.preventEventBubbling = function( value ) {
  */
 Canvas.prototype.addChild = function( aChild ) {
 
+    if ( this.contains( aChild ))
+        return this;
+
     // create a linked list
     const numChildren = this._children.length;
 
