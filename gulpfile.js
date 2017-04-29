@@ -21,7 +21,14 @@ gulp.task("build", ( complete ) => {
 
     // builds both for AMD/RequireJS and globally scoped lib
 
-    runSeq( "clean", [ "amd", "browser" ], complete );
+    runSeq( "clean", [ "commonjs", "amd", "browser" ], complete );
+});
+
+gulp.task("commonjs", ["copy-commonjs-src"], () => {
+
+    return gulp.src([ SRC_FOLDER + "/**/*.js", TEMP_FOLDER + "/zcanvas.es5.js" ])
+        .pipe( babel({ presets: "es2015" }))
+        .pipe( gulp.dest( OUTPUT_FOLDER + "/es5" ));
 });
 
 gulp.task("amd", ["transpile-amd"], () => {
@@ -59,6 +66,16 @@ gulp.task("clean", () => {
 gulp.task("copy-amd-src", [], () => {
 
     return gulp.src([ SRC_FOLDER + "/**/*.js", "export/zcanvas.amd.js" ])
+        .pipe( gulp.dest( TEMP_FOLDER ));
+});
+
+/**
+ * copy the wrapper file that acts as the entry
+ * point for direct ES5 CommonJS usage
+ */
+gulp.task("copy-commonjs-src", [], () => {
+
+    return gulp.src([ "export/zcanvas.es5.js" ])
         .pipe( gulp.dest( TEMP_FOLDER ));
 });
 

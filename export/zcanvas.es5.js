@@ -1,6 +1,6 @@
 /**
  * a wrapper that exports the CommonJS pattern
- * of the source code to be available in the global document
+ * of the source code for use in ES5-CommonJS projects
  *
  * NOTE: the requires here are relative to the "src"-folder
  */
@@ -11,13 +11,10 @@ const Canvas    = require( "./Canvas"),
       Loader    = require( "./Loader"),
       Collision = require( "./Collision" );
 
-(function( scope ) {
+module.exports = {
 
-    scope.canvas = {
-        canvas:    Canvas,
-        sprite:    Sprite,
-        loader:    Loader,
-        collision: Collision
-    };
-
-})( self );
+   canvas:    Canvas,
+   sprite:    Sprite,
+   loader:    Loader,
+   collision: Collision
+};

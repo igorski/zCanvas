@@ -1,14 +1,15 @@
 {
   "name": "zcanvas",
   "homepage": "http://www.igorski.nl/",
-  "version": "3.0.6",
+  "version": "3.0.7",
   "license": "MIT",
   "author": {
     "name": "Igor Zinken",
     "url": "http://github.com/igorski/"
   },
   "directories": {},
-  "main": "zcanvas.js",
+  "main": "dist/es5/zcanvas.es5.js",
+  "jsnext:main": "zcanvas.js",
   "bugs": {
     "url": "https://github.com/igorski/canvas/issues/"
   },
@@ -58,7 +59,8 @@
     "vinyl-source-stream": "^1.1.0"
   },
   "scripts": {
-    "test": "mocha test"
+    "test": "mocha test",
+    "prepublish": "gulp build"
   },
   "preferGlobal": false,
   "engines": {
