@@ -31,7 +31,7 @@ const EventHandler = require( "./utils/EventHandler" );
  *
  * @type {Object}
  */
-module.exports = {
+const Loader = module.exports = {
 
     /**
      * Load the image contents described in aSource and fire a callback when the
@@ -80,7 +80,7 @@ module.exports = {
 
         const loadHandler = () => {
             handler.dispose();
-            onReady( out, () => aCallback( wrapOutput( out )) );
+            Loader.onReady( out, () => aCallback( wrapOutput( out )) );
         };
 
         // no load handler required for base64 data, it is immediately ready
@@ -110,6 +110,61 @@ module.exports = {
 
         if ( isDataURL )
             aCallback( wrapOutput( out )); // as stated above, invoke callback immediately for data strings
+    },
+
+    /**
+     * a quick query to check whether the Image is ready for rendering
+     *
+     * @public
+     * @param {Image} aImage
+     * @return {boolean}
+     */
+    isReady( aImage ) {
+
+        // first check : load status
+        if ( typeof aImage.complete === "boolean" && !aImage.complete )
+            return false;
+
+        // second check : validity of source (can be 0 until bitmap has been fully parsed by browser)
+        return !( typeof aImage.naturalWidth !== "undefined" && aImage.naturalWidth === 0 );
+    },
+
+    /**
+     * Executes given callback when given Image is actually ready for rendering
+     * If the image was ready when this function was called, execution is synchronous
+     * if not it will be made asynchronous via RAF delegation
+     *
+     * @public
+     * @param {Image} aImage
+     * @param {!Function} aCallback
+     * @param {!Function=} aErrorCallback optional callback to fire if Image is never ready
+     */
+    onReady( aImage, aCallback, aErrorCallback ) {
+
+        // if this didn't resolve in a full second, we presume the Image is corrupt
+
+        const MAX_ITERATIONS = 60;
+        let iterations = 0;
+
+        function readyCheck() {
+
+            if ( isReady( aImage )) {
+                aCallback();
+            }
+            else if ( ++iterations === MAX_ITERATIONS ) {
+
+                if ( typeof aErrorCallback === "function" )
+                    aErrorCallback();
+
+                console.warn( "Image could not be resolved. This shouldn't occur." );
+            }
+            else {
+                // requestAnimationFrame preferred over a timeout as
+                // browsers will fire this when the DOM is actually ready (e.g. Image is rendered)
+                window.requestAnimationFrame( readyCheck );
+            }
+        }
+        readyCheck();
     }
 
 };
@@ -128,62 +183,6 @@ function applyOrigin( aImageURL, aImage ) {
 
     if ( !isLocalURL( aImageURL ))
         aImage.crossOrigin = "Anonymous";
-}
-
-/**
- * a quick query to check whether the Image is ready for rendering
- *
- * @private
- * @param {Image} aImage
- * @return {boolean}
- */
-function isReady( aImage ) {
-
-    // first check : load status
-    if ( typeof aImage.complete === "boolean" && !aImage.complete )
-        return false;
-
-    // second check : validity of source (can be 0 until bitmap has been fully parsed by browser)
-    return !( typeof aImage.naturalWidth !== "undefined" && aImage.naturalWidth === 0 );
-}
-
-/**
- * XE-10117 All easy.Image operations are synchronous, except on Safari
- * where occasionally the Image is not actually ready while it should be
- * If the image was ready when this function was called, execution is synchronous
- * if not it will be made asynchronous via RAF delegation
- *
- * @private
- * @param {Image} aImage
- * @param {!Function} aCallback
- * @param {!Function=} aErrorCallback optional callback to fire if Image is never ready
- */
-function onReady( aImage, aCallback, aErrorCallback ) {
-
-    // if this didn't resolve in a full second, we presume the Image is corrupt
-
-    const MAX_ITERATIONS = 60;
-    let iterations = 0;
-
-    function readyCheck() {
-
-        if ( isReady( aImage )) {
-            aCallback();
-        }
-        else if ( ++iterations === MAX_ITERATIONS ) {
-
-            if ( typeof aErrorCallback === "function" )
-                aErrorCallback();
-
-            console.warn( "Image could not be resolved. This shouldn't occur." );
-        }
-        else {
-            // requestAnimationFrame preferred over a timeout as
-            // browsers will fire this when the DOM is actually ready (e.g. Image is rendered)
-            window.requestAnimationFrame( readyCheck );
-        }
-    }
-    readyCheck();
 }
 
 /**
