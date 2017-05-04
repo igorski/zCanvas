@@ -62,7 +62,7 @@ const Loader = module.exports = {
 
         // if we were supplied with a ready Image, don't load anything
 
-        if ( aOptImage instanceof window.Image && isReady( aOptImage )) {
+        if ( aOptImage instanceof window.Image && Loader.isReady( aOptImage )) {
 
             aCallback( wrapOutput( aOptImage ));
             return;
@@ -148,7 +148,7 @@ const Loader = module.exports = {
 
         function readyCheck() {
 
-            if ( isReady( aImage )) {
+            if ( Loader.isReady( aImage )) {
                 aCallback();
             }
             else if ( ++iterations === MAX_ITERATIONS ) {
