@@ -588,26 +588,38 @@ Canvas.prototype.drawImage = function( aSource, destX, destY, destWidth, destHei
 Canvas.prototype.stretchToFit = function( value ) {
 
     const idealWidth   = this._preferredWidth;
+    const idealHeight  = this._preferredHeight;
     const windowWidth  = document.documentElement.clientWidth;
     const windowHeight = document.documentElement.clientHeight;
-    const scaledHeight = ( value === true ) ? Math.round(( windowHeight / windowWidth ) * idealWidth ) : this._preferredHeight;
 
-    this.setDimensions( idealWidth, scaledHeight, false );
+    let xScale, yScale;
+
+    if ( windowHeight > windowWidth ) {
+        // available height is larger than the width
+        const scaledHeight = ( value === true ) ? Math.round( windowHeight / windowWidth * idealWidth ) : idealHeight;
+        this.setDimensions( idealWidth, scaledHeight, false );
+        xScale = windowWidth  / idealWidth;
+        yScale = windowHeight / scaledHeight;
+    }
+    else {
+        // available width is large than the height
+        const scaledWidth = ( value === true ) ? Math.round( windowWidth / windowHeight * idealHeight ) : idealWidth;
+        this.setDimensions( scaledWidth, idealHeight, false );
+        xScale = windowWidth  / scaledWidth;
+        yScale = windowHeight / idealHeight;
+    }
 
     // scale canvas element up/down accordingly using CSS
 
-    const xScale = windowWidth  / idealWidth;
-    const yScale = windowHeight / scaledHeight;
     const canvasElement = this.getElement();
-
-    let transform = "scale(" + xScale + ", " + yScale + ")";
+    const transform     = `scale(${xScale}, ${yScale})`;
 
     canvasElement.style[ "-webkit-transform-origin" ] =
-    canvasElement.style[ "transform-origin" ]         = "0 0";
+            canvasElement.style[ "transform-origin" ] = "0 0";
 
     if ( value === true ) {
         canvasElement.style[ "-webkit-transform" ] =
-                canvasElement.style[ "transform" ] = "scale(" + xScale + ", " + yScale + ")";
+                canvasElement.style[ "transform" ] = transform;
     }
     else {
         canvasElement.style[ "-webkit-transform" ] =
