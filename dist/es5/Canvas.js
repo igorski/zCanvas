@@ -1,7 +1,7 @@
 /**
  * The MIT License (MIT)
  *
- * Copyright (c) 2010-2016 Igor Zinken / igorski
+ * Copyright (c) 2010-2017 Igor Zinken / igorski
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of
  * this software and associated documentation files (the "Software"), to deal in
@@ -25,6 +25,7 @@
 var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function (obj) { return typeof obj; } : function (obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; };
 
 var EventHandler = require("./utils/EventHandler");
+var Environment = require("./utils/Environment");
 var OOP = require("./utils/OOP");
 
 module.exports = Canvas;
@@ -568,24 +569,36 @@ Canvas.prototype.drawImage = function (aSource, destX, destY, destWidth, destHei
 Canvas.prototype.stretchToFit = function (value) {
 
     var idealWidth = this._preferredWidth;
+    var idealHeight = this._preferredHeight;
     var windowWidth = document.documentElement.clientWidth;
     var windowHeight = document.documentElement.clientHeight;
-    var scaledHeight = value === true ? Math.round(windowHeight / windowWidth * idealWidth) : this._preferredHeight;
 
-    this.setDimensions(idealWidth, scaledHeight, false);
+    var xScale = void 0,
+        yScale = void 0;
+
+    if (windowHeight > windowWidth) {
+        // available height is larger than the width
+        var scaledHeight = value === true ? Math.round(windowHeight / windowWidth * idealWidth) : idealHeight;
+        this.setDimensions(idealWidth, scaledHeight, false);
+        xScale = windowWidth / idealWidth;
+        yScale = windowHeight / scaledHeight;
+    } else {
+        // available width is large than the height
+        var scaledWidth = value === true ? Math.round(windowWidth / windowHeight * idealHeight) : idealWidth;
+        this.setDimensions(scaledWidth, idealHeight, false);
+        xScale = windowWidth / scaledWidth;
+        yScale = windowHeight / idealHeight;
+    }
 
     // scale canvas element up/down accordingly using CSS
 
-    var xScale = windowWidth / idealWidth;
-    var yScale = windowHeight / scaledHeight;
     var canvasElement = this.getElement();
-
     var transform = "scale(" + xScale + ", " + yScale + ")";
 
     canvasElement.style["-webkit-transform-origin"] = canvasElement.style["transform-origin"] = "0 0";
 
     if (value === true) {
-        canvasElement.style["-webkit-transform"] = canvasElement.style["transform"] = "scale(" + xScale + ", " + yScale + ")";
+        canvasElement.style["-webkit-transform"] = canvasElement.style["transform"] = transform;
     } else {
         canvasElement.style["-webkit-transform"] = canvasElement.style["transform"] = "";
     }
@@ -751,6 +764,7 @@ Canvas.prototype.render = function () {
  * @protected
  */
 Canvas.prototype.addListeners = function () {
+    var _this = this;
 
     if (!this._eventHandler) {
 
@@ -765,22 +779,37 @@ Canvas.prototype.addListeners = function () {
 
     // use touch events ?
 
-    if (!!("ontouchstart" in window)) {
+    if (Environment.hasTouchEvents()) {
         this._eventHandler.addEventListener(this._element, "touchstart", theListener);
         this._eventHandler.addEventListener(this._element, "touchmove", theListener);
         this._eventHandler.addEventListener(this._element, "touchend", theListener);
-    } else {
-        // nope, use mouse events
+    }
+
+    if (!Environment.isMobile()) {
         this._eventHandler.addEventListener(this._element, "mousedown", theListener);
         this._eventHandler.addEventListener(this._element, "mousemove", theListener);
         this._eventHandler.addEventListener(window, "mouseup", theListener); // yes, window!
     }
 
     if (this._stretchToFit) {
-        var resizeEvent = "onorientationchange" in window ? "orientationchange" : "resize";
-        this._eventHandler.addEventListener(window, resizeEvent, function () {
-            this.stretchToFit(true);
-        }.bind(this));
+        (function () {
+            var self = _this;
+            var mm = window.msMatchMedia || window.MozMatchMedia || window.WebkitMatchMedia || window.matchMedia;
+
+            // on mobile/tablet devices we rely on matchMedia for more accurate orientation change detection
+
+            if (Environment.isMobile() && typeof mm !== "undefined") {
+                window.matchMedia('(orientation: portrait)').addListener(function () {
+                    return self.stretchToFit(true);
+                });
+            } else {
+                // for everything else, onorientationchange should help on most mobile devices bar old Androids...
+                var resizeEvent = "onorientationchange" in window ? "orientationchange" : "resize";
+                _this._eventHandler.addEventListener(window, resizeEvent, function (e) {
+                    return self.stretchToFit(true);
+                });
+            }
+        })();
     }
 };
 

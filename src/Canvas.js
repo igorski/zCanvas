@@ -1,7 +1,7 @@
 /**
  * The MIT License (MIT)
  *
- * Copyright (c) 2010-2016 Igor Zinken / igorski
+ * Copyright (c) 2010-2017 Igor Zinken / igorski
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of
  * this software and associated documentation files (the "Software"), to deal in
@@ -23,6 +23,7 @@
 "use strict";
 
 const EventHandler = require( "./utils/EventHandler" );
+const Environment  = require( "./utils/Environment" );
 const OOP          = require( "./utils/OOP" );
 
 module.exports = Canvas;
@@ -801,24 +802,32 @@ Canvas.prototype.addListeners = function() {
 
     // use touch events ?
 
-    if ( !!( "ontouchstart" in window ))
-    {
+    if ( Environment.hasTouchEvents() ) {
         this._eventHandler.addEventListener( this._element, "touchstart", theListener );
         this._eventHandler.addEventListener( this._element, "touchmove",  theListener );
         this._eventHandler.addEventListener( this._element, "touchend",   theListener );
     }
-    else {
-        // nope, use mouse events
+
+    if ( !Environment.isMobile() ) {
         this._eventHandler.addEventListener( this._element, "mousedown", theListener );
         this._eventHandler.addEventListener( this._element, "mousemove", theListener );
-        this._eventHandler.addEventListener( window,        "mouseup",   theListener );   // yes, window!
+        this._eventHandler.addEventListener( window,        "mouseup",   theListener ); // yes, window!
     }
 
     if ( this._stretchToFit ) {
-        const resizeEvent = "onorientationchange" in window ? "orientationchange" : "resize";
-        this._eventHandler.addEventListener( window, resizeEvent, function() {
-            this.stretchToFit( true );
-        }.bind( this ));
+        const self = this;
+        const mm = window.msMatchMedia || window.MozMatchMedia || window.WebkitMatchMedia || window.matchMedia;
+
+        // on mobile/tablet devices we rely on matchMedia for more accurate orientation change detection
+
+        if ( Environment.isMobile() && typeof( mm ) !== "undefined" ) {
+            window.matchMedia('(orientation: portrait)').addListener(() => self.stretchToFit( true ));
+        }
+        else {
+            // for everything else, onorientationchange should help on most mobile devices bar old Androids...
+            const resizeEvent = "onorientationchange" in window ? "orientationchange" : "resize";
+            this._eventHandler.addEventListener( window, resizeEvent, ( e ) => self.stretchToFit( true ));
+        }
     }
 };
 
