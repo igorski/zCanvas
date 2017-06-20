@@ -346,7 +346,7 @@ describe( "zCanvas.canvas", () => {
             "expected canvas to contain added child in the second index of its children list" );
     });
 
-    it( "should be able to update its dimensions", () => {
+    it( "should be able to update its dimensions synchronously", () => {
 
         const canvas = new Canvas({ width: width, height: height });
 
@@ -359,13 +359,44 @@ describe( "zCanvas.canvas", () => {
         while ( newHeight === height )
             newHeight = Math.round( Math.random() * 1000 ) + 1;
 
-        canvas.setDimensions( newWidth, newHeight );
+        canvas.setDimensions( newWidth, newHeight, false, true );
 
         assert.strictEqual( newWidth, canvas.getWidth(),
             "expected new width to be " + newWidth + ", got " + canvas.getWidth() + " instead" );
 
         assert.strictEqual( newHeight, canvas.getHeight(),
             "expected new height to be " + newHeight + ", got " + canvas.getHeight() + " instead" );
+    });
+
+    it( "should be able to update its dimensions asynchronously on next render", ( done ) => {
+
+        const canvas = new Canvas({ width: width, height: height });
+
+        const oldWidth = width, oldHeight = height;
+
+        let newWidth  = width,
+            newHeight = height;
+
+        while ( newWidth === width )
+            newWidth = Math.round( Math.random() * 1000 ) + 1;
+
+        while ( newHeight === height )
+            newHeight = Math.round( Math.random() * 1000 ) + 1;
+
+        canvas.setDimensions( newWidth, newHeight );
+
+        assert.strictEqual( oldWidth,  canvas.getWidth(),  "expected width not to have updated yet" );
+        assert.strictEqual( oldHeight, canvas.getHeight(), "expected height not to have updated yet" );
+
+        window.requestAnimationFrame(() => {
+            assert.strictEqual( newWidth, canvas.getWidth(),
+                "expected new width to be " + newWidth + ", got " + canvas.getWidth() + " instead" );
+
+            assert.strictEqual( newHeight, canvas.getHeight(),
+                "expected new height to be " + newHeight + ", got " + canvas.getHeight() + " instead" );
+
+            done();
+        });
     });
 
     it( "should know whether its animatable", () => {

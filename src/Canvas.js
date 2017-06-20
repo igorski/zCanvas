@@ -140,7 +140,7 @@ function Canvas( width, height, animate, framerate ) {
 
     /** @protected @type {number} */ this._HDPIscaleRatio = ( devicePixelRatio !== backingStoreRatio ) ? ratio : 1;
 
-    this.setDimensions( width, height );
+    this.setDimensions( width, height, true, true );
 
     if ( typeof opts.smoothing === "boolean" )
         this.setSmoothing( opts.smoothing );
@@ -436,7 +436,9 @@ Canvas.prototype.getHeight = function() {
 };
 
 /**
- * updates the dimensions of the Canvas
+ * updates the dimensions of the Canvas (this actually enqueues the update and will only
+ * execute it once the canvas draws to prevent flickering on constants resize operations
+ * as browsers will clear the existing Canvas content when adjusting its dimensions)
  *
  * @public
  *
@@ -444,33 +446,25 @@ Canvas.prototype.getHeight = function() {
  * @param {number} aHeight
  * @param {boolean=} setAsPreferredDimensions optional, defaults to true, stretchToFit handler
  *        overrides this to ensure returning to correct dimensions when disabling stretchToFit
+ * @param {boolean=} optImmediate optional, whether to apply immediately, defaults to false
+ *        to prevent flickering of existing screen contents during repeated resize
  */
-Canvas.prototype.setDimensions = function( aWidth, aHeight, setAsPreferredDimensions ) {
+Canvas.prototype.setDimensions = function( aWidth, aHeight, setAsPreferredDimensions, optImmediate ) {
 
-    // apply scale factor for HDPI screens
-    const scaleFactor = this._HDPIscaleRatio;
-
-    /** @protected @type {number} */ this._width  = aWidth;
-    /** @protected @type {number} */ this._height = aHeight;
+    /**
+     * @protected
+     * @type {{width: number, height: number}}
+     */
+    this._enqueuedSize = { "width": aWidth, "height": aHeight };
 
     if ( setAsPreferredDimensions !== false ) {
         /** @protected @type {number} */ this._preferredWidth  = aWidth;
         /** @protected @type {number} */ this._preferredHeight = aHeight;
     }
 
-    this._element.width  = aWidth  * scaleFactor;
-    this._element.height = aHeight * scaleFactor;
-
-    this._element.style.width  = aWidth  + "px";
-    this._element.style.height = aHeight + "px";
-
-    this._canvasContext.scale( scaleFactor, scaleFactor );
-
-    // non-smoothing must be re-applied when the canvas dimensions change...
-
-    if ( this._smoothing === false )
-        this.setSmoothing( this._smoothing );
-
+    if ( optImmediate === true ) {
+        updateCanvasSize( this );
+    }
     this.invalidate();
 };
 
@@ -733,6 +727,13 @@ Canvas.prototype.render = function() {
     this._renderPending = false;
     this._lastRender    = now - ( delta % this._renderInterval );
 
+    // in case a resize was requested execute it now as we will
+    // immediately draw nwe contents onto the screen
+
+    if ( this._enqueuedSize ) {
+        updateCanvasSize( this );
+    }
+
     const ctx = this._canvasContext;
     let theSprite;
 
@@ -870,3 +871,36 @@ Canvas.prototype.getCoordinate = function() {
 
     return { "x" : left, "y" : top };
 };
+
+/* internal methods */
+
+/**
+ * @private
+ * @param {Canvas} canvasInstance
+ */
+function updateCanvasSize( canvasInstance ) {
+    
+    // apply scale factor for HDPI screens
+    const scaleFactor = canvasInstance._HDPIscaleRatio;
+
+    const width  = canvasInstance._enqueuedSize.width,
+          height = canvasInstance._enqueuedSize.height;
+
+    canvasInstance._enqueuedSize = null;
+
+    /** @protected @type {number} */ canvasInstance._width  = width;
+    /** @protected @type {number} */ canvasInstance._height = height;
+
+    canvasInstance._element.width  = width  * scaleFactor;
+    canvasInstance._element.height = height * scaleFactor;
+
+    canvasInstance._element.style.width  = width  + "px";
+    canvasInstance._element.style.height = height + "px";
+
+    canvasInstance._canvasContext.scale( scaleFactor, scaleFactor );
+
+    // non-smoothing must be re-applied when the canvas dimensions change...
+
+    if ( canvasInstance._smoothing === false )
+        canvasInstance.setSmoothing( canvasInstance._smoothing );
+}
