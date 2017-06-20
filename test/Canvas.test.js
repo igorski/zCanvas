@@ -385,15 +385,25 @@ describe( "zCanvas.canvas", () => {
 
         canvas.setDimensions( newWidth, newHeight );
 
-        assert.strictEqual( oldWidth,  canvas.getWidth(),  "expected width not to have updated yet" );
-        assert.strictEqual( oldHeight, canvas.getHeight(), "expected height not to have updated yet" );
+        // actual values should not have been updated yet
+
+        assert.strictEqual( oldWidth,  canvas._width,  "expected value not to have updated yet" );
+        assert.strictEqual( oldHeight, canvas._height, "expected value not to have updated yet" );
+
+        // we do expect the getters to return the enqueued dimensions
+
+        assert.strictEqual( newWidth,  canvas.getWidth(),  "expected getter to return enqueued width" );
+        assert.strictEqual( newHeight, canvas.getHeight(), "expected getter to return enqueued height" );
 
         window.requestAnimationFrame(() => {
             assert.strictEqual( newWidth, canvas.getWidth(),
                 "expected new width to be " + newWidth + ", got " + canvas.getWidth() + " instead" );
-
+            assert.strictEqual( newWidth, canvas._width,
+                "expected new width to be " + newWidth + ", got " + canvas._width + " instead" );
             assert.strictEqual( newHeight, canvas.getHeight(),
                 "expected new height to be " + newHeight + ", got " + canvas.getHeight() + " instead" );
+            assert.strictEqual( newHeight, canvas._height,
+                "expected new height to be " + newHeight + ", got " + canvas._height + " instead" );
 
             done();
         });

@@ -408,8 +408,7 @@ Canvas.prototype.setSmoothing = function (aValue) {
  * @return {number}
  */
 Canvas.prototype.getWidth = function () {
-
-    return this._width;
+    return this._enqueuedSize ? this._enqueuedSize.width : this._width;
 };
 
 /**
@@ -417,8 +416,7 @@ Canvas.prototype.getWidth = function () {
  * @return {number}
  */
 Canvas.prototype.getHeight = function () {
-
-    return this._height;
+    return this._enqueuedSize ? this._enqueuedSize.height : this._height;
 };
 
 /**
