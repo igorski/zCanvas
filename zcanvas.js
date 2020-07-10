@@ -1,7 +1,7 @@
 /**
  * The MIT License (MIT)
  *
- * Copyright (c) 2013-2016 Igor Zinken / igorski
+ * Copyright (c) 2013-2020 Igor Zinken https://www.igorski.nl
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of
  * this software and associated documentation files (the "Software"), to deal in
@@ -19,20 +19,20 @@
  * COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER
  * IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- */
-"use strict";
+//  */
+import canvas    from './src/Canvas';
+import sprite    from './src/Sprite';
+import loader    from './src/Loader';
+import { pixelCollision, getChildrenUnderPoint } from './src/Collision';
 
-module.exports = {
+const collision = {
+    pixelCollision,
+    getChildrenUnderPoint
+};
 
-    // legacy (pre v3.0) exports
-
-    zCanvas : require( "./src/Canvas" ),
-    zSprite : require( "./src/Sprite" ),
-
-    // new API (post v3.0) exports
-
-    canvas    : require( "./src/Canvas" ),
-    sprite    : require( "./src/Sprite" ),
-    loader    : require( "./src/Loader" ),
-    collision : require( "./src/Collision" )
+export {
+    canvas,
+    sprite,
+    loader,
+    collision,
 };

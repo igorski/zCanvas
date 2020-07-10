@@ -1,7 +1,7 @@
 /**
  * The MIT License (MIT)
  *
- * Copyright (c) 2010-2016 Igor Zinken / igorski
+ * Igor Zinken 2010-2020 - https://www.igorski.nl
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of
  * this software and associated documentation files (the "Software"), to deal in
@@ -20,10 +20,6 @@
  * IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-"use strict";
-
-module.exports = EventHandler;
-
 /**
  * EventHandler provides an interface to attach event listeners
  * to the DOM without having to worry about pesky cross browser implementations
@@ -36,7 +32,7 @@ function EventHandler() {
 
     /**
      * @private
-     * @type {Array.<{ element: Element, type: string, listener: !Function}>}
+     * @type {Array<{ element: Element, type: string, listener: !Function}>}
      */
     this._eventMappings = [];
 
@@ -46,13 +42,12 @@ function EventHandler() {
      */
     this._disposed = false;
 }
+export default EventHandler;
 
 /* public methods */
 
 /**
  * attach a listener and an event handler to an element
- *
- * @public
  *
  * @param {Element} aElement
  * @param {string} aType
@@ -66,11 +61,15 @@ EventHandler.prototype.addEventListener = function( aElement, aType, aCallback )
         if ( aElement.addEventListener )
             aElement.addEventListener( aType, aCallback, false );
         else if ( aElement.attachEvent )
-            aElement.attachEvent( "on" + aType, aCallback );
+            aElement.attachEvent( `on${aType}`, aCallback );
         else
             return false;
 
-        this._eventMappings.push({ "element" : aElement, "type" : aType, "listener" : aCallback });
+        this._eventMappings.push({
+            element  : aElement,
+            type     : aType,
+            listener : aCallback
+        });
         return true;
     }
     return false;
@@ -79,8 +78,6 @@ EventHandler.prototype.addEventListener = function( aElement, aType, aCallback )
 /**
  * query whether a listener for a specific event type has already
  * been registered for the given element
- *
- * @public
  *
  * @param {Element} aElement
  * @param {string} aType
@@ -103,8 +100,6 @@ EventHandler.prototype.hasEventListener = function( aElement, aType ) {
 /**
  * remove a previously registered handler from an element
  *
- * @public
- *
  * @param {Element} aElement
  * @param {string} aType *
  * @return {boolean} whether the listener has been found and removed
@@ -122,7 +117,7 @@ EventHandler.prototype.removeEventListener = function( aElement, aType ) {
             if ( aElement.removeEventListener )
                 aElement.removeEventListener( aType, theMapping.listener, false );
             else if ( aElement.detachEvent )
-                aElement.detachEvent( "on" + aType, theMapping.listener );
+                aElement.detachEvent( `on${aType}`, theMapping.listener );
             else
                 return false;
 
@@ -133,9 +128,6 @@ EventHandler.prototype.removeEventListener = function( aElement, aType ) {
     return false;
 };
 
-/**
- * @public
- */
 EventHandler.prototype.dispose = function() {
 
     if ( this._disposed )
