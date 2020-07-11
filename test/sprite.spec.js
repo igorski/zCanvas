@@ -490,7 +490,7 @@ describe( "zCanvas.sprite", () => {
         expect( sprite1.next ).toBeNull();
     });
 
-    // TODO: add setBounds test
+    // TODO: add setPosition test
 
     it( "should be able to update its bitmap", async () => {
         const sprite = new Sprite({ x, y, width, height });

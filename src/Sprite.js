@@ -1119,18 +1119,16 @@ Sprite.prototype.handleInteraction = function( aEventX, aEventY, aEvent ) {
           numChildren = this._children.length;
 
     if ( numChildren > 0 ) {
-
         // reverse loop to first handle top layers
         theChild = this._children[ numChildren - 1 ];
 
         while ( theChild ) {
-
             foundInteractionInChild = theChild.handleInteraction( aEventX, aEventY, aEvent );
 
             // child is higher in DisplayList, takes precedence over this parent
-            if ( foundInteractionInChild )
+            if ( foundInteractionInChild ) {
                 return true;
-
+            }
             theChild = theChild.last;
         }
     }
@@ -1151,9 +1149,9 @@ Sprite.prototype.handleInteraction = function( aEventX, aEventY, aEvent ) {
             // in case we only handled this object for a short
             // period (250 ms), we assume it was clicked / tapped
 
-            if ( Date.now() - this._dragStartTime < 250 )
+            if ( Date.now() - this._dragStartTime < 250 ) {
                 this.handleClick();
-
+            }
             this.handleRelease( aEventX, aEventY );
             return true;
         }
@@ -1173,9 +1171,7 @@ Sprite.prototype.handleInteraction = function( aEventX, aEventY, aEvent ) {
 
         // yes sir, we've got a match
         if ( !this.isDragging ) {
-
-            if ( aEvent.type === "touchstart" ||
-                 aEvent.type === "mousedown" ) {
+            if ( aEvent.type === "touchstart" || aEvent.type === "mousedown" ) {
 
                 this.isDragging = true;
 
@@ -1218,7 +1214,6 @@ Sprite.prototype.handleInteraction = function( aEventX, aEventY, aEvent ) {
     // ensure we don't lose the handle by quickly moving around...
 
     if ( this._draggable && this.isDragging ) {
-
         this.handleMove( aEventX, aEventY );
         return true;
     }
