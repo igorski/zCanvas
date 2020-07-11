@@ -128,6 +128,7 @@ available to the browser:
 
  * [Demo #3: Layers and interactions](https://rawgithub.com/igorski/zcanvas/master/examples/demo3.html)
  * [Demo #4: Integrating 3rd party animation libraries](https://rawgithub.com/igorski/zcanvas/master/examples/demo4.html)
+ * [Demo #5: Local image manipulation](https://rawgithub.com/igorski/zcanvas/master/examples/demo5.html)
 
 # The API / Documentation
 
