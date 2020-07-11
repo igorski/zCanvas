@@ -52,7 +52,7 @@ const Loader = {
      *                    will only fire once)
      * @return {Promise} will receive loaded Image
      */
-    loadImage( aSource, aOptImage = new window.Image() ) {
+    loadImage( aSource, aOptImage = null ) {
         return new Promise(( resolve, reject ) => {
 
             // if we were supplied with a ready Image, don't load anything
@@ -60,14 +60,14 @@ const Loader = {
                 resolve( wrapOutput( aOptImage ));
                 return;
             }
-            const out       = aOptImage;
+            const out       = aOptImage || new window.Image();
             const isDataURL = isDataSource( aSource );
 
             const handler = new EventHandler();
 
             const errorHandler = ( aError ) => {
                 handler.dispose();
-                reject( new Error( aError.type ));
+                reject( aError );
             };
             const loadHandler = async () => {
                 handler.dispose();
@@ -79,15 +79,12 @@ const Loader = {
                 }
             };
 
-            // no load handler required for base64 data, it is immediately ready
-            // for use (apart from Chrome 8 and FF 3.6 but these are OLD !), even IE9
-            // plays nice. As a matter of fact for ALL supported browsers the
-            // image data is immediately usable after setting the src, but on "SOME"
-            // browsers the LoadEvent doesn't fire when ready.
+            // in JSDOM the load event won't fire for base64 strings (or images in general)
+            // for every other (browser) environment, add load listeners
 
-            const isSafari = /^((?!chrome|android).)*safari/i.test( window.navigator.userAgent );
+            const addLoadListeners = !isDataURL || /^((?!jsdom).)*$/.test( window.navigator.userAgent );
 
-            if ( !isDataURL || isSafari ) {
+            if ( addLoadListeners ) {
 
                 // supplying the crossOrigin for a LOCAL image (e.g. retrieved via FileReader)
                 // is an illegal statement in Firefox and Safari and will break execution
@@ -104,8 +101,9 @@ const Loader = {
             // load the image
             out.src = aSource;
 
-            if ( isDataURL ) {
-                resolve( wrapOutput( out )); // as stated above, invoke callback immediately for data strings
+            // as stated above, invoke callback immediately for data strings when no load is required
+            if ( !addLoadListeners ) {
+                resolve( wrapOutput( out ));
             }
         });
     },
@@ -169,8 +167,9 @@ export default Loader;
  * @param {Image} aImage
  */
 function applyOrigin( aImageURL, aImage ) {
-    if ( !isLocalURL( aImageURL ))
+    if ( !isLocalURL( aImageURL )) {
         aImage.crossOrigin = "Anonymous";
+    }
 }
 
 /**

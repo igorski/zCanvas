@@ -53,13 +53,23 @@ describe( "zCanvas.canvas", () => {
     });
 
     it( "should return the construction arguments unchanged", () => {
-        const canvas = new Canvas({ width, height, fps, smoothing, animate });
+        const scale = 2;
+        const backgroundColor = '#FF00FF';
+        const preventEventBubbling = Math.random() > .5;
 
+        const canvas = new Canvas({
+            width, height, fps, smoothing, animate,
+            scale, backgroundColor, preventEventBubbling
+        });
         expect( canvas.getWidth() ).toEqual( width );
         expect( canvas.getHeight() ).toEqual( height );
         expect( canvas.getFrameRate() ).toEqual( fps );
         expect( canvas._smoothing ).toEqual( smoothing );
         expect( canvas.isAnimatable() ).toEqual( animate );
+        expect( canvas._scale.x ).toEqual( scale );
+        expect( canvas._scale.y ).toEqual( scale );
+        expect( canvas._bgColor ).toEqual( backgroundColor );
+        expect( canvas._preventDefaults ).toEqual( preventEventBubbling );
     });
 
     it( "should be able to insert itself into DOM", () => {
@@ -72,6 +82,13 @@ describe( "zCanvas.canvas", () => {
         canvas.insertInPage( element );
 
         // expected canvas to be inserted into given expected DOM element
+        expect( canvas.getElement().parentNode ).toEqual( element );
+    });
+
+    it( "should insert itself into DOM when a parent element is specified during construction", () => {
+        const element = global.document.createElement( "div" );
+        const canvas  = new Canvas({ parentElement: element });
+
         expect( canvas.getElement().parentNode ).toEqual( element );
     });
 
@@ -386,5 +403,130 @@ describe( "zCanvas.canvas", () => {
             throw new Error( "sprite update should not have been called" );
         };
         canvas.invalidate();
+    });
+
+    describe( "when scaling the canvas", () => {
+        it( "should be able to scale to the requested factor", () => {
+            const canvas  = new Canvas({ width, height });
+            const xFactor = 2;
+            const yFactor = 3;
+
+            canvas.scale( xFactor, yFactor );
+
+            const { style } = canvas.getElement();
+
+            // expected canvas dimensions to have remained the same
+            expect( canvas.getWidth() ).toEqual( width );
+            expect( canvas.getHeight() ).toEqual( height );
+
+            // expected CSS transform to have applied scale
+            expect( style.transform ).toEqual( `scale(${xFactor}, ${yFactor})` );
+        });
+
+        it( "should default the vertical scale factor to the horizontal, when not provided", () => {
+            const canvas  = new Canvas({ width, height });
+            const xFactor = 2;
+
+            canvas.scale( xFactor );
+
+            const { style } = canvas.getElement();
+            expect( style.transform ).toEqual( `scale(${xFactor}, ${xFactor})` );
+        });
+
+        it( "should maintain the stretch to fit ratio when set", () => {
+            const canvas = new Canvas({ width, height, stretchToFit: true });
+            canvas.stretchToFit = jest.fn();
+            canvas.scale( 2 );
+            expect( canvas.stretchToFit ).toHaveBeenCalled();
+        });
+    });
+
+    describe( "when stretching the canvas", () => {
+        it( "should be able to stretch itself to fit vertically inside its container", () => {
+            width  = 300;
+            height = 200;
+
+            const xFactor = 3;
+            const yFactor = 1.5;
+
+            window.innerWidth  = width * xFactor;
+            window.innerHeight = height * yFactor;
+
+            const canvas = new Canvas({ width, height });
+            expect( canvas.getWidth() ).toEqual( width );
+            expect( canvas.getHeight() ).toEqual( height );
+
+            canvas.stretchToFit( true );
+            expect( canvas.getWidth() ).toEqual( window.innerWidth );
+            expect( canvas.getHeight() ).toEqual( window.innerHeight );
+        });
+
+        describe( "and maintaing the canvas aspect ratio", () => {
+            it( "it should be able to stretch itself to fit vertically inside its container", () => {
+                // canvas will be portrait aspect ratio
+                width  = 200;
+                height = 300;
+
+                // window will be landscape aspect ratio
+                window.innerWidth  = 800;
+                window.innerHeight = 600;
+
+                const canvas = new Canvas({ width, height });
+                canvas.stretchToFit( true, true );
+
+                // ensure dominant size matches window size and other side
+                // has used this same scale factor
+                expect( canvas.getWidth() ).toEqual( 400 );
+                expect( canvas.getHeight() ).toEqual( 600 );
+            });
+
+            it( "it should be able to stretch itself to fit horizontally inside its container", () => {
+                // canvas will be landscape aspect ratio
+                width  = 300;
+                height = 200;
+
+                // window will be portrait aspect ratio
+                window.innerWidth  = 600;
+                window.innerHeight = 800;
+
+                const canvas = new Canvas({ width, height });
+                canvas.stretchToFit( true, true );
+
+                // ensure dominant size matches window size and other side
+                // has used this same scale factor
+                expect( canvas.getWidth() ).toEqual( 600 );
+                expect( canvas.getHeight() ).toEqual( 400 );
+            });
+        });
+
+        it( "should preserve the existing scale factor when stretching to fit inside its container", () => {
+            width  = 400;
+            height = 300;
+
+            const scale = 2;
+
+            window.innerWidth  = 800;
+            window.innerHeight = 600;
+
+            const canvas = new Canvas({ width, height });
+            canvas.scale( scale );
+            canvas.stretchToFit( true );
+
+            // ensure dimensions have maintained the same along with the scale factor
+            expect( canvas.getWidth() ).toEqual( width );
+            expect( canvas.getHeight() ).toEqual( height );
+            expect( canvas.getElement().style.transform ).toEqual( `scale(${scale}, ${scale})` );
+
+            // expand window size
+            window.innerWidth  *= scale;
+            window.innerHeight *= scale;
+
+            canvas.stretchToFit( true );
+
+            // ensure dimensions have scaled according to scale factor ratio
+            expect( canvas.getWidth() ).toEqual( width * scale );
+            expect( canvas.getHeight() ).toEqual( height * scale );
+            expect( canvas.getElement().style.transform ).toEqual( `scale(${scale}, ${scale})` );
+        });
     });
 });

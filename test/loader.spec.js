@@ -30,7 +30,7 @@ describe( "zCanvas.loader", () => {
         urls.forEach( async url => {
             const data = await Loader.loadImage( url );
             // expected crossOrigin attribute to be undefined for local images
-            expect( data.image.crossOrigin ).toBeUndefined();
+            expect( data.image.crossOrigin ).toEqual( "" );
         });
     });
 

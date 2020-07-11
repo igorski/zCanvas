@@ -32,18 +32,22 @@ import OOP          from "./utils/OOP";
  * @param {{
  *            width: number,
  *            height: number,
+ *            fps: number,
+ *            scale : number,
+ *            backgroundColor: string,
  *            animate: boolean,
  *            smoothing: boolean,
  *            stretchToFit: boolean,
- *            fps: number,
+ *            preventEventBubbling: boolean,
+ *            parentElement: null,
  *            onUpdate: Function,
  *            debug: boolean
  *        }}
  */
 function Canvas({
-    width = 300, height = 300, fps = 60,
+    width = 300, height = 300, fps = 60, scale = 1, backgroundColor = null,
     animate = false, smoothing = true, stretchToFit = false,
-    debug = false, onUpdate = null
+    preventEventBubbling = false, parentElement = null, debug = false, onUpdate = null
 } = {}) {
 
     if ( width <= 0 || height <= 0 ) {
@@ -56,7 +60,6 @@ function Canvas({
     /** @protected @type {number} */   this._fps            = fps;
     /** @protected @type {boolean} */  this._animate        = animate;
     /** @protected @type {boolean} */  this._smoothing      = smoothing;
-    /** @protected @type {boolean} */  this._stretchToFit   = stretchToFit;
     /** @protected @type {Function} */ this._updateHandler  = onUpdate;
     /** @protected @type {Function} */ this._renderHandler  = this.render.bind( this );
     /** @protected @type {number} */   this._lastRender     = 0;
@@ -64,6 +67,7 @@ function Canvas({
     /** @protected @type {boolean} */  this._renderPending  = false;
     /** @protected @type {number} */   this._renderInterval = 1000 / this._fps;
     /** @protected @type {boolean} */  this._disposed       = false;
+    /** @protected @type {object} */   this._scale          = { x: scale, y: scale };
 
     /** @protected @type {Array<Sprite>} */ this._children = [];
 
@@ -81,6 +85,10 @@ function Canvas({
      */
     this._canvasContext = this._element.getContext( "2d" );
 
+    if ( !!backgroundColor ) {
+        this.setBackgroundColor( backgroundColor );
+    }
+
     // ensure all is crisp clear on HDPI screens
 
     const devicePixelRatio  = window.devicePixelRatio || 1;
@@ -95,15 +103,22 @@ function Canvas({
     /** @protected @type {number} */ this._HDPIscaleRatio = ( devicePixelRatio !== backingStoreRatio ) ? ratio : 1;
 
     this.setDimensions( width, height, true, true );
+
+    if ( scale !== 1 ) {
+        this.scale( scale, scale );
+    }
+    this.stretchToFit( stretchToFit );
+
+    if ( parentElement instanceof Element ) {
+        this.insertInPage( parentElement );
+    }
     this.setSmoothing( smoothing );
-    this.preventEventBubbling( false );
+    this.preventEventBubbling( preventEventBubbling );
     this.addListeners();
 
-    if ( this._stretchToFit )
-        this.stretchToFit( true );
-
-    if ( this._animate )
+    if ( this._animate ) {
         this.render();  // start render loop
+    }
 }
 export default Canvas;
 
@@ -135,10 +150,9 @@ Canvas.extend = function( extendingFunction ) {
  * @param {Element} aContainer DOM node to append the Canvas to
  */
 Canvas.prototype.insertInPage = function( aContainer ) {
-
-    if ( this._element.parentNode )
+    if ( this._element.parentNode ) {
         throw new Error( "Canvas already present in DOM" );
-
+    }
     aContainer.appendChild( this._element );
 };
 
@@ -166,7 +180,6 @@ Canvas.prototype.getElement = function() {
  * @param {boolean} value
  */
 Canvas.prototype.preventEventBubbling = function( value ) {
-
     /**
      * @protected
      * @type {boolean}
@@ -308,7 +321,6 @@ Canvas.prototype.contains = function( aChild ) {
  * @public
  */
 Canvas.prototype.invalidate = function() {
-
     if ( !this._animate && !this._renderPending ) {
         this._renderPending = true;
         this._renderId = window.requestAnimationFrame( this._renderHandler );
@@ -390,7 +402,6 @@ Canvas.prototype.getHeight = function() {
  * as browsers will clear the existing Canvas content when adjusting its dimensions)
  *
  * @public
- *
  * @param {number} aWidth
  * @param {number} aHeight
  * @param {boolean=} setAsPreferredDimensions optional, defaults to true, stretchToFit handler
@@ -399,7 +410,6 @@ Canvas.prototype.getHeight = function() {
  *        to prevent flickering of existing screen contents during repeated resize
  */
 Canvas.prototype.setDimensions = function( aWidth, aHeight, setAsPreferredDimensions, optImmediate ) {
-
     /**
      * @protected
      * @type {{width: number, height: number}}
@@ -425,7 +435,6 @@ Canvas.prototype.setDimensions = function( aWidth, aHeight, setAsPreferredDimens
  * @param {string} aColor
  */
 Canvas.prototype.setBackgroundColor = function( aColor ) {
-
     /**
      * @protected
      * @type {string}
@@ -524,51 +533,70 @@ Canvas.prototype.drawImage = function( aSource, destX, destY, destWidth, destHei
 };
 
 /**
- * stretches the Canvas to fit the window
+ * Scales the canvas accordingly. This can be used to render content at a lower
+ * resolution but scale it up to fit the screen (for instance when rendering pixel art
+ * with smoothing disabled for crisp definition).
  *
  * @public
- * @param {boolean=} value
+ * @param {number} x the factor to scale the horizontal axis by
+ * @param {number=} y the factor to scale the vertical axis by, defaults to x
  */
-Canvas.prototype.stretchToFit = function( value ) {
+Canvas.prototype.scale = function( x, y = x ) {
+    this._scale = { x, y };
+
+    const scaleStyle = x === 1 && y === 1 ? '' : `scale(${x}, ${y})`;
+    const { style }  = this._element;
+
+    style[ "-webkit-transform-origin" ] =
+            style[ "transform-origin" ] = "0 0";
+
+    style[ "-webkit-transform" ] =
+            style[ "transform" ] = scaleStyle;
+
+    if ( this._stretchToFit ) {
+        this.stretchToFit( true, this._maintainRatio );
+    }
+};
+
+/**
+ * Stretches the Canvas to fit inside the available window size
+ * NOTE: when maintaing the aspect ratio this is not equal to filling the entire window size
+ * when the canvas dimensions re of a different ratio than the window, instead the dominant
+ * side will be scaled to fit. This method will maintain the existing scale factor.
+ *
+ * @public
+ * @param {boolean=} value whether to stretch the canvas to fit the window size
+ * @param {boolean=} maintainRatio whether to maintain the current aspect ratio
+ */
+Canvas.prototype.stretchToFit = function( value, maintainRatio = false ) {
+    /**
+     * @protected
+     * @type {boolean}
+     */
+    this._stretchToFit = value;
+
+    /**
+     * @protected
+     * @type {boolean}
+     */
+    this._maintainRatio = maintainRatio;
 
     const idealWidth   = this._preferredWidth;
     const idealHeight  = this._preferredHeight;
-    const windowWidth  = document.documentElement.clientWidth;
-    const windowHeight = document.documentElement.clientHeight;
+    const { x, y }     = this._scale; // take existing canvas scale factor into account
 
-    let xScale, yScale;
+    const { innerWidth, innerHeight } = window;
 
-    if ( windowHeight > windowWidth ) {
-        // available height is larger than the width
-        const scaledHeight = ( value === true ) ? Math.round( windowHeight / windowWidth * idealWidth ) : idealHeight;
-        this.setDimensions( idealWidth, scaledHeight, false );
-        xScale = windowWidth  / idealWidth;
-        yScale = windowHeight / scaledHeight;
+    let targetWidth, targetHeight;
+    if ( maintainRatio && value ) {
+        const ratio  = Math.min( innerWidth / idealWidth, innerHeight / idealHeight );
+        targetWidth  = idealWidth * ratio;
+        targetHeight = idealHeight * ratio;
+    } else {
+        targetWidth  = value ? ( innerWidth  / x ) : idealWidth;
+        targetHeight = value ? ( innerHeight / y ) : idealHeight;
     }
-    else {
-        // available width is large than the height
-        const scaledWidth = ( value === true ) ? Math.round( windowWidth / windowHeight * idealHeight ) : idealWidth;
-        this.setDimensions( scaledWidth, idealHeight, false );
-        xScale = windowWidth  / scaledWidth;
-        yScale = windowHeight / idealHeight;
-    }
-
-    // scale canvas element up/down accordingly using CSS
-
-    const canvasElement = this.getElement();
-    const transform     = `scale(${xScale}, ${yScale})`;
-
-    canvasElement.style[ "-webkit-transform-origin" ] =
-            canvasElement.style[ "transform-origin" ] = "0 0";
-
-    if ( value === true ) {
-        canvasElement.style[ "-webkit-transform" ] =
-                canvasElement.style[ "transform" ] = transform;
-    }
-    else {
-        canvasElement.style[ "-webkit-transform" ] =
-                canvasElement.style[ "transform" ] = "";
-    }
+    this.setDimensions( Math.round( targetWidth ), Math.round( targetHeight ), false );
 };
 
 /**
@@ -603,7 +631,6 @@ Canvas.prototype.dispose = function() {
 Canvas.prototype.handleInteraction = function( aEvent ) {
 
     const numChildren  = this._children.length;
-    let eventOffsetX = 0, eventOffsetY = 0;
     let theChild, touches, found;
 
     if ( numChildren > 0 ) {
@@ -615,11 +642,10 @@ Canvas.prototype.handleInteraction = function( aEvent ) {
 
             // all touch events
             default:
-
+                let eventOffsetX = 0, eventOffsetY = 0;
                 touches /** @type {TouchList} */ = ( aEvent.touches.length > 0 ) ? aEvent.touches : aEvent.changedTouches;
 
                 if ( touches.length > 0 ) {
-
                     const offset = this.getCoordinate();
 
                     eventOffsetX = touches[ 0 ].pageX - offset.x;
@@ -636,26 +662,21 @@ Canvas.prototype.handleInteraction = function( aEvent ) {
             case "mousedown":
             case "mousemove":
             case "mouseup":
-
+                const { offsetX, offsetY } = aEvent;
                 while ( theChild ) {
-
-                    found = theChild.handleInteraction( aEvent.offsetX, aEvent.offsetY, aEvent );
-
-                    if ( found )
+                    found = theChild.handleInteraction( offsetX, offsetY, aEvent );
+                    if ( found ) {
                         break;
-
+                    }
                     theChild = theChild.last;
                 }
                 break;
         }
     }
-
     if ( this._preventDefaults ) {
-
         aEvent.stopPropagation();
         aEvent.preventDefault();
     }
-
     // update the Canvas contents
     this.invalidate();
 };
@@ -669,7 +690,6 @@ Canvas.prototype.handleInteraction = function( aEvent ) {
  * @protected
  */
 Canvas.prototype.render = function() {
-
     const now   = Date.now();  // current timestamp
     const delta = now - this._lastRender;
 
@@ -763,19 +783,10 @@ Canvas.prototype.addListeners = function() {
     this._eventHandler.addEventListener( window,        "mouseup",   theListener ); // yes, window!
 
     if ( this._stretchToFit ) {
-        const self = this;
-        const mm = window.msMatchMedia || window.MozMatchMedia || window.WebkitMatchMedia || window.matchMedia;
-
-        // on mobile/tablet devices we rely on matchMedia for more accurate orientation change detection
-
-        if ( typeof( mm ) !== "undefined" ) {
-            window.matchMedia('(orientation: portrait)').addListener(() => self.stretchToFit( true ));
-        }
-        else {
-            // for everything else, onorientationchange should help on most mobile devices bar old Androids...
-            const resizeEvent = "onorientationchange" in window ? "orientationchange" : "resize";
-            this._eventHandler.addEventListener( window, resizeEvent, ( e ) => self.stretchToFit( true ));
-        }
+        const resizeEvent = "onorientationchange" in window ? "orientationchange" : "resize";
+        this._eventHandler.addEventListener( window, resizeEvent, () => {
+            this.stretchToFit( this._stretchToFit, this._maintainRatio );
+        });
     }
 };
 

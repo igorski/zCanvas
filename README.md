@@ -115,10 +115,17 @@ Unit tests go in the _./test_-folder. The file name for a unit test must be equa
 
 # Live Demos
 
-You can view some basic features in the down-and-dirty demos here :
+You can view some basic features in the down-and-dirty demos here, note the demos were written in
+ES5 without the use of any libraries (other than RequireJS to load zCanvas), to make them instantly
+available to the browser:
+
+### Game demos
 
  * [Demo #1: Spritesheets and pixel-perfect collisions](https://rawgithub.com/igorski/zcanvas/master/examples/demo1.html)
  * [Demo #2: Custom game loop and fast collision detections](https://rawgithub.com/igorski/zcanvas/master/examples/demo2.html)
+
+### Graphics manipulation demos
+
  * [Demo #3: Layers and interactions](https://rawgithub.com/igorski/zcanvas/master/examples/demo3.html)
  * [Demo #4: Integrating 3rd party animation libraries](https://rawgithub.com/igorski/zcanvas/master/examples/demo4.html)
 

@@ -42,6 +42,7 @@ import Loader from "./Loader";
  *            height: number,
  *            bitmap: Image|HTMLCanvasElement|string,
  *            collidable: boolean,
+ *            interactive: boolean,
  *            mask: boolean,
  *            sheet: Array<{ row: number, col: number, amount: number, fpt: 5 }>,
  *            sheetTileWidth: number,
@@ -51,7 +52,7 @@ import Loader from "./Loader";
 function Sprite({
     width, height,
     x = 0, y = 0, bitmap = null,
-    collidable = false, mask = false,
+    collidable = false, interactive = false, mask = false,
     sheet = [], sheetTileWidth = 0, sheetTileHeight = 0
 } = {}) {
 
@@ -159,16 +160,6 @@ function Sprite({
     this._draggable = false;
 
     /**
-     * whether this Sprite can receive user interaction events, when
-     * false this Sprite is omitted from "handleInteraction"-queries
-     * executed when the user interacts with the parent StageCanvas element
-     *
-     * @protected
-     * @type {boolean}
-     */
-    this._interactive = false;
-
-    /**
      * whether to restrict this Sprites movement
      * to its constraints / canvas dimensions
      *
@@ -187,16 +178,16 @@ function Sprite({
 
     this.setX( x );
     this.setY( y );
+    this.setInteractive( interactive );
 
     if ( bitmap ) {
         this.setBitmap( bitmap );
     }
 
     if ( Array.isArray( sheet ) && sheet.length > 0 ) {
-
-        if ( !bitmap )
+        if ( !bitmap ) {
             throw new Error( "cannot use a spritesheet without a valid Bitmap" );
-
+        }
         this.setSheet( sheet, sheetTileWidth, sheetTileHeight );
     }
 }
@@ -245,7 +236,7 @@ Sprite.prototype.getDraggable = function() {
  */
 Sprite.prototype.setDraggable = function( aValue, aKeepInBounds = false ) {
     this._draggable    = aValue;
-    this._keepInBounds = aKeepInBounds;
+    this._keepInBounds = this._constraint ? true : aKeepInBounds;
 
     // if we want to drag this Sprite and it isn't interactive, set it as interactive
     // otherwise it will not receive any interaction events from the canvas
@@ -337,6 +328,7 @@ Sprite.prototype.setWidth = function( aValue ) {
     if ( prevWidth !== 0 ) {
         this._bounds.left -= ( aValue * .5 - prevWidth * .5 );
     }
+    this.invalidate();
 };
 
 /**
@@ -362,6 +354,7 @@ Sprite.prototype.setHeight = function( aValue ) {
     if ( prevHeight !== 0 ) {
         this._bounds.top -= ( aValue * .5 - prevHeight * .5 );
     }
+    this.invalidate();
 };
 
 /**
@@ -459,12 +452,18 @@ Sprite.prototype.getInteractive = function() {
 };
 
 /**
- * toggle the interactive state of this Sprite
+ * toggle whether this Sprite can receive user interaction events, when
+ * false this Sprite is omitted from "handleInteraction"-queries
+ * executed when the user interacts with the parent StageCanvas element
  *
  * @public
  * @param {boolean} aValue
  */
 Sprite.prototype.setInteractive = function( aValue ) {
+    /**
+     * @protected
+     * @type {boolean}
+     */
     this._interactive = aValue;
 };
 
@@ -753,14 +752,18 @@ Sprite.prototype.setBitmap = function( aImage, aOptWidth, aOptHeight ) {
 
             return resolve();
         }
-        else if ( isImageElement || isDataSource ) {
+        else {
             try {
-                const { size, image } = await Loader.loadImage( aImage );
+                const { size, image } = await Loader.loadImage(
+                    isImageElement ? aImage.src : aImage, isImageElement ? aImage : null
+                );
                 this._bitmap          = image;
                 this._bitmapReady     = true;
 
                 /** @protected @type {number} */ this._bitmapWidth  = size.width;
                 /** @protected @type {number} */ this._bitmapHeight = size.height;
+
+                this.invalidate();
 
                 return resolve();
             }
@@ -928,9 +931,8 @@ Sprite.prototype.addChild = function( aChild ) {
 
     // request a render now the state of the canvas has changed
 
-    if ( this.canvas ) {
-        this.canvas.invalidate();
-    }
+    this.invalidate();
+
     return this;
 };
 
@@ -968,9 +970,8 @@ Sprite.prototype.removeChild = function( aChild ) {
 
     // request a render now the state of the canvas has changed
 
-    if ( this.canvas ) {
-        this.canvas.invalidate();
-    }
+    this.invalidate();
+
     return aChild;
 };
 
@@ -1250,6 +1251,17 @@ Sprite.prototype.updateAnimation = function() {
             aniProps.onComplete( this );
         }
     }
+};
+
+/**
+ * Whenever a change has occurred, this Sprite can request an
+ * invalidation of the Canvas to ensure the on screen representation
+ * matches the latest state.
+ *
+ * @protected
+ */
+Sprite.prototype.invalidate = function() {
+    this.canvas && this.canvas.invalidate();
 };
 
 /**

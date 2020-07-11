@@ -59,13 +59,10 @@
                 height: cvsHeight,
                 animate: true,
                 smoothing: false, // pixel art ahoy
-                fps: 60
+                fps: 60,
+                preventEventBubbling: true,
+                parentElement: container
             });
-            cvs.preventEventBubbling( true );
-
-            // append canvas to DOM
-            cvs.insertInPage( container );
-            cvs.setSmoothing( false );  // pixel art example, make crisp.
 
             // STEP 2 : SELF ANIMATING IMAGE EXAMPLE
             // --------------------------------------

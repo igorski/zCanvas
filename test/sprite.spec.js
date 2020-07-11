@@ -62,15 +62,9 @@ describe( "zCanvas.sprite", () => {
     /* actual unit tests */
 
     it( "should construct with a single data Object", done => {
-        const isMask = ( Math.random() > .5 );
+        const interactive = Math.random() > .5;
         const sprite = new Sprite({
-            x: x,
-            y: y,
-            width: width,
-            height: height,
-            bitmap: imgSource,
-            collidable: collidable,
-            mask: mask
+            x, y, width, height, collidable, mask, interactive, bitmap: imgSource,
         });
         // setting of Bitmap is async
         window.requestAnimationFrame(() => {
@@ -80,6 +74,7 @@ describe( "zCanvas.sprite", () => {
             expect( sprite.getHeight() ).toEqual( height );
             expect( sprite._bitmap.src ).toEqual( imgSource );
             expect( sprite.collidable ).toEqual( collidable );
+            expect( sprite.getInteractive() ).toEqual( interactive );
             expect( sprite._mask ).toEqual( mask );
             done();
         });
