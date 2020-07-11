@@ -1,14 +1,14 @@
 {
   "name": "zcanvas",
-  "homepage": "http://www.igorski.nl/",
-  "version": "3.0.14",
+  "homepage": "https://www.igorski.nl/",
+  "version": "4.0.0",
   "license": "MIT",
   "author": {
     "name": "Igor Zinken",
-    "url": "http://github.com/igorski/"
+    "url": "https://github.com/igorski/"
   },
   "directories": {},
-  "main": "dist/es5/zcanvas.es5.js",
+  "main": "dist/zcanvas.js",
   "jsnext:main": "zcanvas.js",
   "bugs": {
     "url": "https://github.com/igorski/zcanvas/issues/"
@@ -39,32 +39,24 @@
     "detection"
   ],
   "devDependencies": {
-    "amd-optimize": "^0.6.1",
-    "babel-plugin-transform-es2015-modules-amd": "^6.18.0",
-    "babel-preset-es2015": "^6.18.0",
-    "browserify": "^13.1.1",
-    "chai": "^1.9.2",
-    "del": "^2.2.2",
-    "gulp": "^3.9.1",
-    "gulp-babel": "^6.1.2",
-    "gulp-browserify": "^0.5.1",
-    "gulp-concat": "^2.6.1",
-    "gulp-rename": "^1.2.2",
-    "gulp-uglify": "^2.0.0",
-    "run-sequence": "^1.2.2",
-    "mocha": "^2.2.5",
-    "mock-browser": "^0.91.34",
-    "sinon": "^1.17.6",
-    "vinyl-buffer": "^1.0.0",
-    "vinyl-source-stream": "^1.1.0"
+    "@babel/core": "7.9.6",
+    "@babel/plugin-transform-runtime": "^7.9.6",
+    "@babel/preset-env": "7.9.6",
+    "babel-loader": "8.1.0",
+    "canvas": "^2.6.1",
+    "clean-webpack-plugin": "^3.0.0",
+    "jest": "^26.1.0",
+    "webpack": "^4.43.0",
+    "webpack-cli": "^3.3.12"
   },
   "scripts": {
-    "test": "mocha test",
-    "prepublish": "gulp build"
+    "test": "jest",
+    "build": "webpack --mode=production",
+    "prepublish": "npm run test && npm run build"
   },
   "preferGlobal": false,
   "engines": {
-    "node": ">=0.6.0"
+    "node": ">=10.0.0"
   },
   "readmeFilename": "README.md",
   "gitHead": "d40e43e32dd066e5a7306a3715ff27f67bbc9682"

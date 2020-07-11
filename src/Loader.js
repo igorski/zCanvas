@@ -1,7 +1,7 @@
 /**
  * The MIT License (MIT)
  *
- * Copyright (c) 2013-2016 Igor Zinken / igorski
+ * Igor Zinken 2013-2020 - https://www.igorski.nl
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of
  * this software and associated documentation files (the "Software"), to deal in
@@ -20,18 +20,14 @@
  * IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-"use strict";
-
-const EventHandler = require( "./utils/EventHandler" );
+import EventHandler from "./utils/EventHandler";
 
 /**
  * loader provides an interface that allows the loading of Images
  * regardless of their source type (e.g. path to (cross origin) image, Blob URL)
  * and always ensures Image content is actually ready for rendering
- *
- * @type {Object}
  */
-const Loader = module.exports = {
+const Loader = {
 
     /**
      * Load the image contents described in aSource and fire a callback when the
@@ -48,68 +44,68 @@ const Loader = module.exports = {
      *
      * if an Error has occurred the second argument will be the Error
      *
-     * @public
      * @param {string}    aSource either base64 encoded bitmap data or (web)path
      *                    to an image file
-     * @param {!Function} aCallback callback handler to execute when Image has
-     *                    finished loading and its contents are ready
      * @param {Image=}    aOptImage optional HTMLImageElement to load the aSource
      *                    into, in case we'd like to re-use an existing Element
      *                    (will not work in Firefox repeatedly as load handlers
      *                    will only fire once)
+     * @return {Promise} will receive loaded Image
      */
-    loadImage( aSource, aCallback, aOptImage ) {
+    loadImage( aSource, aOptImage = null ) {
+        return new Promise(( resolve, reject ) => {
 
-        // if we were supplied with a ready Image, don't load anything
+            // if we were supplied with a ready Image, don't load anything
+            if ( aOptImage instanceof window.Image && Loader.isReady( aOptImage )) {
+                resolve( wrapOutput( aOptImage ));
+                return;
+            }
+            const out       = aOptImage || new window.Image();
+            const isDataURL = isDataSource( aSource );
 
-        if ( aOptImage instanceof window.Image && Loader.isReady( aOptImage )) {
+            const handler = new EventHandler();
 
-            aCallback( wrapOutput( aOptImage ));
-            return;
-        }
+            const errorHandler = ( aError ) => {
+                handler.dispose();
+                reject( aError );
+            };
+            const loadHandler = async () => {
+                handler.dispose();
+                try {
+                    await Loader.onReady( out );
+                    resolve( wrapOutput( out ));
+                } catch ( e ) {
+                    reject( e );
+                }
+            };
 
-        const out = ( aOptImage instanceof window.Image ) ? aOptImage : new window.Image();
-        const isDataURL = isDataSource( aSource );
+            // in JSDOM the load event won't fire for base64 strings (or images in general)
+            // for every other (browser) environment, add load listeners
 
-        const handler = new EventHandler();
+            const addLoadListeners = !isDataURL || /^((?!jsdom).)*$/.test( window.navigator.userAgent );
 
-        const errorHandler = ( aError ) => {
-            handler.dispose();
-            aCallback( wrapOutput( out ), new Error( aError.type ));
-        };
+            if ( addLoadListeners ) {
 
-        const loadHandler = () => {
-            handler.dispose();
-            Loader.onReady( out, () => aCallback( wrapOutput( out )) );
-        };
+                // supplying the crossOrigin for a LOCAL image (e.g. retrieved via FileReader)
+                // is an illegal statement in Firefox and Safari and will break execution
+                // of the remainder of this function body! we only supply it for
+                // src attributes that AREN'T local data strings
 
-        // no load handler required for base64 data, it is immediately ready
-        // for use (apart from Chrome 8 and FF 3.6 but these are OLD !), even IE9
-        // plays nice. As a matter of fact for ALL supported browsers the
-        // image data is immediately usable after setting the src, but on SOME
-        // browsers the LoadEvent wouldn't fire when ready !! WTF
+                if ( !isDataURL ) {
+                    applyOrigin( aSource, out );
+                }
+                handler.addEventListener( out, "load",  loadHandler );
+                handler.addEventListener( out, "error", errorHandler );
+            }
 
-        const isSafari = /^((?!chrome|android).)*safari/i.test( window.navigator.userAgent );
+            // load the image
+            out.src = aSource;
 
-        if ( !isDataURL || isSafari ) {
-
-            // supplying the crossOrigin for a LOCAL image (e.g. retrieved via FileReader)
-            // is an illegal statement in Firefox and Safari and will break execution
-            // of the remainder of this function body! we only supply it for
-            // src attributes that AREN'T local data strings
-
-            if ( !isDataURL )
-                applyOrigin( aSource, out );
-
-            handler.addEventListener( out, "load",  loadHandler );
-            handler.addEventListener( out, "error", errorHandler );
-        }
-
-        // load the image
-        out.src = aSource;
-
-        if ( isDataURL )
-            aCallback( wrapOutput( out )); // as stated above, invoke callback immediately for data strings
+            // as stated above, invoke callback immediately for data strings when no load is required
+            if ( !addLoadListeners ) {
+                resolve( wrapOutput( out ));
+            }
+        });
     },
 
     /**
@@ -120,11 +116,10 @@ const Loader = module.exports = {
      * @return {boolean}
      */
     isReady( aImage ) {
-
         // first check : load status
-        if ( typeof aImage.complete === "boolean" && !aImage.complete )
+        if ( typeof aImage.complete === "boolean" && !aImage.complete ) {
             return false;
-
+        }
         // second check : validity of source (can be 0 until bitmap has been fully parsed by browser)
         return !( typeof aImage.naturalWidth !== "undefined" && aImage.naturalWidth === 0 );
     },
@@ -136,60 +131,51 @@ const Loader = module.exports = {
      *
      * @public
      * @param {Image} aImage
-     * @param {!Function} aCallback
-     * @param {!Function=} aErrorCallback optional callback to fire if Image is never ready
+     * @return {Promise}
      */
-    onReady( aImage, aCallback, aErrorCallback ) {
+    async onReady( aImage, aCallback, aErrorCallback ) {
+        return new Promise(( resolve, reject ) => {
+            // if this didn't resolve in a full second, we presume the Image is corrupt
 
-        // if this didn't resolve in a full second, we presume the Image is corrupt
+            const MAX_ITERATIONS = 60;
+            let iterations = 0;
 
-        const MAX_ITERATIONS = 60;
-        let iterations = 0;
-
-        function readyCheck() {
-
-            if ( Loader.isReady( aImage )) {
-                aCallback();
+            function readyCheck() {
+                if ( Loader.isReady( aImage )) {
+                    resolve();
+                } else if ( ++iterations === MAX_ITERATIONS ) {
+                    reject( new Error( "Image could not be resolved. This shouldn't occur." ));
+                } else {
+                    // requestAnimationFrame preferred over a timeout as
+                    // browsers will fire this when the DOM is actually ready (e.g. Image is rendered)
+                    window.requestAnimationFrame( readyCheck );
+                }
             }
-            else if ( ++iterations === MAX_ITERATIONS ) {
-
-                if ( typeof aErrorCallback === "function" )
-                    aErrorCallback();
-
-                console.warn( "Image could not be resolved. This shouldn't occur." );
-            }
-            else {
-                // requestAnimationFrame preferred over a timeout as
-                // browsers will fire this when the DOM is actually ready (e.g. Image is rendered)
-                window.requestAnimationFrame( readyCheck );
-            }
-        }
-        readyCheck();
+            readyCheck();
+        });
     }
-
 };
+export default Loader;
 
-/* private methods */
+/* internal methods */
 
 /**
  * Firefox and Safari will NOT accept images with erroneous crossOrigin attributes !
  * this method applies the correct value accordingly
  *
- * @private
  * @param {string} aImageURL
  * @param {Image} aImage
  */
 function applyOrigin( aImageURL, aImage ) {
-
-    if ( !isLocalURL( aImageURL ))
+    if ( !isLocalURL( aImageURL )) {
         aImage.crossOrigin = "Anonymous";
+    }
 }
 
 /**
  * checks whether the contents of an Image are either a base64 encoded string
  * or a Blob
  *
- * @private
  * @param {Image|string} image when string, it is the src attribute of an Image
  * @return {boolean}
  */
@@ -204,12 +190,10 @@ function isDataSource( image ) {
 }
 
 /**
- * @private
  * @param {Image} image
  * @return {{ width: number, height: number }}
  */
 function getSize( image ) {
-
     return {
         width: image.width   || image.naturalWidth,
         height: image.height || image.naturalHeight
@@ -221,7 +205,6 @@ function getSize( image ) {
  * same server/origin as this application) or whether it is local (e.g. a URL
  * to a file on the same server or a data URL)
  *
- * @private
  * @param {string=} aURL
  * @return {boolean}
  */
@@ -229,8 +212,9 @@ function isLocalURL( aURL ) {
 
     // check if the URL belongs to an asset on the same domain the application is running on
 
+    const { location } = window;
     if ( aURL.substr( 0, 2 ) === "./" ||
-        aURL.indexOf( window.location.protocol + "//" + window.location.host ) === 0 ) {
+        aURL.indexOf( `${location.protocol}//${location.host}` ) === 0 ) {
         return true;
     }
 
@@ -240,7 +224,7 @@ function isLocalURL( aURL ) {
 
     // .html-file in the path name ? strip it
 
-    if ( urlRoot.indexOf( ".html" ) > -1 ) {
+    if ( urlRoot.includes( ".html" )) {
 
         const urlArr    = urlRoot.split( "/" );
         const arrLength = urlArr.length;
@@ -260,14 +244,12 @@ function isLocalURL( aURL ) {
 }
 
 function wrapOutput( image ) {
-
     const out = {
         image: image,
         size: null
     };
-
-    if ( image instanceof window.HTMLImageElement )
+    if ( image instanceof window.HTMLImageElement ) {
         out.size = getSize( image );
-
+    }
     return out;
 }

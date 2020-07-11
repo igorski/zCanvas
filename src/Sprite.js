@@ -1,7 +1,7 @@
 /**
  * The MIT License (MIT)
  *
- * Copyright (c) 2010-2017 Igor Zinken / igorski
+ * Igor Zinken 2013-2020 - https://www.igorski.nl
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of
  * this software and associated documentation files (the "Software"), to deal in
@@ -20,12 +20,8 @@
  * IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-"use strict";
-
-const OOP    = require( "./utils/OOP" );
-const Loader = require( "./Loader" );
-
-module.exports = Sprite;
+import OOP    from "./utils/OOP";
+import Loader from "./Loader";
 
 /**
  * provides an API equivalent to the Flash Sprite / Display Object for manipulating "Objects" on a canvas element.
@@ -39,92 +35,45 @@ module.exports = Sprite;
  * for drawing the Sprite's visual representation onto the canvas. This method is invoked on each draw cycle.
  *
  * @constructor
- *
- * @param {number|{
+ * @param {{
  *            x: number,
  *            y: number,
  *            width: number,
  *            height: number,
  *            bitmap: Image|HTMLCanvasElement|string,
  *            collidable: boolean,
+ *            interactive: boolean,
  *            mask: boolean,
- *            sheet: Array.<{ row: number, col: number, amount: number, fpt: 5 }>,
+ *            sheet: Array<{ row: number, col: number, amount: number, fpt: 5 }>,
  *            sheetTileWidth: number,
  *            sheetTileHeight: number
- *
- *        }} x when numerical (legacy 7 argument constructor) the x-coordinate of this Sprite,
- *        when Object it should contain required properties width and height, with others optional
- *        (x and y will default to 0, 0 coordinate) see the description for width, height, bitmap,
- *        collidable and mask below)
- *
- *        "sheet" describes a list of separate animations inside given "bitmap"
- *        "sheetTileWidth" and "sheetTileHeight" can specify dimensions for a single sheet tile
- *
- *        When object, no further arguments will be
- *        processed by this constructor.
- *
- * @param {number=} y the y-coordinate of this Sprite, required when x is number
- * @param {number=} width of this Sprite's bounding box, required when x is number
- * @param {number=} height of this Sprite's bounding box, required when x is number
- * @param {Image|HTMLCanvasElement|string=} bitmap optional image, when given, no override of the "draw"-method is
- *            required, as it will render the image by default at the current coordinates and at the given width and
- *            height. value can be either: HTMLImageElement, HTMLCanvasElement or a string describing an Image.src
- *            (e.g. hyperlink to remote Image, base64 encoded String or Blob URL)
- *            when not defined, you must override the "draw"-method as otherwise this
- *            sprite won't render anything onto the canvas! *
- * @param {boolean=} collidable whether this Sprite can cause collisions with other Sprites
- * @param {boolean=} mask whether to use this Sprite as a mask for underlying content
+ *        }}
  */
-function Sprite( x, y, width, height, bitmap, collidable, mask ) {
+function Sprite({
+    width, height,
+    x = 0, y = 0, bitmap = null,
+    collidable = false, interactive = false, mask = false,
+    sheet = [], sheetTileWidth = 0, sheetTileHeight = 0
+} = {}) {
 
     /* assertions */
 
-    let opts;
-
-    if ( typeof x === "number" ) {
-
-        // legacy API
-
-        opts = {
-            x: x, y: y,
-            width: width, height: height,
-            bitmap: bitmap,
-            collidable: collidable,
-            mask: mask
-        };
-    }
-    else if ( typeof x === "object" ) {
-
-        // new API : Object based
-
-        opts = x;
-    }
-    else {
-        throw new Error( "Sprite must either be constructed using a definitions Object {} " +
-            "or x, y, width, height, bitmap (optional), collidable (optional), mask (optional)" );
-    }
-
-    if ( typeof opts.width  !== "number" || typeof opts.height !== "number" )
+    if ( width <= 0 || height <= 0 ) {
         throw new Error( "cannot construct a zSprite without valid dimensions" );
-
-    if ( typeof opts.x !== "number" )
-        opts.x = 0;
-
-    if ( typeof opts.y !== "number" )
-        opts.y = 0;
+    }
 
     /* instance properties */
 
-    /** @protected @type {Array.<Sprite>} */ this._children   = [];
-    /** @protected @type {boolean} */        this._disposed = false;
+    /** @protected @type {Array<Sprite>} */ this._children   = [];
+    /** @protected @type {boolean} */       this._disposed = false;
 
     /**
      * whether this sprite can collide with others
-     * 
+     *
      * @public
      * @type {boolean}
      */
-    this.collidable = ( typeof opts.collidable === "boolean" ) ? opts.collidable : false;
+    this.collidable = collidable;
 
     /**
      * indicates the user is currently hovering over this Sprite, note
@@ -139,11 +88,11 @@ function Sprite( x, y, width, height, bitmap, collidable, mask ) {
     /**
      *  whether this Sprites image contents should function as a mask
      * (for instance to obscure the contents of underlying Sprites)
-     * 
+     *
      * @protected
      * @type {boolean}
      */
-    this._mask = ( typeof opts.mask === "boolean" ) ? opts.mask : false;
+    this._mask = mask;
 
     /**
      * rectangle describing this sprites bounds relative to the canvas
@@ -152,7 +101,7 @@ function Sprite( x, y, width, height, bitmap, collidable, mask ) {
      * @protected
      * @type {{ left: number, top: number, width: number, height: number }}
      */
-    this._bounds = { "left" : 0, "top" : 0, "width" : opts.width, "height" : opts.height };
+    this._bounds = { left: 0, top: 0, width, height };
 
     /**
      * @protected
@@ -187,7 +136,7 @@ function Sprite( x, y, width, height, bitmap, collidable, mask ) {
      * @public
      * @type {canvas}
      */
-    Sprite.prototype.canvas = null;
+    this.canvas = null;
 
     /**
      * @protected
@@ -211,16 +160,6 @@ function Sprite( x, y, width, height, bitmap, collidable, mask ) {
     this._draggable = false;
 
     /**
-     * whether this Sprite can receive user interaction events, when
-     * false this Sprite is omitted from "handleInteraction"-queries
-     * executed when the user interacts with the parent StageCanvas element
-     *
-     * @protected
-     * @type {boolean}
-     */
-    this._interactive = false;
-    
-    /**
      * whether to restrict this Sprites movement
      * to its constraints / canvas dimensions
      *
@@ -237,20 +176,22 @@ function Sprite( x, y, width, height, bitmap, collidable, mask ) {
 
     /* initialization */
 
-    this.setX( opts.x );
-    this.setY( opts.y );
+    this.setX( x );
+    this.setY( y );
+    this.setInteractive( interactive );
 
-    if ( opts.bitmap )
-        this.setBitmap( opts.bitmap );
+    if ( bitmap ) {
+        this.setBitmap( bitmap );
+    }
 
-    if ( Array.isArray( opts.sheet ) && opts.sheet.length > 0 ) {
-
-        if ( !opts.bitmap )
+    if ( Array.isArray( sheet ) && sheet.length > 0 ) {
+        if ( !bitmap ) {
             throw new Error( "cannot use a spritesheet without a valid Bitmap" );
-
-        this.setSheet( opts.sheet, opts.sheetTileWidth, opts.sheetTileHeight );
+        }
+        this.setSheet( sheet, sheetTileWidth, sheetTileHeight );
     }
 }
+export default Sprite;
 
 /* static methods */
 
@@ -269,7 +210,6 @@ function Sprite( x, y, width, height, bitmap, collidable, mask ) {
  *        function which should inherit the Sprite prototype
  */
 Sprite.extend = function( extendingFunction ) {
-
     OOP.extend( extendingFunction, Sprite );
 };
 
@@ -282,7 +222,6 @@ Sprite.extend = function( extendingFunction ) {
  * @return {boolean}
  */
 Sprite.prototype.getDraggable = function() {
-
     return this._draggable;
 };
 
@@ -290,41 +229,36 @@ Sprite.prototype.getDraggable = function() {
  * toggle the draggable mode of this Sprite
  *
  * @public
- *
  * @param {boolean} aValue whether we want to activate / deactivate the dragging mode
- * @param {boolean=} aKeepInBounds optional, whether we should keep dragging within bounds
+ * @param {Boolean=} aKeepInBounds optional, whether we should keep dragging within bounds
  *                   this will default to the bounds of the canvas, or can be a custom
  *                   restraint (see "setConstraint")
  */
-Sprite.prototype.setDraggable = function( aValue, aKeepInBounds ) {
-
+Sprite.prototype.setDraggable = function( aValue, aKeepInBounds = false ) {
     this._draggable    = aValue;
-    this._keepInBounds = aKeepInBounds || false;
+    this._keepInBounds = this._constraint ? true : aKeepInBounds;
 
     // if we want to drag this Sprite and it isn't interactive, set it as interactive
     // otherwise it will not receive any interaction events from the canvas
 
-    if ( aValue && !this._interactive )
+    if ( aValue && !this._interactive ) {
         this.setInteractive( true );
+    }
 };
 
 /**
  * @public
- *
  * @return {number}
  */
 Sprite.prototype.getX = function() {
-
     return this._bounds.left;
 };
 
 /**
  * @public
- *
  * @param {number} aValue
  */
 Sprite.prototype.setX = function( aValue ) {
-
     const delta       = aValue - this._bounds.left;
     this._bounds.left = this._constraint ? aValue + this._constraint.left : aValue;
 
@@ -332,13 +266,11 @@ Sprite.prototype.setX = function( aValue ) {
     // must update their offsets by the delta value too
 
     if ( this._children.length > 0 ) {
-
         let theChild = this._children[ 0 ];
-
         while ( theChild ) {
-            if ( !theChild.isDragging )
+            if ( !theChild.isDragging ) {
                 theChild.setX( theChild._bounds.left + delta );
-
+            }
             theChild = theChild.next;
         }
     }
@@ -346,21 +278,17 @@ Sprite.prototype.setX = function( aValue ) {
 
 /**
  * @public
- *
  * @return {number}
  */
 Sprite.prototype.getY = function() {
-
     return this._bounds.top;
 };
 
 /**
  * @public
- *
  * @param {number} aValue
  */
 Sprite.prototype.setY = function( aValue ) {
-
     const delta        = aValue - this._bounds.top;
     this._bounds.top = this._constraint ? aValue + this._constraint.top : aValue;
 
@@ -368,14 +296,11 @@ Sprite.prototype.setY = function( aValue ) {
     // must update their offsets by the delta value too
 
     if ( this._children.length > 0 ) {
-
         let theChild = this._children[ 0 ];
-
         while ( theChild ) {
-
-            if ( !theChild.isDragging )
+            if ( !theChild.isDragging ) {
                 theChild.setY( theChild._bounds.top + delta );
-
+            }
             theChild = theChild.next;
         }
     }
@@ -386,7 +311,6 @@ Sprite.prototype.setY = function( aValue ) {
  * @return {number}
  */
 Sprite.prototype.getWidth = function() {
-
     return this._bounds.width;
 };
 
@@ -395,15 +319,16 @@ Sprite.prototype.getWidth = function() {
  * @param {number} aValue
  */
 Sprite.prototype.setWidth = function( aValue ) {
-
     const prevWidth    = this._bounds.width || 0;
     this._bounds.width = aValue;
 
     // adjust the left offset so it remains relative to the
     // previous left offset for the old width
 
-    if ( prevWidth !== 0 )
+    if ( prevWidth !== 0 ) {
         this._bounds.left -= ( aValue * .5 - prevWidth * .5 );
+    }
+    this.invalidate();
 };
 
 /**
@@ -420,15 +345,16 @@ Sprite.prototype.getHeight = function() {
  * @param {number} aValue
  */
 Sprite.prototype.setHeight = function( aValue ) {
-
     const prevHeight    = this._bounds.height || 0;
     this._bounds.height = aValue;
 
     // adjust the top offset so it remains relative to the
     // previous top offset for the old height
 
-    if ( prevHeight !== 0 )
-        this._bounds.top -= ( aValue *.5 - prevHeight *.5 );
+    if ( prevHeight !== 0 ) {
+        this._bounds.top -= ( aValue * .5 - prevHeight * .5 );
+    }
+    this.invalidate();
 };
 
 /**
@@ -437,19 +363,18 @@ Sprite.prototype.setHeight = function( aValue ) {
  * defined constraints of this Sprite to ensure it remains within the constraints
  *
  * @public
- *
  * @param {number=} left optionally desired x-coordinate, defaults to current position
  * @param {number=} top optionally desired y-coordinate, defaults to current position
  * @param {number=} width optionally desired width, defaults to current size
  * @param {number=} height optionally desired width, defaults to current size
  */
 Sprite.prototype.setBounds = function( left, top, width, height ) {
-
-    if ( typeof left !== "number" )
+    if ( typeof left !== "number" ) {
         left = this._bounds.left;
-
-    if ( typeof top !== "number" )
+    }
+    if ( typeof top !== "number" ) {
         top = this._bounds.top;
+    }
 
     if ( this._constraint ) {
         left -= this._constraint.left;
@@ -459,11 +384,13 @@ Sprite.prototype.setBounds = function( left, top, width, height ) {
         throw new Error( "cannot update position of a Sprite that has no constraint or is not added to a canvas" );
     }
 
-    if ( typeof width === "number" )
+    if ( typeof width === "number" ) {
         this._bounds.width = width;
+    }
 
-    if ( typeof height === "number" )
+    if ( typeof height === "number" ) {
         this._bounds.height = height;
+    }
 
     const thisWidth   = this._bounds.width;
     const thisHeight  = this._bounds.height;
@@ -510,7 +437,6 @@ Sprite.prototype.setBounds = function( left, top, width, height ) {
  * @return {{ left: number, top: number, width: number, height: number }}
  */
 Sprite.prototype.getBounds = function() {
-
     return this._bounds;
 };
 
@@ -522,19 +448,22 @@ Sprite.prototype.getBounds = function() {
  * @return {boolean}
  */
 Sprite.prototype.getInteractive = function() {
-
     return this._interactive;
 };
 
 /**
- * toggle the interactive state of this Sprite
+ * toggle whether this Sprite can receive user interaction events, when
+ * false this Sprite is omitted from "handleInteraction"-queries
+ * executed when the user interacts with the parent StageCanvas element
  *
  * @public
- *
  * @param {boolean} aValue
  */
 Sprite.prototype.setInteractive = function( aValue ) {
-
+    /**
+     * @protected
+     * @type {boolean}
+     */
     this._interactive = aValue;
 };
 
@@ -550,14 +479,11 @@ Sprite.prototype.setInteractive = function( aValue ) {
  *                 which can be used to create strict timed animations
  */
 Sprite.prototype.update = function( aCurrentTimestamp ) {
-
     // override in prototype-extensions or instance
     // recursively update this sprites children :
 
     if ( this._children.length > 0 ) {
-
         let theSprite = this._children[ 0 ];
-
         while ( theSprite ) {
             theSprite.update( aCurrentTimestamp );
             theSprite = theSprite.next;
@@ -566,8 +492,9 @@ Sprite.prototype.update = function( aCurrentTimestamp ) {
 
     // if this sprite has a spritesheet, progress its animation
 
-    if ( this._animation )
+    if ( this._animation ) {
         this.updateAnimation();
+    }
 };
 
 /**
@@ -584,16 +511,16 @@ Sprite.prototype.draw = function( aCanvasContext ) {
     // extend in subclass if you're drawing a custom object instead of a graphical Image asset
     // don't forget to draw the child display list when overriding this method!
 
-    if ( !this.canvas )
+    if ( !this.canvas ) {
         return;
-
+    }
     aCanvasContext.save();
 
     // Sprite acts as a mask for underlying Sprites ?
 
-    if ( this._mask )
+    if ( this._mask ) {
         aCanvasContext.globalCompositeOperation = 'destination-in';
-
+    }
 
     if ( this._bitmapReady ) {
 
@@ -638,9 +565,7 @@ Sprite.prototype.draw = function( aCanvasContext ) {
     // draw this Sprites children onto the canvas
 
     if ( this._children.length > 0 ) {
-
         let theSprite = this._children[ 0 ];
-
         while ( theSprite ) {
             theSprite.draw( aCanvasContext );
             theSprite = theSprite.next;
@@ -649,9 +574,9 @@ Sprite.prototype.draw = function( aCanvasContext ) {
 
     // restore canvas drawing operation so subsequent sprites draw as overlay
 
-    if ( this._mask )
+    if ( this._mask ) {
         aCanvasContext.globalCompositeOperation = 'source-over';
-
+    }
     aCanvasContext.restore();
 
     // draw an outline when in debug mode
@@ -671,12 +596,11 @@ Sprite.prototype.draw = function( aCanvasContext ) {
  * @return {boolean} whether a collision has been detected
  */
 Sprite.prototype.collidesWith = function( aSprite ) {
-
-    if ( aSprite === this )
+    if ( aSprite === this ) {
         return false;
-    
+    }
     const self = this._bounds, compare = aSprite.getBounds();
-    
+
     return !(
         (( self.top + self.height ) < ( compare.top )) ||
         ( self.top > ( compare.top + compare.height )) ||
@@ -694,9 +618,7 @@ Sprite.prototype.collidesWith = function( aSprite ) {
  * @return {{ left: number, top: number, width: number, height: number }|null}
  */
 Sprite.prototype.getIntersection = function( aSprite ) {
-
     if ( this.collidesWith( aSprite )) {
-
         const self = this._bounds, compare = aSprite.getBounds();
 
         const x = Math.max( self.left, compare.left );
@@ -718,7 +640,6 @@ Sprite.prototype.getIntersection = function( aSprite ) {
  * sake, we only check the desired plane, and not against the other axis.
  *
  * @public
- *
  * @param {Sprite} aSprite the sprite to check against
  * @param {number} aEdge the edge to check 0 = left, 1 = above, 2 = right, 3 = below this is relative
  *                 to the edge of THIS sprite
@@ -726,12 +647,12 @@ Sprite.prototype.getIntersection = function( aSprite ) {
  * @return {boolean} whether collision with the given edge has been detected
  */
 Sprite.prototype.collidesWithEdge = function( aSprite, aEdge ) {
-
-    if ( aSprite === this )
+    if ( aSprite === this ) {
         return false;
-
-    if ( isNaN( aEdge ) || aEdge < 0 || aEdge > 3 )
+    }
+    if ( isNaN( aEdge ) || aEdge < 0 || aEdge > 3 ) {
         throw new Error( "invalid argument for edge" );
+    }
 
     switch ( aEdge ) {
         case 0: // left
@@ -754,7 +675,6 @@ Sprite.prototype.collidesWithEdge = function( aSprite, aEdge ) {
  * @return {Image|HTMLCanvasElement|string}
  */
 Sprite.prototype.getBitmap = function() {
-
     return this._bitmap;
 };
 
@@ -763,84 +683,95 @@ Sprite.prototype.getBitmap = function() {
  * to swap spritesheets (for instance)
  *
  * @public
- * @param {Image|HTMLCanvasElement|string=} aImage image, can be either HTMLImageElement, HTMLCanvasElement
+ * @param {Image|HTMLCanvasElement|string|null=} aImage image, can be either HTMLImageElement, HTMLCanvasElement
  *        or String (remote URL, base64 encoded string or Blob URL)
  * @param {number=} aOptWidth optional new width to use for this Sprites bounds
  * @param {number=} aOptHeight optional new width to use for this Sprites bounds
+ * @return {Promise}
  */
 Sprite.prototype.setBitmap = function( aImage, aOptWidth, aOptHeight ) {
+    const isCanvasElement = aImage instanceof window.HTMLCanvasElement;
+    const isImageElement  = aImage instanceof window.HTMLImageElement;
+    const isDataSource    = typeof aImage === "string";
 
-    // swapping Bitmaps ? unset the ready state
-
-    if ( this._bitmap !== aImage )
-        this._bitmapReady = false;
-
-    if ( !aImage ) {
-        this._bitmap = null;
-        return;
+    if ( !!aImage && ( !isCanvasElement && !isImageElement && !isDataSource )) {
+        throw new Error( `expected HTMLImageElement, HTMLCanvasElement or String for Image source, got "${aImage}" instead` );
     }
 
-    // update dimensions, when given
+    return new Promise( async ( resolve, reject ) => {
+        // swapping Bitmaps ? unset the ready state
 
-    const hasWidth  = ( typeof aOptWidth === "number" );
-    const hasHeight = ( typeof aOptHeight === "number" );
+        if ( this._bitmap !== aImage ) {
+            this._bitmapReady = false;
+        }
 
-    if ( hasWidth )
-        this.setWidth( aOptWidth );
+        if ( !aImage ) {
+            this._bitmap = null;
+            return;
+        }
 
-    if ( hasHeight )
-        this.setHeight( aOptHeight );
+        // update dimensions, when given
 
-    // make sure the image is still within bounds
+        const hasWidth  = ( typeof aOptWidth === "number" );
+        const hasHeight = ( typeof aOptHeight === "number" );
 
-    if ( this._keepInBounds && this.canvas && ( hasWidth || hasHeight )) {
+        if ( hasWidth ) {
+            this.setWidth( aOptWidth );
+        }
 
-        const minX = -( this._bounds.width  - this.canvas.getWidth() );
-        const minY = -( this._bounds.height - this.canvas.getHeight() );
+        if ( hasHeight ) {
+            this.setHeight( aOptHeight );
+        }
 
-        if ( this._bounds.left > 0 )
-            this._bounds.left = 0;
+        // make sure the image is still within bounds
 
-        else if ( this._bounds.left < minX )
-            this._bounds.left = minX;
+        if ( this._keepInBounds && this.canvas && ( hasWidth || hasHeight )) {
 
-        if ( this._bounds.top > 0 )
-            this._bounds.top = 0;
+            const minX = -( this._bounds.width  - this.canvas.getWidth() );
+            const minY = -( this._bounds.height - this.canvas.getHeight() );
 
-        else if ( this._bounds.top < minY )
-            this._bounds.top = minY;
-    }
+            if ( this._bounds.left > 0 )
+                this._bounds.left = 0;
 
-    if ( aImage instanceof window.HTMLCanvasElement ) {
+            else if ( this._bounds.left < minX )
+                this._bounds.left = minX;
 
-        // nothing to load, HTMLCanvasElement is ready for rendering
+            if ( this._bounds.top > 0 )
+                this._bounds.top = 0;
 
-        this._bitmap      = aImage;
-        this._bitmapReady = true;
-    }
-    else if ( aImage instanceof window.HTMLImageElement || typeof aImage === "string" ) {
+            else if ( this._bounds.top < minY )
+                this._bounds.top = minY;
+        }
 
-        const self = this;
+        if ( isCanvasElement ) {
 
-        Loader.loadImage( aImage, ( aResult, aOptError ) => {
+            // nothing to load, HTMLCanvasElement is ready for rendering
 
-            if ( !( aOptError instanceof Error )) {
+            this._bitmap      = aImage;
+            this._bitmapReady = true;
 
-                self._bitmap      = aResult.image;
-                self._bitmapReady = true;
+            return resolve();
+        }
+        else {
+            try {
+                const { size, image } = await Loader.loadImage(
+                    isImageElement ? aImage.src : aImage, isImageElement ? aImage : null
+                );
+                this._bitmap          = image;
+                this._bitmapReady     = true;
 
-                /** @protected @type {number} */ this._bitmapWidth  = aResult.size.width;
-                /** @protected @type {number} */ this._bitmapHeight = aResult.size.height;
+                /** @protected @type {number} */ this._bitmapWidth  = size.width;
+                /** @protected @type {number} */ this._bitmapHeight = size.height;
+
+                this.invalidate();
+
+                return resolve();
             }
-            else {
-                console.error( aOptError.message + " occurred. Could not setBitmap()" );
+            catch ( aOptError ){
+                reject( new Error( `zSprite.setBitmap() "${aOptError.message}" occurred.` ));
             }
-        });
-    }
-    else {
-        throw new Error( "expected HTMLImageElement, HTMLCanvasElement or String for Image source, " +
-            "got " + aImage + " instead" );
-    }
+        }
+    });
 };
 
 /**
@@ -848,14 +779,14 @@ Sprite.prototype.setBitmap = function( aImage, aOptWidth, aOptHeight ) {
  * from its Bitmap, use in conjunction with setBitmap()
  *
  * @public
- * @param {Array.<{ row: number, col: number, amount: number, fpt: 5, onComplete: Function= }>} sheet
+ * @param {Array<{ row: number, col: number, amount: number, fpt: 5, onComplete: Function= }>} sheet
  * @param {number=} width optional width to use for a single tile, defaults to Sprite bounds width
  * @param {number=} height optional height to use for a single tile, defaults to Sprite bounds height
  */
 Sprite.prototype.setSheet = function( sheet, width, height ) {
     /**
      * @protected
-     * @type {Array.<{ row: number, col: number, amount: number, fpt: 5, onComplete: Function= }>}
+     * @type {Array<{ row: number, col: number, amount: number, fpt: 5, onComplete: Function= }>}
      */
     this._sheet = sheet;
 
@@ -906,22 +837,18 @@ Sprite.prototype.switchAnimation = function( sheetIndex ) {
 /**
  * set a reference to the parent sprite containing this one
  *
- * @override
  * @public
- *
- * @param {Sprite|canvas} aParent
+ * @param {Sprite|Canvas} aParent
  */
 Sprite.prototype.setParent = function( aParent ) {
-
     this._parent = aParent;
 };
 
 /**
  * @public
- * @return {Sprite|canvas} parent
+ * @return {Sprite|Canvas} parent
  */
 Sprite.prototype.getParent = function() {
-
     return this._parent;
 };
 
@@ -929,11 +856,9 @@ Sprite.prototype.getParent = function() {
  * set a reference to the canvas that is rendering this sprite
  *
  * @public
- *
- * @param {canvas} aCanvas
+ * @param {Canvas} aCanvas
  */
 Sprite.prototype.setCanvas = function( aCanvas ) {
-
     this.canvas = aCanvas;
 };
 
@@ -947,16 +872,14 @@ Sprite.prototype.setCanvas = function( aCanvas ) {
  * but this method can be invoked to override it to a custom Rectangle
  *
  * @public
- *
- * @param {number} aLeft
- * @param {number} aTop
- * @param {number} aWidth
- * @param {number} aHeight
+ * @param {number} left
+ * @param {number} top
+ * @param {number} width
+ * @param {number} height
  *
  * @return {{ left: number, top: number, width: number, height: number }} the generated constraint Rectangle
  */
-Sprite.prototype.setConstraint = function( aLeft, aTop, aWidth, aHeight ) {
-
+Sprite.prototype.setConstraint = function( left, top, width, height) {
     /**
      * rectangle describing this sprites restrictions (only applicable
      * to draggable Sprites to ensure they remain within these bounds)
@@ -964,23 +887,21 @@ Sprite.prototype.setConstraint = function( aLeft, aTop, aWidth, aHeight ) {
      * @protected
      * @type {{ left: number, top: number, width: number, height: number }}
      */
-    this._constraint = { "left" : aLeft, "top" : aTop, "width" : aWidth, "height" : aHeight };
+    this._constraint = { left, top, width, height };
 
-    this._bounds.left = Math.max( aLeft, this._bounds.left );
-    this._bounds.top  = Math.max( aTop,  this._bounds.top );
+    this._bounds.left = Math.max( left, this._bounds.left );
+    this._bounds.top  = Math.max( top,  this._bounds.top );
 
     this._keepInBounds = true;
 
-    return this._constraint;
+    return this.getConstraint();
 };
 
 /**
  * @public
- *
  * @return {{ left: number, top: number, width: number, height: number }}
  */
 Sprite.prototype.getConstraint = function() {
-
     return this._constraint;
 };
 
@@ -988,15 +909,13 @@ Sprite.prototype.getConstraint = function() {
  * append another Sprite to the display list of this sprite
  *
  * @public
- *
  * @param {Sprite} aChild to append
  * @return {Sprite} this object - for chaining purposes
  */
 Sprite.prototype.addChild = function( aChild ) {
-
-    if ( this.contains( aChild ))
+    if ( this.contains( aChild )) {
         return this;
-
+    }
     // create a linked list
     const numChildren = this._children.length;
 
@@ -1012,8 +931,7 @@ Sprite.prototype.addChild = function( aChild ) {
 
     // request a render now the state of the canvas has changed
 
-    if ( this.canvas )
-        this.canvas.invalidate();
+    this.invalidate();
 
     return this;
 };
@@ -1027,34 +945,33 @@ Sprite.prototype.addChild = function( aChild ) {
  * @return {Sprite} the removed child
  */
 Sprite.prototype.removeChild = function( aChild ) {
-
     aChild.setParent( null );
     aChild.setCanvas( null );
 
     //aChild.dispose(); // no, we might like to re-use the child at a later stage!
 
     const childIndex = this._children.indexOf( aChild );
-    if ( childIndex !== -1 )
+    if ( childIndex !== -1 ) {
         this._children.splice( childIndex, 1 );
+    }
 
     // update linked list
 
     const prevChild = aChild.last;
     const nextChild = aChild.next;
 
-    if ( prevChild )
+    if ( prevChild ) {
         prevChild.next = nextChild;
-
-    if ( nextChild )
+    }
+    if ( nextChild ) {
         nextChild.last = prevChild;
-
+    }
     aChild.last = aChild.next = null;
 
     // request a render now the state of the canvas has changed
 
-    if ( this.canvas ) {
-        this.canvas.invalidate();
-    }
+    this.invalidate();
+
     return aChild;
 };
 
@@ -1062,12 +979,10 @@ Sprite.prototype.removeChild = function( aChild ) {
  * get a child of this Sprite by its index in the Display List
  *
  * @public
- *
  * @param {number} index of the object in the Display List
  * @return {Sprite} the Sprite present at the given index
  */
 Sprite.prototype.getChildAt = function( index ) {
-
     return this._children[ index ];
 };
 
@@ -1075,12 +990,10 @@ Sprite.prototype.getChildAt = function( index ) {
  * remove a child from this object's Display List at the given index
  *
  * @public
- *
  * @param {number} index of the object to remove
  * @return {Sprite} the Sprite removed at the given index
  */
 Sprite.prototype.removeChildAt = function( index ) {
-
     return this.removeChild( this.getChildAt( index ));
 };
 
@@ -1089,7 +1002,6 @@ Sprite.prototype.removeChildAt = function( index ) {
  * @return {number} the amount of children in this object's Display List
  */
 Sprite.prototype.numChildren = function() {
-
     return this._children.length;
 };
 
@@ -1097,29 +1009,29 @@ Sprite.prototype.numChildren = function() {
  * check whether a given display object is present in this object's display list
  *
  * @public
- *
  * @param {Sprite} aChild
  * @return {boolean}
  */
 Sprite.prototype.contains = function( aChild ) {
-
     return this._children.indexOf( aChild ) > -1;
 };
 
 /**
+ * clean up all resources allocated to this Sprite
+ *
  * @public
  */
 Sprite.prototype.dispose = function() {
-
-    if ( this._disposed )
+    if ( this._disposed ) {
         return;
-
+    }
     this._disposed = true;
 
     // in case this Sprite was still on the canvas, remove it
 
-    if ( this._parent )
+    if ( this._parent ) {
         this._parent.removeChild( this );
+    }
 
     // dispose the children
     let i = this._children.length;
@@ -1140,12 +1052,10 @@ Sprite.prototype.dispose = function() {
  * is a "down"-handler and indicates the sprite has just been touched
  *
  * @protected
- *
  * @param {number} aXPosition position of the touch / cursor
  * @param {number} aYPosition position of the touch / cursor
  */
 Sprite.prototype.handlePress = function( aXPosition, aYPosition ) {
-
     // override in prototype-extensions or instance
 };
 
@@ -1153,12 +1063,10 @@ Sprite.prototype.handlePress = function( aXPosition, aYPosition ) {
  * invoked when the user releases touch of this (previously pressed) Sprite
  *
  * @protected
- *
  * @param {number} aXPosition position of the touch / cursor
  * @param {number} aYPosition position of the touch / cursor
  */
 Sprite.prototype.handleRelease = function( aXPosition, aYPosition ) {
-
     // override in prototype-extensions or instance
 };
 
@@ -1169,7 +1077,6 @@ Sprite.prototype.handleRelease = function( aXPosition, aYPosition ) {
  * @protected
  */
 Sprite.prototype.handleClick = function() {
-
     // override in prototype-extensions or instance
 };
 
@@ -1178,12 +1085,10 @@ Sprite.prototype.handleClick = function() {
  * to delegate drag logic
  *
  * @protected
- *
  * @param {number} aXPosition
  * @param {number} aYPosition
  */
 Sprite.prototype.handleMove = function( aXPosition, aYPosition ) {
-
     const theX = this._dragStartOffset.x + ( aXPosition - this._dragStartEventCoordinates.x );
     const theY = this._dragStartOffset.y + ( aYPosition - this._dragStartEventCoordinates.y );
 
@@ -1199,7 +1104,6 @@ Sprite.prototype.handleMove = function( aXPosition, aYPosition ) {
  * do NOT override this method, override the individual "protected" handlers instead
  *
  * @public
- *
  * @param {number} aEventX the events X offset, passed for quick evaluation of position updates
  * @param {number} aEventY the events Y offset, passed for quick evaluation of position updates
  * @param {Event} aEvent the original event that triggered this action
@@ -1207,7 +1111,6 @@ Sprite.prototype.handleMove = function( aXPosition, aYPosition ) {
  * @return {boolean} whether this Sprite has handled the event
  */
 Sprite.prototype.handleInteraction = function( aEventX, aEventY, aEvent ) {
-
     // first traverse the children of this sprite
     let foundInteractionInChild = false, theChild;
 
@@ -1216,24 +1119,23 @@ Sprite.prototype.handleInteraction = function( aEventX, aEventY, aEvent ) {
           numChildren = this._children.length;
 
     if ( numChildren > 0 ) {
-
         // reverse loop to first handle top layers
         theChild = this._children[ numChildren - 1 ];
 
         while ( theChild ) {
-
             foundInteractionInChild = theChild.handleInteraction( aEventX, aEventY, aEvent );
 
             // child is higher in DisplayList, takes precedence over this parent
-            if ( foundInteractionInChild )
+            if ( foundInteractionInChild ) {
                 return true;
-
+            }
             theChild = theChild.last;
         }
     }
 
-    if ( !this._interactive )
+    if ( !this._interactive ) {
         return false;
+    }
 
     // did we have a previous interaction and the 'up' event was fired?
     // unset this property or update the position in case the event is a move event
@@ -1247,9 +1149,9 @@ Sprite.prototype.handleInteraction = function( aEventX, aEventY, aEvent ) {
             // in case we only handled this object for a short
             // period (250 ms), we assume it was clicked / tapped
 
-            if ( Date.now() - this._dragStartTime < 250 )
+            if ( Date.now() - this._dragStartTime < 250 ) {
                 this.handleClick();
-
+            }
             this.handleRelease( aEventX, aEventY );
             return true;
         }
@@ -1269,9 +1171,7 @@ Sprite.prototype.handleInteraction = function( aEventX, aEventY, aEvent ) {
 
         // yes sir, we've got a match
         if ( !this.isDragging ) {
-
-            if ( aEvent.type === "touchstart" ||
-                 aEvent.type === "mousedown" ) {
+            if ( aEvent.type === "touchstart" || aEvent.type === "mousedown" ) {
 
                 this.isDragging = true;
 
@@ -1314,7 +1214,6 @@ Sprite.prototype.handleInteraction = function( aEventX, aEventY, aEvent ) {
     // ensure we don't lose the handle by quickly moving around...
 
     if ( this._draggable && this.isDragging ) {
-
         this.handleMove( aEventX, aEventY );
         return true;
     }
@@ -1330,7 +1229,6 @@ Sprite.prototype.handleInteraction = function( aEventX, aEventY, aEvent ) {
  * @protected
  */
 Sprite.prototype.updateAnimation = function() {
-
     const aniProps = this._animation;
 
     if ( ++aniProps.counter === aniProps.fpt ) {
@@ -1344,9 +1242,21 @@ Sprite.prototype.updateAnimation = function() {
         aniProps.col = aniProps.type.col;
 
         // fire animation complete callback if defined
-        if ( typeof aniProps.onComplete === "function" )
+        if ( typeof aniProps.onComplete === "function" ) {
             aniProps.onComplete( this );
+        }
     }
+};
+
+/**
+ * Whenever a change has occurred, this Sprite can request an
+ * invalidation of the Canvas to ensure the on screen representation
+ * matches the latest state.
+ *
+ * @protected
+ */
+Sprite.prototype.invalidate = function() {
+    this.canvas && this.canvas.invalidate();
 };
 
 /**
@@ -1357,7 +1267,6 @@ Sprite.prototype.updateAnimation = function() {
  * @param {CanvasRenderingContext2D} aCanvasContext to draw on
  */
 Sprite.prototype.drawOutline = function( aCanvasContext ) {
-
     aCanvasContext.lineWidth   = 1;
     aCanvasContext.strokeStyle = '#FF0000';
     aCanvasContext.strokeRect( this.getX(), this.getY(), this.getWidth(), this.getHeight() )

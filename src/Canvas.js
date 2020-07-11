@@ -1,7 +1,7 @@
 /**
  * The MIT License (MIT)
  *
- * Copyright (c) 2010-2017 Igor Zinken / igorski
+ * Igor Zinken 2013-2020 - https://www.igorski.nl
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of
  * this software and associated documentation files (the "Software"), to deal in
@@ -20,13 +20,8 @@
  * IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-"use strict";
-
-const EventHandler = require( "./utils/EventHandler" );
-const Environment  = require( "./utils/Environment" );
-const OOP          = require( "./utils/OOP" );
-
-module.exports = Canvas;
+import EventHandler from "./utils/EventHandler";
+import OOP          from "./utils/OOP";
 
 /**
  * creates an API for an HTMLCanvasElement where all drawables are treated as
@@ -34,84 +29,47 @@ module.exports = Canvas;
  * than having a single function aggregating all drawing instructions
  *
  * @constructor
- *
- * @param {number|{
+ * @param {{
  *            width: number,
  *            height: number,
+ *            fps: number,
+ *            scale : number,
+ *            backgroundColor: string,
  *            animate: boolean,
  *            smoothing: boolean,
  *            stretchToFit: boolean,
- *            fps: number,
+ *            preventEventBubbling: boolean,
+ *            parentElement: null,
  *            onUpdate: Function,
  *            debug: boolean
- *        }} width when numerical (legacy 4 argument constructor), the desired width of the Canvas,
- *        when Object it should contain required properties width and height, with others optional
- *        (see description on the default values for animate and framerate below)
- *        "smoothing" specifies whether or not to use smoothing (default, better for photos) or not (better for pixel art)
- *        "stretchToFit" specifies whether or not to stretch the canvas to fit the window dimensions (defaults to false)
- *                     note that the width is taken as the dominant factor, the height scales relative to the window ratio
- *        "onUpdate" callback method to execute when the canvas is about to render. This can be used to synchronize
- *            a game's model from a single spot (instead of having each sprite's update()-method fire)
- *        "debug" specifies whether or not all sprites should render their bounding box for debugging purposes
- *
- *        When object, no further arguments will be processed by this constructor
- *
- * @param {number=} height desired height of the Canvas
- * @param {boolean=} animate specifies whether we will animate the Canvas (redraw it constantly on each
- *            animationFrame), this defaults to false to preserve resources (and will only (re)draw when
- *            adding/removing sprites from the display list) set this to true when creating animated
- *            content / games
- * @param {number=} framerate  (defaults to 60), only useful when animate is true
+ *        }}
  */
-function Canvas( width, height, animate, framerate ) {
+function Canvas({
+    width = 300, height = 300, fps = 60, scale = 1, backgroundColor = null,
+    animate = false, smoothing = true, stretchToFit = false,
+    preventEventBubbling = false, parentElement = null, debug = false, onUpdate = null
+} = {}) {
 
-    /* assertions */
-
-    let opts;
-
-    if ( typeof width === "number" ) {
-
-        // legacy API
-
-        opts = {
-            width: width,
-            height: height,
-            animate: animate,
-            fps: framerate
-        };
-    }
-    else if ( typeof width === "object" ) {
-
-        // new API : Object based
-
-        opts = width;
-    }
-    else {
-        opts = {};
-    }
-
-    width  = ( typeof opts.width  === "number" ) ? opts.width  : 300;
-    height = ( typeof opts.height === "number" ) ? opts.height : 300;
-
-    if ( width <= 0 || height <= 0 )
+    if ( width <= 0 || height <= 0 ) {
         throw new Error( "cannot construct a zCanvas without valid dimensions" );
+    }
 
     /* instance properties */
 
-    /** @public @type {boolean} */     this.DEBUG = ( typeof opts.debug === "boolean" ) ? opts.debug : false;
-    /** @protected @type {number} */   this._fps = ( typeof opts.fps === "number" ) ? opts.fps : 60;
+    /** @public @type {boolean} */     this.DEBUG           = debug;
+    /** @protected @type {number} */   this._fps            = fps;
+    /** @protected @type {boolean} */  this._animate        = animate;
+    /** @protected @type {boolean} */  this._smoothing      = smoothing;
+    /** @protected @type {Function} */ this._updateHandler  = onUpdate;
+    /** @protected @type {Function} */ this._renderHandler  = this.render.bind( this );
+    /** @protected @type {number} */   this._lastRender     = 0;
+    /** @protected @type {number} */   this._renderId       = 0;
+    /** @protected @type {boolean} */  this._renderPending  = false;
     /** @protected @type {number} */   this._renderInterval = 1000 / this._fps;
-    /** @protected @type {boolean} */  this._animate = ( typeof opts.animate === "boolean" ) ? opts.animate : false;
-    /** @protected @type {boolean} */  this._smoothing = true;
-    /** @protected @type {boolean} */  this._stretchToFit = ( typeof opts.stretchToFit === "boolean" ) ? opts.stretchToFit : false;
-    /** @protected @type {Function} */ this._updateHandler = ( typeof opts.onUpdate === "function" ) ? opts.onUpdate : null;
-    /** @protected type {Function} */  this._renderHandler  = this.render.bind( this );
-    /** @protected @type {number} */   this._lastRender = 0;
-    /** @protected @type {number} */   this._renderId   = 0;
-    /** @protected @type {boolean} */  this._renderPending = false;
-    /** @protected @type {boolean} */  this._disposed = false;
+    /** @protected @type {boolean} */  this._disposed       = false;
+    /** @protected @type {object} */   this._scale          = { x: scale, y: scale };
 
-    /** @protected @type {Array.<sprite>} */ this._children = [];
+    /** @protected @type {Array<Sprite>} */ this._children = [];
 
     /* initialization */
 
@@ -127,14 +85,18 @@ function Canvas( width, height, animate, framerate ) {
      */
     this._canvasContext = this._element.getContext( "2d" );
 
+    if ( !!backgroundColor ) {
+        this.setBackgroundColor( backgroundColor );
+    }
+
     // ensure all is crisp clear on HDPI screens
 
     const devicePixelRatio  = window.devicePixelRatio || 1;
     const backingStoreRatio = this._canvasContext.webkitBackingStorePixelRatio ||
-                              this._canvasContext.mozBackingStorePixelRatio ||
-                              this._canvasContext.msBackingStorePixelRatio ||
-                              this._canvasContext.oBackingStorePixelRatio ||
-                              this._canvasContext.backingStorePixelRatio || 1;
+                                 this._canvasContext.mozBackingStorePixelRatio ||
+                                  this._canvasContext.msBackingStorePixelRatio ||
+                                   this._canvasContext.oBackingStorePixelRatio ||
+                                    this._canvasContext.backingStorePixelRatio || 1;
 
     const ratio = devicePixelRatio / backingStoreRatio;
 
@@ -142,18 +104,23 @@ function Canvas( width, height, animate, framerate ) {
 
     this.setDimensions( width, height, true, true );
 
-    if ( typeof opts.smoothing === "boolean" )
-        this.setSmoothing( opts.smoothing );
+    if ( scale !== 1 ) {
+        this.scale( scale, scale );
+    }
+    this.stretchToFit( stretchToFit );
 
-    this.preventEventBubbling( false );
+    if ( parentElement instanceof Element ) {
+        this.insertInPage( parentElement );
+    }
+    this.setSmoothing( smoothing );
+    this.preventEventBubbling( preventEventBubbling );
     this.addListeners();
 
-    if ( this._stretchToFit )
-        this.stretchToFit( true );
-
-    if ( this._animate )
+    if ( this._animate ) {
         this.render();  // start render loop
+    }
 }
+export default Canvas;
 
 /**
  * extend a given Function reference with the Canvas prototype, you
@@ -183,10 +150,9 @@ Canvas.extend = function( extendingFunction ) {
  * @param {Element} aContainer DOM node to append the Canvas to
  */
 Canvas.prototype.insertInPage = function( aContainer ) {
-
-    if ( this._element.parentNode )
+    if ( this._element.parentNode ) {
         throw new Error( "Canvas already present in DOM" );
-
+    }
     aContainer.appendChild( this._element );
 };
 
@@ -214,7 +180,6 @@ Canvas.prototype.getElement = function() {
  * @param {boolean} value
  */
 Canvas.prototype.preventEventBubbling = function( value ) {
-
     /**
      * @protected
      * @type {boolean}
@@ -224,8 +189,7 @@ Canvas.prototype.preventEventBubbling = function( value ) {
 
 /**
  * @public
- * @param {sprite} aChild
- *
+ * @param {Sprite} aChild
  * @return {Canvas} this Canvas - for chaining purposes
  */
 Canvas.prototype.addChild = function( aChild ) {
@@ -252,9 +216,9 @@ Canvas.prototype.addChild = function( aChild ) {
 
 /**
  * @public
- * @param {sprite} aChild the child to remove from this Canvas
+ * @param {Sprite} aChild the child to remove from this Canvas
  *
- * @return {sprite} the removed child - for chaining purposes
+ * @return {Sprite} the removed child - for chaining purposes
  */
 Canvas.prototype.removeChild = function( aChild ) {
 
@@ -294,7 +258,7 @@ Canvas.prototype.removeChild = function( aChild ) {
  * @public
  *
  * @param {number} index of the object in the Display List
- * @return {sprite} the referenced object
+ * @return {Sprite} the referenced object
  */
 Canvas.prototype.getChildAt = function( index ) {
 
@@ -306,7 +270,7 @@ Canvas.prototype.getChildAt = function( index ) {
  *
  * @public
  * @param {number} index of the object to remove
- * @return {sprite} the removed sprite
+ * @return {Sprite} the removed sprite
  */
 Canvas.prototype.removeChildAt = function( index ) {
 
@@ -324,7 +288,7 @@ Canvas.prototype.numChildren = function() {
 
 /**
  * @public
- * @return {Array.<sprite>}
+ * @return {Array<Sprite>}
  */
 Canvas.prototype.getChildren = function() {
 
@@ -335,7 +299,7 @@ Canvas.prototype.getChildren = function() {
  * check whether a given display object is present in this object's display list
  *
  * @public
- * @param {sprite} aChild
+ * @param {Sprite} aChild
  *
  * @return {boolean}
  */
@@ -357,7 +321,6 @@ Canvas.prototype.contains = function( aChild ) {
  * @public
  */
 Canvas.prototype.invalidate = function() {
-
     if ( !this._animate && !this._renderPending ) {
         this._renderPending = true;
         this._renderId = window.requestAnimationFrame( this._renderHandler );
@@ -439,7 +402,6 @@ Canvas.prototype.getHeight = function() {
  * as browsers will clear the existing Canvas content when adjusting its dimensions)
  *
  * @public
- *
  * @param {number} aWidth
  * @param {number} aHeight
  * @param {boolean=} setAsPreferredDimensions optional, defaults to true, stretchToFit handler
@@ -448,7 +410,6 @@ Canvas.prototype.getHeight = function() {
  *        to prevent flickering of existing screen contents during repeated resize
  */
 Canvas.prototype.setDimensions = function( aWidth, aHeight, setAsPreferredDimensions, optImmediate ) {
-
     /**
      * @protected
      * @type {{width: number, height: number}}
@@ -474,7 +435,6 @@ Canvas.prototype.setDimensions = function( aWidth, aHeight, setAsPreferredDimens
  * @param {string} aColor
  */
 Canvas.prototype.setBackgroundColor = function( aColor ) {
-
     /**
      * @protected
      * @type {string}
@@ -573,51 +533,70 @@ Canvas.prototype.drawImage = function( aSource, destX, destY, destWidth, destHei
 };
 
 /**
- * stretches the Canvas to fit the window
+ * Scales the canvas accordingly. This can be used to render content at a lower
+ * resolution but scale it up to fit the screen (for instance when rendering pixel art
+ * with smoothing disabled for crisp definition).
  *
  * @public
- * @param {boolean=} value
+ * @param {number} x the factor to scale the horizontal axis by
+ * @param {number=} y the factor to scale the vertical axis by, defaults to x
  */
-Canvas.prototype.stretchToFit = function( value ) {
+Canvas.prototype.scale = function( x, y = x ) {
+    this._scale = { x, y };
+
+    const scaleStyle = x === 1 && y === 1 ? '' : `scale(${x}, ${y})`;
+    const { style }  = this._element;
+
+    style[ "-webkit-transform-origin" ] =
+            style[ "transform-origin" ] = "0 0";
+
+    style[ "-webkit-transform" ] =
+            style[ "transform" ] = scaleStyle;
+
+    if ( this._stretchToFit ) {
+        this.stretchToFit( true, this._maintainRatio );
+    }
+};
+
+/**
+ * Stretches the Canvas to fit inside the available window size
+ * NOTE: when maintaing the aspect ratio this is not equal to filling the entire window size
+ * when the canvas dimensions re of a different ratio than the window, instead the dominant
+ * side will be scaled to fit. This method will maintain the existing scale factor.
+ *
+ * @public
+ * @param {boolean=} value whether to stretch the canvas to fit the window size
+ * @param {boolean=} maintainRatio whether to maintain the current aspect ratio
+ */
+Canvas.prototype.stretchToFit = function( value, maintainRatio = false ) {
+    /**
+     * @protected
+     * @type {boolean}
+     */
+    this._stretchToFit = value;
+
+    /**
+     * @protected
+     * @type {boolean}
+     */
+    this._maintainRatio = maintainRatio;
 
     const idealWidth   = this._preferredWidth;
     const idealHeight  = this._preferredHeight;
-    const windowWidth  = document.documentElement.clientWidth;
-    const windowHeight = document.documentElement.clientHeight;
+    const { x, y }     = this._scale; // take existing canvas scale factor into account
 
-    let xScale, yScale;
+    const { innerWidth, innerHeight } = window;
 
-    if ( windowHeight > windowWidth ) {
-        // available height is larger than the width
-        const scaledHeight = ( value === true ) ? Math.round( windowHeight / windowWidth * idealWidth ) : idealHeight;
-        this.setDimensions( idealWidth, scaledHeight, false );
-        xScale = windowWidth  / idealWidth;
-        yScale = windowHeight / scaledHeight;
+    let targetWidth, targetHeight;
+    if ( maintainRatio && value ) {
+        const ratio  = Math.min( innerWidth / idealWidth, innerHeight / idealHeight );
+        targetWidth  = idealWidth * ratio;
+        targetHeight = idealHeight * ratio;
+    } else {
+        targetWidth  = value ? ( innerWidth  / x ) : idealWidth;
+        targetHeight = value ? ( innerHeight / y ) : idealHeight;
     }
-    else {
-        // available width is large than the height
-        const scaledWidth = ( value === true ) ? Math.round( windowWidth / windowHeight * idealHeight ) : idealWidth;
-        this.setDimensions( scaledWidth, idealHeight, false );
-        xScale = windowWidth  / scaledWidth;
-        yScale = windowHeight / idealHeight;
-    }
-
-    // scale canvas element up/down accordingly using CSS
-
-    const canvasElement = this.getElement();
-    const transform     = `scale(${xScale}, ${yScale})`;
-
-    canvasElement.style[ "-webkit-transform-origin" ] =
-            canvasElement.style[ "transform-origin" ] = "0 0";
-
-    if ( value === true ) {
-        canvasElement.style[ "-webkit-transform" ] =
-                canvasElement.style[ "transform" ] = transform;
-    }
-    else {
-        canvasElement.style[ "-webkit-transform" ] =
-                canvasElement.style[ "transform" ] = "";
-    }
+    this.setDimensions( Math.round( targetWidth ), Math.round( targetHeight ), false );
 };
 
 /**
@@ -652,7 +631,6 @@ Canvas.prototype.dispose = function() {
 Canvas.prototype.handleInteraction = function( aEvent ) {
 
     const numChildren  = this._children.length;
-    let eventOffsetX = 0, eventOffsetY = 0;
     let theChild, touches, found;
 
     if ( numChildren > 0 ) {
@@ -664,11 +642,10 @@ Canvas.prototype.handleInteraction = function( aEvent ) {
 
             // all touch events
             default:
-
+                let eventOffsetX = 0, eventOffsetY = 0;
                 touches /** @type {TouchList} */ = ( aEvent.touches.length > 0 ) ? aEvent.touches : aEvent.changedTouches;
 
                 if ( touches.length > 0 ) {
-
                     const offset = this.getCoordinate();
 
                     eventOffsetX = touches[ 0 ].pageX - offset.x;
@@ -685,26 +662,21 @@ Canvas.prototype.handleInteraction = function( aEvent ) {
             case "mousedown":
             case "mousemove":
             case "mouseup":
-
+                const { offsetX, offsetY } = aEvent;
                 while ( theChild ) {
-
-                    found = theChild.handleInteraction( aEvent.offsetX, aEvent.offsetY, aEvent );
-
-                    if ( found )
+                    found = theChild.handleInteraction( offsetX, offsetY, aEvent );
+                    if ( found ) {
                         break;
-
+                    }
                     theChild = theChild.last;
                 }
                 break;
         }
     }
-
     if ( this._preventDefaults ) {
-
         aEvent.stopPropagation();
         aEvent.preventDefault();
     }
-
     // update the Canvas contents
     this.invalidate();
 };
@@ -718,7 +690,6 @@ Canvas.prototype.handleInteraction = function( aEvent ) {
  * @protected
  */
 Canvas.prototype.render = function() {
-
     const now   = Date.now();  // current timestamp
     const delta = now - this._lastRender;
 
@@ -801,32 +772,21 @@ Canvas.prototype.addListeners = function() {
 
     // use touch events ?
 
-    if ( Environment.hasTouchEvents() ) {
+    if ( !!( "ontouchstart" in window )) {
         this._eventHandler.addEventListener( this._element, "touchstart", theListener );
         this._eventHandler.addEventListener( this._element, "touchmove",  theListener );
         this._eventHandler.addEventListener( this._element, "touchend",   theListener );
     }
 
-    if ( !Environment.isMobile() ) {
-        this._eventHandler.addEventListener( this._element, "mousedown", theListener );
-        this._eventHandler.addEventListener( this._element, "mousemove", theListener );
-        this._eventHandler.addEventListener( window,        "mouseup",   theListener ); // yes, window!
-    }
+    this._eventHandler.addEventListener( this._element, "mousedown", theListener );
+    this._eventHandler.addEventListener( this._element, "mousemove", theListener );
+    this._eventHandler.addEventListener( window,        "mouseup",   theListener ); // yes, window!
 
     if ( this._stretchToFit ) {
-        const self = this;
-        const mm = window.msMatchMedia || window.MozMatchMedia || window.WebkitMatchMedia || window.matchMedia;
-
-        // on mobile/tablet devices we rely on matchMedia for more accurate orientation change detection
-
-        if ( Environment.isMobile() && typeof( mm ) !== "undefined" ) {
-            window.matchMedia('(orientation: portrait)').addListener(() => self.stretchToFit( true ));
-        }
-        else {
-            // for everything else, onorientationchange should help on most mobile devices bar old Androids...
-            const resizeEvent = "onorientationchange" in window ? "orientationchange" : "resize";
-            this._eventHandler.addEventListener( window, resizeEvent, ( e ) => self.stretchToFit( true ));
-        }
+        const resizeEvent = "onorientationchange" in window ? "orientationchange" : "resize";
+        this._eventHandler.addEventListener( window, resizeEvent, () => {
+            this.stretchToFit( this._stretchToFit, this._maintainRatio );
+        });
     }
 };
 
@@ -877,7 +837,7 @@ Canvas.prototype.getCoordinate = function() {
  * @param {Canvas} canvasInstance
  */
 function updateCanvasSize( canvasInstance ) {
-    
+
     // apply scale factor for HDPI screens
     const scaleFactor = canvasInstance._HDPIscaleRatio;
 

@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable = no" name="viewport">
+    <meta charset="utf-8" />
+    <title>canvas animated spritesheet example</title>
+    <link rel="stylesheet" href="./assets/styles.css">
+    <script type="text/javascript" src="./assets/images.js"></script>
+    <!-- requestAnimationFrame and Promise polyfills for IE9 -->
+    <script src="http://www.edisonsecretlab.com/cdn/global/js/lib/rAF.js" type="text/javascript"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/promise-polyfill/8.1.3/polyfill.min.js" type="text/javascript"></script>
+    <!-- include RequireJS to resolve dependencies -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.1.14/require.min.js" type="text/javascript"></script>
+</head>
+<body>
+    <div id="container">
+        <h1>zCanvas demo #5: Image manipulation</h1>
+        <fieldset>
+            <label for="file">Select local image file</label>
+            <input type="file" id="file"
+                   accept="image/png,image/gif,image/jpeg"
+            />
+            <label for="scale">Zoom factor</label>
+            <input type="range" id="scale" min="1" max="3" step=".1" />
+            <button type="button" id="save">Save output</button>
+        </fieldset>
+        <div id="demo"><!-- x --></div>
+        <p>
+            Demo features : a simple utility that can load images which can be
+            panned and zoomed inside the browser, where the visual result can be saved to disk.
+        </p>
+    </div>
+    <script type="text/javascript">
+
+        // resolve dependencies
+
+        requirejs.config({
+            baseUrl : "../dist/",
+            urlArgs : "bust=" + Date.now()
+        });
+
+        require( [ "zcanvas.amd" ], function( zCanvas ) {
+
+            // STEP 1 : SETUP
+            // --------------------------------------
+
+            var container = document.getElementById( "demo" );
+
+            // get window dimensions
+
+            var w, h;
+            if ( window.outerHeight ) {
+                w = window.outerWidth;
+                h = window.outerHeight;
+            }
+            else {
+                w = document.documentElement.clientWidth;
+                h = document.documentElement.clientHeight;
+            }
+
+            // create a new canvas that renders at 60 fps
+            // keep it within the device / browser bounds
+            var cvsWidth  = ( w < 400 ) ? w * .93 : 400;
+            var cvsHeight = ( h < 300 ) ? h : 300;
+
+            var cvs = new zCanvas.canvas({
+                width: cvsWidth,
+                height: cvsHeight,
+                preventEventBubbling: true,
+                parentElement: container
+            });
+
+            // create the sprite that will represent the loaded image
+            var CroppableImage = function( opts ) {
+                CroppableImage.super( this, "constructor", opts );
+            };
+            zCanvas.sprite.extend( CroppableImage );
+            var sprite = new CroppableImage({ interactive: true });
+
+            // enable in-bounds Sprite dragging
+            sprite.setDraggable( true, true );
+            cvs.addChild( sprite );
+
+            // override the setBounds method (invoked by the pointer event handlers) as
+            // we want to constrain the movement to always keep the full Canvas occupied
+
+            sprite.setBounds = function( x, y ) {
+                // determine the max x and y positions at which the image will remain visible
+                var maxX = -( this.getWidth()  - cvs.getWidth() );
+                var maxY = -( this.getHeight() - cvs.getHeight() );
+                this.setX( Math.min( 0, Math.max( maxX, x )));
+                this.setY( Math.min( 0, Math.max( maxY, y )));
+            };
+
+            // STEP 2 : ATTACH LISTENERS TO FORM ELEMENTS
+            // ------------------------------------------
+
+            var orgImageWidth = 0;
+            var orgImageHeight = 0;
+
+            document.getElementById( "file" ).onchange = function( event ) {
+                var files = event.target.files;
+                // load file data into memory
+                if ( files && files.length > 0 ) {
+                    var file = files[ 0 ];
+                    var reader = new FileReader();
+                    reader.onload = function( event2 ) {
+                        // load the image contents using the zCanvas.loader
+                        // which will also provide the image dimensions
+                        zCanvas.loader.loadImage( reader.result ).then( function( imgObj ) {
+                            orgImageWidth = imgObj.size.width;
+                            orgImageHeight = imgObj.size.height;
+
+                            // ensure the image is occupying the full canvas
+                            var targetWidth, targetHeight;
+                            const isLandscape = orgImageWidth >= orgImageHeight;
+                            if ( isLandscape ) {
+                                targetWidth  = cvs.getWidth();
+                                targetHeight = cvs.getWidth() * ( orgImageHeight / orgImageWidth );
+                            } else {
+                                targetWidth  = cvs.getWidth() * ( orgImageWidth / orgImageHeight );
+                                targetHeight = cvs.getHeight();
+                            }
+                            // set the loaded image Bitmap as the Sprite image source using calculated dimensions
+                            sprite.setBitmap( imgObj.image, targetWidth, targetHeight );
+                            setConstraint( targetWidth, targetHeight );
+                        });
+                    };
+                    reader.readAsDataURL( file );
+                }
+            }
+
+            // we want to drag the image Sprite in a way where it will always remain visible
+            // inside the Canvas (e.g. no dragging outside of visual bounds to the point where
+            // whitespace occurs)
+
+            function setConstraint( width, height ) {
+                var constraintWidth, constraintHeight;
+                if ( width > height ) {
+                    constraintWidth = width;
+                    constraintHeight = width * ( height / width );
+                } else {
+                    constraintHeight = height;
+                    constraintWidth  = height * ( width / height );
+                }
+                var top = cvs.getHeight() / 2 - constraintHeight / 2;
+                var left = cvs.getWidth() / 2 - constraintWidth  / 2;
+
+                sprite.setConstraint( left, top, cvs.getWidth() - left, constraintHeight - top );
+            }
+
+            document.getElementById( "scale" ).oninput = function( event ) {
+                var scale     = event.target.value;
+                var width     = orgImageWidth * scale;
+                var height    = orgImageHeight * scale;
+
+                sprite.setWidth( width );
+                sprite.setHeight( height );
+            }
+
+            document.getElementById( "save" ).onclick = function() {
+                var snapshot = cvs.getElement().toDataURL( "image/png" );
+                var downloadLink = document.createElement( "a" );
+                downloadLink.setAttribute( "download", "demo5.png" );
+                downloadLink.setAttribute( "href", snapshot.replace(/^data:image\/png/, "data:application/octet-stream" ));
+                downloadLink.click();
+            }
+        });
+
+    </script>
+</body>
+</html>
