@@ -363,22 +363,15 @@ Sprite.prototype.setHeight = function( aValue ) {
  * defined constraints of this Sprite to ensure it remains within the constraints
  *
  * @public
- * @param {number=} left optionally desired x-coordinate, defaults to current position
- * @param {number=} top optionally desired y-coordinate, defaults to current position
+ * @param {number=} left desired x-coordinate
+ * @param {number=} top desired y-coordinate
  * @param {number=} width optionally desired width, defaults to current size
  * @param {number=} height optionally desired width, defaults to current size
  */
 Sprite.prototype.setBounds = function( left, top, width, height ) {
-    if ( typeof left !== "number" ) {
-        left = this._bounds.left;
-    }
-    if ( typeof top !== "number" ) {
-        top = this._bounds.top;
-    }
-
     if ( this._constraint ) {
         left -= this._constraint.left;
-        top -= this._constraint.top;
+        top  -= this._constraint.top;
     }
     else if ( !this.canvas ) {
         throw new Error( "cannot update position of a Sprite that has no constraint or is not added to a canvas" );
@@ -1092,7 +1085,7 @@ Sprite.prototype.handleMove = function( aXPosition, aYPosition ) {
     const theX = this._dragStartOffset.x + ( aXPosition - this._dragStartEventCoordinates.x );
     const theY = this._dragStartOffset.y + ( aYPosition - this._dragStartEventCoordinates.y );
 
-    this.setBounds( theX, theY );
+    this.setBounds( theX, theY, this._bounds.width, this._bounds.height );
 };
 
 /**

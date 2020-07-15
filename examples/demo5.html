@@ -14,14 +14,14 @@
 </head>
 <body>
     <div id="container">
-        <h1>zCanvas demo #5: Image manipulation</h1>
+        <h1>zCanvas demo #5: Sprite Bitmap manipulation</h1>
         <fieldset>
             <label for="file">Select local image file</label>
             <input type="file" id="file"
                    accept="image/png,image/gif,image/jpeg"
             />
             <label for="scale">Zoom factor</label>
-            <input type="range" id="scale" min="1" max="3" step=".1" />
+            <input type="range" id="scale" min="1" max="4" value="1" step=".1" />
             <button type="button" id="save">Save output</button>
         </fieldset>
         <div id="demo"><!-- x --></div>
@@ -83,11 +83,16 @@
 
             // override the setBounds method (invoked by the pointer event handlers) as
             // we want to constrain the movement to always keep the full Canvas occupied
+            // and not allowing dragging the image outside of visible bounds. As the
+            // image can be scaled, we override this method instead of customizing the setConstraint()
 
-            sprite.setBounds = function( x, y ) {
+            sprite.setBounds = function( x, y, width, height ) {
                 // determine the max x and y positions at which the image will remain visible
-                var maxX = -( this.getWidth()  - cvs.getWidth() );
-                var maxY = -( this.getHeight() - cvs.getHeight() );
+                var maxX = -( width  - cvs.getWidth() );
+                var maxY = -( height - cvs.getHeight() );
+
+                this.setWidth ( width );
+                this.setHeight( height );
                 this.setX( Math.min( 0, Math.max( maxX, x )));
                 this.setY( Math.min( 0, Math.max( maxY, y )));
             };
@@ -95,8 +100,13 @@
             // STEP 2 : ATTACH LISTENERS TO FORM ELEMENTS
             // ------------------------------------------
 
-            var orgImageWidth = 0;
+            var orgImageWidth  = 0;
             var orgImageHeight = 0;
+            var minImageWidth  = 0;
+            var minImageHeight = 0;
+
+            // read local file data into the Sprite Bitmap when the
+            // user has selected an image file
 
             document.getElementById( "file" ).onchange = function( event ) {
                 var files = event.target.files;
@@ -108,55 +118,59 @@
                         // load the image contents using the zCanvas.loader
                         // which will also provide the image dimensions
                         zCanvas.loader.loadImage( reader.result ).then( function( imgObj ) {
-                            orgImageWidth = imgObj.size.width;
+                            orgImageWidth  = imgObj.size.width;
                             orgImageHeight = imgObj.size.height;
 
-                            // ensure the image is occupying the full canvas
-                            var targetWidth, targetHeight;
-                            const isLandscape = orgImageWidth >= orgImageHeight;
+                            // image dimensions at the default (=lowest) zoom level should match canvas dimensions
+
+                            var isLandscape = orgImageWidth >= orgImageHeight;
                             if ( isLandscape ) {
-                                targetWidth  = cvs.getWidth();
-                                targetHeight = cvs.getWidth() * ( orgImageHeight / orgImageWidth );
+                                minImageWidth  = cvs.getWidth();
+                                minImageHeight = cvs.getWidth() * ( orgImageHeight / orgImageWidth );
                             } else {
-                                targetWidth  = cvs.getWidth() * ( orgImageWidth / orgImageHeight );
-                                targetHeight = cvs.getHeight();
+                                minImageWidth  = cvs.getHeight() * ( orgImageWidth / orgImageHeight );
+                                minImageHeight = cvs.getHeight();
                             }
+
+                            // ensure the image is occupying the full canvas without empty space on the non-dominant side
+                            var ratio = 1;
+                            if ( minImageWidth < cvs.getWidth() ) {
+                                ratio = cvs.getWidth() / minImageWidth;
+                            } else if ( minImageHeight < cvs.getHeight() ) {
+                                ratio = cvs.getHeight() / minImageHeight;
+                            }
+                            minImageWidth  *= ratio;
+                            minImageHeight *= ratio;
+
                             // set the loaded image Bitmap as the Sprite image source using calculated dimensions
-                            sprite.setBitmap( imgObj.image, targetWidth, targetHeight );
-                            setConstraint( targetWidth, targetHeight );
+                            sprite.setBitmap( imgObj.image, minImageWidth, minImageHeight );
                         });
                     };
                     reader.readAsDataURL( file );
                 }
             }
 
-            // we want to drag the image Sprite in a way where it will always remain visible
-            // inside the Canvas (e.g. no dragging outside of visual bounds to the point where
-            // whitespace occurs)
-
-            function setConstraint( width, height ) {
-                var constraintWidth, constraintHeight;
-                if ( width > height ) {
-                    constraintWidth = width;
-                    constraintHeight = width * ( height / width );
-                } else {
-                    constraintHeight = height;
-                    constraintWidth  = height * ( width / height );
-                }
-                var top = cvs.getHeight() / 2 - constraintHeight / 2;
-                var left = cvs.getWidth() / 2 - constraintWidth  / 2;
-
-                sprite.setConstraint( left, top, cvs.getWidth() - left, constraintHeight - top );
-            }
+            // scale the image when the scale slider changes value
 
             document.getElementById( "scale" ).oninput = function( event ) {
-                var scale     = event.target.value;
-                var width     = orgImageWidth * scale;
-                var height    = orgImageHeight * scale;
+                var scale        = event.target.value;
+                var scaledWidth  = minImageWidth  * scale;
+                var scaledHeight = minImageHeight * scale;
+                var oldBounds    = sprite.getBounds();
 
-                sprite.setWidth( width );
-                sprite.setHeight( height );
+                // note we scale from the center of the image to maintain
+                // relative offset (the overridden setBounds() method will correct
+                // the offset if the image is scaled from any of the edges)
+
+                sprite.setBounds(
+                    oldBounds.left - ( scaledWidth  / 2 - oldBounds.width  / 2 ),
+                    oldBounds.top  - ( scaledHeight / 2 - oldBounds.height / 2 ),
+                    scaledWidth,
+                    scaledHeight
+                );
             }
+
+            // download zCanvas contents as an image file
 
             document.getElementById( "save" ).onclick = function() {
                 var snapshot = cvs.getElement().toDataURL( "image/png" );
