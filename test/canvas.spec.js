@@ -295,6 +295,20 @@ describe( "zCanvas.canvas", () => {
         });
     });
 
+    it( "should be able to activate image smoothing", () => {
+        const canvas = new Canvas({ width, height, smoothing: false });
+        expect( canvas.getElement().getContext( '2d' ).imageSmoothingEnabled ).toBe( false );
+        canvas.setSmoothing( true );
+        expect( canvas.getElement().getContext( '2d' ).imageSmoothingEnabled ).toBe( true );
+    });
+
+    it( "should be able to render crisp pixel art when image smoothing is disabled", () => {
+        const canvas = new Canvas({ width, height, smoothing: true });
+        expect( canvas.getElement() )?.style?.[ "image-rendering" ].toBeUndefined();
+        canvas.setSmoothing( false );
+        expect( canvas.getElement() )?.style?.[ "image-rendering" ].toEqual( "crisp-edges" );
+    });
+
     it( "should know whether its animatable", () => {
         let canvas = new Canvas({ width, height, animate: false });
         expect( canvas.isAnimatable() ).toBe( false );

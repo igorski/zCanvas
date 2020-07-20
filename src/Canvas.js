@@ -371,19 +371,17 @@ Canvas.prototype.setSmoothing = function( enabled ) {
     ];
     this._smoothing = enabled;
 
-    // debounce until next DOM paint
     const canvasStyle = this._element.style;
     const context     = this._canvasContext;
 
-    window.requestAnimationFrame(() => {
-        props.forEach( prop => {
-            if ( context[ prop ] !== undefined )
-                context[ prop ] = enabled;
-        });
-        styles.forEach( style => {
-            canvasStyle[ "image-rendering" ] = enabled ? style : undefined;
-        });
+    props.forEach( prop => {
+        if ( context[ prop ] !== undefined )
+            context[ prop ] = enabled;
     });
+    styles.forEach( style => {
+        canvasStyle[ "image-rendering" ] = enabled ? undefined : style;
+    });
+    this.invalidate();
 };
 
 /**
