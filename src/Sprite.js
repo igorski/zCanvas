@@ -363,8 +363,8 @@ Sprite.prototype.setHeight = function( aValue ) {
  * defined constraints of this Sprite to ensure it remains within the constraints
  *
  * @public
- * @param {number=} left desired x-coordinate
- * @param {number=} top desired y-coordinate
+ * @param {number} left desired x-coordinate
+ * @param {number} top desired y-coordinate
  * @param {number=} width optionally desired width, defaults to current size
  * @param {number=} height optionally desired width, defaults to current size
  */

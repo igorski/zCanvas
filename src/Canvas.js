@@ -358,24 +358,30 @@ Canvas.prototype.getRenderInterval = function() {
  * false will yield crisper results
  *
  * @public
- * @param {boolean} aValue
+ * @param {boolean} enabled
  */
-Canvas.prototype.setSmoothing = function( aValue ) {
-
+Canvas.prototype.setSmoothing = function( enabled ) {
+    // 1. context smoothing state
     const props = [ "imageSmoothingEnabled",  "mozImageSmoothingEnabled",
                     "oImageSmoothingEnabled", "webkitImageSmoothingEnabled" ];
 
-    const ctx = this._canvasContext;
+    // 2. canvas rendering CSS style
+    const styles = [
+        "-moz-crisp-edges", "-webkit-crisp-edges", "pixelated", "crisp-edges"
+    ];
+    this._smoothing = enabled;
 
-    this._smoothing = aValue;
-
-    // observed not to work during setup
+    // debounce until next DOM paint
+    const canvasStyle = this._element.style;
+    const context     = this._canvasContext;
 
     window.requestAnimationFrame(() => {
-
-        props.forEach(( prop ) => {
-            if ( ctx[ prop ] !== undefined )
-                ctx[ prop ] = aValue;
+        props.forEach( prop => {
+            if ( context[ prop ] !== undefined )
+                context[ prop ] = enabled;
+        });
+        styles.forEach( style => {
+            canvasStyle[ "image-rendering" ] = enabled ? style : undefined;
         });
     });
 };
