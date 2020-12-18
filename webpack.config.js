@@ -1,5 +1,4 @@
 const path = require( 'path' );
-const { CleanWebpackPlugin } = require( 'clean-webpack-plugin' );
 
 const config = {
     entry: './zcanvas.js',
@@ -19,9 +18,6 @@ const config = {
 
 const browserConfig = {
     ...config,
-    plugins: [
-        new CleanWebpackPlugin(),
-    ],
     output: {
         filename: 'zcanvas.min.js',
         path: path.resolve( __dirname, 'dist' )

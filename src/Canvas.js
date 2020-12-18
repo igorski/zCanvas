@@ -193,10 +193,9 @@ Canvas.prototype.preventEventBubbling = function( value ) {
  * @return {Canvas} this Canvas - for chaining purposes
  */
 Canvas.prototype.addChild = function( aChild ) {
-
-    if ( this.contains( aChild ))
+    if ( this.contains( aChild )) {
         return this;
-
+    }
     // create a linked list
     const numChildren = this._children.length;
 
@@ -221,7 +220,6 @@ Canvas.prototype.addChild = function( aChild ) {
  * @return {Sprite} the removed child - for chaining purposes
  */
 Canvas.prototype.removeChild = function( aChild ) {
-
     aChild.setParent( null );
     aChild.setCanvas( null );
 
@@ -237,12 +235,12 @@ Canvas.prototype.removeChild = function( aChild ) {
     const prevChild = aChild.last;
     const nextChild = aChild.next;
 
-    if ( prevChild )
+    if ( prevChild ) {
         prevChild.next = nextChild;
-
-    if ( nextChild )
+    }
+    if ( nextChild ) {
         nextChild.last = prevChild;
-
+    }
     aChild.last = aChild.next = null;
 
     // request a render now the state of the canvas has changed
@@ -261,7 +259,6 @@ Canvas.prototype.removeChild = function( aChild ) {
  * @return {Sprite} the referenced object
  */
 Canvas.prototype.getChildAt = function( index ) {
-
     return this._children[ index ];
 };
 
@@ -273,7 +270,6 @@ Canvas.prototype.getChildAt = function( index ) {
  * @return {Sprite} the removed sprite
  */
 Canvas.prototype.removeChildAt = function( index ) {
-
     return this.removeChild( this.getChildAt( index ));
 };
 
@@ -282,7 +278,6 @@ Canvas.prototype.removeChildAt = function( index ) {
  * @return {number} the amount of children in this object's Display List
  */
 Canvas.prototype.numChildren = function() {
-
     return this._children.length;
 };
 
@@ -291,7 +286,6 @@ Canvas.prototype.numChildren = function() {
  * @return {Array<Sprite>}
  */
 Canvas.prototype.getChildren = function() {
-
     return this._children;
 };
 
@@ -335,7 +329,6 @@ Canvas.prototype.invalidate = function() {
  * @return {number}
  */
 Canvas.prototype.getFrameRate = function() {
-
     return this._fps;
 };
 
@@ -348,7 +341,6 @@ Canvas.prototype.getFrameRate = function() {
  * @return {number}
  */
 Canvas.prototype.getRenderInterval = function() {
-
     return this._renderInterval;
 };
 
@@ -406,23 +398,23 @@ Canvas.prototype.getHeight = function() {
  * as browsers will clear the existing Canvas content when adjusting its dimensions)
  *
  * @public
- * @param {number} aWidth
- * @param {number} aHeight
+ * @param {number} width
+ * @param {number} height
  * @param {boolean=} setAsPreferredDimensions optional, defaults to true, stretchToFit handler
  *        overrides this to ensure returning to correct dimensions when disabling stretchToFit
  * @param {boolean=} optImmediate optional, whether to apply immediately, defaults to false
  *        to prevent flickering of existing screen contents during repeated resize
  */
-Canvas.prototype.setDimensions = function( aWidth, aHeight, setAsPreferredDimensions, optImmediate ) {
+Canvas.prototype.setDimensions = function( width, height, setAsPreferredDimensions = true, optImmediate = false ) {
     /**
      * @protected
-     * @type {{width: number, height: number}}
+     * @type {{ width: number, height: number }}
      */
-    this._enqueuedSize = { "width": aWidth, "height": aHeight };
+    this._enqueuedSize = { width, height };
 
-    if ( setAsPreferredDimensions !== false ) {
-        /** @protected @type {number} */ this._preferredWidth  = aWidth;
-        /** @protected @type {number} */ this._preferredHeight = aHeight;
+    if ( setAsPreferredDimensions === true ) {
+        /** @protected @type {number} */ this._preferredWidth  = width;
+        /** @protected @type {number} */ this._preferredHeight = height;
     }
 
     if ( optImmediate === true ) {
@@ -436,14 +428,14 @@ Canvas.prototype.setDimensions = function( aWidth, aHeight, setAsPreferredDimens
  * or RGB/RGBA, e.g. "#FF0000" or "rgba(255,0,0,1)";
  *
  * @public
- * @param {string} aColor
+ * @param {string} color
  */
-Canvas.prototype.setBackgroundColor = function( aColor ) {
+Canvas.prototype.setBackgroundColor = function( color ) {
     /**
      * @protected
      * @type {string}
      */
-    this._bgColor = aColor;
+    this._bgColor = color;
 };
 
 /**
@@ -451,12 +443,12 @@ Canvas.prototype.setBackgroundColor = function( aColor ) {
  * @param {boolean} value
  */
 Canvas.prototype.setAnimatable = function( value ) {
-
     const oldValue = this._animate;
     this._animate  = value;
 
-    if ( value && !oldValue && !this._renderPending )
+    if ( value && !oldValue && !this._renderPending ) {
         this._renderHandler();
+    }
 };
 
 /**
@@ -537,7 +529,7 @@ Canvas.prototype.drawImage = function( aSource, destX, destY, destWidth, destHei
 };
 
 /**
- * Scales the canvas accordingly. This can be used to render content at a lower
+ * Scales the canvas Element. This can be used to render content at a lower
  * resolution but scale it up to fit the screen (for instance when rendering pixel art
  * with smoothing disabled for crisp definition).
  *
@@ -559,6 +551,8 @@ Canvas.prototype.scale = function( x, y = x ) {
 
     if ( this._stretchToFit ) {
         this.stretchToFit( true, this._maintainRatio );
+    } else {
+        this.invalidate();
     }
 };
 
@@ -607,14 +601,12 @@ Canvas.prototype.stretchToFit = function( value, maintainRatio = false ) {
  * @public
  */
 Canvas.prototype.dispose = function() {
-
-    if ( this._disposed )
+    if ( this._disposed ) {
         return;
-
-    this._disposed = true;
-    this.removeListeners();
+    }
     this._animate = false;
     window.cancelAnimationFrame( this._renderId ); // kill render loop
+    this.removeListeners();
 
     // dispose all sprites on Display List
 
@@ -624,6 +616,11 @@ Canvas.prototype.dispose = function() {
         this._children[ i ].dispose();
     }
     this._children = [];
+
+    if ( this._element.parentNode ) {
+        this._element.parentNode.removeChild( this._element );
+    }
+    this._disposed = true;
 };
 
 /* event handlers */
@@ -817,21 +814,19 @@ Canvas.prototype.removeListeners = function() {
  * @return {Object} w/ x and y properties
  */
 Canvas.prototype.getCoordinate = function() {
-
-    let left = 0;
-    let top  = 0;
+    let x = 0;
+    let y = 0;
     let theElement = this._element;
 
     while ( theElement.offsetParent ) {
-
-        left      += theElement.offsetLeft;
-        top       += theElement.offsetTop;
+        x         += theElement.offsetLeft;
+        y         += theElement.offsetTop;
         theElement = theElement.offsetParent;
     }
-    left += theElement.offsetLeft;
-    top  += theElement.offsetTop;
+    x += theElement.offsetLeft;
+    y += theElement.offsetTop;
 
-    return { "x" : left, "y" : top };
+    return { x, y };
 };
 
 /* internal methods */
@@ -841,28 +836,27 @@ Canvas.prototype.getCoordinate = function() {
  * @param {Canvas} canvasInstance
  */
 function updateCanvasSize( canvasInstance ) {
-
-    // apply scale factor for HDPI screens
-    const scaleFactor = canvasInstance._HDPIscaleRatio;
-
-    const width  = canvasInstance._enqueuedSize.width,
-          height = canvasInstance._enqueuedSize.height;
+    const scaleFactor       = canvasInstance._HDPIscaleRatio;
+    const { width, height } = canvasInstance._enqueuedSize;
 
     canvasInstance._enqueuedSize = null;
 
     /** @protected @type {number} */ canvasInstance._width  = width;
     /** @protected @type {number} */ canvasInstance._height = height;
 
-    canvasInstance._element.width  = width  * scaleFactor;
-    canvasInstance._element.height = height * scaleFactor;
+    const element = canvasInstance._element;
 
-    canvasInstance._element.style.width  = width  + "px";
-    canvasInstance._element.style.height = height + "px";
+    element.width  = width  * scaleFactor;
+    element.height = height * scaleFactor;
+
+    element.style.width  = `${width}px`;
+    element.style.height = `${height}px`;
 
     canvasInstance._canvasContext.scale( scaleFactor, scaleFactor );
 
     // non-smoothing must be re-applied when the canvas dimensions change...
 
-    if ( canvasInstance._smoothing === false )
+    if ( canvasInstance._smoothing === false ) {
         canvasInstance.setSmoothing( canvasInstance._smoothing );
+    }
 }

@@ -453,6 +453,13 @@ describe( "zCanvas.canvas", () => {
             canvas.scale( 2 );
             expect( canvas.stretchToFit ).toHaveBeenCalled();
         });
+
+        it( "should invalidate the current contents even when stretch to fit isn't set", () => {
+            const canvas = new Canvas({ width, height, stretchToFit: false });
+            canvas.invalidate = jest.fn();
+            canvas.scale( 2 );
+            expect( canvas.invalidate ).toHaveBeenCalled();
+        });
     });
 
     describe( "when stretching the canvas", () => {
@@ -541,6 +548,18 @@ describe( "zCanvas.canvas", () => {
             expect( canvas.getWidth() ).toEqual( width * scale );
             expect( canvas.getHeight() ).toEqual( height * scale );
             expect( canvas.getElement().style.transform ).toEqual( `scale(${scale}, ${scale})` );
+        });
+    });
+
+    describe( "when disposing the Canvas instance", () => {
+        it( "should remove itself from the DOM", () => {
+            const element = global.document.createElement( "div" );
+            const canvas  = new Canvas({ width, height });
+
+            canvas.insertInPage( element );
+            expect( canvas.getElement().parentNode ).toEqual( element );
+            canvas.dispose();
+            expect( canvas.getElement().parentNode ).toBeNull();
         });
     });
 });
