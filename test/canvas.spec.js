@@ -551,6 +551,86 @@ describe( "zCanvas.canvas", () => {
         });
     });
 
+    describe( "when handling interaction events", () => {
+        let mockEvent;
+        beforeEach(() => {
+            mockEvent = {
+                type: "mousedown",
+                touches: [],
+                offsetX: 10,
+                offsetY: 10
+            };
+        });
+
+        it( "should invalidate the canvas content when events were handled for a non-animatable canvas", () => {
+            const canvas = new Canvas({ width: 50, height: 50, animate: false });
+
+            // note sprite is inside of event bounds
+            canvas.addChild( new Sprite({ x: 5, y: 5, width: 10, height: 10, interactive: true }));
+            canvas.invalidate = jest.fn();
+            canvas.handleInteraction( mockEvent );
+
+            expect(canvas.invalidate).toHaveBeenCalled();
+        });
+
+        it( "should not handle interactions of multiple sprites for a mouse event", () => {
+            const canvas  = new Canvas({ width: 50, height: 50 });
+            const sprite1 = new Sprite({ x: 5, y: 5, width: 10, height: 10, interactive: true });
+            const sprite2 = new Sprite({ x: 5, y: 5, width: 10, height: 10, interactive: true });
+
+            jest.spyOn( sprite1, "handleInteraction" );
+            jest.spyOn( sprite2, "handleInteraction" );
+
+            canvas.addChild( sprite1 );
+            canvas.addChild( sprite2 );
+            canvas.handleInteraction( mockEvent );
+
+            // note reverse order as events are handled first by sprites higher up in the display list
+            expect(sprite2.handleInteraction).toHaveBeenCalled();
+            expect(sprite1.handleInteraction).not.toHaveBeenCalled();
+        });
+
+        it( "should not handle interactions of multiple sprites for a touch event with a single touch", () => {
+            mockEvent.type    = "touchstart";
+            mockEvent.touches = [{ pageX: 10, pageY: 10 }];
+
+            const canvas  = new Canvas({ width: 50, height: 50 });
+            const sprite1 = new Sprite({ x: 5, y: 5, width: 10, height: 10, interactive: true });
+            const sprite2 = new Sprite({ x: 5, y: 5, width: 10, height: 10, interactive: true });
+
+            jest.spyOn( sprite1, "handleInteraction" );
+            jest.spyOn( sprite2, "handleInteraction" );
+
+            canvas.addChild( sprite1 );
+            canvas.addChild( sprite2 );
+            canvas.handleInteraction( mockEvent );
+
+            // note reverse order as events are handled first by sprites higher up in the display list
+            expect(sprite2.handleInteraction).toHaveBeenCalled();
+            expect(sprite1.handleInteraction).not.toHaveBeenCalled();
+        });
+
+        it( "should handle interactions of multiple sprites for a touch event with a multiple touches", () => {
+            mockEvent.type    = "touchstart";
+            mockEvent.touches = [{ pageX: 10, pageY: 10 }, { pageX: 20, pageY: 20 }];
+
+            const canvas  = new Canvas({ width: 50, height: 50 });
+            const sprite1 = new Sprite({ x: 5,  y: 5,  width: 10, height: 10, interactive: true });
+            const sprite2 = new Sprite({ x: 15, y: 15, width: 10, height: 10, interactive: true });
+
+            jest.spyOn( sprite1, "handleInteraction" );
+            jest.spyOn( sprite2, "handleInteraction" );
+
+            canvas.addChild( sprite1 );
+            canvas.addChild( sprite2 );
+            canvas.handleInteraction( mockEvent );
+
+            // note reverse order as events are handled first by sprites higher up in the display list
+            expect(sprite2.handleInteraction).toHaveBeenCalled();
+            expect(sprite1.handleInteraction).toHaveBeenCalled();
+        });
+    });
+
     describe( "when disposing the Canvas instance", () => {
         it( "should remove itself from the DOM", () => {
             const element = global.document.createElement( "div" );

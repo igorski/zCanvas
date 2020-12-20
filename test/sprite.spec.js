@@ -620,4 +620,152 @@ describe( "zCanvas.sprite", () => {
             }
         }
     });
+
+    describe( "when handling events", () => {
+        let mockEvent, sprite;
+        beforeEach(() => {
+            mockEvent = {
+                type: "mousemove",
+                touches: [],
+                offsetX: 10,
+                offsetY: 10
+            }
+        });
+
+        describe( "and the sprite is not interactive", () => {
+            beforeEach(() => {
+                mockEvent.type = "mousedown";
+            });
+
+            it( "should not handle anything", () => {
+                const sprite = new Sprite({ x: 5, y: 5, width: 10, height: 10, interactive: false });
+                const handled = sprite.handleInteraction( mockEvent.offsetX, mockEvent.offsetY, mockEvent );
+                expect( handled ).toBe( false );
+            });
+
+            it( "except when it has interactive children", () => {
+                const sprite = new Sprite({ x: 0, y: 0, width: 4, height: 4, interactive: false });
+                sprite.addChild( new Sprite({ x: 5, y: 5, width: 10, height: 10, interactive: true }));
+                const handled = sprite.handleInteraction( mockEvent.offsetX, mockEvent.offsetY, mockEvent );
+                expect( handled ).toBe( true );
+            });
+        });
+
+        describe( "and the sprite is interactive", () => {
+            it( "should set the hover state when moving over the sprite", () => {
+                const sprite = new Sprite({ x: 5, y: 5, width: 10, height: 10, interactive: true });
+                expect( sprite.hover ).toBe( false );
+                const handled = sprite.handleInteraction( mockEvent.offsetX, mockEvent.offsetY, mockEvent );
+                expect( sprite.hover ).toBe( true );
+                expect( handled ).toBe( false ); // hovering does not stop event propagation
+            });
+
+            it( "should unset the hover state when moving out of a hovered sprite", () => {
+                const sprite = new Sprite({ x: 15, y: 15, width: 10, height: 10, interactive: true });
+                sprite.hover = true;
+                const handled = sprite.handleInteraction( mockEvent.offsetX, mockEvent.offsetY, mockEvent );
+                expect( sprite.hover ).toBe( false );
+            });
+
+            describe( "and pressing down on the sprite", () => {
+                beforeEach(() => {
+                    mockEvent.type = "mousedown";
+                });
+
+                it( "should call its handlePress handler", () => {
+                    const sprite = new Sprite({ x: 5, y: 5, width: 10, height: 10, interactive: true });
+                    jest.spyOn( sprite, "handlePress" );
+                    const handled = sprite.handleInteraction( mockEvent.offsetX, mockEvent.offsetY, mockEvent );
+                    expect( sprite.handlePress ).toHaveBeenCalledWith( mockEvent.offsetX, mockEvent.offsetY );
+                    expect( handled ).toBe( true );
+                });
+
+                it( "should not allow dragging for non draggable sprites", () => {
+                    const sprite = new Sprite({ x: 5, y: 5, width: 10, height: 10, interactive: true });
+                    const handled = sprite.handleInteraction( mockEvent.offsetX, mockEvent.offsetY, mockEvent );
+                    expect( sprite.isDragging ).toBe( false );
+                    expect( handled ).toBe( true );
+                });
+
+                it( "should allow dragging for draggable sprites", () => {
+                    const sprite = new Sprite({ x: 5, y: 5, width: 10, height: 10, interactive: true });
+                    sprite.setDraggable( true );
+                    const handled = sprite.handleInteraction( mockEvent.offsetX, mockEvent.offsetY, mockEvent );
+                    expect( sprite.isDragging ).toBe( true );
+                    expect( handled ).toBe( true );
+                });
+            });
+
+            describe( "and moving over a down pressed sprite", () => {
+                beforeEach(() => {
+                    mockEvent.type = "mousemove";
+                });
+
+                it( "should not do anything for a non draggable sprite", () => {
+                    const sprite = new Sprite({ x: 5, y: 5, width: 10, height: 10, interactive: true });
+                    jest.spyOn( sprite, "handleMove" );
+                    sprite.handleInteraction( mockEvent.offsetX, mockEvent.offsetY, mockEvent );
+                    expect( sprite.handleMove ).not.toHaveBeenCalled();
+                });
+
+                it( "should call the move handler for a draggable sprite that is being dragged", () => {
+                    const canvas = new Canvas({ width: 10, height: 10 });
+                    const sprite = new Sprite({ x: 5, y: 5, width: 10, height: 10, interactive: true });
+                    canvas.addChild( sprite );
+                    jest.spyOn( sprite, "handleMove" );
+                    sprite.setDraggable( true );
+                    sprite.isDragging = true;
+                    sprite._dragStartOffset = { x: sprite.getX(), y: sprite.getY() };
+                    sprite._dragStartEventCoordinates = { x: mockEvent.offsetX, y: mockEvent.offsetY };
+                    const handled = sprite.handleInteraction( mockEvent.offsetX, mockEvent.offsetY, mockEvent );
+                    expect( sprite.handleMove ).toHaveBeenCalledWith( mockEvent.offsetX, mockEvent.offsetY );
+                    expect( handled ).toBe( true );
+                });
+            });
+
+            describe( "and releasing a down pressed sprite", () => {
+                beforeEach(() => {
+                    mockEvent.type = "mouseup";
+                    // create sprite within mock event bounds and with down press state
+                    sprite = new Sprite({ x: 5, y: 5, width: 10, height: 10, interactive: true });
+                    sprite._pressed = true;
+
+                    const canvas = new Canvas({ width: sprite.getWidth(), height: sprite.getHeight() });
+                    canvas.addChild( sprite );
+                });
+
+                it( "should call its handleClick handler instead of handleRelease if the elapsed time between press and release was below 250 ms", () => {
+                    sprite._pressTime = Date.now() - 249;
+                    jest.spyOn( sprite, "handleClick" );
+                    jest.spyOn( sprite, "handleRelease" );
+                    const handled = sprite.handleInteraction( mockEvent.offsetX, mockEvent.offsetY, mockEvent );
+                    expect( sprite.handleClick ).toHaveBeenCalled();
+                    expect( sprite.handleRelease ).not.toHaveBeenCalled();
+                    expect( handled ).toBe( true );
+                });
+
+                it( "should call its handleRelease handler if the elapsed time between press and release was over 250 ms", () => {
+                    sprite._pressTime = Date.now() - 250;
+                    jest.spyOn( sprite, "handleRelease" );
+                    jest.spyOn( sprite, "handleClick" );
+                    const handled = sprite.handleInteraction( mockEvent.offsetX, mockEvent.offsetY, mockEvent );
+                    expect( sprite.handleClick ).not.toHaveBeenCalled();
+                    expect( sprite.handleRelease ).toHaveBeenCalled();
+                    expect( handled ).toBe( true );
+                });
+
+                it( "should unset the dragging state for draggable Sprites", () => {
+                    // set draggable sprite variables
+                    sprite._dragStartOffset = { x: sprite.getX(), y: sprite.getY() };
+                    sprite._dragStartEventCoordinates = { x: mockEvent.offsetX, y: mockEvent.offsetY };
+
+                    sprite.setDraggable( true );
+                    sprite.isDragging = true;
+                    const handled = sprite.handleInteraction( mockEvent.offsetX, mockEvent.offsetY, mockEvent );
+                    expect( sprite.isDragging ).toBe( false );
+                    expect( handled ).toBe( true );
+                });
+            });
+        });
+    });
 });
