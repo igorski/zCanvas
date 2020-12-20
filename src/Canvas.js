@@ -640,7 +640,6 @@ Canvas.prototype.handleInteraction = function( aEvent ) {
         {
             // all touch events
             default:
-                let handled = false;
                 let eventOffsetX = 0, eventOffsetY = 0, result;
 
                 const touches /** @type {TouchList} */ = ( aEvent.touches.length > 0 ) ? aEvent.touches : aEvent.changedTouches;
@@ -653,8 +652,7 @@ Canvas.prototype.handleInteraction = function( aEvent ) {
                         eventOffsetY = touches[ i ].pageY - offset.y;
 
                         while ( theChild ) {
-                            handled = theChild.handleInteraction( eventOffsetX, eventOffsetY, aEvent );
-                            if ( handled ) {
+                            if ( theChild.handleInteraction( eventOffsetX, eventOffsetY, aEvent )) {
                                 break;
                             }
                             theChild = theChild.last;
