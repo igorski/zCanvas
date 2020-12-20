@@ -622,7 +622,7 @@ describe( "zCanvas.sprite", () => {
     });
 
     describe( "when handling events", () => {
-        let mockEvent;
+        let mockEvent, sprite;
         beforeEach(() => {
             mockEvent = {
                 type: "mousemove",
@@ -633,6 +633,10 @@ describe( "zCanvas.sprite", () => {
         });
 
         describe( "and the sprite is not interactive", () => {
+            beforeEach(() => {
+                mockEvent.type = "mousedown";
+            });
+
             it( "should not handle anything", () => {
                 const sprite = new Sprite({ x: 5, y: 5, width: 10, height: 10, interactive: false });
                 const handled = sprite.handleInteraction( mockEvent.offsetX, mockEvent.offsetY, mockEvent );
@@ -653,7 +657,7 @@ describe( "zCanvas.sprite", () => {
                 expect( sprite.hover ).toBe( false );
                 const handled = sprite.handleInteraction( mockEvent.offsetX, mockEvent.offsetY, mockEvent );
                 expect( sprite.hover ).toBe( true );
-                expect( handled ).toBe( true );
+                expect( handled ).toBe( false ); // hovering does not stop event propagation
             });
 
             it( "should unset the hover state when moving out of a hovered sprite", () => {
@@ -722,38 +726,46 @@ describe( "zCanvas.sprite", () => {
             describe( "and releasing a down pressed sprite", () => {
                 beforeEach(() => {
                     mockEvent.type = "mouseup";
+                    // create sprite within mock event bounds and with down press state
+                    sprite = new Sprite({ x: 5, y: 5, width: 10, height: 10, interactive: true });
+                    sprite._pressed = true;
+
+                    const canvas = new Canvas({ width: sprite.getWidth(), height: sprite.getHeight() });
+                    canvas.addChild( sprite );
                 });
 
-                it( "should call its handleClick handler", () => {
-                    const sprite = new Sprite({ x: 5, y: 5, width: 10, height: 10, interactive: true });
+                it( "should call its handleClick handler instead of handleRelease if the elapsed time between press and release was below 250 ms", () => {
+                    sprite._pressTime = Date.now() - 249;
                     jest.spyOn( sprite, "handleClick" );
+                    jest.spyOn( sprite, "handleRelease" );
                     const handled = sprite.handleInteraction( mockEvent.offsetX, mockEvent.offsetY, mockEvent );
                     expect( sprite.handleClick ).toHaveBeenCalled();
+                    expect( sprite.handleRelease ).not.toHaveBeenCalled();
+                    expect( handled ).toBe( true );
+                });
+
+                it( "should call its handleRelease handler if the elapsed time between press and release was over 250 ms", () => {
+                    sprite._pressTime = Date.now() - 250;
+                    jest.spyOn( sprite, "handleRelease" );
+                    jest.spyOn( sprite, "handleClick" );
+                    const handled = sprite.handleInteraction( mockEvent.offsetX, mockEvent.offsetY, mockEvent );
+                    expect( sprite.handleClick ).not.toHaveBeenCalled();
+                    expect( sprite.handleRelease ).toHaveBeenCalled();
                     expect( handled ).toBe( true );
                 });
 
                 it( "should unset the dragging state for draggable Sprites", () => {
-                    const sprite = new Sprite({ x: 5, y: 5, width: 10, height: 10, interactive: true });
+                    // set draggable sprite variables
+                    sprite._dragStartOffset = { x: sprite.getX(), y: sprite.getY() };
+                    sprite._dragStartEventCoordinates = { x: mockEvent.offsetX, y: mockEvent.offsetY };
+
                     sprite.setDraggable( true );
                     sprite.isDragging = true;
                     const handled = sprite.handleInteraction( mockEvent.offsetX, mockEvent.offsetY, mockEvent );
                     expect( sprite.isDragging ).toBe( false );
                     expect( handled ).toBe( true );
                 });
-
-                it( "should call the handleRelease handler draggable Sprites", () => {
-                    const sprite = new Sprite({ x: 5, y: 5, width: 10, height: 10, interactive: true });
-                    sprite.setDraggable( true );
-                    sprite.isDragging = true;
-                    sprite._dragStartTime = Date.now();
-                    jest.spyOn( sprite, "handleRelease" );
-                    const handled = sprite.handleInteraction( mockEvent.offsetX, mockEvent.offsetY, mockEvent );
-                    expect( sprite.handleRelease ).toHaveBeenCalledWith( mockEvent.offsetX, mockEvent.offsetY );
-                    expect( handled ).toBe( true );
-                });
-
             });
         });
-
     });
 });

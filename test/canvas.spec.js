@@ -555,7 +555,7 @@ describe( "zCanvas.canvas", () => {
         let mockEvent;
         beforeEach(() => {
             mockEvent = {
-                type: "mousemove",
+                type: "mousedown",
                 touches: [],
                 offsetX: 10,
                 offsetY: 10
@@ -602,7 +602,7 @@ describe( "zCanvas.canvas", () => {
         });
 
         it( "should not handle interactions of multiple sprites for a touch event with a single touch", () => {
-            mockEvent.type    = "touchmove";
+            mockEvent.type    = "touchstart";
             mockEvent.touches = [{ pageX: 10, pageY: 10 }];
 
             const canvas  = new Canvas({ width: 50, height: 50 });
@@ -622,7 +622,7 @@ describe( "zCanvas.canvas", () => {
         });
 
         it( "should handle interactions of multiple sprites for a touch event with a multiple touches", () => {
-            mockEvent.type    = "touchmove";
+            mockEvent.type    = "touchstart";
             mockEvent.touches = [{ pageX: 10, pageY: 10 }, { pageX: 20, pageY: 20 }];
 
             const canvas  = new Canvas({ width: 50, height: 50 });
