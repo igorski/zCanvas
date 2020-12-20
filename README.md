@@ -2,9 +2,9 @@
 
 A lightweight JavaScript library for interacting with HTML Canvas drawables as if they were separately animatable, interactive objects. zCanvas is optimized for mobile devices, relying on optimal use of resources and works well with touch events; as such zCanvas can be an excellent resource for creating (mobile) browsed based games. It is however also equally useful for creating complex graphical interfaces.
 
-The concept of zCanvas encourages an object oriented approach, where each custom drawable you create for your project should inherit its prototype from the _sprite_-class. You'll find that in regular use you'll hardly ever have to override the basic sprite behaviour. Don't be frightened by the mention of _OOP_ however, zCanvas is equally useful if you prefer _functional programming_.
+The concept of zCanvas encourages an object oriented approach, where each custom drawable you create for your project inherits its prototype from the _sprite_-class. Don't be frightened by the mention of _OOP_ however, zCanvas is equally useful if you prefer _functional programming_.
 
-zCanvas will provide an API that takes care of all animation and update logic you'd associate with, for instance, a game loop, rendering images or even using animated spritesheets. However, the rendering logic (i.e. the "drawing" of the visual content) can be as low level as you'd like, by drawing straight onto the HTMLCanvasElement using the browsers _CanvasRenderingContext2D_-API.
+zCanvas will provide an API that takes care of all animation and update logic you'd associate with, for instance, a game loop, rendering images or even using animated spritesheets. You'll find that in regular use you'll hardly ever have to override the basic sprite behaviour. However, the rendering logic (i.e. the "drawing" of the visual content) can be as low level as you'd like, by drawing straight onto the HTMLCanvasElement using the browsers _CanvasRenderingContext2D_-API.
 
 zCanvas has been written in vanilla JavaScript (ES2018 dialect) and thus works independently from (and should work with) any other JavaScript framework.
 
