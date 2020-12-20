@@ -630,32 +630,39 @@ Canvas.prototype.dispose = function() {
  * @param {Event} aEvent
  */
 Canvas.prototype.handleInteraction = function( aEvent ) {
-
     const numChildren  = this._children.length;
-    let theChild, touches, found;
+    let i, l, theChild, touches, result;
+    let handled = false;
 
-    if ( numChildren > 0 ) {
+    if ( numChildren > 0 )
+    {
+        theChild = this._children[ numChildren - 1 ]; // reverse loop to first handle top layers
 
-        // reverse loop to first handle top layers
-        theChild = this._children[ numChildren - 1 ];
-
-        switch ( aEvent.type ) {
-
+        switch ( aEvent.type )
+        {
             // all touch events
             default:
                 let eventOffsetX = 0, eventOffsetY = 0;
                 touches /** @type {TouchList} */ = ( aEvent.touches.length > 0 ) ? aEvent.touches : aEvent.changedTouches;
+                l = touches.length;
 
-                if ( touches.length > 0 ) {
+                if ( l > 0 ) {
                     const offset = this.getCoordinate();
 
-                    eventOffsetX = touches[ 0 ].pageX - offset.x;
-                    eventOffsetY = touches[ 0 ].pageY - offset.y;
-                }
+                    for ( i = 0; i < l; ++i ) {
+                        eventOffsetX = touches[ i ].pageX - offset.x;
+                        eventOffsetY = touches[ i ].pageY - offset.y;
 
-                while ( theChild ) {
-                    theChild.handleInteraction( eventOffsetX, eventOffsetY, aEvent );
-                    theChild = theChild.last; // note we don't break this loop for multi touch purposes
+                        while ( theChild ) {
+                            result = theChild.handleInteraction( eventOffsetX, eventOffsetY, aEvent );
+                            if ( result ) {
+                                handled = true;
+                                break;
+                            }
+                            theChild = theChild.last;
+                        }
+                        theChild = this._children[ numChildren - 1 ];
+                    }
                 }
                 break;
 
@@ -665,8 +672,8 @@ Canvas.prototype.handleInteraction = function( aEvent ) {
             case "mouseup":
                 const { offsetX, offsetY } = aEvent;
                 while ( theChild ) {
-                    found = theChild.handleInteraction( offsetX, offsetY, aEvent );
-                    if ( found ) {
+                    handled = theChild.handleInteraction( offsetX, offsetY, aEvent );
+                    if ( handled ) {
                         break;
                     }
                     theChild = theChild.last;
@@ -678,8 +685,12 @@ Canvas.prototype.handleInteraction = function( aEvent ) {
         aEvent.stopPropagation();
         aEvent.preventDefault();
     }
-    // update the Canvas contents
-    this.invalidate();
+
+    // update the Canvas contents (only when the event was handled, otherwise
+    // we assume the visual state hasn't changed).
+    if ( handled ) {
+        this.invalidate();
+    }
 };
 
 /* protected methods */
@@ -799,7 +810,6 @@ Canvas.prototype.addListeners = function() {
  * @protected
  */
 Canvas.prototype.removeListeners = function() {
-
     if ( this._eventHandler ) {
         this._eventHandler.dispose();
     }

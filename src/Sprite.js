@@ -1132,22 +1132,26 @@ Sprite.prototype.handleInteraction = function( aEventX, aEventY, aEvent ) {
 
     // did we have a previous interaction and the 'up' event was fired?
     // unset this property or update the position in case the event is a move event
-    if ( this.isDragging ) {
 
-        if ( aEvent.type === "touchend" ||
-             aEvent.type === "mouseup" ) {
+    if ( aEvent.type === "touchend" || aEvent.type === "mouseup" )
+    {
+        // in case we only handled this object for a short
+        // period (250 ms), we assume it was clicked / tapped
 
-            this.isDragging = false;
+        let clicked = false;
 
-            // in case we only handled this object for a short
-            // period (250 ms), we assume it was clicked / tapped
-
-            if ( Date.now() - this._dragStartTime < 250 ) {
-                this.handleClick();
-            }
-            this.handleRelease( aEventX, aEventY );
-            return true;
+        if ( !this._draggable || ( Date.now() - this._dragStartTime < 250 )) {
+            this.handleClick();
+            clicked = true;
         }
+
+        if ( this.isDragging ) {
+            this.isDragging = false;
+            if ( !clicked ) {
+                this.handleRelease( aEventX, aEventY );
+            }
+        }
+        return true;
     }
 
     // evaluate if the event applies to this sprite by
@@ -1163,9 +1167,10 @@ Sprite.prototype.handleInteraction = function( aEventX, aEventY, aEvent ) {
         this.hover = true;
 
         // yes sir, we've got a match
-        if ( !this.isDragging ) {
-            if ( aEvent.type === "touchstart" || aEvent.type === "mousedown" ) {
-
+        if ( !this.isDragging && ( aEvent.type === "touchstart" || aEvent.type === "mousedown" ))
+        {
+            if ( this._draggable )
+            {
                 this.isDragging = true;
 
                 /**
@@ -1183,7 +1188,10 @@ Sprite.prototype.handleInteraction = function( aEventX, aEventY, aEvent ) {
                  * @protected
                  * @type {Object} w/ properties x and y
                  */
-                this._dragStartOffset = { "x" : this._bounds.left, "y" : this._bounds.top };
+                this._dragStartOffset = {
+                    x: this._bounds.left,
+                    y: this._bounds.top
+                };
 
                 /**
                  * the coordinates of the click/touch event at the moment
@@ -1192,25 +1200,27 @@ Sprite.prototype.handleInteraction = function( aEventX, aEventY, aEvent ) {
                  * @protected
                  * @type {Object} w/ properties x and y
                  */
-                this._dragStartEventCoordinates = { "x" : aEventX, "y" : aEventY };
-
-                this.handlePress( aEventX, aEventY );
-                return true;
+                this._dragStartEventCoordinates = {
+                    x: aEventX,
+                    y: aEventY
+                };
             }
+
+            this.handlePress( aEventX, aEventY );
+            return true;
         }
-    }
-    else {
+    } else {
         this.hover = false;
     }
 
     // the move handler is outside of the bounds check to
     // ensure we don't lose the handle by quickly moving around...
 
-    if ( this._draggable && this.isDragging ) {
+    if ( this.isDragging ) {
         this.handleMove( aEventX, aEventY );
         return true;
     }
-    return false;
+    return this.hover;
 };
 
 /* protected methods */
