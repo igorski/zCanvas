@@ -1137,18 +1137,18 @@ Sprite.prototype.handleInteraction = function( aEventX, aEventY, aEvent ) {
     {
         this._pressed = false;
 
+        if ( this.isDragging ) {
+            this.isDragging = false;
+        }
+
         // in case we only handled this object for a short
         // period (250 ms), we assume it was clicked / tapped
 
         if (( Date.now() - this._pressTime ) < 250 ) {
             this.handleClick();
-        } else {
-            this.handleRelease( aEventX, aEventY );
         }
+        this.handleRelease( aEventX, aEventY );
 
-        if ( this.isDragging ) {
-            this.isDragging = false;
-        }
         return true;
     }
 

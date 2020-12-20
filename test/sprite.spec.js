@@ -734,17 +734,17 @@ describe( "zCanvas.sprite", () => {
                     canvas.addChild( sprite );
                 });
 
-                it( "should call its handleClick handler instead of handleRelease if the elapsed time between press and release was below 250 ms", () => {
+                it( "should call its handleClick handler if the elapsed time between press and release was below 250 ms, along with handleRelease", () => {
                     sprite._pressTime = Date.now() - 249;
                     jest.spyOn( sprite, "handleClick" );
                     jest.spyOn( sprite, "handleRelease" );
                     const handled = sprite.handleInteraction( mockEvent.offsetX, mockEvent.offsetY, mockEvent );
                     expect( sprite.handleClick ).toHaveBeenCalled();
-                    expect( sprite.handleRelease ).not.toHaveBeenCalled();
+                    expect( sprite.handleRelease ).toHaveBeenCalled();
                     expect( handled ).toBe( true );
                 });
 
-                it( "should call its handleRelease handler if the elapsed time between press and release was over 250 ms", () => {
+                it( "should only call its handleRelease handler if the elapsed time between press and release was over 250 ms", () => {
                     sprite._pressTime = Date.now() - 250;
                     jest.spyOn( sprite, "handleRelease" );
                     jest.spyOn( sprite, "handleClick" );
