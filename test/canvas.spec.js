@@ -562,19 +562,8 @@ describe( "zCanvas.canvas", () => {
             };
         });
 
-        it( "should not invalidate the canvas content when events were unhandled", () => {
-            const canvas = new Canvas({ width: 50, height: 50 });
-
-            // note sprite is outside of event bounds
-            canvas.addChild( new Sprite({ x: 11, y: 11, width: 1, height: 1, interactive: true }));
-            canvas.invalidate = jest.fn();
-            canvas.handleInteraction( mockEvent );
-
-            expect(canvas.invalidate).not.toHaveBeenCalled();
-        });
-
-        it( "should invalidate the canvas content when events were unhandled", () => {
-            const canvas = new Canvas({ width: 50, height: 50 });
+        it( "should invalidate the canvas content when events were handled for a non-animatable canvas", () => {
+            const canvas = new Canvas({ width: 50, height: 50, animate: false });
 
             // note sprite is inside of event bounds
             canvas.addChild( new Sprite({ x: 5, y: 5, width: 10, height: 10, interactive: true }));

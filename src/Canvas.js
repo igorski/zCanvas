@@ -630,10 +630,8 @@ Canvas.prototype.dispose = function() {
  * @param {Event} aEvent
  */
 Canvas.prototype.handleInteraction = function( aEvent ) {
-    const numChildren  = this._children.length;
-    let i, l, theChild, touches, result;
-    let handled = false;
-
+    const numChildren = this._children.length;
+    let theChild;
     if ( numChildren > 0 )
     {
         theChild = this._children[ numChildren - 1 ]; // reverse loop to first handle top layers
@@ -642,21 +640,21 @@ Canvas.prototype.handleInteraction = function( aEvent ) {
         {
             // all touch events
             default:
-                let eventOffsetX = 0, eventOffsetY = 0;
-                touches /** @type {TouchList} */ = ( aEvent.touches.length > 0 ) ? aEvent.touches : aEvent.changedTouches;
-                l = touches.length;
+                let handled = false;
+                let eventOffsetX = 0, eventOffsetY = 0, result;
+
+                const touches /** @type {TouchList} */ = ( aEvent.touches.length > 0 ) ? aEvent.touches : aEvent.changedTouches;
+                let i = 0, l = touches.length;
 
                 if ( l > 0 ) {
                     const offset = this.getCoordinate();
-
                     for ( i = 0; i < l; ++i ) {
                         eventOffsetX = touches[ i ].pageX - offset.x;
                         eventOffsetY = touches[ i ].pageY - offset.y;
 
                         while ( theChild ) {
-                            result = theChild.handleInteraction( eventOffsetX, eventOffsetY, aEvent );
-                            if ( result ) {
-                                handled = true;
+                            handled = theChild.handleInteraction( eventOffsetX, eventOffsetY, aEvent );
+                            if ( handled ) {
                                 break;
                             }
                             theChild = theChild.last;
@@ -672,8 +670,7 @@ Canvas.prototype.handleInteraction = function( aEvent ) {
             case "mouseup":
                 const { offsetX, offsetY } = aEvent;
                 while ( theChild ) {
-                    handled = theChild.handleInteraction( offsetX, offsetY, aEvent );
-                    if ( handled ) {
+                    if ( theChild.handleInteraction( offsetX, offsetY, aEvent )) {
                         break;
                     }
                     theChild = theChild.last;
@@ -686,9 +683,8 @@ Canvas.prototype.handleInteraction = function( aEvent ) {
         aEvent.preventDefault();
     }
 
-    // update the Canvas contents (only when the event was handled, otherwise
-    // we assume the visual state hasn't changed).
-    if ( handled ) {
+    // update the Canvas contents
+    if ( !this._animate ) {
         this.invalidate();
     }
 };
