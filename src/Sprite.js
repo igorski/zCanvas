@@ -510,6 +510,8 @@ Sprite.prototype.draw = function( canvasContext, viewport = null ) {
         return;
     }
 
+    const bounds = this._bounds;
+
     // only render when associated bitmap is ready
     let render = this._bitmapReady;
     if ( render && viewport ) {
@@ -527,8 +529,8 @@ Sprite.prototype.draw = function( canvasContext, viewport = null ) {
 
     if ( render ) {
 
-        const bounds   = this._bounds,
-              aniProps = this._animation;
+        const aniProps = this._animation;
+        const { left, top, width, height } = bounds;
 
         // note we use a fast rounding operation on the
         // potentially floating point bounds
@@ -537,7 +539,7 @@ Sprite.prototype.draw = function( canvasContext, viewport = null ) {
 
             // no spritesheet defined
 
-            if ( viewportBounds )
+            if ( viewport )
             {
                 // bounds are defined, draw partial Bitmap
                 const { src, dest } = calculateDrawRectangle( bounds, viewport );

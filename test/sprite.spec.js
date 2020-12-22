@@ -5,19 +5,19 @@ import Loader from "../src/Loader";
 // stub the loader process
 let mockLoadImage;
 jest.mock('../src/Loader', () => ({
-    loadImage: (...args) => mockLoadImage(...args)
+    loadImage: ( ...args ) => mockLoadImage( ...args )
 }));
 let mockMathFn;
 jest.mock('../src/utils/image-math', () => ({
-    isInsideViewport       : (...args) => mockMathFn( "isInsideViewport", ...args ),
-    calculateDrawRectangle : (...args) => mockMathFn( "calculateDrawRectangle", ...args )
+    isInsideViewport       : ( ...args ) => mockMathFn?.( "isInsideViewport", ...args ),
+    calculateDrawRectangle : ( ...args ) => mockMathFn?.( "calculateDrawRectangle", ...args )
 }));
 
 describe( "zCanvas.sprite", () => {
 
     /* setup */
 
-    let canvas, x, y, width, height, imgSource, collidable, mask;
+    let canvas, x, y, width, height, imgSource, imageElement, collidable, mask;
 
     // executed before the tests start running
 
@@ -40,6 +40,8 @@ describe( "zCanvas.sprite", () => {
         };
         // prepare 1x1 red PNG as Bitmap Image source
         imgSource = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP4z8DwHwAFAAH/VscvDQAAAABJRU5ErkJggg==";
+        imageElement     = new window.Image();
+        imageElement.src = imgSource;
     });
 
     // executed before each individual test
@@ -775,10 +777,65 @@ describe( "zCanvas.sprite", () => {
     });
 
     describe( "when rendering its contents", () => {
-        it( "should perform a boundary check when a viewport is passed", () => {
-            const sprite = new Sprite();
-            const viewport = { left: 10, top: 10, width: 50, height: 50, right: 60, bottom: 60 };
-            sprite.draw( {}, viewport );
+        const canvas      = new Canvas();
+        const sprite      = new Sprite({ x: 5, y: 5, width: 50, height: 50, bitmap: imageElement });
+        const viewport    = { left: 10, top: 10, width: 100, height: 50, right: 110, bottom: 60 };
+
+        canvas.addChild( sprite );
+        let mockContext;
+
+        beforeEach(() => {
+            mockContext = { save: jest.fn(), restore: jest.fn(), drawImage: jest.fn() };
+            sprite._bitmapReady = true;
+        });
+
+        it ( "should not draw when its bitmap is not ready", () => {
+            sprite._bitmapReady = false;
+            sprite.draw( mockContext, viewport );
+            expect( mockContext.drawImage ).not.toHaveBeenCalled();
+        });
+
+        it( "should draw a when its bitmap is ready", () => {
+            sprite.draw( mockContext );
+            expect( mockContext.drawImage ).toHaveBeenCalledWith(
+                sprite._bitmap,
+                expect.any( Number ), expect.any( Number ), expect.any( Number ), expect.any( Number )
+            );
+        });
+
+        describe( "and a viewport is passed", () => {
+            it( "should perform a boundary check and not draw when the Sprite is outside of viewport bounds", () => {
+                mockMathFn = jest.fn( fn => {
+                    if ( fn === "isInsideViewport" ) {
+                        return false;
+                    }
+                });
+                sprite.draw( mockContext, viewport );
+                expect( mockMathFn ).toHaveBeenCalledWith( "isInsideViewport", sprite.getBounds(), viewport );
+                expect( mockContext.drawImage ).not.toHaveBeenCalled();
+            });
+
+            it( "should perform a boundary check and not draw when the Sprite is outside of viewport bounds", () => {
+                mockMathFn = jest.fn( fn => {
+                    if ( fn === "isInsideViewport" ) {
+                        return true;
+                    }
+                    if ( fn === "calculateDrawRectangle" ) {
+                        return {
+                            src: { left: 1, top: 2, width: 3, height: 4 },
+                            dest: { let: 5, top: 6, width: 7, height: 8 }
+                        };
+                    }
+                });
+                sprite.draw( mockContext, viewport );
+                expect( mockMathFn ).toHaveBeenCalledWith( "isInsideViewport", sprite.getBounds(), viewport );
+                expect( mockMathFn ).toHaveBeenCalledWith( "calculateDrawRectangle", sprite.getBounds(), viewport );
+                expect( mockContext.drawImage ).toHaveBeenCalledWith(
+                    sprite._bitmap,
+                    expect.any( Number ), expect.any( Number ), expect.any( Number ), expect.any( Number ),
+                    expect.any( Number ), expect.any( Number ), expect.any( Number ), expect.any( Number )
+                );
+            });
         });
     });
 });
