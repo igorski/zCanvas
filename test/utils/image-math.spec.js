@@ -1,12 +1,90 @@
-import { calculateDrawRectangle } from "../../src/utils/ImageMath";
+import { isInsideViewport, calculateDrawRectangle } from "../../src/utils/image-math";
 
 describe( "Image math utilities", () => {
-    describe( "when calculating the drawable area rectangle", () => {
-        const viewportX      = 50;
-        const viewportY      = 50;
-        const viewportWidth  = 400;
-        const viewportHeight = 400;
+    const viewport = {
+        left   : 50,
+        top    : 50,
+        width  : 400,
+        height : 400,
+        right  : 450,
+        bottom : 450
+    };
 
+    describe( "when determining whether a sprite is visible within the current viewport", () => {
+        it( "should know when a sprite close to the edges is not visible inside the viewport", () => {
+            // will be 1 pixel out of horizontal and vertical viewport bounds
+            const spriteBounds = {
+                left: 48,
+                top: 48,
+                width: 1,
+                height: 1
+            };
+            expect( isInsideViewport( spriteBounds, viewport )).toBe( false );
+        });
+
+        it( "should know when a sprite positioned at the edges, is visible inside the viewport", () => {
+            // will be just inside horizontal and vertical viewport bounds
+            const spriteBounds = {
+                left: 49,
+                top: 49,
+                width: 1,
+                height: 1
+            };
+            expect( isInsideViewport( spriteBounds, viewport )).toBe( true );
+        });
+
+        it( "should know when a sprite centered inside the viewport is visible", () => {
+            const spriteBounds = {
+                left: 250,
+                top: 250,
+                width: 20,
+                height: 20
+            };
+            expect( isInsideViewport( spriteBounds, viewport )).toBe( true );
+        });
+
+        it( "should know when a sprite positioned at the top is visible inside the viewport", () => {
+            const spriteBounds = {
+                left: 0,
+                top: 49,
+                width: 100,
+                height: 1
+            };
+            expect( isInsideViewport( spriteBounds, viewport )).toBe( true );
+        });
+
+        it( "should know when a sprite positioned at the bottom is visible inside the viewport", () => {
+            const spriteBounds = {
+                left: 0,
+                top: 450,
+                width: 100,
+                height: 1
+            };
+            expect( isInsideViewport( spriteBounds, viewport )).toBe( true );
+        });
+
+        it( "should know when a sprite positioned at the left is visible inside the viewport", () => {
+            const spriteBounds = {
+                left: 40,
+                top: 49,
+                width: 10,
+                height: 1
+            };
+            expect( isInsideViewport( spriteBounds, viewport )).toBe( true );
+        });
+
+        it( "should know when a sprite positioned at the right is visible inside the viewport", () => {
+            const spriteBounds = {
+                left: 450,
+                top: 49,
+                width: 1,
+                height: 1
+            };
+            expect( isInsideViewport( spriteBounds, viewport )).toBe( true );
+        });
+    });
+
+    describe( "when calculating the drawable area rectangle", () => {
         describe( "for a small Sprite positioned within a panned viewport", () => {
             it( "should be able to draw a small Sprite in the horizontal and vertical center of a panned viewport", () => {
                 const spriteBounds = {
@@ -15,8 +93,8 @@ describe( "Image math utilities", () => {
                     width: 20,
                     height: 20
                 };
-                const { source, dest } = calculateDrawRectangle( spriteBounds, viewportX, viewportY, viewportWidth, viewportHeight );
-                expect( source ).toEqual({
+                const { src, dest } = calculateDrawRectangle( spriteBounds, viewport );
+                expect( src ).toEqual({
                     left: 0,
                     top: 0,
                     width: 20,
@@ -40,16 +118,16 @@ describe( "Image math utilities", () => {
                     width: 20,
                     height: 20
                 };
-                const { source, dest } = calculateDrawRectangle( spriteBounds, viewportX, viewportY, viewportWidth, viewportHeight );
-                expect( source ).toEqual({
+                const { src, dest } = calculateDrawRectangle( spriteBounds, viewport );
+                expect( src ).toEqual({
                     left: 10,
                     top: 10,
                     width: 10,
                     height: 10
                 });
                 expect( dest ).toEqual({
-                    left: viewportX,
-                    top: viewportY,
+                    left: viewport.left,
+                    top: viewport.top,
                     width: 10,
                     height: 10
                 });
@@ -62,8 +140,8 @@ describe( "Image math utilities", () => {
                     width: 20,
                     height: 20
                 };
-                const { source, dest } = calculateDrawRectangle( spriteBounds, viewportX, viewportY, viewportWidth, viewportHeight );
-                expect( source ).toEqual({
+                const { src, dest } = calculateDrawRectangle( spriteBounds, viewport );
+                expect( src ).toEqual({
                     left: 0,
                     top: 10,
                     width: 20,
@@ -71,7 +149,7 @@ describe( "Image math utilities", () => {
                 });
                 expect( dest ).toEqual({
                     left: 250,
-                    top: viewportY,
+                    top: viewport.top,
                     width: 20,
                     height: 10
                 });
@@ -84,8 +162,8 @@ describe( "Image math utilities", () => {
                     width: 20,
                     height: 20
                 };
-                const { source, dest } = calculateDrawRectangle( spriteBounds, viewportX, viewportY, viewportWidth, viewportHeight );
-                expect( source ).toEqual({
+                const { src, dest } = calculateDrawRectangle( spriteBounds, viewport );
+                expect( src ).toEqual({
                     left: 0,
                     top: 10,
                     width: 10,
@@ -93,7 +171,7 @@ describe( "Image math utilities", () => {
                 });
                 expect( dest ).toEqual({
                     left: 440,
-                    top: viewportY,
+                    top: viewport.top,
                     width: 10,
                     height: 10
                 });
@@ -106,15 +184,15 @@ describe( "Image math utilities", () => {
                     width: 20,
                     height: 20
                 };
-                const { source, dest } = calculateDrawRectangle( spriteBounds, viewportX, viewportY, viewportWidth, viewportHeight );
-                expect( source ).toEqual({
+                const { src, dest } = calculateDrawRectangle( spriteBounds, viewport );
+                expect( src ).toEqual({
                     left: 10,
                     top: 0,
                     width: 10,
                     height: 10
                 });
                 expect( dest ).toEqual({
-                    left: viewportX,
+                    left: viewport.left,
                     top: 440,
                     width: 10,
                     height: 10
@@ -128,8 +206,8 @@ describe( "Image math utilities", () => {
                     width: 20,
                     height: 20
                 };
-                const { source, dest } = calculateDrawRectangle( spriteBounds, viewportX, viewportY, viewportWidth, viewportHeight );
-                expect( source ).toEqual({
+                const { src, dest } = calculateDrawRectangle( spriteBounds, viewport );
+                expect( src ).toEqual({
                     left: 0,
                     top: 0,
                     width: 20,
@@ -150,8 +228,8 @@ describe( "Image math utilities", () => {
                     width: 20,
                     height: 20
                 };
-                const { source, dest } = calculateDrawRectangle( spriteBounds, viewportX, viewportY, viewportWidth, viewportHeight );
-                expect( source ).toEqual({
+                const { src, dest } = calculateDrawRectangle( spriteBounds, viewport );
+                expect( src ).toEqual({
                     left: 0,
                     top: 0,
                     width: 10,
@@ -175,18 +253,18 @@ describe( "Image math utilities", () => {
                     height: 500
                 };
 
-                const { source, dest } = calculateDrawRectangle( spriteBounds, viewportX, viewportY, viewportWidth, viewportHeight );
-                expect( source ).toEqual({
-                    left: viewportX,
-                    top: viewportY,
-                    width: viewportWidth,
-                    height: viewportHeight
+                const { src, dest } = calculateDrawRectangle( spriteBounds, viewport );
+                expect( src ).toEqual({
+                    left: viewport.left,
+                    top: viewport.top,
+                    width: viewport.width,
+                    height: viewport.height
                 });
                 expect( dest ).toEqual({
-                    left: viewportX,
-                    top: viewportY,
-                    width: viewportWidth,
-                    height: viewportHeight
+                    left: viewport.left,
+                    top: viewport.top,
+                    width: viewport.width,
+                    height: viewport.height
                 });
             });
 
@@ -198,8 +276,8 @@ describe( "Image math utilities", () => {
                     height: 500
                 };
 
-                const { source, dest } = calculateDrawRectangle( spriteBounds, viewportX, viewportY, viewportWidth, viewportHeight );
-                expect( source ).toEqual({
+                const { src, dest } = calculateDrawRectangle( spriteBounds, viewport );
+                expect( src ).toEqual({
                     left: 0,
                     top: 0,
                     width: 350,
@@ -221,17 +299,17 @@ describe( "Image math utilities", () => {
                     height: 500
                 };
 
-                const { source, dest } = calculateDrawRectangle( spriteBounds, viewportX, viewportY, viewportWidth, viewportHeight );
-                expect( source ).toEqual({
+                const { src, dest } = calculateDrawRectangle( spriteBounds, viewport );
+                expect( src ).toEqual({
                     left: 100,
                     top: 0,
-                    width: viewportWidth,
+                    width: viewport.width,
                     height: 100
                 });
                 expect( dest ).toEqual({
-                    left: viewportX,
+                    left: viewport.left,
                     top: 350,
-                    width: viewportWidth,
+                    width: viewport.width,
                     height: 100
                 });
             });
@@ -244,18 +322,18 @@ describe( "Image math utilities", () => {
                     height: 500
                 };
 
-                const { source, dest } = calculateDrawRectangle( spriteBounds, viewportX, viewportY, viewportWidth, viewportHeight );
-                expect( source ).toEqual({
+                const { src, dest } = calculateDrawRectangle( spriteBounds, viewport );
+                expect( src ).toEqual({
                     left: 0,
                     top: 100,
                     width: 150,
-                    height: viewportHeight
+                    height: viewport.height
                 });
                 expect( dest ).toEqual({
                     left: 300,
-                    top: viewportY,
+                    top: viewport.top,
                     width: 150,
-                    height: viewportHeight
+                    height: viewport.height
                 });
             });
 
@@ -267,16 +345,16 @@ describe( "Image math utilities", () => {
                     height: 600
                 };
 
-                const { source, dest } = calculateDrawRectangle( spriteBounds, viewportX, viewportY, viewportWidth, viewportHeight );
-                expect( source ).toEqual({
+                const { src, dest } = calculateDrawRectangle( spriteBounds, viewport );
+                expect( src ).toEqual({
                     left: 200,
                     top: 350,
                     width: 100,
                     height: 250
                 });
                 expect( dest ).toEqual({
-                    left: viewportX,
-                    top: viewportY,
+                    left: viewport.left,
+                    top: viewport.top,
                     width: 100,
                     height: 250
                 });

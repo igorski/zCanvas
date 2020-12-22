@@ -20,8 +20,9 @@
  * IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-import OOP    from "./utils/OOP";
-import Loader from "./Loader";
+import Inheritance from "./utils/inheritance";
+import Loader      from "./Loader";
+import { isInsideViewport, calculateDrawRectangle } from "./utils/image-math";
 
 /**
  * provides an API equivalent to the Flash Sprite / Display Object for manipulating "Objects" on a canvas element.
@@ -210,7 +211,7 @@ export default Sprite;
  *        function which should inherit the Sprite prototype
  */
 Sprite.extend = function( extendingFunction ) {
-    OOP.extend( extendingFunction, Sprite );
+    Inheritance.extend( extendingFunction, Sprite );
 };
 
 /* public methods */
@@ -498,11 +499,9 @@ Sprite.prototype.update = function( aCurrentTimestamp ) {
  *
  * @public
  * @param {CanvasRenderingContext2D} canvasContext to draw on
- * @param {number} canvasWidth
- * @param {number} canvasHeight
- * @param {{ x: number, y: number, width: number, height: number}|null} viewportBounds
+ * @param {{ left: number, top: number, width: number, height: number, right: number, bottom: number }|null} viewport
  */
-Sprite.prototype.draw = function( canvasContext, canvasWidth, canvasHeight, viewportBounds = null ) {
+Sprite.prototype.draw = function( canvasContext, viewport = null ) {
 
     // extend in subclass if you're drawing a custom object instead of a graphical Image asset
     // don't forget to draw the child display list when overriding this method!
@@ -511,15 +510,11 @@ Sprite.prototype.draw = function( canvasContext, canvasWidth, canvasHeight, view
         return;
     }
 
-    const { left, top, width, height } = this._bounds;
-
     // only render when associated bitmap is ready
     let render = this._bitmapReady;
-    if ( render && viewportBounds ) {
+    if ( render && viewport ) {
         // ...and content is within visual bounds if a viewport was defined
-        // TODO: when viewport Bounds are given, check these !!
-        render = ( left + width ) >= 0 && left <= canvasWidth &&
-                 ( top + height ) >= 0 && top  <= canvasHeight;
+        render = isInsideViewport( this._bounds, viewport );
     }
 
     canvasContext.save();
@@ -540,31 +535,25 @@ Sprite.prototype.draw = function( canvasContext, canvasWidth, canvasHeight, view
 
         if ( !aniProps ) {
 
-            // no spritesheet defined, draw entire Bitmap
+            // no spritesheet defined
 
-            if ( viewportBounds ) {
-                const targetWidth  = viewport.width;
-                const targetHeight = viewport.height;
-                const ratio        = targetWidth / canvasWidth;
-                const sourceLeft   = left   * ratio;
-                const sourceTop    = top    * ratio;
-                const sourceWidth  = width  * ratio;
-                const sourceHeight = height * ratio;
-
+            if ( viewportBounds )
+            {
+                // bounds are defined, draw partial Bitmap
+                const { src, dest } = calculateDrawRectangle( bounds, viewport );
                 canvasContext.drawImage(
-                    // TODO dWidth and dHeight should not equal viewport
-                    // (as this sprite can have content smaller than viewport size)
                     this._bitmap,
-                    ( .5 + sourceLeft )   << 0,
-                    ( .5 + sourceTop )    << 0,
-                    ( .5 + sourceWidth )  << 0,
-                    ( .5 + sourceHeight ) << 0,
-                    ( .5 + left )         << 0,
-                    ( .5 + top )          << 0,
-                    ( .5 + width )  << 0,
-                    ( .5 + height ) << 0
+                    ( .5 + src.left )    << 0,
+                    ( .5 + src.top )     << 0,
+                    ( .5 + src.width )   << 0,
+                    ( .5 + src.height )  << 0,
+                    ( .5 + dest.left )   << 0,
+                    ( .5 + dest.top )    << 0,
+                    ( .5 + dest.width )  << 0,
+                    ( .5 + dest.height ) << 0
                 );
             } else {
+                // no bounds defined, draw entire Bitmap
                 canvasContext.drawImage(
                     this._bitmap,
                     ( .5 + left )   << 0,
@@ -598,7 +587,7 @@ Sprite.prototype.draw = function( canvasContext, canvasWidth, canvasHeight, view
 
     let theSprite = this._children[ 0 ];
     while ( theSprite ) {
-        theSprite.draw( canvasContext );
+        theSprite.draw( canvasContext, viewport );
         theSprite = theSprite.next;
     }
 

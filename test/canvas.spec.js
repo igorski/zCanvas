@@ -241,57 +241,72 @@ describe( "zCanvas.canvas", () => {
         expect( canvas.getChildren().indexOf( sprite2 ) ).toEqual( 1 );
     });
 
-    it( "should be able to update its dimensions synchronously", () => {
-        const canvas = new Canvas({ width, height });
+    describe( "when updating its dimensions", () => {
+        it( "should be able to update its dimensions synchronously", () => {
+            const canvas = new Canvas({ width, height });
 
-        let newWidth  = width,
-            newHeight = height;
+            let newWidth  = width,
+                newHeight = height;
 
-        while ( newWidth === width )
-            newWidth = Math.round( Math.random() * 1000 ) + 1;
+            while ( newWidth === width )
+                newWidth = Math.round( Math.random() * 1000 ) + 1;
 
-        while ( newHeight === height )
-            newHeight = Math.round( Math.random() * 1000 ) + 1;
+            while ( newHeight === height )
+                newHeight = Math.round( Math.random() * 1000 ) + 1;
 
-        canvas.setDimensions( newWidth, newHeight, false, true );
+            canvas.setDimensions( newWidth, newHeight, false, true );
 
-        expect( canvas.getWidth() ).toEqual( newWidth );
-        expect( canvas.getHeight() ).toEqual( newHeight );
+            expect( canvas.getWidth() ).toEqual( newWidth );
+            expect( canvas.getHeight() ).toEqual( newHeight );
+        });
+
+        it( "should be able to update its dimensions asynchronously on next render", done => {
+            const canvas = new Canvas({ width, height });
+
+            const oldWidth = width, oldHeight = height;
+
+            let newWidth  = width,
+                newHeight = height;
+
+            while ( newWidth === width )
+                newWidth = Math.round( Math.random() * 1000 ) + 1;
+
+            while ( newHeight === height )
+                newHeight = Math.round( Math.random() * 1000 ) + 1;
+
+            canvas.setDimensions( newWidth, newHeight );
+
+            // actual values should not have been updated yet
+
+            expect( canvas._width ).toEqual( oldWidth );
+            expect( canvas._height ).toEqual( oldHeight );
+
+            // we do expect the getters to return the enqueued dimensions
+
+            expect( canvas.getWidth() ).toEqual( newWidth );
+            expect( canvas.getHeight() ).toEqual( newHeight );
+
+            window.requestAnimationFrame(() => {
+                expect( canvas.getWidth() ).toEqual( newWidth );
+                expect( canvas._width ).toEqual( newWidth );
+                expect( canvas.getHeight() ).toEqual( newHeight );
+                expect( canvas._height ).toEqual( newHeight );
+
+                done();
+            });
+        });
     });
 
-    it( "should be able to update its dimensions asynchronously on next render", done => {
+    it( "should be able to set its optional viewport and calculate the full bounding box", () => {
         const canvas = new Canvas({ width, height });
-
-        const oldWidth = width, oldHeight = height;
-
-        let newWidth  = width,
-            newHeight = height;
-
-        while ( newWidth === width )
-            newWidth = Math.round( Math.random() * 1000 ) + 1;
-
-        while ( newHeight === height )
-            newHeight = Math.round( Math.random() * 1000 ) + 1;
-
-        canvas.setDimensions( newWidth, newHeight );
-
-        // actual values should not have been updated yet
-
-        expect( canvas._width ).toEqual( oldWidth );
-        expect( canvas._height ).toEqual( oldHeight );
-
-        // we do expect the getters to return the enqueued dimensions
-
-        expect( canvas.getWidth() ).toEqual( newWidth );
-        expect( canvas.getHeight() ).toEqual( newHeight );
-
-        window.requestAnimationFrame(() => {
-            expect( canvas.getWidth() ).toEqual( newWidth );
-            expect( canvas._width ).toEqual( newWidth );
-            expect( canvas.getHeight() ).toEqual( newHeight );
-            expect( canvas._height ).toEqual( newHeight );
-
-            done();
+        canvas.setViewport( 10, 20, 100, 50 );
+        expect( canvas._viewport ).toEqual({
+            left: 10,
+            top: 20,
+            width: 100,
+            height: 50,
+            right: 110,
+            bottom: 70
         });
     });
 
@@ -309,65 +324,67 @@ describe( "zCanvas.canvas", () => {
         expect( canvas.getElement() )?.style?.[ "image-rendering" ].toEqual( "crisp-edges" );
     });
 
-    it( "should know whether its animatable", () => {
-        let canvas = new Canvas({ width, height, animate: false });
-        expect( canvas.isAnimatable() ).toBe( false );
+    describe( "when dealing with the animatable state", () => {
+        it( "should know whether its animatable", () => {
+            let canvas = new Canvas({ width, height, animate: false });
+            expect( canvas.isAnimatable() ).toBe( false );
 
-        canvas = new Canvas({ width, height, animate: true });
-        expect( canvas.isAnimatable() ).toBe( true );
-    });
+            canvas = new Canvas({ width, height, animate: true });
+            expect( canvas.isAnimatable() ).toBe( true );
+        });
 
-    it( "should be able to toggle its animatable state", () => {
-        const canvas = new Canvas({ width, height, animate: false });
+        it( "should be able to toggle its animatable state", () => {
+            const canvas = new Canvas({ width, height, animate: false });
 
-        canvas.setAnimatable( true );
-        expect( canvas.isAnimatable() ).toBe( true );
+            canvas.setAnimatable( true );
+            expect( canvas.isAnimatable() ).toBe( true );
 
-        canvas.setAnimatable( false );
-        expect( canvas.isAnimatable() ).toBe( false );
-    });
+            canvas.setAnimatable( false );
+            expect( canvas.isAnimatable() ).toBe( false );
+        });
 
-    it( "should continuously render on each animation frame when animatable", done => {
-        const canvas = new Canvas({ width, height, animate: false });
+        it( "should continuously render on each animation frame when animatable", done => {
+            const canvas = new Canvas({ width, height, animate: false });
 
-        // hijack bound render handlers
+            // hijack bound render handlers
 
-        const hijackedHandler = canvas._renderHandler;
-        let renders = 0;
+            const hijackedHandler = canvas._renderHandler;
+            let renders = 0;
 
-        canvas._renderHandler = () => {
+            canvas._renderHandler = () => {
 
-            if ( ++renders === 5 )
-                done();
-            else
+                if ( ++renders === 5 )
+                    done();
+                else
+                    hijackedHandler();
+            };
+            canvas.setAnimatable( true );
+        });
+
+        it( "should only render on invalidation when not animatable", done => {
+            // construct as animatable
+            const canvas = new Canvas({ width, height, animate: true });
+
+            // now disable animation
+            canvas.setAnimatable( false );
+
+            // hijack bound render handlers
+
+            const hijackedHandler = canvas._renderHandler;
+            let renders = 0;
+
+            canvas._renderHandler = () => {
+                ++renders;
                 hijackedHandler();
-        };
-        canvas.setAnimatable( true );
-    });
+            };
 
-    it( "should only render on invalidation when not animatable", done => {
-        // construct as animatable
-        const canvas = new Canvas({ width, height, animate: true });
+            window.requestAnimationFrame( () => {
+                // expected render count not to have incremented after disabling of animatable state
+                expect( renders ).toEqual( 0 );
 
-        // now disable animation
-        canvas.setAnimatable( false );
-
-        // hijack bound render handlers
-
-        const hijackedHandler = canvas._renderHandler;
-        let renders = 0;
-
-        canvas._renderHandler = () => {
-            ++renders;
-            hijackedHandler();
-        };
-
-        window.requestAnimationFrame( () => {
-            // expected render count not to have incremented after disabling of animatable state
-            expect( renders ).toEqual( 0 );
-
-            canvas._renderHandler = () => done(); // hijack render to end test
-            canvas.invalidate(); // call invalidate to render and end this test
+                canvas._renderHandler = () => done(); // hijack render to end test
+                canvas.invalidate(); // call invalidate to render and end this test
+            });
         });
     });
 
@@ -388,35 +405,37 @@ describe( "zCanvas.canvas", () => {
         canvas.invalidate();
     });
 
-    it( "should invoke the update()-method of its children upon render", done => {
-        const canvas = new Canvas({
-            width: width,
-            height: height,
-            animate: false
+    describe( "when rendering", () => {
+        it( "should invoke the update()-method of its children upon render", done => {
+            const canvas = new Canvas({
+                width: width,
+                height: height,
+                animate: false
+            });
+            const sprite = new Sprite({ width: 10, height: 10 });
+            canvas.addChild( sprite );
+
+            sprite.update = () => {
+                done();
+            };
+            canvas.invalidate();
         });
-        const sprite = new Sprite({ width: 10, height: 10 });
-        canvas.addChild( sprite );
 
-        sprite.update = () => {
-            done();
-        };
-        canvas.invalidate();
-    });
+        it( "should not invoke the update()-method of its children if a custom external " +
+            "update handler was configured", async done => {
 
-    it( "should not invoke the update()-method of its children if a custom external " +
-        "update handler was configured", async done => {
+            const handler = () => {
+                setTimeout( () => done(), 10 );
+            };
+            const canvas = new Canvas({ width, height, animate: false, onUpdate: handler });
+            const sprite = new Sprite({ width: 10, height: 10 });
+            canvas.addChild( sprite );
 
-        const handler = () => {
-            setTimeout( () => done(), 10 );
-        };
-        const canvas = new Canvas({ width, height, animate: false, onUpdate: handler });
-        const sprite = new Sprite({ width: 10, height: 10 });
-        canvas.addChild( sprite );
-
-        sprite.update = () => {
-            throw new Error( "sprite update should not have been called" );
-        };
-        canvas.invalidate();
+            sprite.update = () => {
+                throw new Error( "sprite update should not have been called" );
+            };
+            canvas.invalidate();
+        });
     });
 
     describe( "when scaling the canvas", () => {

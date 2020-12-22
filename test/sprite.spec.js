@@ -7,6 +7,11 @@ let mockLoadImage;
 jest.mock('../src/Loader', () => ({
     loadImage: (...args) => mockLoadImage(...args)
 }));
+let mockMathFn;
+jest.mock('../src/utils/image-math', () => ({
+    isInsideViewport       : (...args) => mockMathFn( "isInsideViewport", ...args ),
+    calculateDrawRectangle : (...args) => mockMathFn( "calculateDrawRectangle", ...args )
+}));
 
 describe( "zCanvas.sprite", () => {
 
@@ -766,6 +771,14 @@ describe( "zCanvas.sprite", () => {
                     expect( handled ).toBe( true );
                 });
             });
+        });
+    });
+
+    describe( "when rendering its contents", () => {
+        it( "should perform a boundary check when a viewport is passed", () => {
+            const sprite = new Sprite();
+            const viewport = { left: 10, top: 10, width: 50, height: 50, right: 60, bottom: 60 };
+            sprite.draw( {}, viewport );
         });
     });
 });

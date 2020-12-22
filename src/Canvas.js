@@ -20,8 +20,8 @@
  * IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-import EventHandler from "./utils/EventHandler";
-import OOP          from "./utils/OOP";
+import EventHandler from "./utils/event-handler";
+import Inheritance  from "./utils/inheritance";
 
 /**
  * creates an API for an HTMLCanvasElement where all drawables are treated as
@@ -138,7 +138,7 @@ export default Canvas;
  *        function which should inherit the Canvas prototype
  */
 Canvas.extend = function( extendingFunction ) {
-    OOP.extend( extendingFunction, Canvas );
+    Inheritance.extend( extendingFunction, Canvas );
 };
 
 /* public methods */
@@ -431,17 +431,28 @@ Canvas.prototype.setDimensions = function( width, height, setAsPreferredDimensio
  * by only rendering the visible area.
  *
  * @public
- * @param {number} x
- * @param {number} y
+ * @param {number} left
+ * @param {number} top
  * @param {number} width
  * @param {number} height
  */
-Canvas.prototype.setViewport = function( x, y, width, height ) {
+Canvas.prototype.setViewport = function( left, top, width, height ) {
     /**
      * @protected
-     * @type {{ x: number, y: number, width: number, height: number }}
+     * @type {{
+     *           left: number,
+     *           top: number,
+     *           width: number,
+     *           height: number,
+     *           right: number,
+     *           bottom: number
+     *       }}
      */
-     this._viewport = { x, y, width, height };
+     this._viewport = {
+         left, top, width, height,
+         right  : left + width,
+         bottom : top + height
+     };
 };
 
 /**
@@ -765,7 +776,7 @@ Canvas.prototype.render = function() {
             if ( !useExternalUpdateHandler ) {
                 theSprite.update( now );
             }
-            theSprite.draw( ctx, width, height, this._viewport );
+            theSprite.draw( ctx, this._viewport );
             theSprite = theSprite.next;
         }
     }
