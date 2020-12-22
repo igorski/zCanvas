@@ -497,9 +497,12 @@ Sprite.prototype.update = function( aCurrentTimestamp ) {
  * you can override this method for your own custom rendering logic (e.g. draw custom shapes)
  *
  * @public
- * @param {CanvasRenderingContext2D} aCanvasContext to draw on
+ * @param {CanvasRenderingContext2D} canvasContext to draw on
+ * @param {number} canvasWidth
+ * @param {number} canvasHeight
+ * @param {{ x: number, y: number, width: number, height: number}|null} viewportBounds
  */
-Sprite.prototype.draw = function( aCanvasContext ) {
+Sprite.prototype.draw = function( canvasContext, canvasWidth, canvasHeight, viewportBounds = null ) {
 
     // extend in subclass if you're drawing a custom object instead of a graphical Image asset
     // don't forget to draw the child display list when overriding this method!
@@ -507,75 +510,109 @@ Sprite.prototype.draw = function( aCanvasContext ) {
     if ( !this.canvas ) {
         return;
     }
-    aCanvasContext.save();
+
+    const { left, top, width, height } = this._bounds;
+
+    // only render when associated bitmap is ready
+    let render = this._bitmapReady;
+    if ( render && viewportBounds ) {
+        // ...and content is within visual bounds if a viewport was defined
+        // TODO: when viewport Bounds are given, check these !!
+        render = ( left + width ) >= 0 && left <= canvasWidth &&
+                 ( top + height ) >= 0 && top  <= canvasHeight;
+    }
+
+    canvasContext.save();
 
     // Sprite acts as a mask for underlying Sprites ?
 
     if ( this._mask ) {
-        aCanvasContext.globalCompositeOperation = 'destination-in';
+        canvasContext.globalCompositeOperation = "destination-in";
     }
 
-    if ( this._bitmapReady ) {
+    if ( render ) {
 
         const bounds   = this._bounds,
               aniProps = this._animation;
 
         // note we use a fast rounding operation on the
-        // optionally floating point Bounds values
+        // potentially floating point bounds
 
         if ( !aniProps ) {
 
             // no spritesheet defined, draw entire Bitmap
 
-            aCanvasContext.drawImage(
-                this._bitmap,
-                ( .5 + bounds.left )   << 0,
-                ( .5 + bounds.top )    << 0,
-                ( .5 + bounds.width )  << 0,
-                ( .5 + bounds.height ) << 0
-            );
+            if ( viewportBounds ) {
+                const targetWidth  = viewport.width;
+                const targetHeight = viewport.height;
+                const ratio        = targetWidth / canvasWidth;
+                const sourceLeft   = left   * ratio;
+                const sourceTop    = top    * ratio;
+                const sourceWidth  = width  * ratio;
+                const sourceHeight = height * ratio;
+
+                canvasContext.drawImage(
+                    // TODO dWidth and dHeight should not equal viewport
+                    // (as this sprite can have content smaller than viewport size)
+                    this._bitmap,
+                    ( .5 + sourceLeft )   << 0,
+                    ( .5 + sourceTop )    << 0,
+                    ( .5 + sourceWidth )  << 0,
+                    ( .5 + sourceHeight ) << 0,
+                    ( .5 + left )         << 0,
+                    ( .5 + top )          << 0,
+                    ( .5 + width )  << 0,
+                    ( .5 + height ) << 0
+                );
+            } else {
+                canvasContext.drawImage(
+                    this._bitmap,
+                    ( .5 + left )   << 0,
+                    ( .5 + top )    << 0,
+                    ( .5 + width )  << 0,
+                    ( .5 + height ) << 0
+                );
+            }
         }
         else {
 
             // spritesheet defined, draw tile
 
-            const width  = ( aniProps.tileWidth )  ? aniProps.tileWidth  : ( .5 + bounds.width )  << 0;
-            const height = ( aniProps.tileHeight ) ? aniProps.tileHeight : ( .5 + bounds.height ) << 0;
+            const tileWidth  = ( aniProps.tileWidth )  ? aniProps.tileWidth  : ( .5 + width )  << 0;
+            const tileHeight = ( aniProps.tileHeight ) ? aniProps.tileHeight : ( .5 + height ) << 0;
 
-            aCanvasContext.drawImage(
+            canvasContext.drawImage(
                 this._bitmap,
-                aniProps.col      * width,  // tile x offset
-                aniProps.type.row * height, // tile y offset
-                width, height,
-                ( .5 + bounds.left )   << 0,
-                ( .5 + bounds.top )    << 0,
-                ( .5 + bounds.width )  << 0,
-                ( .5 + bounds.height ) << 0
+                aniProps.col      * tileWidth,  // tile x offset
+                aniProps.type.row * tileHeight, // tile y offset
+                tileWidth, tileHeight,
+                ( .5 + left )   << 0,
+                ( .5 + top )    << 0,
+                ( .5 + width )  << 0,
+                ( .5 + height ) << 0
             );
         }
     }
 
     // draw this Sprites children onto the canvas
 
-    if ( this._children.length > 0 ) {
-        let theSprite = this._children[ 0 ];
-        while ( theSprite ) {
-            theSprite.draw( aCanvasContext );
-            theSprite = theSprite.next;
-        }
+    let theSprite = this._children[ 0 ];
+    while ( theSprite ) {
+        theSprite.draw( canvasContext );
+        theSprite = theSprite.next;
     }
 
     // restore canvas drawing operation so subsequent sprites draw as overlay
 
     if ( this._mask ) {
-        aCanvasContext.globalCompositeOperation = 'source-over';
+        canvasContext.globalCompositeOperation = "source-over";
     }
-    aCanvasContext.restore();
+    canvasContext.restore();
 
     // draw an outline when in debug mode
 
     if ( this.canvas.DEBUG ) {
-        this.drawOutline( aCanvasContext );
+        this.drawOutline( canvasContext );
     }
 };
 
@@ -1270,10 +1307,10 @@ Sprite.prototype.invalidate = function() {
  * be used when debugging
  *
  * @protected
- * @param {CanvasRenderingContext2D} aCanvasContext to draw on
+ * @param {CanvasRenderingContext2D} canvasContext to draw on
  */
-Sprite.prototype.drawOutline = function( aCanvasContext ) {
-    aCanvasContext.lineWidth   = 1;
-    aCanvasContext.strokeStyle = '#FF0000';
-    aCanvasContext.strokeRect( this.getX(), this.getY(), this.getWidth(), this.getHeight() )
+Sprite.prototype.drawOutline = function( canvasContext ) {
+    canvasContext.lineWidth   = 1;
+    canvasContext.strokeStyle = '#FF0000';
+    canvasContext.strokeRect( this.getX(), this.getY(), this.getWidth(), this.getHeight() )
 };

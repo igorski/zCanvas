@@ -33,7 +33,7 @@ import OOP          from "./utils/OOP";
  *            width: number,
  *            height: number,
  *            fps: number,
- *            scale : number,
+ *            scale: number,
  *            backgroundColor: string,
  *            animate: boolean,
  *            smoothing: boolean,
@@ -90,13 +90,14 @@ function Canvas({
     }
 
     // ensure all is crisp clear on HDPI screens
+    const ctx = this._canvasContext;
 
     const devicePixelRatio  = window.devicePixelRatio || 1;
-    const backingStoreRatio = this._canvasContext.webkitBackingStorePixelRatio ||
-                                 this._canvasContext.mozBackingStorePixelRatio ||
-                                  this._canvasContext.msBackingStorePixelRatio ||
-                                   this._canvasContext.oBackingStorePixelRatio ||
-                                    this._canvasContext.backingStorePixelRatio || 1;
+    const backingStoreRatio = ctx.webkitBackingStorePixelRatio ||
+                                 ctx.mozBackingStorePixelRatio ||
+                                  ctx.msBackingStorePixelRatio ||
+                                   ctx.oBackingStorePixelRatio ||
+                                    ctx.backingStorePixelRatio || 1;
 
     const ratio = devicePixelRatio / backingStoreRatio;
 
@@ -424,6 +425,26 @@ Canvas.prototype.setDimensions = function( width, height, setAsPreferredDimensio
 };
 
 /**
+ * In case the Canvas isn't fully visible (for instance because it is part
+ * of a scrollable container), you can define the visible bounds here. This
+ * can be used to improve rendering performance on large Canvas instances
+ * by only rendering the visible area.
+ *
+ * @public
+ * @param {number} x
+ * @param {number} y
+ * @param {number} width
+ * @param {number} height
+ */
+Canvas.prototype.setViewport = function( x, y, width, height ) {
+    /**
+     * @protected
+     * @type {{ x: number, y: number, width: number, height: number }}
+     */
+     this._viewport = { x, y, width, height };
+};
+
+/**
  * set the background color for the Canvas, either hexadecimal
  * or RGB/RGBA, e.g. "#FF0000" or "rgba(255,0,0,1)";
  *
@@ -714,18 +735,22 @@ Canvas.prototype.render = function() {
 
     if ( ctx ) {
 
+        const width  = this._width;
+        const height = this._height;
+        const renderWithinViewportBounds = this.renderVisiblesOnly;
+
         // clear previous canvas contents either by flooding it
         // with the optional background colour, or by clearing all pixel content
 
         if ( this._bgColor ) {
             ctx.fillStyle = this._bgColor;
-            ctx.fillRect( 0, 0, this._width, this._height );
+            ctx.fillRect( 0, 0, width, height );
         }
         else {
-            ctx.clearRect( 0, 0, this._width, this._height );
+            ctx.clearRect( 0, 0, width, height );
         }
 
-        const useExternalUpdateHandler = ( typeof this._updateHandler === "function" );
+        const useExternalUpdateHandler = typeof this._updateHandler === "function";
 
         if ( useExternalUpdateHandler ) {
             this._updateHandler( now );
@@ -733,18 +758,15 @@ Canvas.prototype.render = function() {
 
         // draw the children onto the canvas
 
-        if ( this._children.length > 0 ) {
+        theSprite = this._children[ 0 ];
 
-            theSprite = this._children[ 0 ];
+        while ( theSprite ) {
 
-            while ( theSprite ) {
-
-                if ( !useExternalUpdateHandler ) {
-                    theSprite.update( now );
-                }
-                theSprite.draw( ctx );
-                theSprite = theSprite.next;
+            if ( !useExternalUpdateHandler ) {
+                theSprite.update( now );
             }
+            theSprite.draw( ctx, width, height, this._viewport );
+            theSprite = theSprite.next;
         }
     }
 
