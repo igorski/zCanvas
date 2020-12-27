@@ -873,14 +873,20 @@ Canvas.prototype.getCoordinate = function() {
  * @param {Canvas} canvasInstance
  */
 function updateCanvasSize( canvasInstance ) {
-    const scaleFactor       = canvasInstance._HDPIscaleRatio;
-    const { width, height } = canvasInstance._enqueuedSize;
+    const scaleFactor     = canvasInstance._HDPIscaleRatio;
+    let { width, height } = canvasInstance._enqueuedSize;
+    const viewport        = canvasInstance._viewport;
 
     canvasInstance._enqueuedSize = null;
 
     /** @protected @type {number} */ canvasInstance._width  = width;
     /** @protected @type {number} */ canvasInstance._height = height;
 
+    if ( viewport ) {
+        width  = viewport.width;
+        height = viewport.height;
+    }
+    
     const element = canvasInstance._element;
 
     element.width  = width  * scaleFactor;
