@@ -454,6 +454,7 @@ Canvas.prototype.setViewport = function( left, top, width, height ) {
      */
      this._viewport = { width, height };
      this.panViewport( left, top );
+     updateCanvasSize( this );
 };
 
 /**
@@ -470,7 +471,6 @@ Canvas.prototype.panViewport = function( left, top ) {
     vp.top    = top;
     vp.bottom = top + vp.height;
 
-    updateCanvasSize( this );
     this.invalidate();
 };
 
