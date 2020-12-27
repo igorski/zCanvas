@@ -24,6 +24,9 @@ import Inheritance from "./utils/inheritance";
 import Loader      from "./Loader";
 import { isInsideViewport, calculateDrawRectangle } from "./utils/image-math";
 
+const { min, max } = Math;
+const HALF = .5;
+
 /**
  * provides an API equivalent to the Flash Sprite / Display Object for manipulating "Objects" on a canvas element.
  *
@@ -327,7 +330,7 @@ Sprite.prototype.setWidth = function( aValue ) {
     // previous left offset for the old width
 
     if ( prevWidth !== 0 ) {
-        this._bounds.left -= ( aValue * .5 - prevWidth * .5 );
+        this._bounds.left -= ( aValue * HALF - prevWidth * HALF );
     }
     this.invalidate();
 };
@@ -353,7 +356,7 @@ Sprite.prototype.setHeight = function( aValue ) {
     // previous top offset for the old height
 
     if ( prevHeight !== 0 ) {
-        this._bounds.top -= ( aValue * .5 - prevHeight * .5 );
+        this._bounds.top -= ( aValue * HALF - prevHeight * HALF );
     }
     this.invalidate();
 };
@@ -398,28 +401,28 @@ Sprite.prototype.setBounds = function( left, top, width, height ) {
         // There is a very small chance that the bounds width/height compared to stage width/height
         // is only very slightly different, which will produce a positive numeric result very close to,
         // but not quite zero. To play it safe, we will limit it to a maximum of 0.
-        const minX = Math.min( 0, -( thisWidth  - stageWidth  ));
-        const minY = Math.min( 0, -( thisHeight - stageHeight ));
+        const minX = min( 0, -( thisWidth  - stageWidth  ));
+        const minY = min( 0, -( thisHeight - stageHeight ));
         const maxX = stageWidth  - thisWidth;
         const maxY = stageHeight - thisHeight;
 
-        left = Math.min( maxX, Math.max( left, minX ));
-        top = Math.min( maxY, Math.max( top, minY ));
+        left = min( maxX, max( left, minX ));
+        top  = min( maxY, max( top, minY ));
     }
     else {
 
         /*if ( aXPosition < 0 ) {
-         aXPosition = aXPosition - ( thisWidth  * .5 );
+         aXPosition = aXPosition - ( thisWidth  * HALF );
          }
          else*/ if ( left > stageWidth ) {
-            left = left + ( thisWidth  * .5 );
+            left = left + ( thisWidth  * HALF );
         }
 
         /*if ( aYPosition < 0 ) {
-         aYPosition = aYPosition - ( thisHeight * .5 );
+         aYPosition = aYPosition - ( thisHeight * HALF );
          }
          else*/ if ( top > stageHeight ) {
-            top = top + ( thisHeight * .5 );
+            top = top + ( thisHeight * HALF );
         }
     }
     this.setX( left );
@@ -530,7 +533,7 @@ Sprite.prototype.draw = function( canvasContext, viewport = null ) {
     if ( render ) {
 
         const aniProps = this._animation;
-        const { left, top, width, height } = bounds;
+        let { left, top, width, height } = bounds;
 
         // note we use a fast rounding operation on the
         // potentially floating point bounds
@@ -545,23 +548,23 @@ Sprite.prototype.draw = function( canvasContext, viewport = null ) {
                 const { src, dest } = calculateDrawRectangle( bounds, viewport );
                 canvasContext.drawImage(
                     this._bitmap,
-                    ( .5 + src.left )    << 0,
-                    ( .5 + src.top )     << 0,
-                    ( .5 + src.width )   << 0,
-                    ( .5 + src.height )  << 0,
-                    ( .5 + dest.left )   << 0,
-                    ( .5 + dest.top )    << 0,
-                    ( .5 + dest.width )  << 0,
-                    ( .5 + dest.height ) << 0
+                    ( HALF + src.left )    << 0,
+                    ( HALF + src.top )     << 0,
+                    ( HALF + src.width )   << 0,
+                    ( HALF + src.height )  << 0,
+                    ( HALF + dest.left )   << 0,
+                    ( HALF + dest.top )    << 0,
+                    ( HALF + dest.width )  << 0,
+                    ( HALF + dest.height ) << 0
                 );
             } else {
                 // no bounds defined, draw entire Bitmap
                 canvasContext.drawImage(
                     this._bitmap,
-                    ( .5 + left )   << 0,
-                    ( .5 + top )    << 0,
-                    ( .5 + width )  << 0,
-                    ( .5 + height ) << 0
+                    ( HALF + left )   << 0,
+                    ( HALF + top )    << 0,
+                    ( HALF + width )  << 0,
+                    ( HALF + height ) << 0
                 );
             }
         }
@@ -569,18 +572,24 @@ Sprite.prototype.draw = function( canvasContext, viewport = null ) {
 
             // spritesheet defined, draw tile
 
-            const tileWidth  = ( aniProps.tileWidth )  ? aniProps.tileWidth  : ( .5 + width )  << 0;
-            const tileHeight = ( aniProps.tileHeight ) ? aniProps.tileHeight : ( .5 + height ) << 0;
+            const tileWidth  = aniProps.tileWidth  ? aniProps.tileWidth  : ( HALF + width )  << 0;
+            const tileHeight = aniProps.tileHeight ? aniProps.tileHeight : ( HALF + height ) << 0;
+
+            if ( viewport ) {
+                left -= viewport.left;
+                top  -= viewport.top;
+            }
 
             canvasContext.drawImage(
                 this._bitmap,
                 aniProps.col      * tileWidth,  // tile x offset
                 aniProps.type.row * tileHeight, // tile y offset
-                tileWidth, tileHeight,
-                ( .5 + left )   << 0,
-                ( .5 + top )    << 0,
-                ( .5 + width )  << 0,
-                ( .5 + height ) << 0
+                tileWidth,
+                tileHeight,
+                ( HALF + left )   << 0,
+                ( HALF + top )    << 0,
+                ( HALF + width )  << 0,
+                ( HALF + height ) << 0
             );
         }
     }
@@ -642,10 +651,10 @@ Sprite.prototype.getIntersection = function( aSprite ) {
     if ( this.collidesWith( aSprite )) {
         const self = this._bounds, compare = aSprite.getBounds();
 
-        const x = Math.max( self.left, compare.left );
-        const y = Math.max( self.top,  compare.top );
-        const w = Math.min( self.left + self.width,  compare.width + compare.height ) - x;
-        const h = Math.min( self.top  + self.height, compare.top   + compare.height ) - y;
+        const x = max( self.left, compare.left );
+        const y = max( self.top,  compare.top );
+        const w = min( self.left + self.width,  compare.width + compare.height ) - x;
+        const h = min( self.top  + self.height, compare.top   + compare.height ) - y;
 
         return { left: x, top: y, width: w, height: h };
     }
@@ -910,8 +919,8 @@ Sprite.prototype.setConstraint = function( left, top, width, height) {
      */
     this._constraint = { left, top, width, height };
 
-    this._bounds.left = Math.max( left, this._bounds.left );
-    this._bounds.top  = Math.max( top,  this._bounds.top );
+    this._bounds.left = max( left, this._bounds.left );
+    this._bounds.top  = max( top,  this._bounds.top );
 
     this._keepInBounds = true;
 

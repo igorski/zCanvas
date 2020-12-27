@@ -23,6 +23,8 @@
 import EventHandler from "./utils/event-handler";
 import Inheritance  from "./utils/inheritance";
 
+const { min, max, round } = Math;
+
 /**
  * creates an API for an HTMLCanvasElement where all drawables are treated as
  * self-contained Objects that can add/remove themselves from the DisplayList, rather
@@ -466,10 +468,10 @@ Canvas.prototype.setViewport = function( left, top, width, height ) {
  */
 Canvas.prototype.panViewport = function( left, top ) {
     const vp  = this._viewport;
-    vp.left   = left;
-    vp.right  = left + vp.width;
-    vp.top    = top;
-    vp.bottom = top + vp.height;
+    vp.left   = max( 0, left );
+    vp.right  = min( left + vp.width );
+    vp.top    = max( 0, top );
+    vp.bottom = min( top + vp.height );
 
     this.invalidate();
 };
@@ -549,8 +551,8 @@ Canvas.prototype.drawImage = function( aSource, destX, destY, destWidth, destHei
     if ( typeof aOptSourceX === "number" ) {
 
         // clipping rectangle doesn't have to exceed <canvas> dimensions
-        destWidth  = Math.min( this._canvasContext.canvas.width,  destWidth );
-        destHeight = Math.min( this._canvasContext.canvas.height, destHeight );
+        destWidth  = min( this._canvasContext.canvas.width,  destWidth );
+        destHeight = min( this._canvasContext.canvas.height, destHeight );
 
         const xScale = destWidth  / aOptSourceWidth;
         const yScale = destHeight / aOptSourceHeight;
@@ -638,14 +640,14 @@ Canvas.prototype.stretchToFit = function( value, maintainRatio = false ) {
 
     let targetWidth, targetHeight;
     if ( maintainRatio && value ) {
-        const ratio  = Math.min( innerWidth / idealWidth, innerHeight / idealHeight );
+        const ratio  = min( innerWidth / idealWidth, innerHeight / idealHeight );
         targetWidth  = idealWidth * ratio;
         targetHeight = idealHeight * ratio;
     } else {
         targetWidth  = value ? ( innerWidth  / x ) : idealWidth;
         targetHeight = value ? ( innerHeight / y ) : idealHeight;
     }
-    this.setDimensions( Math.round( targetWidth ), Math.round( targetHeight ), false );
+    this.setDimensions( round( targetWidth ), round( targetHeight ), false );
 };
 
 /**
@@ -682,7 +684,9 @@ Canvas.prototype.dispose = function() {
  */
 Canvas.prototype.handleInteraction = function( aEvent ) {
     const numChildren = this._children.length;
+    const viewport    = this._viewport;
     let theChild;
+
     if ( numChildren > 0 )
     {
         theChild = this._children[ numChildren - 1 ]; // reverse loop to first handle top layers
@@ -698,6 +702,10 @@ Canvas.prototype.handleInteraction = function( aEvent ) {
 
                 if ( l > 0 ) {
                     const offset = this.getCoordinate();
+                    if ( viewport ) {
+                        offset.x -= viewport.left;
+                        offset.y -= viewport.top;
+                    }
                     for ( i = 0; i < l; ++i ) {
                         eventOffsetX = touches[ i ].pageX - offset.x;
                         eventOffsetY = touches[ i ].pageY - offset.y;
@@ -717,13 +725,25 @@ Canvas.prototype.handleInteraction = function( aEvent ) {
             case "mousedown":
             case "mousemove":
             case "mouseup":
-                const { offsetX, offsetY } = aEvent;
+                let { offsetX, offsetY } = aEvent;
+                if ( viewport ) {
+                    offsetX += viewport.left;
+                    offsetY += viewport.top;
+                }
                 while ( theChild ) {
                     if ( theChild.handleInteraction( offsetX, offsetY, aEvent )) {
                         break;
                     }
                     theChild = theChild.last;
                 }
+                break;
+
+            // scroll wheel
+            case "wheel":
+                const { deltaX, deltaY } = aEvent;
+                const xSpeed = deltaX === 0 ? 0 : deltaX > 0 ? 10 : -10;
+                const ySpeed = deltaY === 0 ? 0 : deltaY > 0 ? 10 : -10;
+                this.panViewport( this._viewport.left + xSpeed, this._viewport.top + ySpeed );
                 break;
         }
     }
@@ -825,24 +845,28 @@ Canvas.prototype.addListeners = function() {
          */
         this._eventHandler = new EventHandler();
     }
-
+    const theHandler  = this._eventHandler;
     const theListener = this.handleInteraction.bind( this );
 
     // use touch events ?
 
     if ( !!( "ontouchstart" in window )) {
-        this._eventHandler.addEventListener( this._element, "touchstart", theListener );
-        this._eventHandler.addEventListener( this._element, "touchmove",  theListener );
-        this._eventHandler.addEventListener( this._element, "touchend",   theListener );
+        theHandler.addEventListener( this._element, "touchstart", theListener );
+        theHandler.addEventListener( this._element, "touchmove",  theListener );
+        theHandler.addEventListener( this._element, "touchend",   theListener );
     }
 
-    this._eventHandler.addEventListener( this._element, "mousedown", theListener );
-    this._eventHandler.addEventListener( this._element, "mousemove", theListener );
-    this._eventHandler.addEventListener( window,        "mouseup",   theListener ); // yes, window!
+    theHandler.addEventListener( this._element, "mousedown", theListener );
+    theHandler.addEventListener( this._element, "mousemove", theListener );
+    theHandler.addEventListener( window,        "mouseup",   theListener );
+
+    if ( this._viewport ) {
+        theHandler.addEventListener( this._element, "wheel", theListener );
+    }
 
     if ( this._stretchToFit ) {
         const resizeEvent = "onorientationchange" in window ? "orientationchange" : "resize";
-        this._eventHandler.addEventListener( window, resizeEvent, () => {
+        theHandler.addEventListener( window, resizeEvent, () => {
             this.stretchToFit( this._stretchToFit, this._maintainRatio );
         });
     }

@@ -25,8 +25,8 @@
             </div>
         </div>
         <p>
-            Demo features : a large zCanvas filled with random draggable circles that
-            change appearance on hover. By using the scrollbars the viewport inside zCanvas
+            Demo features : a large zCanvas filled with a single tile sheet sprite and several random draggable
+            circles that change appearance on hover. By using the scrollbars the viewport inside zCanvas
             can be panned.
         </p>
     </div>
@@ -63,7 +63,7 @@
             var viewportWidth  = ( w < 400 ) ? w * .93 : 400;
             var viewportHeight = ( h < 300 ) ? h : 300;
             // but its own size is a factor ten larger
-            var cvsWidth  = viewportWidth * 10;
+            var cvsWidth  = viewportWidth  * 10;
             var cvsHeight = viewportHeight * 10;
 
             var cvs = new zCanvas.canvas({
@@ -72,6 +72,7 @@
                 preventEventBubbling: true,
                 parentElement: container,
                 backgroundColor: "#00ff00",
+                animate: true,
                 viewport: { x: 0, y: 0, width: viewportWidth, height: viewportHeight }
             });
 
@@ -92,9 +93,12 @@
 
                 /* overridden zCanvas.sprite methods */
 
-                this.draw = function( ctx ) {
+                this.draw = function( ctx, viewport ) {
+                    var x = this.getX() - viewport.left;
+                    var y = this.getY() - viewport.top;
+
                     ctx.beginPath();
-                    ctx.arc( this.getX() + this.radius, this.getY() + this.radius, this.radius, 0, 2 * Math.PI, false );
+                    ctx.arc( x + this.radius, y + this.radius, this.radius, 0, 2 * Math.PI, false );
                     ctx.fillStyle = this.hover ? "#FFFFFF" : this.color; // when hovering the circle is white
                     ctx.fill();
 
@@ -115,6 +119,20 @@
                 cvs.addChild( new CircleSprite( cvsWidth * Math.random(), cvsHeight * Math.random(), 10 + ( Math.random() * 25 ), "#FF0099" ));
             }
 
+            // add a single Sprite using a tilesheet animation
+
+            var hero = new zCanvas.sprite({
+                x: viewportWidth  / 2 - 38 / 2,
+                y: viewportHeight / 2 - 35 / 2,
+                width: 38,
+                height: 35,
+                bitmap: IMAGE_SPRITE_SHEET,
+                sheet: [
+                    { row: 1, col: 0, fpt: 5, amount: 3 },  // standing still, facing right
+                ]
+            });
+            cvs.addChild( hero );
+
             // STEP 2 : CONFIGURE VIEWPORT SCROLLBARS
             // --------------------------------------
 
@@ -127,18 +145,19 @@
             var trackHeight  = verScroll.offsetHeight;
             var scrollWidth  = cvsWidth  - viewportWidth;
             var scrollHeight = cvsHeight - viewportHeight;
-
             var scrollLeft = 0;
             var scrollTop  = 0;
 
-            horTrack.style.width  = ( scrollWidth  / viewportWidth )  + "px";
-            verTrack.style.height = ( scrollHeight / viewportHeight ) + "px";
+            var horHandleWidth  = ( viewportWidth  / scrollWidth )  * trackWidth;
+            var verHandleHeight = ( viewportHeight / scrollHeight ) * trackHeight;
+            horTrack.style.width  = horHandleWidth  + "px";
+            verTrack.style.height = verHandleHeight + "px";
 
             // STEP 3 : ATTACH HANDLERS TO VIEWPORT SCROLLBARS
             // -----------------------------------------------
 
             var downEvents = [ "mousedown", "touchstart" ];
-            var moveEvents = [ "mousemove", "touchmove" ];
+            var moveEvents = [ "mousemove", "touchmove", "wheel" ];
             var upEvents   = [ "mouseup", "touchend", "touchcancel" ];
 
             downEvents.forEach( type => {
@@ -150,8 +169,8 @@
                 window.addEventListener( type, handleScrollEvent );
             });
             moveEvents.forEach( type => {
-                horScroll.addEventListener( type, handleScrollEvent );
-                verScroll.addEventListener( type, handleScrollEvent );
+                window.addEventListener( type, handleScrollEvent, { passive: false });
+                window.addEventListener( type, handleScrollEvent, { passive: false });
             });
 
             var hasHorizontalScroll = false;
@@ -160,13 +179,14 @@
             var viewportY = 0;
 
             function handleScrollEvent( e ) {
-                var isHorizontal = e.target === horScroll; // only other option is verScroll
+                var isHorizontal = e.target === horScroll;
+                var isVertical   = e.target === verScroll;
                 // pointer down == scroll start
                 if ( downEvents.includes( e.type )) {
                     if ( isHorizontal ) {
                         hasHorizontalScroll = true;
                         hasVerticalScroll   = false;
-                    } else {
+                    } else if ( isVertical ) {
                         hasHorizontalScroll = false;
                         hasVerticalScroll   = true;
                     }
@@ -181,14 +201,24 @@
                 }
                 // pointer move == move scroll bar
                 if ( moveEvents.includes( e.type )) {
-                    if ( isHorizontal ) {
-                        horTrack.style.left = e.offsetX + "px";
-                        viewportX = Math.max( 0, e.offsetX / trackWidth );
-                    } else {
-                        verTrack.style.top = e.offsetY + "px";
-                        viewportY = Math.max( 0, e.offsetY / trackHeight );
+                    var pointerX = e.offsetX;
+                    var pointerY = e.offsetY;
+                    // touch event handling
+                    var touches = e.touches || e.changedTouches;
+                    if ( touches && touches.length ) {
+                        pointerX = touches[ 0 ].pageX;
+                        pointerY = touches[ 0 ].pageY;
+                        e.preventDefault(); // prevents page bounce
                     }
-                    cvs.panViewport( viewportX * scrollWidth, viewportY * scrollHeight );
+                    if ( isHorizontal ) {
+                        horTrack.style.left = Math.min( trackWidth - horHandleWidth, pointerX ) + "px";
+                        viewportX = Math.max( 0, pointerX / trackWidth ); // is % of total
+                    }
+                    if ( isVertical ) {
+                        verTrack.style.top = Math.min( trackHeight - verHandleHeight, pointerY ) + "px";
+                        viewportY = Math.max( 0, pointerY / trackHeight ); // is % of total
+                    }
+                    cvs.panViewport( Math.round( viewportX * cvsWidth ), Math.round( viewportY * cvsHeight ));
                 }
             }
         });
