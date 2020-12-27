@@ -38,6 +38,7 @@ import Inheritance  from "./utils/inheritance";
  *            animate: boolean,
  *            smoothing: boolean,
  *            stretchToFit: boolean,
+ *            viewport: {{ x: number, y: number, width: number, height: number }}=
  *            preventEventBubbling: boolean,
  *            parentElement: null,
  *            onUpdate: Function,
@@ -46,7 +47,7 @@ import Inheritance  from "./utils/inheritance";
  */
 function Canvas({
     width = 300, height = 300, fps = 60, scale = 1, backgroundColor = null,
-    animate = false, smoothing = true, stretchToFit = false,
+    animate = false, smoothing = true, stretchToFit = false, viewport = null,
     preventEventBubbling = false, parentElement = null, debug = false, onUpdate = null
 } = {}) {
 
@@ -103,6 +104,9 @@ function Canvas({
 
     /** @protected @type {number} */ this._HDPIscaleRatio = ( devicePixelRatio !== backingStoreRatio ) ? ratio : 1;
 
+    if ( viewport ) {
+        this.setViewport( viewport.x, viewport.y, viewport.width, viewport.height );
+    }
     this.setDimensions( width, height, true, true );
 
     if ( scale !== 1 ) {
@@ -448,11 +452,26 @@ Canvas.prototype.setViewport = function( left, top, width, height ) {
      *           bottom: number
      *       }}
      */
-     this._viewport = {
-         left, top, width, height,
-         right  : left + width,
-         bottom : top + height
-     };
+     this._viewport = { width, height };
+     this.panViewport( left, top );
+};
+
+/**
+ * Updates the horizontal and vertical position of the current viewport.
+ *
+ * @public
+ * @param {number} left
+ * @param {number} top
+ */
+Canvas.prototype.panViewport = function( left, top ) {
+    const vp  = this._viewport;
+    vp.left   = left;
+    vp.right  = left + vp.width;
+    vp.top    = top;
+    vp.bottom = top + vp.height;
+
+    updateCanvasSize( this );
+    this.invalidate();
 };
 
 /**
@@ -874,19 +893,22 @@ Canvas.prototype.getCoordinate = function() {
  */
 function updateCanvasSize( canvasInstance ) {
     const scaleFactor     = canvasInstance._HDPIscaleRatio;
-    let { width, height } = canvasInstance._enqueuedSize;
     const viewport        = canvasInstance._viewport;
+    let width, height;
 
-    canvasInstance._enqueuedSize = null;
-
-    /** @protected @type {number} */ canvasInstance._width  = width;
-    /** @protected @type {number} */ canvasInstance._height = height;
+    if ( canvasInstance._enqueuedSize ) {
+        ({ width, height } = canvasInstance._enqueuedSize );
+        canvasInstance._enqueuedSize = null;
+    }
 
     if ( viewport ) {
         width  = viewport.width;
         height = viewport.height;
     }
-    
+
+    /** @protected @type {number} */ canvasInstance._width  = width;
+    /** @protected @type {number} */ canvasInstance._height = height;
+
     const element = canvasInstance._element;
 
     element.width  = width  * scaleFactor;
