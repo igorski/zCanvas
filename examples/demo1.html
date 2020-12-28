@@ -3,7 +3,7 @@
 <head>
     <meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable = no" name="viewport">
     <meta charset="utf-8" />
-    <title>canvas animated spritesheet example</title>
+    <title>zCanvas animated spritesheet example</title>
     <link rel="stylesheet" href="./assets/styles.css">
     <script type="text/javascript" src="./assets/images.js"></script>
     <!-- requestAnimationFrame and Promise polyfills for IE9 -->
@@ -68,7 +68,7 @@
             // STEP 2 : SELF ANIMATING IMAGE EXAMPLE
             // --------------------------------------
 
-            // first sprite will acts as a background
+            // first sprite will act as a background
             // (see included "assets.js"-file for the assetBackground-image data)
 
             var bgWidth  = 800, bgHeight = 1067;
@@ -259,8 +259,8 @@
                 sheet: [
                     { row: 0, col: 0, fpt: 5, amount: 3 },  // standing still, facing left
                     { row: 1, col: 0, fpt: 5, amount: 3 },  // standing still, facing right
-                    { row: 2, col: 0, fpt: 5, amount: 10 }, // running, facing left
-                    { row: 3, col: 0, fpt: 5, amount: 10 }  // running facing right
+                    { row: 2, col: 0, fpt: 3, amount: 10 }, // running, facing left
+                    { row: 3, col: 0, fpt: 3, amount: 10 }  // running facing right
                 ]
             });
             cvs.addChild( hero );

@@ -20,7 +20,7 @@
  * IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-const OOP = {
+const Inheritance = {
 
     /**
      * convenience method to inherit prototypes, this can be used to
@@ -39,8 +39,8 @@ const OOP = {
 
         function TempConstructor() {}
         TempConstructor.prototype = aSuperClass.prototype;
-        aSubClass.superClass_= aSuperClass.prototype;
-        aSubClass.prototype = new TempConstructor();
+        aSubClass.superClass_     = aSuperClass.prototype;
+        aSubClass.prototype       = new TempConstructor();
         aSubClass.prototype.constructor = aSubClass;
 
         /**
@@ -57,17 +57,17 @@ const OOP = {
         aSubClass.super = function( aCaller, aMethodName, var_args ) {
 
             const args = new Array( arguments.length - 2 );
-            for ( let i = 2; i < arguments.length; i++ )
+            for ( let i = 2; i < arguments.length; i++ ) {
                 args[ i - 2 ] = arguments[ i ];
-
+            }
             return aSuperClass.prototype[ aMethodName ].apply( aCaller, args );
         };
 
         // ensure sub classes can also be extended indefinitely
 
         aSubClass.extend = function( anotherSubClass ) {
-            OOP.extend( anotherSubClass, aSubClass )
+            Inheritance.extend( anotherSubClass, aSubClass )
         };
     }
 };
-export default OOP;
+export default Inheritance;

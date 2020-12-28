@@ -6,7 +6,7 @@ The concept of zCanvas encourages an object oriented approach, where each custom
 
 zCanvas will provide an API that takes care of all animation and update logic you'd associate with, for instance, a game loop, rendering images or even using animated spritesheets. You'll find that in regular use you'll hardly ever have to override the basic sprite behaviour. However, the rendering logic (i.e. the "drawing" of the visual content) can be as low level as you'd like, by drawing straight onto the HTMLCanvasElement using the browsers _CanvasRenderingContext2D_-API.
 
-zCanvas has been written in vanilla JavaScript (ES2018 dialect) and thus works independently from (and should work with) any other JavaScript framework.
+zCanvas has been written in vanilla JavaScript (ES2018 dialect) and works independently from (and should work with) any other JavaScript framework.
 
 ## DisplayList convention
 
@@ -44,7 +44,7 @@ npm install zcanvas
 
 ## Project Integration
 
-zCanvas is compatible with CommonJS, AMD/RequireJS or can be included in a document via script tags:
+zCanvas is compatible with ES6 modules, CommonJS, AMD/RequireJS or can be included in a document via script tags:
 
 ### ES6 module:
 
@@ -129,6 +129,12 @@ available to the browser:
  * [Demo #3: Layers and interactions](https://rawgithub.com/igorski/zcanvas/master/examples/demo3.html)
  * [Demo #4: Integrating 3rd party animation libraries](https://rawgithub.com/igorski/zcanvas/master/examples/demo4.html)
  * [Demo #5: Local image manipulation](https://rawgithub.com/igorski/zcanvas/master/examples/demo5.html)
+ * [Demo #6: Pannable viewport](https://rawgithub.com/igorski/zcanvas/master/examples/demo6.html)
+
+## Real-life examples
+
+zCanvas is used in proprietary image editing software, but is also the rendering engine behind
+[Bitmappery](https://www.igorski.nl/application/bitmappery/), which is also [open source](https://github.com/igorski/bitmappery).
 
 # The API / Documentation
 

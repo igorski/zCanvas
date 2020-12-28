@@ -20,8 +20,10 @@
  * IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-import EventHandler from "./utils/EventHandler";
-import OOP          from "./utils/OOP";
+import EventHandler from "./utils/event-handler";
+import Inheritance  from "./utils/inheritance";
+
+const { min, max, round } = Math;
 
 /**
  * creates an API for an HTMLCanvasElement where all drawables are treated as
@@ -33,11 +35,12 @@ import OOP          from "./utils/OOP";
  *            width: number,
  *            height: number,
  *            fps: number,
- *            scale : number,
+ *            scale: number,
  *            backgroundColor: string,
  *            animate: boolean,
  *            smoothing: boolean,
  *            stretchToFit: boolean,
+ *            viewport: {{ width: number, height: number }}=
  *            preventEventBubbling: boolean,
  *            parentElement: null,
  *            onUpdate: Function,
@@ -46,7 +49,7 @@ import OOP          from "./utils/OOP";
  */
 function Canvas({
     width = 300, height = 300, fps = 60, scale = 1, backgroundColor = null,
-    animate = false, smoothing = true, stretchToFit = false,
+    animate = false, smoothing = true, stretchToFit = false, viewport = null,
     preventEventBubbling = false, parentElement = null, debug = false, onUpdate = null
 } = {}) {
 
@@ -90,19 +93,23 @@ function Canvas({
     }
 
     // ensure all is crisp clear on HDPI screens
+    const ctx = this._canvasContext;
 
     const devicePixelRatio  = window.devicePixelRatio || 1;
-    const backingStoreRatio = this._canvasContext.webkitBackingStorePixelRatio ||
-                                 this._canvasContext.mozBackingStorePixelRatio ||
-                                  this._canvasContext.msBackingStorePixelRatio ||
-                                   this._canvasContext.oBackingStorePixelRatio ||
-                                    this._canvasContext.backingStorePixelRatio || 1;
+    const backingStoreRatio = ctx.webkitBackingStorePixelRatio ||
+                                 ctx.mozBackingStorePixelRatio ||
+                                  ctx.msBackingStorePixelRatio ||
+                                   ctx.oBackingStorePixelRatio ||
+                                    ctx.backingStorePixelRatio || 1;
 
     const ratio = devicePixelRatio / backingStoreRatio;
 
     /** @protected @type {number} */ this._HDPIscaleRatio = ( devicePixelRatio !== backingStoreRatio ) ? ratio : 1;
 
     this.setDimensions( width, height, true, true );
+    if ( viewport ) {
+        this.setViewport( viewport.width, viewport.height );
+    }
 
     if ( scale !== 1 ) {
         this.scale( scale, scale );
@@ -137,7 +144,7 @@ export default Canvas;
  *        function which should inherit the Canvas prototype
  */
 Canvas.extend = function( extendingFunction ) {
-    OOP.extend( extendingFunction, Canvas );
+    Inheritance.extend( extendingFunction, Canvas );
 };
 
 /* public methods */
@@ -424,6 +431,50 @@ Canvas.prototype.setDimensions = function( width, height, setAsPreferredDimensio
 };
 
 /**
+ * In case the Canvas isn't fully visible (for instance because it is part
+ * of a scrollable container), you can define the visible bounds (relative to
+ * the full Canvas width/height) here. This can be used to improve rendering
+ * performance on large Canvas instances by only rendering the visible area.
+ *
+ * @public
+ * @param {number} width
+ * @param {number} height
+ */
+Canvas.prototype.setViewport = function( width, height ) {
+    /**
+     * @protected
+     * @type {{
+     *           left: number,
+     *           top: number,
+     *           width: number,
+     *           height: number,
+     *           right: number,
+     *           bottom: number
+     *       }}
+     */
+     this._viewport = { width, height };
+     this.panViewport( 0, 0 );
+     updateCanvasSize( this );
+};
+
+/**
+ * Updates the horizontal and vertical position of the viewport.
+ *
+ * @public
+ * @param {number} left
+ * @param {number} top
+ */
+Canvas.prototype.panViewport = function( x, y ) {
+    const vp  = this._viewport;
+    vp.left   = max( 0, min( x, this._width - vp.width ));
+    vp.right  = vp.left + vp.width;
+    vp.top    = max( 0, min( y, this._height - vp.height ));
+    vp.bottom = vp.top + vp.height;
+
+    this.invalidate();
+};
+
+/**
  * set the background color for the Canvas, either hexadecimal
  * or RGB/RGBA, e.g. "#FF0000" or "rgba(255,0,0,1)";
  *
@@ -493,13 +544,15 @@ Canvas.prototype.drawImage = function( aSource, destX, destY, destWidth, destHei
         return;
     }
 
+    const ctx = this._canvasContext;
+
     // use 9-arity draw method if source rectangle is defined
 
     if ( typeof aOptSourceX === "number" ) {
 
         // clipping rectangle doesn't have to exceed <canvas> dimensions
-        destWidth  = Math.min( this._canvasContext.canvas.width,  destWidth );
-        destHeight = Math.min( this._canvasContext.canvas.height, destHeight );
+        destWidth  = min( ctx.canvas.width,  destWidth );
+        destHeight = min( ctx.canvas.height, destHeight );
 
         const xScale = destWidth  / aOptSourceWidth;
         const yScale = destHeight / aOptSourceHeight;
@@ -515,7 +568,7 @@ Canvas.prototype.drawImage = function( aSource, destX, destY, destWidth, destHei
             aOptSourceHeight -= (aOptSourceY + aOptSourceHeight - aSource.height);
         }
 
-        this._canvasContext.drawImage(
+        ctx.drawImage(
             aSource,
             // no rounding required here as these are integer values
             aOptSourceX, aOptSourceY, aOptSourceWidth, aOptSourceHeight,
@@ -524,7 +577,7 @@ Canvas.prototype.drawImage = function( aSource, destX, destY, destWidth, destHei
         );
     }
     else {
-        this._canvasContext.drawImage( aSource, destX, destY, destWidth, destHeight );
+        ctx.drawImage( aSource, destX, destY, destWidth, destHeight );
     }
 };
 
@@ -587,14 +640,14 @@ Canvas.prototype.stretchToFit = function( value, maintainRatio = false ) {
 
     let targetWidth, targetHeight;
     if ( maintainRatio && value ) {
-        const ratio  = Math.min( innerWidth / idealWidth, innerHeight / idealHeight );
+        const ratio  = min( innerWidth / idealWidth, innerHeight / idealHeight );
         targetWidth  = idealWidth * ratio;
         targetHeight = idealHeight * ratio;
     } else {
         targetWidth  = value ? ( innerWidth  / x ) : idealWidth;
         targetHeight = value ? ( innerHeight / y ) : idealHeight;
     }
-    this.setDimensions( Math.round( targetWidth ), Math.round( targetHeight ), false );
+    this.setDimensions( round( targetWidth ), round( targetHeight ), false );
 };
 
 /**
@@ -631,7 +684,9 @@ Canvas.prototype.dispose = function() {
  */
 Canvas.prototype.handleInteraction = function( aEvent ) {
     const numChildren = this._children.length;
+    const viewport    = this._viewport;
     let theChild;
+
     if ( numChildren > 0 )
     {
         theChild = this._children[ numChildren - 1 ]; // reverse loop to first handle top layers
@@ -647,6 +702,10 @@ Canvas.prototype.handleInteraction = function( aEvent ) {
 
                 if ( l > 0 ) {
                     const offset = this.getCoordinate();
+                    if ( viewport ) {
+                        offset.x -= viewport.left;
+                        offset.y -= viewport.top;
+                    }
                     for ( i = 0; i < l; ++i ) {
                         eventOffsetX = touches[ i ].pageX - offset.x;
                         eventOffsetY = touches[ i ].pageY - offset.y;
@@ -666,13 +725,26 @@ Canvas.prototype.handleInteraction = function( aEvent ) {
             case "mousedown":
             case "mousemove":
             case "mouseup":
-                const { offsetX, offsetY } = aEvent;
+                let { offsetX, offsetY } = aEvent;
+                if ( viewport ) {
+                    offsetX += viewport.left;
+                    offsetY += viewport.top;
+                }
                 while ( theChild ) {
                     if ( theChild.handleInteraction( offsetX, offsetY, aEvent )) {
                         break;
                     }
                     theChild = theChild.last;
                 }
+                break;
+
+            // scroll wheel / touchpad
+            case "wheel":
+                const { deltaX, deltaY } = aEvent;
+                const WHEEL_SPEED = 20;
+                const xSpeed = deltaX === 0 ? 0 : deltaX > 0 ? WHEEL_SPEED : -WHEEL_SPEED;
+                const ySpeed = deltaY === 0 ? 0 : deltaY > 0 ? WHEEL_SPEED : -WHEEL_SPEED;
+                this.panViewport( viewport.left + xSpeed, viewport.top + ySpeed );
                 break;
         }
     }
@@ -714,18 +786,21 @@ Canvas.prototype.render = function() {
 
     if ( ctx ) {
 
+        const width  = this._width;
+        const height = this._height;
+
         // clear previous canvas contents either by flooding it
         // with the optional background colour, or by clearing all pixel content
 
         if ( this._bgColor ) {
             ctx.fillStyle = this._bgColor;
-            ctx.fillRect( 0, 0, this._width, this._height );
+            ctx.fillRect( 0, 0, width, height );
         }
         else {
-            ctx.clearRect( 0, 0, this._width, this._height );
+            ctx.clearRect( 0, 0, width, height );
         }
 
-        const useExternalUpdateHandler = ( typeof this._updateHandler === "function" );
+        const useExternalUpdateHandler = typeof this._updateHandler === "function";
 
         if ( useExternalUpdateHandler ) {
             this._updateHandler( now );
@@ -733,18 +808,15 @@ Canvas.prototype.render = function() {
 
         // draw the children onto the canvas
 
-        if ( this._children.length > 0 ) {
+        theSprite = this._children[ 0 ];
 
-            theSprite = this._children[ 0 ];
+        while ( theSprite ) {
 
-            while ( theSprite ) {
-
-                if ( !useExternalUpdateHandler ) {
-                    theSprite.update( now );
-                }
-                theSprite.draw( ctx );
-                theSprite = theSprite.next;
+            if ( !useExternalUpdateHandler ) {
+                theSprite.update( now );
             }
+            theSprite.draw( ctx, this._viewport );
+            theSprite = theSprite.next;
         }
     }
 
@@ -773,24 +845,28 @@ Canvas.prototype.addListeners = function() {
          */
         this._eventHandler = new EventHandler();
     }
-
+    const theHandler  = this._eventHandler;
     const theListener = this.handleInteraction.bind( this );
 
     // use touch events ?
 
     if ( !!( "ontouchstart" in window )) {
-        this._eventHandler.addEventListener( this._element, "touchstart", theListener );
-        this._eventHandler.addEventListener( this._element, "touchmove",  theListener );
-        this._eventHandler.addEventListener( this._element, "touchend",   theListener );
+        theHandler.addEventListener( this._element, "touchstart", theListener );
+        theHandler.addEventListener( this._element, "touchmove",  theListener );
+        theHandler.addEventListener( this._element, "touchend",   theListener );
     }
 
-    this._eventHandler.addEventListener( this._element, "mousedown", theListener );
-    this._eventHandler.addEventListener( this._element, "mousemove", theListener );
-    this._eventHandler.addEventListener( window,        "mouseup",   theListener ); // yes, window!
+    theHandler.addEventListener( this._element, "mousedown", theListener );
+    theHandler.addEventListener( this._element, "mousemove", theListener );
+    theHandler.addEventListener( window,        "mouseup",   theListener );
+
+    if ( this._viewport ) {
+        theHandler.addEventListener( this._element, "wheel", theListener );
+    }
 
     if ( this._stretchToFit ) {
         const resizeEvent = "onorientationchange" in window ? "orientationchange" : "resize";
-        this._eventHandler.addEventListener( window, resizeEvent, () => {
+        theHandler.addEventListener( window, resizeEvent, () => {
             this.stretchToFit( this._stretchToFit, this._maintainRatio );
         });
     }
@@ -840,22 +916,47 @@ Canvas.prototype.getCoordinate = function() {
  * @param {Canvas} canvasInstance
  */
 function updateCanvasSize( canvasInstance ) {
-    const scaleFactor       = canvasInstance._HDPIscaleRatio;
-    const { width, height } = canvasInstance._enqueuedSize;
+    const scaleFactor = canvasInstance._HDPIscaleRatio;
+    const viewport    = canvasInstance._viewport;
+    let width, height;
 
-    canvasInstance._enqueuedSize = null;
+    if ( canvasInstance._enqueuedSize ) {
+        ({ width, height } = canvasInstance._enqueuedSize );
+        canvasInstance._enqueuedSize = null;
+        /** @protected @type {number} */ canvasInstance._width  = width;
+        /** @protected @type {number} */ canvasInstance._height = height;
+    }
 
-    /** @protected @type {number} */ canvasInstance._width  = width;
-    /** @protected @type {number} */ canvasInstance._height = height;
+    if ( viewport ) {
+        const cvsWidth  = canvasInstance._width;
+        const cvsHeight = canvasInstance._height;
 
-    const element = canvasInstance._element;
+        width  = min( viewport.width,  cvsWidth );
+        height = min( viewport.height, cvsHeight );
 
-    element.width  = width  * scaleFactor;
-    element.height = height * scaleFactor;
+        // in case viewport was panned beyond the new canvas dimensions
+        // reset pan to center.
+/*
+        if ( viewport.left > cvsWidth ) {
+            viewport.left  = cvsWidth * .5;
+            viewport.right = viewport.width + viewport.left;
+        }
+        if ( viewport.top > cvsHeight ) {
+            viewport.top    = cvsHeight * .5;
+            viewport.bottom = viewport.height + viewport.top;
+        }
+*/
+    }
 
-    element.style.width  = `${width}px`;
-    element.style.height = `${height}px`;
+    if ( width && height ) {
+        const element = canvasInstance._element;
 
+        element.width  = width  * scaleFactor;
+        element.height = height * scaleFactor;
+
+        element.style.width  = `${width}px`;
+        element.style.height = `${height}px`;
+    }
     canvasInstance._canvasContext.scale( scaleFactor, scaleFactor );
 
     // non-smoothing must be re-applied when the canvas dimensions change...

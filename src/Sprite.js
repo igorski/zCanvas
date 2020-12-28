@@ -20,8 +20,12 @@
  * IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-import OOP    from "./utils/OOP";
-import Loader from "./Loader";
+import Inheritance from "./utils/inheritance";
+import Loader      from "./Loader";
+import { isInsideViewport, calculateDrawRectangle } from "./utils/image-math";
+
+const { min, max } = Math;
+const HALF = .5;
 
 /**
  * provides an API equivalent to the Flash Sprite / Display Object for manipulating "Objects" on a canvas element.
@@ -210,7 +214,7 @@ export default Sprite;
  *        function which should inherit the Sprite prototype
  */
 Sprite.extend = function( extendingFunction ) {
-    OOP.extend( extendingFunction, Sprite );
+    Inheritance.extend( extendingFunction, Sprite );
 };
 
 /* public methods */
@@ -326,7 +330,7 @@ Sprite.prototype.setWidth = function( aValue ) {
     // previous left offset for the old width
 
     if ( prevWidth !== 0 ) {
-        this._bounds.left -= ( aValue * .5 - prevWidth * .5 );
+        this._bounds.left -= ( aValue * HALF - prevWidth * HALF );
     }
     this.invalidate();
 };
@@ -352,7 +356,7 @@ Sprite.prototype.setHeight = function( aValue ) {
     // previous top offset for the old height
 
     if ( prevHeight !== 0 ) {
-        this._bounds.top -= ( aValue * .5 - prevHeight * .5 );
+        this._bounds.top -= ( aValue * HALF - prevHeight * HALF );
     }
     this.invalidate();
 };
@@ -397,28 +401,28 @@ Sprite.prototype.setBounds = function( left, top, width, height ) {
         // There is a very small chance that the bounds width/height compared to stage width/height
         // is only very slightly different, which will produce a positive numeric result very close to,
         // but not quite zero. To play it safe, we will limit it to a maximum of 0.
-        const minX = Math.min( 0, -( thisWidth  - stageWidth  ));
-        const minY = Math.min( 0, -( thisHeight - stageHeight ));
+        const minX = min( 0, -( thisWidth  - stageWidth  ));
+        const minY = min( 0, -( thisHeight - stageHeight ));
         const maxX = stageWidth  - thisWidth;
         const maxY = stageHeight - thisHeight;
 
-        left = Math.min( maxX, Math.max( left, minX ));
-        top = Math.min( maxY, Math.max( top, minY ));
+        left = min( maxX, max( left, minX ));
+        top  = min( maxY, max( top, minY ));
     }
     else {
 
         /*if ( aXPosition < 0 ) {
-         aXPosition = aXPosition - ( thisWidth  * .5 );
+         aXPosition = aXPosition - ( thisWidth  * HALF );
          }
          else*/ if ( left > stageWidth ) {
-            left = left + ( thisWidth  * .5 );
+            left = left + ( thisWidth  * HALF );
         }
 
         /*if ( aYPosition < 0 ) {
-         aYPosition = aYPosition - ( thisHeight * .5 );
+         aYPosition = aYPosition - ( thisHeight * HALF );
          }
          else*/ if ( top > stageHeight ) {
-            top = top + ( thisHeight * .5 );
+            top = top + ( thisHeight * HALF );
         }
     }
     this.setX( left );
@@ -493,13 +497,21 @@ Sprite.prototype.update = function( aCurrentTimestamp ) {
 /**
  * invoked by the canvas whenever it renders a new frame / updates the on-screen contents
  * this is where the Sprite is responsible for rendering its contents onto the screen
- * By default, it will render it's Bitmap image at its described coordinates and dimensions but
- * you can override this method for your own custom rendering logic (e.g. draw custom shapes)
+ * By default, it will render it's Bitmap image/spritesheet at its described coordinates and dimensions,
+ * but you can override this method for your own custom rendering logic (e.g. drawing custom shapes)
  *
  * @public
- * @param {CanvasRenderingContext2D} aCanvasContext to draw on
+ * @param {CanvasRenderingContext2D} canvasContext to draw on
+ * @param {{
+ *            left: number,
+ *            top: number,
+ *            width: number,
+ *            height: number,
+ *            right: number,
+ *            bottom: number
+ *        }|null} viewport optional viewport defining the currently visible canvas area
  */
-Sprite.prototype.draw = function( aCanvasContext ) {
+Sprite.prototype.draw = function( canvasContext, viewport = null ) {
 
     // extend in subclass if you're drawing a custom object instead of a graphical Image asset
     // don't forget to draw the child display list when overriding this method!
@@ -507,75 +519,106 @@ Sprite.prototype.draw = function( aCanvasContext ) {
     if ( !this.canvas ) {
         return;
     }
-    aCanvasContext.save();
+
+    const bounds = this._bounds;
+
+    // only render when associated bitmap is ready
+    let render = this._bitmapReady;
+    if ( render && viewport ) {
+        // ...and content is within visual bounds if a viewport was defined
+        render = isInsideViewport( this._bounds, viewport );
+    }
+
+    canvasContext.save();
 
     // Sprite acts as a mask for underlying Sprites ?
 
     if ( this._mask ) {
-        aCanvasContext.globalCompositeOperation = 'destination-in';
+        canvasContext.globalCompositeOperation = "destination-in";
     }
 
-    if ( this._bitmapReady ) {
+    if ( render ) {
 
-        const bounds   = this._bounds,
-              aniProps = this._animation;
+        const aniProps = this._animation;
+        let { left, top, width, height } = bounds;
 
-        // note we use a fast rounding operation on the
-        // optionally floating point Bounds values
+        // note we use a fast rounding operation to prevent fractional values
 
         if ( !aniProps ) {
 
-            // no spritesheet defined, draw entire Bitmap
+            // no spritesheet defined
 
-            aCanvasContext.drawImage(
-                this._bitmap,
-                ( .5 + bounds.left )   << 0,
-                ( .5 + bounds.top )    << 0,
-                ( .5 + bounds.width )  << 0,
-                ( .5 + bounds.height ) << 0
-            );
+            if ( viewport )
+            {
+                // bounds are defined, draw partial Bitmap
+                const { src, dest } = calculateDrawRectangle( bounds, viewport );
+                canvasContext.drawImage(
+                    this._bitmap,
+                    ( HALF + src.left )    << 0,
+                    ( HALF + src.top )     << 0,
+                    ( HALF + src.width )   << 0,
+                    ( HALF + src.height )  << 0,
+                    ( HALF + dest.left )   << 0,
+                    ( HALF + dest.top )    << 0,
+                    ( HALF + dest.width )  << 0,
+                    ( HALF + dest.height ) << 0
+                );
+            } else {
+                // no bounds defined, draw entire Bitmap
+                canvasContext.drawImage(
+                    this._bitmap,
+                    ( HALF + left )   << 0,
+                    ( HALF + top )    << 0,
+                    ( HALF + width )  << 0,
+                    ( HALF + height ) << 0
+                );
+            }
         }
         else {
 
             // spritesheet defined, draw tile
 
-            const width  = ( aniProps.tileWidth )  ? aniProps.tileWidth  : ( .5 + bounds.width )  << 0;
-            const height = ( aniProps.tileHeight ) ? aniProps.tileHeight : ( .5 + bounds.height ) << 0;
+            const tileWidth  = aniProps.tileWidth  ? aniProps.tileWidth  : ( HALF + width )  << 0;
+            const tileHeight = aniProps.tileHeight ? aniProps.tileHeight : ( HALF + height ) << 0;
 
-            aCanvasContext.drawImage(
+            if ( viewport ) {
+                left -= viewport.left;
+                top  -= viewport.top;
+            }
+
+            canvasContext.drawImage(
                 this._bitmap,
-                aniProps.col      * width,  // tile x offset
-                aniProps.type.row * height, // tile y offset
-                width, height,
-                ( .5 + bounds.left )   << 0,
-                ( .5 + bounds.top )    << 0,
-                ( .5 + bounds.width )  << 0,
-                ( .5 + bounds.height ) << 0
+                aniProps.col      * tileWidth,  // tile x offset
+                aniProps.type.row * tileHeight, // tile y offset
+                tileWidth,
+                tileHeight,
+                ( HALF + left )   << 0,
+                ( HALF + top )    << 0,
+                ( HALF + width )  << 0,
+                ( HALF + height ) << 0
             );
         }
     }
 
     // draw this Sprites children onto the canvas
 
-    if ( this._children.length > 0 ) {
-        let theSprite = this._children[ 0 ];
-        while ( theSprite ) {
-            theSprite.draw( aCanvasContext );
-            theSprite = theSprite.next;
-        }
+    let theSprite = this._children[ 0 ];
+    while ( theSprite ) {
+        theSprite.draw( canvasContext, viewport );
+        theSprite = theSprite.next;
     }
 
     // restore canvas drawing operation so subsequent sprites draw as overlay
 
     if ( this._mask ) {
-        aCanvasContext.globalCompositeOperation = 'source-over';
+        canvasContext.globalCompositeOperation = "source-over";
     }
-    aCanvasContext.restore();
+    canvasContext.restore();
 
     // draw an outline when in debug mode
 
     if ( this.canvas.DEBUG ) {
-        this.drawOutline( aCanvasContext );
+        this.drawOutline( canvasContext );
     }
 };
 
@@ -614,10 +657,10 @@ Sprite.prototype.getIntersection = function( aSprite ) {
     if ( this.collidesWith( aSprite )) {
         const self = this._bounds, compare = aSprite.getBounds();
 
-        const x = Math.max( self.left, compare.left );
-        const y = Math.max( self.top,  compare.top );
-        const w = Math.min( self.left + self.width,  compare.width + compare.height ) - x;
-        const h = Math.min( self.top  + self.height, compare.top   + compare.height ) - y;
+        const x = max( self.left, compare.left );
+        const y = max( self.top,  compare.top );
+        const w = min( self.left + self.width,  compare.width + compare.height ) - x;
+        const h = min( self.top  + self.height, compare.top   + compare.height ) - y;
 
         return { left: x, top: y, width: w, height: h };
     }
@@ -882,8 +925,8 @@ Sprite.prototype.setConstraint = function( left, top, width, height) {
      */
     this._constraint = { left, top, width, height };
 
-    this._bounds.left = Math.max( left, this._bounds.left );
-    this._bounds.top  = Math.max( top,  this._bounds.top );
+    this._bounds.left = max( left, this._bounds.left );
+    this._bounds.top  = max( top,  this._bounds.top );
 
     this._keepInBounds = true;
 
@@ -1270,10 +1313,10 @@ Sprite.prototype.invalidate = function() {
  * be used when debugging
  *
  * @protected
- * @param {CanvasRenderingContext2D} aCanvasContext to draw on
+ * @param {CanvasRenderingContext2D} canvasContext to draw on
  */
-Sprite.prototype.drawOutline = function( aCanvasContext ) {
-    aCanvasContext.lineWidth   = 1;
-    aCanvasContext.strokeStyle = '#FF0000';
-    aCanvasContext.strokeRect( this.getX(), this.getY(), this.getWidth(), this.getHeight() )
+Sprite.prototype.drawOutline = function( canvasContext ) {
+    canvasContext.lineWidth   = 1;
+    canvasContext.strokeStyle = '#FF0000';
+    canvasContext.strokeRect( this.getX(), this.getY(), this.getWidth(), this.getHeight() )
 };
