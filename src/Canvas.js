@@ -40,7 +40,8 @@ const { min, max, round } = Math;
  *            animate: boolean,
  *            smoothing: boolean,
  *            stretchToFit: boolean,
- *            viewport: {{ width: number, height: number }}=
+ *            viewport: {{ width: number, height: number }}
+ *            handler: Function,
  *            preventEventBubbling: boolean,
  *            parentElement: null,
  *            onUpdate: Function,
@@ -49,7 +50,7 @@ const { min, max, round } = Math;
  */
 function Canvas({
     width = 300, height = 300, fps = 60, scale = 1, backgroundColor = null,
-    animate = false, smoothing = true, stretchToFit = false, viewport = null,
+    animate = false, smoothing = true, stretchToFit = false, viewport = null, handler = null,
     preventEventBubbling = false, parentElement = null, debug = false, onUpdate = null
 } = {}) {
 
@@ -71,6 +72,7 @@ function Canvas({
     /** @protected @type {number} */   this._renderInterval = 1000 / this._fps;
     /** @protected @type {boolean} */  this._disposed       = false;
     /** @protected @type {object} */   this._scale          = { x: scale, y: scale };
+    /** @protected @type {Function} */ this._handler        = handler;
 
     /** @protected @type {Array<Sprite>} */ this._children = [];
 
@@ -463,8 +465,9 @@ Canvas.prototype.setViewport = function( width, height ) {
  * @public
  * @param {number} left
  * @param {number} top
+ * @param {boolean=} broadcast optionally broadcast change to registered handler
  */
-Canvas.prototype.panViewport = function( x, y ) {
+Canvas.prototype.panViewport = function( x, y, broadcast = false ) {
     const vp  = this._viewport;
     vp.left   = max( 0, min( x, this._width - vp.width ));
     vp.right  = vp.left + vp.width;
@@ -472,6 +475,10 @@ Canvas.prototype.panViewport = function( x, y ) {
     vp.bottom = vp.top + vp.height;
 
     this.invalidate();
+
+    if ( broadcast ) {
+        this._handler?.({ type: "panned", value: vp });
+    }
 };
 
 /**
@@ -744,7 +751,7 @@ Canvas.prototype.handleInteraction = function( aEvent ) {
                 const WHEEL_SPEED = 20;
                 const xSpeed = deltaX === 0 ? 0 : deltaX > 0 ? WHEEL_SPEED : -WHEEL_SPEED;
                 const ySpeed = deltaY === 0 ? 0 : deltaY > 0 ? WHEEL_SPEED : -WHEEL_SPEED;
-                this.panViewport( viewport.left + xSpeed, viewport.top + ySpeed );
+                this.panViewport( viewport.left + xSpeed, viewport.top + ySpeed, true );
                 break;
         }
     }

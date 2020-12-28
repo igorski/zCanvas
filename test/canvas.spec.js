@@ -326,8 +326,7 @@ describe( "zCanvas.canvas", () => {
         });
 
         it( "should not allow negative panning of the viewport", () => {
-            const canvas = new Canvas({ width, height });
-            canvas.setViewport( 100, 50 );
+            const canvas = new Canvas({ width, height, viewport: { width: 100, height: 50 } });
             canvas.panViewport( -50, -50 );
             expect( canvas._viewport ).toEqual({
                 left: 0,
@@ -340,8 +339,7 @@ describe( "zCanvas.canvas", () => {
         });
 
         it( "should not allow panning the viewport beyond the document bounds", () => {
-            const canvas = new Canvas({ width, height });
-            canvas.setViewport( 100, 50 );
+            const canvas = new Canvas({ width, height, viewport: { width: 100, height: 50 } });
             canvas.panViewport( width, height );
             expect( canvas._viewport ).toEqual({
                 left: width - 100,
@@ -351,6 +349,20 @@ describe( "zCanvas.canvas", () => {
                 right: ( width - 100 ) + 100,
                 bottom: ( height - 50 ) + 50
             });
+        });
+
+        it( "should by default not broadcast a change event to the optionally registered handler", () => {
+            const handler = jest.fn();
+            const canvas = new Canvas({ width, height, handler, viewport: { width: 100, height: 50 } });
+            canvas.panViewport( width, height );
+            expect( handler ).not.toHaveBeenCalled();
+        });
+
+        it( "should broadcast a change event to the optionally registered handler, when requested", () => {
+            const handler = jest.fn();
+            const canvas = new Canvas({ width, height, handler, viewport: { width: 100, height: 50 } });
+            canvas.panViewport( width, height, true );
+            expect( handler ).toHaveBeenCalled();
         });
     });
 

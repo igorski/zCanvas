@@ -73,7 +73,8 @@
                 parentElement: container,
                 backgroundColor: "#00ff00",
                 animate: true,
-                viewport: { width: viewportWidth, height: viewportHeight }
+                viewport: { width: viewportWidth, height: viewportHeight },
+                handler: handleCanvasEvent
             });
 
             var CircleSprite = function( x, y, aRadius, aColor ) {
@@ -184,8 +185,9 @@
 
             var hasHorizontalScroll = false;
             var hasVerticalScroll   = false;
-            var viewportX = 0;
-            var viewportY = 0;
+            // these ratios describe the % of total in 0 - 1 range
+            var viewportXratio = 0;
+            var viewportYratio = 0;
 
             function handleScrollEvent( e ) {
                 var isHorizontalScrollTrack = e.target === horScroll;
@@ -220,18 +222,37 @@
                         e.preventDefault(); // prevents page bounce
                     }
                     if ( isHorizontalScrollTrack ) {
-                        viewportX = Math.max( 0, pointerX / trackWidth ); // is % of total
-                        horHandle.style.left = (( trackWidth - horHandleSize ) * viewportX ) + "px";
+                        viewportXratio = Math.max( 0, pointerX / trackWidth );
+                        positionHorizontalHandle();
                     }
                     if ( isVerticalScrollTrack ) {
-                        viewportY = Math.max( 0, pointerY / trackHeight ); // is % of total
-                        verHandle.style.top = (( trackHeight - verHandleSize ) * viewportY ) + "px";
+                        viewportYratio = Math.max( 0, pointerY / trackHeight );
+                        positionVerticalHandle();
                     }
                     cvs.panViewport(
-                        Math.round( viewportX * ( cvsWidth  - viewportWidth )),
-                        Math.round( viewportY * ( cvsHeight - viewportHeight ))
+                        Math.round( viewportXratio * ( cvsWidth  - viewportWidth )),
+                        Math.round( viewportYratio * ( cvsHeight - viewportHeight ))
                     );
                 }
+            }
+
+            function handleCanvasEvent( e ) {
+                // panning can also be adjusted internally by zCanvas (for instance wheel/trackpad event)
+                // by listening to these events we can keep the scroll handle offsets in sync
+                if ( e.type === "panned" ) {
+                    viewportXratio = e.value.left / ( cvsWidth  - viewportWidth );
+                    viewportYratio = e.value.top  / ( cvsHeight - viewportHeight );
+                    positionHorizontalHandle();
+                    positionVerticalHandle();
+                }
+            }
+
+            function positionHorizontalHandle() {
+                horHandle.style.left = (( trackWidth - horHandleSize ) * viewportXratio ) + "px";
+            }
+
+            function positionVerticalHandle() {
+                verHandle.style.top = (( trackHeight - verHandleSize ) * viewportYratio ) + "px";
             }
         });
 
