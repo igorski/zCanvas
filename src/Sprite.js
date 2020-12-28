@@ -497,12 +497,19 @@ Sprite.prototype.update = function( aCurrentTimestamp ) {
 /**
  * invoked by the canvas whenever it renders a new frame / updates the on-screen contents
  * this is where the Sprite is responsible for rendering its contents onto the screen
- * By default, it will render it's Bitmap image at its described coordinates and dimensions but
- * you can override this method for your own custom rendering logic (e.g. draw custom shapes)
+ * By default, it will render it's Bitmap image/spritesheet at its described coordinates and dimensions,
+ * but you can override this method for your own custom rendering logic (e.g. drawing custom shapes)
  *
  * @public
  * @param {CanvasRenderingContext2D} canvasContext to draw on
- * @param {{ left: number, top: number, width: number, height: number, right: number, bottom: number }|null} viewport
+ * @param {{
+ *            left: number,
+ *            top: number,
+ *            width: number,
+ *            height: number,
+ *            right: number,
+ *            bottom: number
+ *        }|null} viewport optional viewport defining the currently visible canvas area
  */
 Sprite.prototype.draw = function( canvasContext, viewport = null ) {
 
@@ -535,8 +542,7 @@ Sprite.prototype.draw = function( canvasContext, viewport = null ) {
         const aniProps = this._animation;
         let { left, top, width, height } = bounds;
 
-        // note we use a fast rounding operation on the
-        // potentially floating point bounds
+        // note we use a fast rounding operation to prevent fractional values
 
         if ( !aniProps ) {
 

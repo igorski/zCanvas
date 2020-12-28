@@ -11,8 +11,8 @@ describe( "zCanvas.canvas", () => {
 
     beforeEach( () => {
         // generate random values
-        width     = Math.round( Math.random() * 100 ) + 10;
-        height    = Math.round( Math.random() * 100 ) + 10;
+        width     = Math.round( Math.random() * 100 ) + 400;
+        height    = Math.round( Math.random() * 100 ) + 300;
         fps       = Math.round( Math.random() * 50 )  + 10;
         animate   = ( Math.random() > .5 );
         smoothing = ( Math.random() > .5 );
@@ -298,9 +298,8 @@ describe( "zCanvas.canvas", () => {
     });
 
     describe( "when specifying an optional viewport", () => {
-        const canvas = new Canvas({ width, height });
-
         it( "should be able to set its optional viewport and calculate its bounding box", () => {
+            const canvas = new Canvas({ width, height });
             canvas.setViewport( 100, 50 );
             expect( canvas._viewport ).toEqual({
                 left: 0,
@@ -313,6 +312,7 @@ describe( "zCanvas.canvas", () => {
         });
 
         it( "should be able to pan the viewport and update its bounding box", () => {
+            const canvas = new Canvas({ width, height });
             canvas.setViewport( 100, 50 );
             canvas.panViewport( 10, 20 );
             expect( canvas._viewport ).toEqual({
@@ -322,6 +322,34 @@ describe( "zCanvas.canvas", () => {
                 height: 50,
                 right: 110,
                 bottom: 70
+            });
+        });
+
+        it( "should not allow negative panning of the viewport", () => {
+            const canvas = new Canvas({ width, height });
+            canvas.setViewport( 100, 50 );
+            canvas.panViewport( -50, -50 );
+            expect( canvas._viewport ).toEqual({
+                left: 0,
+                top: 0,
+                width: 100,
+                height: 50,
+                right: 100,
+                bottom: 50
+            });
+        });
+
+        it( "should not allow panning the viewport beyond the document bounds", () => {
+            const canvas = new Canvas({ width, height });
+            canvas.setViewport( 100, 50 );
+            canvas.panViewport( width, height );
+            expect( canvas._viewport ).toEqual({
+                left: width - 100,
+                top: height - 50,
+                width: 100,
+                height: 50,
+                right: ( width - 100 ) + 100,
+                bottom: ( height - 50 ) + 50
             });
         });
     });

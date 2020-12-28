@@ -106,10 +106,10 @@ function Canvas({
 
     /** @protected @type {number} */ this._HDPIscaleRatio = ( devicePixelRatio !== backingStoreRatio ) ? ratio : 1;
 
+    this.setDimensions( width, height, true, true );
     if ( viewport ) {
         this.setViewport( viewport.width, viewport.height );
     }
-    this.setDimensions( width, height, true, true );
 
     if ( scale !== 1 ) {
         this.scale( scale, scale );
@@ -432,9 +432,9 @@ Canvas.prototype.setDimensions = function( width, height, setAsPreferredDimensio
 
 /**
  * In case the Canvas isn't fully visible (for instance because it is part
- * of a scrollable container), you can define the visible bounds here. This
- * can be used to improve rendering performance on large Canvas instances
- * by only rendering the visible area.
+ * of a scrollable container), you can define the visible bounds (relative to
+ * the full Canvas width/height) here. This can be used to improve rendering
+ * performance on large Canvas instances by only rendering the visible area.
  *
  * @public
  * @param {number} width
@@ -466,10 +466,10 @@ Canvas.prototype.setViewport = function( width, height ) {
  */
 Canvas.prototype.panViewport = function( x, y ) {
     const vp  = this._viewport;
-    vp.left   = max( 0, x );
-    vp.right  = min( x + vp.width );
-    vp.top    = max( 0, y );
-    vp.bottom = min( y + vp.height );
+    vp.left   = max( 0, min( x, this._width - vp.width ));
+    vp.right  = vp.left + vp.width;
+    vp.top    = max( 0, min( y, this._height - vp.height ));
+    vp.bottom = vp.top + vp.height;
 
     this.invalidate();
 };
@@ -544,13 +544,15 @@ Canvas.prototype.drawImage = function( aSource, destX, destY, destWidth, destHei
         return;
     }
 
+    const ctx = this._canvasContext;
+
     // use 9-arity draw method if source rectangle is defined
 
     if ( typeof aOptSourceX === "number" ) {
 
         // clipping rectangle doesn't have to exceed <canvas> dimensions
-        destWidth  = min( this._canvasContext.canvas.width,  destWidth );
-        destHeight = min( this._canvasContext.canvas.height, destHeight );
+        destWidth  = min( ctx.canvas.width,  destWidth );
+        destHeight = min( ctx.canvas.height, destHeight );
 
         const xScale = destWidth  / aOptSourceWidth;
         const yScale = destHeight / aOptSourceHeight;
@@ -566,7 +568,7 @@ Canvas.prototype.drawImage = function( aSource, destX, destY, destWidth, destHei
             aOptSourceHeight -= (aOptSourceY + aOptSourceHeight - aSource.height);
         }
 
-        this._canvasContext.drawImage(
+        ctx.drawImage(
             aSource,
             // no rounding required here as these are integer values
             aOptSourceX, aOptSourceY, aOptSourceWidth, aOptSourceHeight,
@@ -575,7 +577,7 @@ Canvas.prototype.drawImage = function( aSource, destX, destY, destWidth, destHei
         );
     }
     else {
-        this._canvasContext.drawImage( aSource, destX, destY, destWidth, destHeight );
+        ctx.drawImage( aSource, destX, destY, destWidth, destHeight );
     }
 };
 
@@ -736,7 +738,7 @@ Canvas.prototype.handleInteraction = function( aEvent ) {
                 }
                 break;
 
-            // scroll wheel
+            // scroll wheel / touchpad
             case "wheel":
                 const { deltaX, deltaY } = aEvent;
                 const WHEEL_SPEED = 20;
@@ -786,7 +788,6 @@ Canvas.prototype.render = function() {
 
         const width  = this._width;
         const height = this._height;
-        const renderWithinViewportBounds = this.renderVisiblesOnly;
 
         // clear previous canvas contents either by flooding it
         // with the optional background colour, or by clearing all pixel content
@@ -930,12 +931,12 @@ function updateCanvasSize( canvasInstance ) {
         const cvsWidth  = canvasInstance._width;
         const cvsHeight = canvasInstance._height;
 
-        width  = Math.min( viewport.width,  cvsWidth );
-        height = Math.min( viewport.height, cvsHeight );
+        width  = min( viewport.width,  cvsWidth );
+        height = min( viewport.height, cvsHeight );
 
         // in case viewport was panned beyond the new canvas dimensions
         // reset pan to center.
-
+/*
         if ( viewport.left > cvsWidth ) {
             viewport.left  = cvsWidth * .5;
             viewport.right = viewport.width + viewport.left;
@@ -944,16 +945,18 @@ function updateCanvasSize( canvasInstance ) {
             viewport.top    = cvsHeight * .5;
             viewport.bottom = viewport.height + viewport.top;
         }
+*/
     }
 
-    const element = canvasInstance._element;
+    if ( width && height ) {
+        const element = canvasInstance._element;
 
-    element.width  = width  * scaleFactor;
-    element.height = height * scaleFactor;
+        element.width  = width  * scaleFactor;
+        element.height = height * scaleFactor;
 
-    element.style.width  = `${width}px`;
-    element.style.height = `${height}px`;
-
+        element.style.width  = `${width}px`;
+        element.style.height = `${height}px`;
+    }
     canvasInstance._canvasContext.scale( scaleFactor, scaleFactor );
 
     // non-smoothing must be re-applied when the canvas dimensions change...
