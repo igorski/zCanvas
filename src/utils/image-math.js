@@ -35,9 +35,12 @@ export const isInsideViewport = ( spriteBounds, viewport ) => {
 };
 
 /**
- * If the zCanvas is inside a smaller, pannable viewport we can omit drawing a
- * Sprites unseen pixels by calculating the visible area from both the source
- * drawable and destination canvas context.
+ * If the full zCanvas "document" is represented inside a smaller, pannable viewport
+ * we can omit drawing a Sprites unseen pixels by calculating the visible area from both
+ * the source drawable and destination canvas context.
+ *
+ * NOTE: this method should be used on sprites that are inside the viewports current
+ * bounds (e.g. use after isInsideViewport( spriteBounds, viewport ))
  *
  * NOTE: the returned destination coordinates are relative to the canvas, not the viewport !
  * As such this can directly be used with CanvasRenderingContext2D.drawImage()
@@ -80,8 +83,8 @@ export const calculateDrawRectangle = ( spriteBounds, viewport ) => {
             height
         },
         dest: {
-            left : Math.max( left, viewportX ),
-            top  : Math.max( top,  viewportY ),
+            left : left > viewportX ? left - viewportX : 0,
+            top  : top  > viewportY ? top  - viewportY : 0,
             width,
             height
         }

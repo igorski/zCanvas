@@ -40,7 +40,7 @@ const { min, max, round } = Math;
  *            animate: boolean,
  *            smoothing: boolean,
  *            stretchToFit: boolean,
- *            viewport: {{ x: number, y: number, width: number, height: number }}=
+ *            viewport: {{ width: number, height: number }}=
  *            preventEventBubbling: boolean,
  *            parentElement: null,
  *            onUpdate: Function,
@@ -107,7 +107,7 @@ function Canvas({
     /** @protected @type {number} */ this._HDPIscaleRatio = ( devicePixelRatio !== backingStoreRatio ) ? ratio : 1;
 
     if ( viewport ) {
-        this.setViewport( viewport.x, viewport.y, viewport.width, viewport.height );
+        this.setViewport( viewport.width, viewport.height );
     }
     this.setDimensions( width, height, true, true );
 
@@ -437,12 +437,10 @@ Canvas.prototype.setDimensions = function( width, height, setAsPreferredDimensio
  * by only rendering the visible area.
  *
  * @public
- * @param {number} left
- * @param {number} top
  * @param {number} width
  * @param {number} height
  */
-Canvas.prototype.setViewport = function( left, top, width, height ) {
+Canvas.prototype.setViewport = function( width, height ) {
     /**
      * @protected
      * @type {{
@@ -455,23 +453,23 @@ Canvas.prototype.setViewport = function( left, top, width, height ) {
      *       }}
      */
      this._viewport = { width, height };
-     this.panViewport( left, top );
+     this.panViewport( 0, 0 );
      updateCanvasSize( this );
 };
 
 /**
- * Updates the horizontal and vertical position of the current viewport.
+ * Updates the horizontal and vertical position of the viewport.
  *
  * @public
  * @param {number} left
  * @param {number} top
  */
-Canvas.prototype.panViewport = function( left, top ) {
+Canvas.prototype.panViewport = function( x, y ) {
     const vp  = this._viewport;
-    vp.left   = max( 0, left );
-    vp.right  = min( left + vp.width );
-    vp.top    = max( 0, top );
-    vp.bottom = min( top + vp.height );
+    vp.left   = max( 0, x );
+    vp.right  = min( x + vp.width );
+    vp.top    = max( 0, y );
+    vp.bottom = min( y + vp.height );
 
     this.invalidate();
 };
@@ -741,9 +739,10 @@ Canvas.prototype.handleInteraction = function( aEvent ) {
             // scroll wheel
             case "wheel":
                 const { deltaX, deltaY } = aEvent;
-                const xSpeed = deltaX === 0 ? 0 : deltaX > 0 ? 10 : -10;
-                const ySpeed = deltaY === 0 ? 0 : deltaY > 0 ? 10 : -10;
-                this.panViewport( this._viewport.left + xSpeed, this._viewport.top + ySpeed );
+                const WHEEL_SPEED = 20;
+                const xSpeed = deltaX === 0 ? 0 : deltaX > 0 ? WHEEL_SPEED : -WHEEL_SPEED;
+                const ySpeed = deltaY === 0 ? 0 : deltaY > 0 ? WHEEL_SPEED : -WHEEL_SPEED;
+                this.panViewport( viewport.left + xSpeed, viewport.top + ySpeed );
                 break;
         }
     }
@@ -916,22 +915,36 @@ Canvas.prototype.getCoordinate = function() {
  * @param {Canvas} canvasInstance
  */
 function updateCanvasSize( canvasInstance ) {
-    const scaleFactor     = canvasInstance._HDPIscaleRatio;
-    const viewport        = canvasInstance._viewport;
+    const scaleFactor = canvasInstance._HDPIscaleRatio;
+    const viewport    = canvasInstance._viewport;
     let width, height;
 
     if ( canvasInstance._enqueuedSize ) {
         ({ width, height } = canvasInstance._enqueuedSize );
         canvasInstance._enqueuedSize = null;
+        /** @protected @type {number} */ canvasInstance._width  = width;
+        /** @protected @type {number} */ canvasInstance._height = height;
     }
 
     if ( viewport ) {
-        width  = viewport.width;
-        height = viewport.height;
-    }
+        const cvsWidth  = canvasInstance._width;
+        const cvsHeight = canvasInstance._height;
 
-    /** @protected @type {number} */ canvasInstance._width  = width;
-    /** @protected @type {number} */ canvasInstance._height = height;
+        width  = Math.min( viewport.width,  cvsWidth );
+        height = Math.min( viewport.height, cvsHeight );
+
+        // in case viewport was panned beyond the new canvas dimensions
+        // reset pan to center.
+
+        if ( viewport.left > cvsWidth ) {
+            viewport.left  = cvsWidth * .5;
+            viewport.right = viewport.width + viewport.left;
+        }
+        if ( viewport.top > cvsHeight ) {
+            viewport.top    = cvsHeight * .5;
+            viewport.bottom = viewport.height + viewport.top;
+        }
+    }
 
     const element = canvasInstance._element;
 

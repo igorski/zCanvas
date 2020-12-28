@@ -18,15 +18,15 @@
         <div id="demoWrapper">
             <div id="demo"><!-- x --></div>
             <div id="verticalScroll">
-                <div class="track"></div>
+                <div class="handle"></div>
             </div>
             <div id="horizontalScroll">
-                <div class="track"></div>
+                <div class="handle"></div>
             </div>
         </div>
         <p>
-            Demo features : a large zCanvas filled with a single tile sheet sprite and several random draggable
-            circles that change appearance on hover. By using the scrollbars the viewport inside zCanvas
+            Demo features : a large zCanvas filled with a large background image, a single tile sheet sprite
+            and several random draggable circles. By using the scrollbars the viewport inside zCanvas
             can be panned.
         </p>
     </div>
@@ -62,9 +62,9 @@
             // keep its viewport within the device / browser bounds
             var viewportWidth  = ( w < 400 ) ? w * .93 : 400;
             var viewportHeight = ( h < 300 ) ? h : 300;
-            // but its own size is a factor ten larger
-            var cvsWidth  = viewportWidth  * 10;
-            var cvsHeight = viewportHeight * 10;
+            var bgWidth = 800, bgHeight = 1067; // is size of IMAGE_BACKGROUND assets
+            var cvsWidth  = bgWidth;
+            var cvsHeight = bgHeight;
 
             var cvs = new zCanvas.canvas({
                 width: cvsWidth,
@@ -73,7 +73,7 @@
                 parentElement: container,
                 backgroundColor: "#00ff00",
                 animate: true,
-                viewport: { x: 0, y: 0, width: viewportWidth, height: viewportHeight }
+                viewport: { width: viewportWidth, height: viewportHeight }
             });
 
             var CircleSprite = function( x, y, aRadius, aColor ) {
@@ -113,13 +113,23 @@
             };
             zCanvas.sprite.extend( CircleSprite ); // CircleSprite extends sprite
 
+            // first sprite will act as a background
+            // (see included "assets.js"-file for the IMAGE_BACKGROUND data)
+
+            cvs.addChild( new zCanvas.sprite({
+                width: bgWidth,
+                height: bgHeight,
+                bitmap: IMAGE_BACKGROUND
+            }));
+
             // fill area with Sprites
 
-            for ( var i = 0; i < 100; ++i ) {
+            for ( var i = 0; i < 50; ++i ) {
                 cvs.addChild( new CircleSprite( cvsWidth * Math.random(), cvsHeight * Math.random(), 10 + ( Math.random() * 25 ), "#FF0099" ));
             }
 
             // add a single Sprite using a tilesheet animation
+            // (see included "assets.js"-file for the IMAGE_SPRITE_SHEET data)
 
             var hero = new zCanvas.sprite({
                 x: viewportWidth  / 2 - 38 / 2,
@@ -138,20 +148,21 @@
 
             var horScroll = document.querySelector( "#horizontalScroll" );
             var verScroll = document.querySelector( "#verticalScroll" );
-            var horTrack  = horScroll.querySelector( ".track" );
-            var verTrack  = verScroll.querySelector( ".track" );
+            var horHandle = horScroll.querySelector( ".handle" );
+            var verHandle = verScroll.querySelector( ".handle" );
 
             var trackWidth   = horScroll.offsetWidth;
             var trackHeight  = verScroll.offsetHeight;
             var scrollWidth  = cvsWidth  - viewportWidth;
             var scrollHeight = cvsHeight - viewportHeight;
-            var scrollLeft = 0;
-            var scrollTop  = 0;
+            var scrollLeft   = 0;
+            var scrollTop    = 0;
 
-            var horHandleWidth  = ( viewportWidth  / scrollWidth )  * trackWidth;
-            var verHandleHeight = ( viewportHeight / scrollHeight ) * trackHeight;
-            horTrack.style.width  = horHandleWidth  + "px";
-            verTrack.style.height = verHandleHeight + "px";
+            var horHandleSize = ( viewportWidth  / cvsWidth )  * trackWidth;
+            var verHandleSize = ( viewportHeight / cvsHeight ) * trackHeight;
+
+            horHandle.style.width  = horHandleSize + "px";
+            verHandle.style.height = verHandleSize + "px";
 
             // STEP 3 : ATTACH HANDLERS TO VIEWPORT SCROLLBARS
             // -----------------------------------------------
@@ -166,10 +177,8 @@
             });
             upEvents.forEach( type => {
                 window.addEventListener( type, handleScrollEvent );
-                window.addEventListener( type, handleScrollEvent );
             });
             moveEvents.forEach( type => {
-                window.addEventListener( type, handleScrollEvent, { passive: false });
                 window.addEventListener( type, handleScrollEvent, { passive: false });
             });
 
@@ -179,14 +188,14 @@
             var viewportY = 0;
 
             function handleScrollEvent( e ) {
-                var isHorizontal = e.target === horScroll;
-                var isVertical   = e.target === verScroll;
+                var isHorizontalScrollTrack = e.target === horScroll;
+                var isVerticalScrollTrack   = e.target === verScroll;
                 // pointer down == scroll start
                 if ( downEvents.includes( e.type )) {
-                    if ( isHorizontal ) {
+                    if ( isHorizontalScrollTrack ) {
                         hasHorizontalScroll = true;
                         hasVerticalScroll   = false;
-                    } else if ( isVertical ) {
+                    } else if ( isVerticalScrollTrack ) {
                         hasHorizontalScroll = false;
                         hasVerticalScroll   = true;
                     }
@@ -196,7 +205,7 @@
                     hasHorizontalScroll = false;
                     hasVerticalScroll   = false;
                 }
-                if ( !hasHorizontalScroll && !hasVerticalScroll ) {
+                if (( !hasHorizontalScroll && !hasVerticalScroll ) || ( !isHorizontalScrollTrack && !isVerticalScrollTrack )) {
                     return;
                 }
                 // pointer move == move scroll bar
@@ -210,15 +219,18 @@
                         pointerY = touches[ 0 ].pageY;
                         e.preventDefault(); // prevents page bounce
                     }
-                    if ( isHorizontal ) {
-                        horTrack.style.left = Math.min( trackWidth - horHandleWidth, pointerX ) + "px";
+                    if ( isHorizontalScrollTrack ) {
                         viewportX = Math.max( 0, pointerX / trackWidth ); // is % of total
+                        horHandle.style.left = (( trackWidth - horHandleSize ) * viewportX ) + "px";
                     }
-                    if ( isVertical ) {
-                        verTrack.style.top = Math.min( trackHeight - verHandleHeight, pointerY ) + "px";
+                    if ( isVerticalScrollTrack ) {
                         viewportY = Math.max( 0, pointerY / trackHeight ); // is % of total
+                        verHandle.style.top = (( trackHeight - verHandleSize ) * viewportY ) + "px";
                     }
-                    cvs.panViewport( Math.round( viewportX * cvsWidth ), Math.round( viewportY * cvsHeight ));
+                    cvs.panViewport(
+                        Math.round( viewportX * ( cvsWidth  - viewportWidth )),
+                        Math.round( viewportY * ( cvsHeight - viewportHeight ))
+                    );
                 }
             }
         });
@@ -246,16 +258,16 @@
             width: 100%;
             height: 20px;
         }
-        .track {
+        .handle {
             position: absolute;
             background-color: #B6B6B6;
             pointer-events: none; /* the background captures the events */
         }
-        #verticalScroll .track {
+        #verticalScroll .handle {
             width: 100%;
             min-height: 5px;
         }
-        #horizontalScroll .track {
+        #horizontalScroll .handle {
             height: 100%;
             min-width: 5px;
         }

@@ -297,16 +297,32 @@ describe( "zCanvas.canvas", () => {
         });
     });
 
-    it( "should be able to set its optional viewport and calculate the full bounding box", () => {
+    describe( "when specifying an optional viewport", () => {
         const canvas = new Canvas({ width, height });
-        canvas.setViewport( 10, 20, 100, 50 );
-        expect( canvas._viewport ).toEqual({
-            left: 10,
-            top: 20,
-            width: 100,
-            height: 50,
-            right: 110,
-            bottom: 70
+
+        it( "should be able to set its optional viewport and calculate its bounding box", () => {
+            canvas.setViewport( 100, 50 );
+            expect( canvas._viewport ).toEqual({
+                left: 0,
+                top: 0,
+                width: 100,
+                height: 50,
+                right: 100,
+                bottom: 50
+            });
+        });
+
+        it( "should be able to pan the viewport and update its bounding box", () => {
+            canvas.setViewport( 100, 50 );
+            canvas.panViewport( 10, 20 );
+            expect( canvas._viewport ).toEqual({
+                left: 10,
+                top: 20,
+                width: 100,
+                height: 50,
+                right: 110,
+                bottom: 70
+            });
         });
     });
 

@@ -101,8 +101,8 @@ describe( "Image math utilities", () => {
                     height: 20
                 });
                 expect( dest ).toEqual({
-                    left: 250,
-                    top: 250,
+                    left: 200, // == (spriteBounds.left - viewport.left)
+                    top: 200,  // == (spriteBounds.top - viewport.top)
                     width: 20,
                     height: 20
                 });
@@ -126,8 +126,8 @@ describe( "Image math utilities", () => {
                     height: 10
                 });
                 expect( dest ).toEqual({
-                    left: viewport.left,
-                    top: viewport.top,
+                    left: 0, // == (spriteBounds.left - viewport.left) < viewport.left, therefor 0
+                    top: 0,  // == (spriteBounds.top - viewport.top) < viewport.top, therefor 0
                     width: 10,
                     height: 10
                 });
@@ -148,8 +148,8 @@ describe( "Image math utilities", () => {
                     height: 10
                 });
                 expect( dest ).toEqual({
-                    left: 250,
-                    top: viewport.top,
+                    left: 200, // == (spriteBounds.left - viewport.left)
+                    top: 0,    // == (spriteBounds.top - viewport.top) < viewport.top, therefor 0
                     width: 20,
                     height: 10
                 });
@@ -170,8 +170,8 @@ describe( "Image math utilities", () => {
                     height: 10
                 });
                 expect( dest ).toEqual({
-                    left: 440,
-                    top: viewport.top,
+                    left: 390, // == (spriteBounds.left - viewport.left)
+                    top: 0,    // == (spriteBounds.top - viewport.top) < viewport.top, therefor 0
                     width: 10,
                     height: 10
                 });
@@ -192,8 +192,8 @@ describe( "Image math utilities", () => {
                     height: 10
                 });
                 expect( dest ).toEqual({
-                    left: viewport.left,
-                    top: 440,
+                    left: 0,  // == (spriteBounds.left - viewport.left) < viewport.left, therefor 0
+                    top: 390, // == (spriteBounds.top - viewport.top)
                     width: 10,
                     height: 10
                 });
@@ -214,8 +214,8 @@ describe( "Image math utilities", () => {
                     height: 10
                 });
                 expect( dest ).toEqual({
-                    left: 250,
-                    top: 440,
+                    left: 200, // == (spriteBounds.left - viewport.left)
+                    top: 390,  // == (spriteBounds.top - viewport.top)
                     width: 20,
                     height: 10
                 });
@@ -236,8 +236,8 @@ describe( "Image math utilities", () => {
                     height: 10
                 });
                 expect( dest ).toEqual({
-                    left: 440,
-                    top: 440,
+                    left: 390, // == (spriteBounds.left - viewport.left)
+                    top: 390,  // == (spriteBounds.top - viewport.top)
                     width: 10,
                     height: 10
                 });
@@ -261,8 +261,8 @@ describe( "Image math utilities", () => {
                     height: viewport.height
                 });
                 expect( dest ).toEqual({
-                    left: viewport.left,
-                    top: viewport.top,
+                    left: 0, // == (spriteBounds.left - viewport.left) < viewport.left, therefor 0
+                    top: 0,  // == (spriteBounds.top - viewport.top) < viewport.top, therefor 0
                     width: viewport.width,
                     height: viewport.height
                 });
@@ -284,8 +284,8 @@ describe( "Image math utilities", () => {
                     height: 370
                 });
                 expect( dest ).toEqual({
-                    left: 100,
-                    top: 80,
+                    left: 50, // == (spriteBounds.left - viewport.left)
+                    top: 30,  // == (spriteBounds.top - viewport.top)
                     width: 350,
                     height: 370
                 });
@@ -307,8 +307,8 @@ describe( "Image math utilities", () => {
                     height: 100
                 });
                 expect( dest ).toEqual({
-                    left: viewport.left,
-                    top: 350,
+                    left: 0,  // == (spriteBounds.left - viewport.left) < viewport.left, therefor 0
+                    top: 300, // == (spriteBounds.top - viewport.top)
                     width: viewport.width,
                     height: 100
                 });
@@ -330,8 +330,8 @@ describe( "Image math utilities", () => {
                     height: viewport.height
                 });
                 expect( dest ).toEqual({
-                    left: 300,
-                    top: viewport.top,
+                    left: 250,  // == (spriteBounds.left - viewport.left)
+                    top: 0,     // == (spriteBounds.top - viewport.top) < viewport.top, therefor 0
                     width: 150,
                     height: viewport.height
                 });
@@ -353,9 +353,9 @@ describe( "Image math utilities", () => {
                     height: 250
                 });
                 expect( dest ).toEqual({
-                    left: viewport.left,
-                    top: viewport.top,
-                    width: 100,
+                    left: 0,
+                    top: 0,
+                    width: 100, // == (spriteBounds.left + spriteBounds.width) - viewport.width)
                     height: 250
                 });
             });
