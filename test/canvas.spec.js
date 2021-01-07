@@ -631,9 +631,11 @@ describe( "zCanvas.canvas", () => {
         beforeEach(() => {
             mockEvent = {
                 type: "mousedown",
-                touches: [],
+                changedTouches: [],
                 offsetX: 10,
-                offsetY: 10
+                offsetY: 10,
+                stopPropagation: jest.fn(),
+                preventDefault: jest.fn(),
             };
         });
 
@@ -665,44 +667,106 @@ describe( "zCanvas.canvas", () => {
             expect(sprite1.handleInteraction).not.toHaveBeenCalled();
         });
 
-        it( "should not handle interactions of multiple sprites for a touch event with a single touch", () => {
-            mockEvent.type    = "touchstart";
-            mockEvent.touches = [{ pageX: 10, pageY: 10 }];
+        describe( "and the event is a touch event", () => {
+            it( "should not handle interactions of multiple sprites for a touch event with a single touch", () => {
+                mockEvent.type    = "touchstart";
+                mockEvent.changedTouches = [{ pageX: 10, pageY: 10 }];
 
-            const canvas  = new Canvas({ width: 50, height: 50 });
-            const sprite1 = new Sprite({ x: 5, y: 5, width: 10, height: 10, interactive: true });
-            const sprite2 = new Sprite({ x: 5, y: 5, width: 10, height: 10, interactive: true });
+                const canvas  = new Canvas({ width: 50, height: 50 });
+                const sprite1 = new Sprite({ x: 5, y: 5, width: 10, height: 10, interactive: true });
+                const sprite2 = new Sprite({ x: 5, y: 5, width: 10, height: 10, interactive: true });
 
-            jest.spyOn( sprite1, "handleInteraction" );
-            jest.spyOn( sprite2, "handleInteraction" );
+                jest.spyOn( sprite1, "handleInteraction" );
+                jest.spyOn( sprite2, "handleInteraction" );
 
-            canvas.addChild( sprite1 );
-            canvas.addChild( sprite2 );
-            canvas.handleInteraction( mockEvent );
+                canvas.addChild( sprite1 );
+                canvas.addChild( sprite2 );
+                canvas.handleInteraction( mockEvent );
 
-            // note reverse order as events are handled first by sprites higher up in the display list
-            expect(sprite2.handleInteraction).toHaveBeenCalled();
-            expect(sprite1.handleInteraction).not.toHaveBeenCalled();
-        });
+                // note reverse order as events are handled first by sprites higher up in the display list
+                expect( sprite2.handleInteraction ).toHaveBeenCalled();
+                expect( sprite1.handleInteraction ).not.toHaveBeenCalled();
+            });
 
-        it( "should handle interactions of multiple sprites for a touch event with a multiple touches", () => {
-            mockEvent.type    = "touchstart";
-            mockEvent.touches = [{ pageX: 10, pageY: 10 }, { pageX: 20, pageY: 20 }];
+            it( "should handle interactions of multiple sprites for a touch event with a multiple touches", () => {
+                mockEvent.type    = "touchstart";
+                mockEvent.changedTouches = [{ pageX: 10, pageY: 10 }, { pageX: 20, pageY: 20 }];
 
-            const canvas  = new Canvas({ width: 50, height: 50 });
-            const sprite1 = new Sprite({ x: 5,  y: 5,  width: 10, height: 10, interactive: true });
-            const sprite2 = new Sprite({ x: 15, y: 15, width: 10, height: 10, interactive: true });
+                const canvas  = new Canvas({ width: 50, height: 50 });
+                const sprite1 = new Sprite({ x: 5,  y: 5,  width: 10, height: 10, interactive: true });
+                const sprite2 = new Sprite({ x: 15, y: 15, width: 10, height: 10, interactive: true });
 
-            jest.spyOn( sprite1, "handleInteraction" );
-            jest.spyOn( sprite2, "handleInteraction" );
+                jest.spyOn( sprite1, "handleInteraction" );
+                jest.spyOn( sprite2, "handleInteraction" );
 
-            canvas.addChild( sprite1 );
-            canvas.addChild( sprite2 );
-            canvas.handleInteraction( mockEvent );
+                canvas.addChild( sprite1 );
+                canvas.addChild( sprite2 );
+                canvas.handleInteraction( mockEvent );
 
-            // note reverse order as events are handled first by sprites higher up in the display list
-            expect(sprite2.handleInteraction).toHaveBeenCalled();
-            expect(sprite1.handleInteraction).toHaveBeenCalled();
+                // note reverse order as events are handled first by sprites higher up in the display list
+                expect( sprite2.handleInteraction ).toHaveBeenCalled();
+                expect( sprite1.handleInteraction ).toHaveBeenCalled();
+            });
+
+            it( "should maintain a list of Sprites bound to a touch pointer for a touch event with a multiple touches", () => {
+                mockEvent.type    = "touchstart";
+                mockEvent.changedTouches = [
+                    { identifier: 0, pageX: 10, pageY: 10 },
+                    { identifier: 1, pageX: 20, pageY: 20 }
+                ];
+                const canvas  = new Canvas({ width: 50, height: 50 });
+                const sprite1 = new Sprite({ x: 5,  y: 5,  width: 10, height: 10, interactive: true });
+                const sprite2 = new Sprite({ x: 15, y: 15, width: 10, height: 10, interactive: true });
+
+                canvas.addChild( sprite1 );
+                canvas.addChild( sprite2 );
+
+                // expect no active touches at construction
+                expect( canvas._activeTouches ).toHaveLength( 0 );
+
+                canvas.handleInteraction( mockEvent );
+
+                // expect two sprites in the active touch list
+                expect( canvas._activeTouches ).toEqual([ sprite1, sprite2 ]);
+
+                mockEvent.type    = "touchmove";
+                mockEvent.changedTouches = [
+                    { identifier: 0, pageX: 13, pageY: 10 },
+                    { identifier: 1, pageX: 20, pageY: 23 }
+                ];
+                canvas.handleInteraction( mockEvent );
+
+                // expect touch list to remain unchanged on touch move event
+                expect( canvas._activeTouches ).toEqual([ sprite1, sprite2 ]);
+
+                mockEvent.type = "touchend";
+                mockEvent.changedTouches = [
+                    { identifier: 1, pageX: 20, pageY: 23 }
+                ];
+                canvas.handleInteraction( mockEvent );
+
+                // expect touch list to no longer contain sprite associated with removed pointer
+                expect( canvas._activeTouches ).toEqual([ sprite1, null ]);
+
+                mockEvent.type = "touchstart";
+                mockEvent.changedTouches = [
+                    { identifier: 1, pageX: 20, pageY: 20 }
+                ];
+                canvas.handleInteraction( mockEvent );
+
+                // expect touch list to have added sprite associated with added pointer
+                expect( canvas._activeTouches ).toEqual([ sprite1, sprite2 ]);
+
+                mockEvent.type = "touchend";
+                mockEvent.changedTouches = [
+                    { identifier: 0, pageX: 13, pageY: 10 },
+                    { identifier: 1, pageX: 20, pageY: 20 }
+                ];
+                canvas.handleInteraction( mockEvent );
+
+                // expect touch list to no longer contain any mapped sprites
+                expect( canvas._activeTouches ).toEqual([ null, null ]);
+            });
         });
     });
 

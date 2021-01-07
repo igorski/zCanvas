@@ -633,7 +633,7 @@ describe( "zCanvas.sprite", () => {
         beforeEach(() => {
             mockEvent = {
                 type: "mousemove",
-                touches: [],
+                changedTouches: [],
                 offsetX: 10,
                 offsetY: 10
             }
@@ -683,7 +683,7 @@ describe( "zCanvas.sprite", () => {
                     const sprite = new Sprite({ x: 5, y: 5, width: 10, height: 10, interactive: true });
                     jest.spyOn( sprite, "handlePress" );
                     const handled = sprite.handleInteraction( mockEvent.offsetX, mockEvent.offsetY, mockEvent );
-                    expect( sprite.handlePress ).toHaveBeenCalledWith( mockEvent.offsetX, mockEvent.offsetY );
+                    expect( sprite.handlePress ).toHaveBeenCalledWith( mockEvent.offsetX, mockEvent.offsetY, mockEvent );
                     expect( handled ).toBe( true );
                 });
 
@@ -725,7 +725,7 @@ describe( "zCanvas.sprite", () => {
                     sprite._dragStartOffset = { x: sprite.getX(), y: sprite.getY() };
                     sprite._dragStartEventCoordinates = { x: mockEvent.offsetX, y: mockEvent.offsetY };
                     const handled = sprite.handleInteraction( mockEvent.offsetX, mockEvent.offsetY, mockEvent );
-                    expect( sprite.handleMove ).toHaveBeenCalledWith( mockEvent.offsetX, mockEvent.offsetY );
+                    expect( sprite.handleMove ).toHaveBeenCalledWith( mockEvent.offsetX, mockEvent.offsetY, mockEvent );
                     expect( handled ).toBe( true );
                 });
             });

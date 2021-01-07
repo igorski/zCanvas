@@ -1,7 +1,7 @@
 /**
  * The MIT License (MIT)
  *
- * Igor Zinken 2013-2020 - https://www.igorski.nl
+ * Igor Zinken 2013-2021 - https://www.igorski.nl
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of
  * this software and associated documentation files (the "Software"), to deal in
@@ -60,21 +60,21 @@ function Canvas({
 
     /* instance properties */
 
-    /** @public @type {boolean} */     this.DEBUG           = debug;
-    /** @protected @type {number} */   this._fps            = fps;
-    /** @protected @type {boolean} */  this._animate        = animate;
-    /** @protected @type {boolean} */  this._smoothing      = smoothing;
-    /** @protected @type {Function} */ this._updateHandler  = onUpdate;
-    /** @protected @type {Function} */ this._renderHandler  = this.render.bind( this );
-    /** @protected @type {number} */   this._lastRender     = 0;
-    /** @protected @type {number} */   this._renderId       = 0;
-    /** @protected @type {boolean} */  this._renderPending  = false;
-    /** @protected @type {number} */   this._renderInterval = 1000 / this._fps;
-    /** @protected @type {boolean} */  this._disposed       = false;
-    /** @protected @type {object} */   this._scale          = { x: scale, y: scale };
-    /** @protected @type {Function} */ this._handler        = handler;
-
-    /** @protected @type {Array<Sprite>} */ this._children = [];
+    /** @public @type {boolean} */          this.DEBUG           = debug;
+    /** @protected @type {number} */        this._fps            = fps;
+    /** @protected @type {boolean} */       this._animate        = animate;
+    /** @protected @type {boolean} */       this._smoothing      = smoothing;
+    /** @protected @type {Function} */      this._updateHandler  = onUpdate;
+    /** @protected @type {Function} */      this._renderHandler  = this.render.bind( this );
+    /** @protected @type {number} */        this._lastRender     = 0;
+    /** @protected @type {number} */        this._renderId       = 0;
+    /** @protected @type {boolean} */       this._renderPending  = false;
+    /** @protected @type {number} */        this._renderInterval = 1000 / this._fps;
+    /** @protected @type {boolean} */       this._disposed       = false;
+    /** @protected @type {object} */        this._scale          = { x: scale, y: scale };
+    /** @protected @type {Function} */      this._handler        = handler;
+    /** @protected @type {Array<Sprite>} */ this._activeTouches  = [];
+    /** @protected @type {Array<Sprite>} */ this._children       = [];
 
     /* initialization */
 
@@ -131,6 +131,8 @@ function Canvas({
 }
 export default Canvas;
 
+const classPrototype = Canvas.prototype;
+
 /**
  * extend a given Function reference with the Canvas prototype, you
  * can use this to create custom Canvas extensions. From the extensions
@@ -158,7 +160,7 @@ Canvas.extend = function( extendingFunction ) {
  * @public
  * @param {Element} aContainer DOM node to append the Canvas to
  */
-Canvas.prototype.insertInPage = function( aContainer ) {
+classPrototype.insertInPage = function( aContainer ) {
     if ( this._element.parentNode ) {
         throw new Error( "Canvas already present in DOM" );
     }
@@ -174,7 +176,7 @@ Canvas.prototype.insertInPage = function( aContainer ) {
  *
  * @return {Element}
  */
-Canvas.prototype.getElement = function() {
+classPrototype.getElement = function() {
 
     return this._element;
 };
@@ -188,7 +190,7 @@ Canvas.prototype.getElement = function() {
  * @public
  * @param {boolean} value
  */
-Canvas.prototype.preventEventBubbling = function( value ) {
+classPrototype.preventEventBubbling = function( value ) {
     /**
      * @protected
      * @type {boolean}
@@ -201,7 +203,7 @@ Canvas.prototype.preventEventBubbling = function( value ) {
  * @param {Sprite} aChild
  * @return {Canvas} this Canvas - for chaining purposes
  */
-Canvas.prototype.addChild = function( aChild ) {
+classPrototype.addChild = function( aChild ) {
     if ( this.contains( aChild )) {
         return this;
     }
@@ -228,7 +230,7 @@ Canvas.prototype.addChild = function( aChild ) {
  *
  * @return {Sprite} the removed child - for chaining purposes
  */
-Canvas.prototype.removeChild = function( aChild ) {
+classPrototype.removeChild = function( aChild ) {
     aChild.setParent( null );
     aChild.setCanvas( null );
 
@@ -267,7 +269,7 @@ Canvas.prototype.removeChild = function( aChild ) {
  * @param {number} index of the object in the Display List
  * @return {Sprite} the referenced object
  */
-Canvas.prototype.getChildAt = function( index ) {
+classPrototype.getChildAt = function( index ) {
     return this._children[ index ];
 };
 
@@ -278,7 +280,7 @@ Canvas.prototype.getChildAt = function( index ) {
  * @param {number} index of the object to remove
  * @return {Sprite} the removed sprite
  */
-Canvas.prototype.removeChildAt = function( index ) {
+classPrototype.removeChildAt = function( index ) {
     return this.removeChild( this.getChildAt( index ));
 };
 
@@ -286,7 +288,7 @@ Canvas.prototype.removeChildAt = function( index ) {
  * @public
  * @return {number} the amount of children in this object's Display List
  */
-Canvas.prototype.numChildren = function() {
+classPrototype.numChildren = function() {
     return this._children.length;
 };
 
@@ -294,7 +296,7 @@ Canvas.prototype.numChildren = function() {
  * @public
  * @return {Array<Sprite>}
  */
-Canvas.prototype.getChildren = function() {
+classPrototype.getChildren = function() {
     return this._children;
 };
 
@@ -306,7 +308,7 @@ Canvas.prototype.getChildren = function() {
  *
  * @return {boolean}
  */
-Canvas.prototype.contains = function( aChild ) {
+classPrototype.contains = function( aChild ) {
 
     return this._children.indexOf( aChild ) > -1;
 };
@@ -323,7 +325,7 @@ Canvas.prototype.contains = function( aChild ) {
  *
  * @public
  */
-Canvas.prototype.invalidate = function() {
+classPrototype.invalidate = function() {
     if ( !this._animate && !this._renderPending ) {
         this._renderPending = true;
         this._renderId = window.requestAnimationFrame( this._renderHandler );
@@ -337,7 +339,7 @@ Canvas.prototype.invalidate = function() {
  * @public
  * @return {number}
  */
-Canvas.prototype.getFrameRate = function() {
+classPrototype.getFrameRate = function() {
     return this._fps;
 };
 
@@ -349,7 +351,7 @@ Canvas.prototype.getFrameRate = function() {
  * @public
  * @return {number}
  */
-Canvas.prototype.getRenderInterval = function() {
+classPrototype.getRenderInterval = function() {
     return this._renderInterval;
 };
 
@@ -361,7 +363,7 @@ Canvas.prototype.getRenderInterval = function() {
  * @public
  * @param {boolean} enabled
  */
-Canvas.prototype.setSmoothing = function( enabled ) {
+classPrototype.setSmoothing = function( enabled ) {
     // 1. context smoothing state
     const props = [ "imageSmoothingEnabled",  "mozImageSmoothingEnabled",
                     "oImageSmoothingEnabled", "webkitImageSmoothingEnabled" ];
@@ -389,7 +391,7 @@ Canvas.prototype.setSmoothing = function( enabled ) {
  * @public
  * @return {number}
  */
-Canvas.prototype.getWidth = function() {
+classPrototype.getWidth = function() {
     return ( this._enqueuedSize ) ? this._enqueuedSize.width : this._width;
 };
 
@@ -397,7 +399,7 @@ Canvas.prototype.getWidth = function() {
  * @public
  * @return {number}
  */
-Canvas.prototype.getHeight = function() {
+classPrototype.getHeight = function() {
     return ( this._enqueuedSize ) ? this._enqueuedSize.height : this._height;
 };
 
@@ -414,7 +416,7 @@ Canvas.prototype.getHeight = function() {
  * @param {boolean=} optImmediate optional, whether to apply immediately, defaults to false
  *        to prevent flickering of existing screen contents during repeated resize
  */
-Canvas.prototype.setDimensions = function( width, height, setAsPreferredDimensions = true, optImmediate = false ) {
+classPrototype.setDimensions = function( width, height, setAsPreferredDimensions = true, optImmediate = false ) {
     /**
      * @protected
      * @type {{ width: number, height: number }}
@@ -442,7 +444,7 @@ Canvas.prototype.setDimensions = function( width, height, setAsPreferredDimensio
  * @param {number} width
  * @param {number} height
  */
-Canvas.prototype.setViewport = function( width, height ) {
+classPrototype.setViewport = function( width, height ) {
     /**
      * @protected
      * @type {{
@@ -467,7 +469,7 @@ Canvas.prototype.setViewport = function( width, height ) {
  * @param {number} top
  * @param {boolean=} broadcast optionally broadcast change to registered handler
  */
-Canvas.prototype.panViewport = function( x, y, broadcast = false ) {
+classPrototype.panViewport = function( x, y, broadcast = false ) {
     const vp  = this._viewport;
     vp.left   = max( 0, min( x, this._width - vp.width ));
     vp.right  = vp.left + vp.width;
@@ -488,7 +490,7 @@ Canvas.prototype.panViewport = function( x, y, broadcast = false ) {
  * @public
  * @param {string} color
  */
-Canvas.prototype.setBackgroundColor = function( color ) {
+classPrototype.setBackgroundColor = function( color ) {
     /**
      * @protected
      * @type {string}
@@ -500,7 +502,7 @@ Canvas.prototype.setBackgroundColor = function( color ) {
  * @public
  * @param {boolean} value
  */
-Canvas.prototype.setAnimatable = function( value ) {
+classPrototype.setAnimatable = function( value ) {
     const oldValue = this._animate;
     this._animate  = value;
 
@@ -513,7 +515,7 @@ Canvas.prototype.setAnimatable = function( value ) {
  * @public
  * @return {boolean}
  */
-Canvas.prototype.isAnimatable = function() {
+classPrototype.isAnimatable = function() {
     return this._animate;
 };
 
@@ -533,7 +535,7 @@ Canvas.prototype.isAnimatable = function() {
  * @param {number=} aOptSourceWidth optional, whether to use an alternative width for the source rectangle
  * @param {number=} aOptSourceHeight optional, whether to use an alternative height for the source rectangle
  */
-Canvas.prototype.drawImage = function( aSource, destX, destY, destWidth, destHeight,
+classPrototype.drawImage = function( aSource, destX, destY, destWidth, destHeight,
     aOptSourceX, aOptSourceY, aOptSourceWidth, aOptSourceHeight ) {
 
     // we add .5 to have a pixel perfect outline
@@ -597,7 +599,7 @@ Canvas.prototype.drawImage = function( aSource, destX, destY, destWidth, destHei
  * @param {number} x the factor to scale the horizontal axis by
  * @param {number=} y the factor to scale the vertical axis by, defaults to x
  */
-Canvas.prototype.scale = function( x, y = x ) {
+classPrototype.scale = function( x, y = x ) {
     this._scale = { x, y };
 
     const scaleStyle = x === 1 && y === 1 ? '' : `scale(${x}, ${y})`;
@@ -626,7 +628,7 @@ Canvas.prototype.scale = function( x, y = x ) {
  * @param {boolean=} value whether to stretch the canvas to fit the window size
  * @param {boolean=} maintainRatio whether to maintain the current aspect ratio
  */
-Canvas.prototype.stretchToFit = function( value, maintainRatio = false ) {
+classPrototype.stretchToFit = function( value, maintainRatio = false ) {
     /**
      * @protected
      * @type {boolean}
@@ -660,7 +662,7 @@ Canvas.prototype.stretchToFit = function( value, maintainRatio = false ) {
 /**
  * @public
  */
-Canvas.prototype.dispose = function() {
+classPrototype.dispose = function() {
     if ( this._disposed ) {
         return;
     }
@@ -687,9 +689,9 @@ Canvas.prototype.dispose = function() {
 
 /**
  * @protected
- * @param {Event} aEvent
+ * @param {Event} event
  */
-Canvas.prototype.handleInteraction = function( aEvent ) {
+classPrototype.handleInteraction = function( event ) {
     const numChildren = this._children.length;
     const viewport    = this._viewport;
     let theChild;
@@ -698,13 +700,13 @@ Canvas.prototype.handleInteraction = function( aEvent ) {
     {
         theChild = this._children[ numChildren - 1 ]; // reverse loop to first handle top layers
 
-        switch ( aEvent.type )
+        switch ( event.type )
         {
             // all touch events
             default:
                 let eventOffsetX = 0, eventOffsetY = 0, result;
 
-                const touches /** @type {TouchList} */ = ( aEvent.touches.length > 0 ) ? aEvent.touches : aEvent.changedTouches;
+                const touches /** @type {TouchList} */ = event.changedTouches;
                 let i = 0, l = touches.length;
 
                 if ( l > 0 ) {
@@ -713,17 +715,42 @@ Canvas.prototype.handleInteraction = function( aEvent ) {
                         offset.x -= viewport.left;
                         offset.y -= viewport.top;
                     }
-                    for ( i = 0; i < l; ++i ) {
-                        eventOffsetX = touches[ i ].pageX - offset.x;
-                        eventOffsetY = touches[ i ].pageY - offset.y;
 
-                        while ( theChild ) {
-                            if ( theChild.handleInteraction( eventOffsetX, eventOffsetY, aEvent )) {
+                    // zCanvas supports multitouch, process all pointers
+
+                    for ( i = 0; i < l; ++i ) {
+                        const touch          = touches[ i ];
+                        const { identifier } = touch;
+
+                        eventOffsetX = touch.pageX - offset.x;
+                        eventOffsetY = touch.pageY - offset.y;
+
+                        switch ( event.type ) {
+                            // on touchstart events, when we a Sprite handles the event, we
+                            // map the touch identifier to this Sprite
+                            case "touchstart":
+                                while ( theChild ) {
+                                    if ( !this._activeTouches.includes( theChild ) && theChild.handleInteraction( eventOffsetX, eventOffsetY, event )) {
+                                        this._activeTouches[ identifier ] = theChild;
+                                        break;
+                                    }
+                                    theChild = theChild.last;
+                                }
+                                theChild = this._children[ numChildren - 1 ];
                                 break;
-                            }
-                            theChild = theChild.last;
+                            // on all remaining touch events we retrieve the Sprite associated
+                            // with the event pointer directly
+                            default:
+                                theChild = this._activeTouches[ identifier ];
+                                if ( theChild?.handleInteraction( eventOffsetX, eventOffsetY, event )) {
+                                    // all events other than touchmove should be treated as a release
+                                    if ( event.type !== "touchmove" ) {
+                                        this._activeTouches[ identifier ] = null;
+                                    }
+                                }
+                                break;
+
                         }
-                        theChild = this._children[ numChildren - 1 ];
                     }
                 }
                 break;
@@ -732,13 +759,13 @@ Canvas.prototype.handleInteraction = function( aEvent ) {
             case "mousedown":
             case "mousemove":
             case "mouseup":
-                let { offsetX, offsetY } = aEvent;
+                let { offsetX, offsetY } = event;
                 if ( viewport ) {
                     offsetX += viewport.left;
                     offsetY += viewport.top;
                 }
                 while ( theChild ) {
-                    if ( theChild.handleInteraction( offsetX, offsetY, aEvent )) {
+                    if ( theChild.handleInteraction( offsetX, offsetY, event )) {
                         break;
                     }
                     theChild = theChild.last;
@@ -747,7 +774,7 @@ Canvas.prototype.handleInteraction = function( aEvent ) {
 
             // scroll wheel / touchpad
             case "wheel":
-                const { deltaX, deltaY } = aEvent;
+                const { deltaX, deltaY } = event;
                 const WHEEL_SPEED = 20;
                 const xSpeed = deltaX === 0 ? 0 : deltaX > 0 ? WHEEL_SPEED : -WHEEL_SPEED;
                 const ySpeed = deltaY === 0 ? 0 : deltaY > 0 ? WHEEL_SPEED : -WHEEL_SPEED;
@@ -756,8 +783,8 @@ Canvas.prototype.handleInteraction = function( aEvent ) {
         }
     }
     if ( this._preventDefaults ) {
-        aEvent.stopPropagation();
-        aEvent.preventDefault();
+        event.stopPropagation();
+        event.preventDefault();
     }
 
     // update the Canvas contents
@@ -774,7 +801,7 @@ Canvas.prototype.handleInteraction = function( aEvent ) {
  *
  * @protected
  */
-Canvas.prototype.render = function() {
+classPrototype.render = function() {
     const now   = Date.now();  // current timestamp
     const delta = now - this._lastRender;
 
@@ -842,7 +869,7 @@ Canvas.prototype.render = function() {
  *
  * @protected
  */
-Canvas.prototype.addListeners = function() {
+classPrototype.addListeners = function() {
 
     if ( !this._eventHandler ) {
 
@@ -854,26 +881,26 @@ Canvas.prototype.addListeners = function() {
     }
     const theHandler  = this._eventHandler;
     const theListener = this.handleInteraction.bind( this );
+    const element     = this._element;
 
     // use touch events ?
-
     if ( !!( "ontouchstart" in window )) {
-        theHandler.addEventListener( this._element, "touchstart", theListener );
-        theHandler.addEventListener( this._element, "touchmove",  theListener );
-        theHandler.addEventListener( this._element, "touchend",   theListener );
+        [ "start", "move", "end", "cancel" ].forEach( touchType => {
+            theHandler.add( element, `touch${touchType}`,  theListener );
+        });
     }
-
-    theHandler.addEventListener( this._element, "mousedown", theListener );
-    theHandler.addEventListener( this._element, "mousemove", theListener );
-    theHandler.addEventListener( window,        "mouseup",   theListener );
+    [ "down", "move" ].forEach( mouseType => {
+        theHandler.add( element, `mouse${mouseType}`, theListener );
+    });
+    theHandler.add( window, "mouseup", theListener ); // note different element in listener
 
     if ( this._viewport ) {
-        theHandler.addEventListener( this._element, "wheel", theListener );
+        theHandler.add( element, "wheel", theListener );
     }
 
     if ( this._stretchToFit ) {
         const resizeEvent = "onorientationchange" in window ? "orientationchange" : "resize";
-        theHandler.addEventListener( window, resizeEvent, () => {
+        theHandler.add( window, resizeEvent, () => {
             this.stretchToFit( this._stretchToFit, this._maintainRatio );
         });
     }
@@ -886,7 +913,7 @@ Canvas.prototype.addListeners = function() {
  *
  * @protected
  */
-Canvas.prototype.removeListeners = function() {
+classPrototype.removeListeners = function() {
     if ( this._eventHandler ) {
         this._eventHandler.dispose();
     }
@@ -900,7 +927,7 @@ Canvas.prototype.removeListeners = function() {
  * @protected
  * @return {Object} w/ x and y properties
  */
-Canvas.prototype.getCoordinate = function() {
+classPrototype.getCoordinate = function() {
     let x = 0;
     let y = 0;
     let theElement = this._element;

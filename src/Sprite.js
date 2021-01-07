@@ -1,7 +1,7 @@
 /**
  * The MIT License (MIT)
  *
- * Igor Zinken 2013-2020 - https://www.igorski.nl
+ * Igor Zinken 2013-2021 - https://www.igorski.nl
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of
  * this software and associated documentation files (the "Software"), to deal in
@@ -197,6 +197,8 @@ function Sprite({
 }
 export default Sprite;
 
+const classPrototype = Sprite.prototype;
+
 /* static methods */
 
 /**
@@ -225,7 +227,7 @@ Sprite.extend = function( extendingFunction ) {
  * @public
  * @return {boolean}
  */
-Sprite.prototype.getDraggable = function() {
+classPrototype.getDraggable = function() {
     return this._draggable;
 };
 
@@ -238,7 +240,7 @@ Sprite.prototype.getDraggable = function() {
  *                   this will default to the bounds of the canvas, or can be a custom
  *                   restraint (see "setConstraint")
  */
-Sprite.prototype.setDraggable = function( aValue, aKeepInBounds = false ) {
+classPrototype.setDraggable = function( aValue, aKeepInBounds = false ) {
     this._draggable    = aValue;
     this._keepInBounds = this._constraint ? true : aKeepInBounds;
 
@@ -254,7 +256,7 @@ Sprite.prototype.setDraggable = function( aValue, aKeepInBounds = false ) {
  * @public
  * @return {number}
  */
-Sprite.prototype.getX = function() {
+classPrototype.getX = function() {
     return this._bounds.left;
 };
 
@@ -262,7 +264,7 @@ Sprite.prototype.getX = function() {
  * @public
  * @param {number} aValue
  */
-Sprite.prototype.setX = function( aValue ) {
+classPrototype.setX = function( aValue ) {
     const delta       = aValue - this._bounds.left;
     this._bounds.left = this._constraint ? aValue + this._constraint.left : aValue;
 
@@ -284,7 +286,7 @@ Sprite.prototype.setX = function( aValue ) {
  * @public
  * @return {number}
  */
-Sprite.prototype.getY = function() {
+classPrototype.getY = function() {
     return this._bounds.top;
 };
 
@@ -292,7 +294,7 @@ Sprite.prototype.getY = function() {
  * @public
  * @param {number} aValue
  */
-Sprite.prototype.setY = function( aValue ) {
+classPrototype.setY = function( aValue ) {
     const delta        = aValue - this._bounds.top;
     this._bounds.top = this._constraint ? aValue + this._constraint.top : aValue;
 
@@ -314,7 +316,7 @@ Sprite.prototype.setY = function( aValue ) {
  * @public
  * @return {number}
  */
-Sprite.prototype.getWidth = function() {
+classPrototype.getWidth = function() {
     return this._bounds.width;
 };
 
@@ -322,7 +324,7 @@ Sprite.prototype.getWidth = function() {
  * @public
  * @param {number} aValue
  */
-Sprite.prototype.setWidth = function( aValue ) {
+classPrototype.setWidth = function( aValue ) {
     const prevWidth    = this._bounds.width || 0;
     this._bounds.width = aValue;
 
@@ -339,7 +341,7 @@ Sprite.prototype.setWidth = function( aValue ) {
  * @public
  * @return {number}
  */
-Sprite.prototype.getHeight = function() {
+classPrototype.getHeight = function() {
 
     return this._bounds.height;
 };
@@ -348,7 +350,7 @@ Sprite.prototype.getHeight = function() {
  * @public
  * @param {number} aValue
  */
-Sprite.prototype.setHeight = function( aValue ) {
+classPrototype.setHeight = function( aValue ) {
     const prevHeight    = this._bounds.height || 0;
     this._bounds.height = aValue;
 
@@ -372,7 +374,7 @@ Sprite.prototype.setHeight = function( aValue ) {
  * @param {number=} width optionally desired width, defaults to current size
  * @param {number=} height optionally desired width, defaults to current size
  */
-Sprite.prototype.setBounds = function( left, top, width, height ) {
+classPrototype.setBounds = function( left, top, width, height ) {
     if ( this._constraint ) {
         left -= this._constraint.left;
         top  -= this._constraint.top;
@@ -433,7 +435,7 @@ Sprite.prototype.setBounds = function( left, top, width, height ) {
  * @public
  * @return {{ left: number, top: number, width: number, height: number }}
  */
-Sprite.prototype.getBounds = function() {
+classPrototype.getBounds = function() {
     return this._bounds;
 };
 
@@ -444,7 +446,7 @@ Sprite.prototype.getBounds = function() {
  * @public
  * @return {boolean}
  */
-Sprite.prototype.getInteractive = function() {
+classPrototype.getInteractive = function() {
     return this._interactive;
 };
 
@@ -456,7 +458,7 @@ Sprite.prototype.getInteractive = function() {
  * @public
  * @param {boolean} aValue
  */
-Sprite.prototype.setInteractive = function( aValue ) {
+classPrototype.setInteractive = function( aValue ) {
     /**
      * @protected
      * @type {boolean}
@@ -475,7 +477,7 @@ Sprite.prototype.setInteractive = function( aValue ) {
  * @param {number} aCurrentTimestamp the current timestamp
  *                 which can be used to create strict timed animations
  */
-Sprite.prototype.update = function( aCurrentTimestamp ) {
+classPrototype.update = function( aCurrentTimestamp ) {
     // override in prototype-extensions or instance
     // recursively update this sprites children :
 
@@ -511,7 +513,7 @@ Sprite.prototype.update = function( aCurrentTimestamp ) {
  *            bottom: number
  *        }|null} viewport optional viewport defining the currently visible canvas area
  */
-Sprite.prototype.draw = function( canvasContext, viewport = null ) {
+classPrototype.draw = function( canvasContext, viewport = null ) {
 
     // extend in subclass if you're drawing a custom object instead of a graphical Image asset
     // don't forget to draw the child display list when overriding this method!
@@ -631,7 +633,7 @@ Sprite.prototype.draw = function( canvasContext, viewport = null ) {
  * @param {Sprite} aSprite the sprite to check against *
  * @return {boolean} whether a collision has been detected
  */
-Sprite.prototype.collidesWith = function( aSprite ) {
+classPrototype.collidesWith = function( aSprite ) {
     if ( aSprite === this ) {
         return false;
     }
@@ -653,7 +655,7 @@ Sprite.prototype.collidesWith = function( aSprite ) {
  * @param {Sprite} aSprite
  * @return {{ left: number, top: number, width: number, height: number }|null}
  */
-Sprite.prototype.getIntersection = function( aSprite ) {
+classPrototype.getIntersection = function( aSprite ) {
     if ( this.collidesWith( aSprite )) {
         const self = this._bounds, compare = aSprite.getBounds();
 
@@ -682,7 +684,7 @@ Sprite.prototype.getIntersection = function( aSprite ) {
  *
  * @return {boolean} whether collision with the given edge has been detected
  */
-Sprite.prototype.collidesWithEdge = function( aSprite, aEdge ) {
+classPrototype.collidesWithEdge = function( aSprite, aEdge ) {
     if ( aSprite === this ) {
         return false;
     }
@@ -710,7 +712,7 @@ Sprite.prototype.collidesWithEdge = function( aSprite, aEdge ) {
  * @public
  * @return {Image|HTMLCanvasElement|string}
  */
-Sprite.prototype.getBitmap = function() {
+classPrototype.getBitmap = function() {
     return this._bitmap;
 };
 
@@ -725,7 +727,7 @@ Sprite.prototype.getBitmap = function() {
  * @param {number=} aOptHeight optional new width to use for this Sprites bounds
  * @return {Promise}
  */
-Sprite.prototype.setBitmap = function( aImage, aOptWidth, aOptHeight ) {
+classPrototype.setBitmap = function( aImage, aOptWidth, aOptHeight ) {
     const isCanvasElement = aImage instanceof window.HTMLCanvasElement;
     const isImageElement  = aImage instanceof window.HTMLImageElement;
     const isDataSource    = typeof aImage === "string";
@@ -819,7 +821,7 @@ Sprite.prototype.setBitmap = function( aImage, aOptWidth, aOptHeight ) {
  * @param {number=} width optional width to use for a single tile, defaults to Sprite bounds width
  * @param {number=} height optional height to use for a single tile, defaults to Sprite bounds height
  */
-Sprite.prototype.setSheet = function( sheet, width, height ) {
+classPrototype.setSheet = function( sheet, width, height ) {
     /**
      * @protected
      * @type {Array<{ row: number, col: number, amount: number, fpt: 5, onComplete: Function= }>}
@@ -858,7 +860,7 @@ Sprite.prototype.setSheet = function( sheet, width, height ) {
  * @public
  * @param {Object} sheetIndex index of the animation as defined in the _tileSheet Array
  */
-Sprite.prototype.switchAnimation = function( sheetIndex ) {
+classPrototype.switchAnimation = function( sheetIndex ) {
 
     const aniProps = this._animation, sheet = this._sheet[ sheetIndex ];
 
@@ -876,7 +878,7 @@ Sprite.prototype.switchAnimation = function( sheetIndex ) {
  * @public
  * @param {Sprite|Canvas} aParent
  */
-Sprite.prototype.setParent = function( aParent ) {
+classPrototype.setParent = function( aParent ) {
     this._parent = aParent;
 };
 
@@ -884,7 +886,7 @@ Sprite.prototype.setParent = function( aParent ) {
  * @public
  * @return {Sprite|Canvas} parent
  */
-Sprite.prototype.getParent = function() {
+classPrototype.getParent = function() {
     return this._parent;
 };
 
@@ -894,7 +896,7 @@ Sprite.prototype.getParent = function() {
  * @public
  * @param {Canvas} aCanvas
  */
-Sprite.prototype.setCanvas = function( aCanvas ) {
+classPrototype.setCanvas = function( aCanvas ) {
     this.canvas = aCanvas;
 };
 
@@ -915,7 +917,7 @@ Sprite.prototype.setCanvas = function( aCanvas ) {
  *
  * @return {{ left: number, top: number, width: number, height: number }} the generated constraint Rectangle
  */
-Sprite.prototype.setConstraint = function( left, top, width, height) {
+classPrototype.setConstraint = function( left, top, width, height) {
     /**
      * rectangle describing this sprites restrictions (only applicable
      * to draggable Sprites to ensure they remain within these bounds)
@@ -937,7 +939,7 @@ Sprite.prototype.setConstraint = function( left, top, width, height) {
  * @public
  * @return {{ left: number, top: number, width: number, height: number }}
  */
-Sprite.prototype.getConstraint = function() {
+classPrototype.getConstraint = function() {
     return this._constraint;
 };
 
@@ -948,7 +950,7 @@ Sprite.prototype.getConstraint = function() {
  * @param {Sprite} aChild to append
  * @return {Sprite} this object - for chaining purposes
  */
-Sprite.prototype.addChild = function( aChild ) {
+classPrototype.addChild = function( aChild ) {
     if ( this.contains( aChild )) {
         return this;
     }
@@ -980,7 +982,7 @@ Sprite.prototype.addChild = function( aChild ) {
  * @param {Sprite} aChild the child to remove
  * @return {Sprite} the removed child
  */
-Sprite.prototype.removeChild = function( aChild ) {
+classPrototype.removeChild = function( aChild ) {
     aChild.setParent( null );
     aChild.setCanvas( null );
 
@@ -1018,7 +1020,7 @@ Sprite.prototype.removeChild = function( aChild ) {
  * @param {number} index of the object in the Display List
  * @return {Sprite} the Sprite present at the given index
  */
-Sprite.prototype.getChildAt = function( index ) {
+classPrototype.getChildAt = function( index ) {
     return this._children[ index ];
 };
 
@@ -1029,7 +1031,7 @@ Sprite.prototype.getChildAt = function( index ) {
  * @param {number} index of the object to remove
  * @return {Sprite} the Sprite removed at the given index
  */
-Sprite.prototype.removeChildAt = function( index ) {
+classPrototype.removeChildAt = function( index ) {
     return this.removeChild( this.getChildAt( index ));
 };
 
@@ -1037,7 +1039,7 @@ Sprite.prototype.removeChildAt = function( index ) {
  * @public
  * @return {number} the amount of children in this object's Display List
  */
-Sprite.prototype.numChildren = function() {
+classPrototype.numChildren = function() {
     return this._children.length;
 };
 
@@ -1048,7 +1050,7 @@ Sprite.prototype.numChildren = function() {
  * @param {Sprite} aChild
  * @return {boolean}
  */
-Sprite.prototype.contains = function( aChild ) {
+classPrototype.contains = function( aChild ) {
     return this._children.indexOf( aChild ) > -1;
 };
 
@@ -1057,7 +1059,7 @@ Sprite.prototype.contains = function( aChild ) {
  *
  * @public
  */
-Sprite.prototype.dispose = function() {
+classPrototype.dispose = function() {
     if ( this._disposed ) {
         return;
     }
@@ -1088,10 +1090,11 @@ Sprite.prototype.dispose = function() {
  * is a "down"-handler and indicates the sprite has just been touched
  *
  * @protected
- * @param {number} aXPosition position of the touch / cursor
- * @param {number} aYPosition position of the touch / cursor
+ * @param {number} x position of the touch / cursor
+ * @param {number} y position of the touch / cursor
+ * @param {Event} event the original event that triggered this action
  */
-Sprite.prototype.handlePress = function( aXPosition, aYPosition ) {
+classPrototype.handlePress = function( x, y, event ) {
     // override in prototype-extensions or instance
 };
 
@@ -1099,10 +1102,11 @@ Sprite.prototype.handlePress = function( aXPosition, aYPosition ) {
  * invoked when the user releases touch of this (previously pressed) Sprite
  *
  * @protected
- * @param {number} aXPosition position of the touch / cursor
- * @param {number} aYPosition position of the touch / cursor
+ * @param {number} x position of the touch / cursor
+ * @param {number} y position of the touch / cursor
+ * @param {Event} event the original event that triggered this action
  */
-Sprite.prototype.handleRelease = function( aXPosition, aYPosition ) {
+classPrototype.handleRelease = function( x, y, event ) {
     // override in prototype-extensions or instance
 };
 
@@ -1112,7 +1116,7 @@ Sprite.prototype.handleRelease = function( aXPosition, aYPosition ) {
  *
  * @protected
  */
-Sprite.prototype.handleClick = function() {
+classPrototype.handleClick = function() {
     // override in prototype-extensions or instance
 };
 
@@ -1121,12 +1125,13 @@ Sprite.prototype.handleClick = function() {
  * to delegate drag logic
  *
  * @protected
- * @param {number} aXPosition
- * @param {number} aYPosition
+ * @param {number} x
+ * @param {number} y
+ * @param {Event} event the original event that triggered this action
  */
-Sprite.prototype.handleMove = function( aXPosition, aYPosition ) {
-    const theX = this._dragStartOffset.x + ( aXPosition - this._dragStartEventCoordinates.x );
-    const theY = this._dragStartOffset.y + ( aYPosition - this._dragStartEventCoordinates.y );
+classPrototype.handleMove = function( x, y, event ) {
+    const theX = this._dragStartOffset.x + ( x - this._dragStartEventCoordinates.x );
+    const theY = this._dragStartOffset.y + ( y - this._dragStartEventCoordinates.y );
 
     this.setBounds( theX, theY, this._bounds.width, this._bounds.height );
 };
@@ -1140,13 +1145,13 @@ Sprite.prototype.handleMove = function( aXPosition, aYPosition ) {
  * do NOT override this method, override the individual "protected" handlers instead
  *
  * @public
- * @param {number} aEventX the events X offset, passed for quick evaluation of position updates
- * @param {number} aEventY the events Y offset, passed for quick evaluation of position updates
- * @param {Event} aEvent the original event that triggered this action
+ * @param {number} x the events X offset, passed for quick evaluation of position updates
+ * @param {number} y the events Y offset, passed for quick evaluation of position updates
+ * @param {Event} event the original event that triggered this action
  *
  * @return {boolean} whether this Sprite is handling the event
  */
-Sprite.prototype.handleInteraction = function( aEventX, aEventY, aEvent ) {
+classPrototype.handleInteraction = function( x, y, event ) {
     // first traverse the children of this sprite
     let foundInteractionInChild = false, theChild;
 
@@ -1159,7 +1164,7 @@ Sprite.prototype.handleInteraction = function( aEventX, aEventY, aEvent ) {
         theChild = this._children[ numChildren - 1 ];
 
         while ( theChild ) {
-            foundInteractionInChild = theChild.handleInteraction( aEventX, aEventY, aEvent );
+            foundInteractionInChild = theChild.handleInteraction( x, y, event );
 
             // child is higher in DisplayList, takes precedence over this parent
             if ( foundInteractionInChild ) {
@@ -1176,7 +1181,9 @@ Sprite.prototype.handleInteraction = function( aEventX, aEventY, aEvent ) {
     // did we have a previous interaction and the 'up' event was fired?
     // unset this property or update the position in case the event is a move event
 
-    if ( this._pressed && ( aEvent.type === "touchend" || aEvent.type === "mouseup" ))
+    const { type } = event;
+
+    if ( this._pressed && ( type === "touchend" || type === "mouseup" ))
     {
         this._pressed = false;
 
@@ -1190,7 +1197,7 @@ Sprite.prototype.handleInteraction = function( aEventX, aEventY, aEvent ) {
         if (( Date.now() - this._pressTime ) < 250 ) {
             this.handleClick();
         }
-        this.handleRelease( aEventX, aEventY );
+        this.handleRelease( x, y, event );
 
         return true;
     }
@@ -1200,15 +1207,15 @@ Sprite.prototype.handleInteraction = function( aEventX, aEventY, aEvent ) {
 
     const coordinates = this._bounds;
 
-    if ( aEventX >= thisX && aEventX <= ( thisX + coordinates.width ) &&
-         aEventY >= thisY && aEventY <= ( thisY + coordinates.height )) {
+    if ( x >= thisX && x <= ( thisX + coordinates.width ) &&
+         y >= thisY && y <= ( thisY + coordinates.height )) {
 
         // this Sprites coordinates and dimensions are INSIDE the current event coordinates
 
         this.hover = true;
 
         // yes sir, we've got a match
-        if ( aEvent.type === "touchstart" || aEvent.type === "mousedown" )
+        if ( type === "touchstart" || type === "mousedown" )
         {
             /**
              * timestamp of the moment the interaction down handler was triggered, used for
@@ -1248,11 +1255,17 @@ Sprite.prototype.handleInteraction = function( aEventX, aEventY, aEvent ) {
                  * @type {Object} w/ properties x and y
                  */
                 this._dragStartEventCoordinates = {
-                    x: aEventX,
-                    y: aEventY
+                    x: x,
+                    y: y
                 };
             }
-            this.handlePress( aEventX, aEventY );
+            this.handlePress( x, y, event );
+
+            // mousedown fires after touchstart on Android, block double handling
+            if ( type === "touchstart" ) {
+                event.stopPropagation();
+                event.preventDefault();
+            }
             return true;
         }
     } else {
@@ -1263,7 +1276,7 @@ Sprite.prototype.handleInteraction = function( aEventX, aEventY, aEvent ) {
     // ensure we don't lose the handle by quickly moving around...
 
     if ( this.isDragging ) {
-        this.handleMove( aEventX, aEventY );
+        this.handleMove( x, y, event );
         return true;
     }
     return false;
@@ -1277,7 +1290,7 @@ Sprite.prototype.handleInteraction = function( aEventX, aEventY, aEvent ) {
  *
  * @protected
  */
-Sprite.prototype.updateAnimation = function() {
+classPrototype.updateAnimation = function() {
     const aniProps = this._animation;
 
     if ( ++aniProps.counter === aniProps.fpt ) {
@@ -1304,7 +1317,7 @@ Sprite.prototype.updateAnimation = function() {
  *
  * @protected
  */
-Sprite.prototype.invalidate = function() {
+classPrototype.invalidate = function() {
     this.canvas && this.canvas.invalidate();
 };
 
@@ -1315,7 +1328,7 @@ Sprite.prototype.invalidate = function() {
  * @protected
  * @param {CanvasRenderingContext2D} canvasContext to draw on
  */
-Sprite.prototype.drawOutline = function( canvasContext ) {
+classPrototype.drawOutline = function( canvasContext ) {
     canvasContext.lineWidth   = 1;
     canvasContext.strokeStyle = '#FF0000';
     canvasContext.strokeRect( this.getX(), this.getY(), this.getWidth(), this.getHeight() )

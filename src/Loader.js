@@ -94,8 +94,8 @@ const Loader = {
                 if ( !isDataURL ) {
                     applyOrigin( aSource, out );
                 }
-                handler.addEventListener( out, "load",  loadHandler );
-                handler.addEventListener( out, "error", errorHandler );
+                handler.add( out, "load",  loadHandler );
+                handler.add( out, "error", errorHandler );
             }
 
             // load the image

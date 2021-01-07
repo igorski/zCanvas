@@ -1,7 +1,7 @@
 /**
  * The MIT License (MIT)
  *
- * Igor Zinken 2010-2020 - https://www.igorski.nl
+ * Igor Zinken 2010-2021 - https://www.igorski.nl
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of
  * this software and associated documentation files (the "Software"), to deal in
@@ -44,6 +44,8 @@ function EventHandler() {
 }
 export default EventHandler;
 
+const classPrototype = EventHandler.prototype;
+
 /* public methods */
 
 /**
@@ -54,17 +56,9 @@ export default EventHandler;
  * @param {!Function} aCallback *
  * @return {boolean} whether the listener has been attached successfully
  */
-EventHandler.prototype.addEventListener = function( aElement, aType, aCallback ) {
-
-    if ( !this.hasEventListener( aElement, aType )) {
-
-        if ( aElement.addEventListener )
-            aElement.addEventListener( aType, aCallback, false );
-        else if ( aElement.attachEvent )
-            aElement.attachEvent( `on${aType}`, aCallback );
-        else
-            return false;
-
+classPrototype.add = function( aElement, aType, aCallback ) {
+    if ( !this.has( aElement, aType )) {
+        aElement.addEventListener( aType, aCallback, false );
         this._eventMappings.push({
             element  : aElement,
             type     : aType,
@@ -83,16 +77,13 @@ EventHandler.prototype.addEventListener = function( aElement, aType, aCallback )
  * @param {string} aType
  * @return {boolean} whether the listener already exists
  */
-EventHandler.prototype.hasEventListener = function( aElement, aType ) {
-
+classPrototype.has = function( aElement, aType ) {
     let i = this._eventMappings.length;
-
     while ( i-- ) {
-
         const theMapping = this._eventMappings[ i ];
-
-        if ( theMapping.element === aElement && theMapping.type == aType )
+        if ( theMapping.element === aElement && theMapping.type == aType ) {
             return true;
+        }
     }
     return false;
 };
@@ -104,23 +95,12 @@ EventHandler.prototype.hasEventListener = function( aElement, aType ) {
  * @param {string} aType *
  * @return {boolean} whether the listener has been found and removed
  */
-EventHandler.prototype.removeEventListener = function( aElement, aType ) {
-
+classPrototype.rem = function( aElement, aType ) {
     let i = this._eventMappings.length;
-
     while ( i-- ) {
-
         const theMapping = this._eventMappings[ i ];
-
         if ( theMapping.element === aElement && theMapping.type === aType ) {
-
-            if ( aElement.removeEventListener )
-                aElement.removeEventListener( aType, theMapping.listener, false );
-            else if ( aElement.detachEvent )
-                aElement.detachEvent( `on${aType}`, theMapping.listener );
-            else
-                return false;
-
+            aElement.removeEventListener( aType, theMapping.listener, false );
             this._eventMappings.splice( i, 1 );
             return true;
         }
@@ -128,18 +108,17 @@ EventHandler.prototype.removeEventListener = function( aElement, aType ) {
     return false;
 };
 
-EventHandler.prototype.dispose = function() {
-
-    if ( this._disposed )
+classPrototype.dispose = function() {
+    if ( this._disposed ) {
         return;
-
+    }
     this._disposed = true;
 
     let i = this._eventMappings.length;
 
     while ( i-- )  {
         const mapping = this._eventMappings[ i ];
-        this.removeEventListener( mapping.element, mapping.type );
+        this.rem( mapping.element, mapping.type );
     }
     this._eventMappings = null;
 };
