@@ -1254,10 +1254,7 @@ classPrototype.handleInteraction = function( x, y, event ) {
                  * @protected
                  * @type {Object} w/ properties x and y
                  */
-                this._dragStartEventCoordinates = {
-                    x: x,
-                    y: y
-                };
+                this._dragStartEventCoordinates = { x, y };
             }
             this.handlePress( x, y, event );
 

@@ -95,7 +95,7 @@ classPrototype.has = function( aElement, aType ) {
  * @param {string} aType *
  * @return {boolean} whether the listener has been found and removed
  */
-classPrototype.rem = function( aElement, aType ) {
+classPrototype.remove = function( aElement, aType ) {
     let i = this._eventMappings.length;
     while ( i-- ) {
         const theMapping = this._eventMappings[ i ];
@@ -118,7 +118,7 @@ classPrototype.dispose = function() {
 
     while ( i-- )  {
         const mapping = this._eventMappings[ i ];
-        this.rem( mapping.element, mapping.type );
+        this.remove( mapping.element, mapping.type );
     }
     this._eventMappings = null;
 };
