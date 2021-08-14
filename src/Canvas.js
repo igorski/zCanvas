@@ -116,8 +116,9 @@ function Canvas({
     if ( scale !== 1 ) {
         this.scale( scale, scale );
     }
-    this.stretchToFit( stretchToFit );
-
+    if ( stretchToFit ) {
+        this.stretchToFit( true );
+    }
     if ( parentElement instanceof Element ) {
         this.insertInPage( parentElement );
     }
@@ -611,52 +612,48 @@ classPrototype.scale = function( x, y = x ) {
     style[ "-webkit-transform" ] =
             style[ "transform" ] = scaleStyle;
 
-    if ( this._stretchToFit ) {
-        this.stretchToFit( true, this._maintainRatio );
-    } else {
-        this.invalidate();
-    }
+    this.invalidate();
 };
 
 /**
- * Stretches the Canvas to fit inside the available window size
- * NOTE: when maintaing the aspect ratio this is not equal to filling the entire window size
- * when the canvas dimensions re of a different ratio than the window, instead the dominant
- * side will be scaled to fit. This method will maintain the existing scale factor.
+ * Stretches the Canvas to fit inside the available window size, keeping the
+ * dominant sides of the preferred dimensions in relation to the window dimensions.
+ * This method will disregard scaling factors.
  *
  * @public
  * @param {boolean=} value whether to stretch the canvas to fit the window size
- * @param {boolean=} maintainRatio whether to maintain the current aspect ratio
  */
-classPrototype.stretchToFit = function( value, maintainRatio = false ) {
+classPrototype.stretchToFit = function( value ) {
     /**
      * @protected
      * @type {boolean}
      */
     this._stretchToFit = value;
 
-    /**
-     * @protected
-     * @type {boolean}
-     */
-    this._maintainRatio = maintainRatio;
-
-    const idealWidth   = this._preferredWidth;
-    const idealHeight  = this._preferredHeight;
-    const { x, y }     = this._scale; // take existing canvas scale factor into account
-
     const { innerWidth, innerHeight } = window;
 
-    let targetWidth, targetHeight;
-    if ( maintainRatio && value ) {
-        const ratio  = min( innerWidth / idealWidth, innerHeight / idealHeight );
-        targetWidth  = idealWidth * ratio;
-        targetHeight = idealHeight * ratio;
-    } else {
-        targetWidth  = value ? ( innerWidth  / x ) : idealWidth;
-        targetHeight = value ? ( innerHeight / y ) : idealHeight;
+    let targetWidth  = this._preferredWidth;
+    let targetHeight = this._preferredHeight;
+    let xScale       = 1;
+    let yScale       = 1;
+
+    if ( innerHeight > innerWidth ) {
+        // available height is larger than the width
+        targetHeight = !!value ? innerHeight / innerWidth * targetWidth : targetHeight;
+        xScale = innerWidth  / targetWidth;
+        yScale = innerHeight / targetHeight;
     }
-    this.setDimensions( round( targetWidth ), round( targetHeight ), false );
+    else {
+        // available width is larger than the height
+        targetWidth = !!value ? innerWidth / innerHeight * targetHeight : targetWidth;
+        xScale = innerWidth  / targetWidth;
+        yScale = innerHeight / targetHeight;
+    }
+    this.setDimensions( round( targetWidth ), round( targetHeight ), false, true );
+
+    // we override the scale adjustment performed by updateCanvasSize as
+    // we lock the scale to the ratio of the desired to actual screen dimensions
+    this.scale( xScale, yScale );
 };
 
 /**
@@ -899,9 +896,8 @@ classPrototype.addListeners = function() {
     }
 
     if ( this._stretchToFit ) {
-        const resizeEvent = "onorientationchange" in window ? "orientationchange" : "resize";
-        theHandler.add( window, resizeEvent, () => {
-            this.stretchToFit( this._stretchToFit, this._maintainRatio );
+        theHandler.add( window, "resize", () => {
+            this.stretchToFit( this._stretchToFit );
         });
     }
 };
@@ -996,6 +992,6 @@ function updateCanvasSize( canvasInstance ) {
     // non-smoothing must be re-applied when the canvas dimensions change...
 
     if ( canvasInstance._smoothing === false ) {
-        canvasInstance.setSmoothing( canvasInstance._smoothing );
+        canvasInstance.setSmoothing( false );
     }
 }

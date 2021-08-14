@@ -528,7 +528,7 @@ classPrototype.draw = function( canvasContext, viewport = null ) {
     let render = this._bitmapReady;
     if ( render && viewport ) {
         // ...and content is within visual bounds if a viewport was defined
-        render = isInsideViewport( this._bounds, viewport );
+        render = isInsideViewport( bounds, viewport );
     }
 
     canvasContext.save();
