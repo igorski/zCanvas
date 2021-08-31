@@ -271,14 +271,12 @@ classPrototype.setX = function( aValue ) {
     // as the offsets of the children are drawn relative to the Canvas, we
     // must update their offsets by the delta value too
 
-    if ( this._children.length > 0 ) {
-        let theChild = this._children[ 0 ];
-        while ( theChild ) {
-            if ( !theChild.isDragging ) {
-                theChild.setX( theChild._bounds.left + delta );
-            }
-            theChild = theChild.next;
+    let theChild = this._children[ 0 ];
+    while ( theChild ) {
+        if ( !theChild.isDragging ) {
+            theChild.setX( theChild._bounds.left + delta );
         }
+        theChild = theChild.next;
     }
 };
 
@@ -301,14 +299,12 @@ classPrototype.setY = function( aValue ) {
     // as the offsets of the children are drawn relative to the Canvas, we
     // must update their offsets by the delta value too
 
-    if ( this._children.length > 0 ) {
-        let theChild = this._children[ 0 ];
-        while ( theChild ) {
-            if ( !theChild.isDragging ) {
-                theChild.setY( theChild._bounds.top + delta );
-            }
-            theChild = theChild.next;
+    let theChild = this._children[ 0 ];
+    while ( theChild ) {
+        if ( !theChild.isDragging ) {
+            theChild.setY( theChild._bounds.top + delta );
         }
+        theChild = theChild.next;
     }
 };
 
@@ -342,7 +338,6 @@ classPrototype.setWidth = function( aValue ) {
  * @return {number}
  */
 classPrototype.getHeight = function() {
-
     return this._bounds.height;
 };
 
@@ -481,12 +476,10 @@ classPrototype.update = function( aCurrentTimestamp ) {
     // override in prototype-extensions or instance
     // recursively update this sprites children :
 
-    if ( this._children.length > 0 ) {
-        let theSprite = this._children[ 0 ];
-        while ( theSprite ) {
-            theSprite.update( aCurrentTimestamp );
-            theSprite = theSprite.next;
-        }
+    let theSprite = this._children[ 0 ];
+    while ( theSprite ) {
+        theSprite.update( aCurrentTimestamp );
+        theSprite = theSprite.next;
     }
 
     // if this sprite has a spritesheet, progress its animation
@@ -1051,7 +1044,7 @@ classPrototype.numChildren = function() {
  * @return {boolean}
  */
 classPrototype.contains = function( aChild ) {
-    return this._children.indexOf( aChild ) > -1;
+    return aChild._parent === this;
 };
 
 /**
@@ -1077,8 +1070,9 @@ classPrototype.dispose = function() {
     while ( i-- ) {
         const theChild = this._children[ i ];
         theChild.dispose();
-        theChild.next =
-        theChild.last = null; // break references
+        // break references
+        theChild.next = null;
+        theChild.last = null;
     }
     this._children = [];
 };

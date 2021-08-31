@@ -310,8 +310,7 @@ classPrototype.getChildren = function() {
  * @return {boolean}
  */
 classPrototype.contains = function( aChild ) {
-
-    return this._children.indexOf( aChild ) > -1;
+    return aChild._parent === this;
 };
 
 /**
