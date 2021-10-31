@@ -469,16 +469,17 @@ classPrototype.setInteractive = function( aValue ) {
  * centralize all update logic (e.g. for game loops)
  *
  * @public
- * @param {number} aCurrentTimestamp the current timestamp
- *                 which can be used to create strict timed animations
+ * @param {DOMHighResTimeStamp} now the current timestamp relative
+ *                              to the document time origin. Can be used
+ *                              to perform strict timed operations.
  */
-classPrototype.update = function( aCurrentTimestamp ) {
+classPrototype.update = function( now ) {
     // override in prototype-extensions or instance
     // recursively update this sprites children :
 
     let theSprite = this._children[ 0 ];
     while ( theSprite ) {
-        theSprite.update( aCurrentTimestamp );
+        theSprite.update( now );
         theSprite = theSprite.next;
     }
 

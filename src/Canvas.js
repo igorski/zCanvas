@@ -507,7 +507,7 @@ classPrototype.setAnimatable = function( value ) {
     this._animate  = value;
 
     if ( value && !oldValue && !this._renderPending ) {
-        this._renderHandler();
+        this._renderHandler( window.performance?.now() || Date.now() );
     }
 };
 
@@ -796,9 +796,9 @@ classPrototype.handleInteraction = function( event ) {
  * invoked directly but by the animation loop or an update request
  *
  * @protected
+ * @param {DOMHighResTimeStamp} now time elapsed since document time origin
  */
-classPrototype.render = function() {
-    const now   = Date.now();  // current timestamp
+classPrototype.render = function( now = 0 ) {
     const delta = now - this._lastRender;
 
     this._renderPending = false;
