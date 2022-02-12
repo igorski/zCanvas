@@ -258,6 +258,25 @@ describe( "zCanvas.sprite", () => {
         Sprite.prototype.update = orgUpdateFn;
     });
 
+    it( "should be able to determine whether a coordinate is inside the sprites bounding box", () => {
+        const sprite = new Sprite({ x, y, width, height });
+
+        // top left
+        expect( sprite.insideBounds( x - 1, y - 1 )).toBe( false );
+        expect( sprite.insideBounds( x, y )).toBe( true );
+        // top right
+        expect( sprite.insideBounds( x + width + 1, y )).toBe( false );
+        expect( sprite.insideBounds( x + width, y )).toBe( true );
+        // bottom right
+        expect( sprite.insideBounds( x + width, y + height + 1 )).toBe( false );
+        expect( sprite.insideBounds( x + width, y + height )).toBe( true );
+        // bottom left
+        expect( sprite.insideBounds( x - 1, y + height )).toBe( false );
+        expect( sprite.insideBounds( x, y + height )).toBe( true );
+        // center
+        expect( sprite.insideBounds( x + width / 2, y + height / 2 )).toBe( true );
+    });
+
     it( "should be able to determine when it collides with another sprite", () => {
         const sprite = new Sprite({ x, y, width, height });
 

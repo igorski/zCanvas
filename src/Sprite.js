@@ -619,12 +619,26 @@ classPrototype.draw = function( canvasContext, viewport = null ) {
 };
 
 /**
+ * evaluates whether given coordinate is within the Sprite bounds
+ *
+ * @public
+ * @param {number} x coordinate
+ * @param {number} y coordinate
+ * @return {boolean}
+ */
+classPrototype.insideBounds = function( x, y ) {
+    const { left, top, width, height } = this._bounds;
+    return x >= left && x <= ( left + width ) &&
+           y >= top  && y <= ( top  + height );
+};
+
+/**
  * queries the bounding box of another sprite to check whether it overlaps the bounding box of this sprite, this
  * can be used as a fast method to detect collisions, though note it is less accurate than checking at the pixel
  * level as it will match the entire bounding box, and omit checking for (for instance) transparent areas!
  *
  * @public
- * @param {Sprite} aSprite the sprite to check against *
+ * @param {Sprite} aSprite the sprite to check against
  * @return {boolean} whether a collision has been detected
  */
 classPrototype.collidesWith = function( aSprite ) {
@@ -1150,9 +1164,7 @@ classPrototype.handleInteraction = function( x, y, event ) {
     // first traverse the children of this sprite
     let foundInteractionInChild = false, theChild;
 
-    const thisX       = this.getX(),
-          thisY       = this.getY(),
-          numChildren = this._children.length;
+    const numChildren = this._children.length;
 
     if ( numChildren > 0 ) {
         // reverse loop to first handle top layers
@@ -1200,10 +1212,7 @@ classPrototype.handleInteraction = function( x, y, event ) {
     // evaluate if the event applies to this sprite by
     // matching the event offset with the Sprite bounds
 
-    const coordinates = this._bounds;
-
-    if ( x >= thisX && x <= ( thisX + coordinates.width ) &&
-         y >= thisY && y <= ( thisY + coordinates.height )) {
+    if ( this.insideBounds( x, y )) {
 
         // this Sprites coordinates and dimensions are INSIDE the current event coordinates
 
