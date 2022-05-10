@@ -1,7 +1,7 @@
 /**
  * The MIT License (MIT)
  *
- * Igor Zinken 2013-2020 - https://www.igorski.nl
+ * Igor Zinken 2013-2022 - https://www.igorski.nl
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of
  * this software and associated documentation files (the "Software"), to deal in
@@ -50,16 +50,10 @@ const Loader = {
      *                    into, in case we'd like to re-use an existing Element
      *                    (will not work in Firefox repeatedly as load handlers
      *                    will only fire once)
-     * @return {Promise} will receive loaded Image
+     * @return {Promise<{ size: { width: number, height: number }, image: HTMLImageElement }>}
      */
     loadImage( aSource, aOptImage = null ) {
         return new Promise(( resolve, reject ) => {
-
-            // if we were supplied with a ready Image, don't load anything
-            if ( aOptImage instanceof window.Image && Loader.isReady( aOptImage )) {
-                resolve( wrapOutput( aOptImage ));
-                return;
-            }
             const out       = aOptImage || new window.Image();
             const isDataURL = isDataSource( aSource );
 
@@ -69,31 +63,20 @@ const Loader = {
                 handler.dispose();
                 reject( aError );
             };
-            const loadHandler = async () => {
+            const loadHandler = () => {
                 handler.dispose();
-                try {
-                    await Loader.onReady( out );
-                    resolve( wrapOutput( out ));
-                } catch ( e ) {
-                    reject( e );
-                }
+                Loader.onReady( out ).then( result => resolve( wrapOutput( out ))).catch( reject );
             };
 
-            // in JSDOM the load event won't fire for base64 strings (or images in general)
-            // for every other (browser) environment, add load listeners
-
-            const addLoadListeners = !isDataURL || /^((?!jsdom).)*$/.test( window.navigator.userAgent );
-
-            if ( addLoadListeners ) {
+            if ( !isDataURL ) {
 
                 // supplying the crossOrigin for a LOCAL image (e.g. retrieved via FileReader)
                 // is an illegal statement in Firefox and Safari and will break execution
                 // of the remainder of this function body! we only supply it for
                 // src attributes that AREN'T local data strings
 
-                if ( !isDataURL ) {
-                    applyOrigin( aSource, out );
-                }
+                applyOrigin( aSource, out );
+
                 handler.add( out, "load",  loadHandler );
                 handler.add( out, "error", errorHandler );
             }
@@ -101,8 +84,17 @@ const Loader = {
             // load the image
             out.src = aSource;
 
-            // as stated above, invoke callback immediately for data strings when no load is required
-            if ( !addLoadListeners ) {
+            // invoke callback immediately for data strings when no load is required
+
+            let instantCallback = isDataURL;
+            if ( process.env.NODE_ENV !== "production" ) {
+                // and also when unit testing using jsdom (as jsdom won't fire onload event)
+                if ( window.navigator.userAgent.includes( "jsdom" )) {
+                    instantCallback = true;
+                }
+            }
+
+            if ( instantCallback ) {
                 resolve( wrapOutput( out ));
             }
         });
@@ -117,11 +109,11 @@ const Loader = {
      */
     isReady( aImage ) {
         // first check : load status
-        if ( typeof aImage.complete === "boolean" && !aImage.complete ) {
+        if ( aImage.complete !== true ) {
             return false;
         }
         // second check : validity of source (can be 0 until bitmap has been fully parsed by browser)
-        return !( typeof aImage.naturalWidth !== "undefined" && aImage.naturalWidth === 0 );
+        return typeof aImage.naturalWidth === "number" && aImage.naturalWidth > 0;
     },
 
     /**
@@ -133,7 +125,7 @@ const Loader = {
      * @param {Image} aImage
      * @return {Promise}
      */
-    async onReady( aImage, aCallback, aErrorCallback ) {
+    onReady( aImage ) {
         return new Promise(( resolve, reject ) => {
             // if this didn't resolve in a full second, we presume the Image is corrupt
 
@@ -181,9 +173,9 @@ function applyOrigin( aImageURL, aImage ) {
  */
 function isDataSource( image ) {
 
-    const source = (typeof image === "string" ? image : image.src).substr(0, 5);
+    const source = ( typeof image === "string" ? image : image.src ).substr( 0, 5 );
 
-    // base 64 string contains data-attribute, the MIME type and then the content, e.g. :
+    // base64 string contains data-attribute, the MIME type and then the content, e.g. :
     // e.g. "data:image/png;base64," for a typical PNG, Blob string contains no MIME, e.g.:
     // blob:http://localhost:9001/46cc7e56-cf2a-7540-b515-1d99dfcb2ad6
     return source === "data:" || source === "blob:";
@@ -195,8 +187,8 @@ function isDataSource( image ) {
  */
 function getSize( image ) {
     return {
-        width: image.width   || image.naturalWidth,
-        height: image.height || image.naturalHeight
+        width  : image.width  || image.naturalWidth,
+        height : image.height || image.naturalHeight
     };
 }
 
@@ -213,29 +205,14 @@ function isLocalURL( aURL ) {
     // check if the URL belongs to an asset on the same domain the application is running on
 
     const { location } = window;
-    if ( aURL.substr( 0, 2 ) === "./" ||
-        aURL.indexOf( `${location.protocol}//${location.host}` ) === 0 ) {
+    if ( aURL.startsWith( "./" ) || aURL.startsWith( `${location.protocol}//${location.host}` )) {
         return true;
     }
 
     // check if given URL is a http(s) URL, if so we know it is not local
 
-    let urlRoot = ( aURL.split( "#" )[ 0 ] ).split( "?" )[ 0 ];
-
-    // .html-file in the path name ? strip it
-
-    if ( urlRoot.includes( ".html" )) {
-
-        const urlArr    = urlRoot.split( "/" );
-        const arrLength = urlArr.length;
-        urlRoot = urlRoot.split( urlArr[ arrLength - 1 ]).join( "" );
-    }
-
-    if ( urlRoot ) {
-        const match = urlRoot.match( /^http[s]?:/ );
-        if ( Array.isArray( match ) && match.length > 0 ) {
-            return false;
-        }
+    if ( /^http[s]?:/.test( aURL )) {
+        return false;
     }
 
     // at this point we know we're likely dealing with a data URL, which is local

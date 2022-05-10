@@ -1,7 +1,7 @@
 /**
  * The MIT License (MIT)
  *
- * Igor Zinken 2013-2021 - https://www.igorski.nl
+ * Igor Zinken 2013-2022 - https://www.igorski.nl
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of
  * this software and associated documentation files (the "Software"), to deal in
@@ -61,15 +61,12 @@ function Canvas({
     /* instance properties */
 
     /** @public @type {boolean} */          this.DEBUG           = debug;
-    /** @protected @type {number} */        this._fps            = fps;
-    /** @protected @type {boolean} */       this._animate        = animate;
     /** @protected @type {boolean} */       this._smoothing      = smoothing;
     /** @protected @type {Function} */      this._updateHandler  = onUpdate;
     /** @protected @type {Function} */      this._renderHandler  = this.render.bind( this );
     /** @protected @type {number} */        this._lastRender     = 0;
     /** @protected @type {number} */        this._renderId       = 0;
     /** @protected @type {boolean} */       this._renderPending  = false;
-    /** @protected @type {number} */        this._renderInterval = 1000 / this._fps;
     /** @protected @type {boolean} */       this._disposed       = false;
     /** @protected @type {object} */        this._scale          = { x: scale, y: scale };
     /** @protected @type {Function} */      this._handler        = handler;
@@ -77,6 +74,9 @@ function Canvas({
     /** @protected @type {Array<Sprite>} */ this._children       = [];
 
     /* initialization */
+
+    this.setFrameRate( fps );
+    this.setAnimatable( animate );
 
     /**
      * @protected
@@ -344,6 +344,26 @@ classPrototype.getFrameRate = function() {
 };
 
 /**
+ * sets the framerate of the Canvas
+ *
+ * @public
+ * @param {number} value
+ */
+classPrototype.setFrameRate = function( value ) {
+    /**
+     * @protected
+     * @type {number}
+     */
+    this._fps = value;
+
+    /**
+     * @protected
+     * @type {number}
+     */
+     this._renderInterval = 1000 / value; // milliseconds per frame
+};
+
+/**
  * retrieve the render interval for this Canvas, this basically
  * describes the elapsed time in milliseconds between each successive
  * render at the current framerate
@@ -504,9 +524,23 @@ classPrototype.setBackgroundColor = function( color ) {
  */
 classPrototype.setAnimatable = function( value ) {
     const oldValue = this._animate;
-    this._animate  = value;
 
-    if ( value && !oldValue && !this._renderPending ) {
+    /**
+     * @protected
+     * @type {boolean}
+     */
+    this._animate = value;
+
+    /**
+     * Amount of requestAnimationFrame callbacks fired
+     * between the last and next scheduled render
+     *
+     * @protected
+     * @type {number}
+     */
+    this._rafs = oldValue ? this._fc : 0;
+
+    if ( value && !this._renderPending ) {
         this._renderHandler( window.performance?.now() || Date.now() );
     }
 };
@@ -799,13 +833,26 @@ classPrototype.handleInteraction = function( event ) {
  * @param {DOMHighResTimeStamp} now time elapsed since document time origin
  */
 classPrototype.render = function( now = 0 ) {
+    this._renderPending = false;
+
     const delta = now - this._lastRender;
 
-    this._renderPending = false;
-    this._lastRender    = now - ( delta % this._renderInterval );
+    // for animatable canvas instances, ensure we cap the framerate (this prevents
+    // 120 Hz Apple M1 rendering things too fast when you were expecting 60 fps)
+
+    if ( this._animate && ( delta / this._renderInterval ) < 1 ) {
+        this._renderId = window.requestAnimationFrame( this._renderHandler );
+        ++this._rafs;
+        return;
+    }
+
+    const framesSinceLastRender = this._rafs + 1;
+
+    this._rafs = 0;
+    this._lastRender = now - ( delta % this._renderInterval );
 
     // in case a resize was requested execute it now as we will
-    // immediately draw nwe contents onto the screen
+    // immediately draw new contents onto the screen
 
     if ( this._enqueuedSize ) {
         updateCanvasSize( this );
@@ -833,7 +880,7 @@ classPrototype.render = function( now = 0 ) {
         const useExternalUpdateHandler = typeof this._updateHandler === "function";
 
         if ( useExternalUpdateHandler ) {
-            this._updateHandler( now );
+            this._updateHandler( now, framesSinceLastRender );
         }
 
         // draw the children onto the canvas
@@ -843,16 +890,18 @@ classPrototype.render = function( now = 0 ) {
         while ( theSprite ) {
 
             if ( !useExternalUpdateHandler ) {
-                theSprite.update( now );
+                theSprite.update( now, framesSinceLastRender );
             }
             theSprite.draw( ctx, this._viewport );
             theSprite = theSprite.next;
         }
     }
 
-    // keep render loop going if Canvas is animatable
+    this._renderPending = false;
 
-    if ( !this._disposed && this._animate && !this._renderPending ) {
+    // keep render loop going while Canvas is animatable
+
+    if ( !this._disposed && this._animate ) {
         this._renderPending = true;
         this._renderId = window.requestAnimationFrame( this._renderHandler );
     }

@@ -1,7 +1,7 @@
 /**
  * The MIT License (MIT)
  *
- * Igor Zinken 2013-2021 - https://www.igorski.nl
+ * Igor Zinken 2013-2022 - https://www.igorski.nl
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of
  * this software and associated documentation files (the "Software"), to deal in
@@ -472,8 +472,13 @@ classPrototype.setInteractive = function( aValue ) {
  * @param {DOMHighResTimeStamp} now the current timestamp relative
  *                              to the document time origin. Can be used
  *                              to perform strict timed operations.
+ * @param {number} framesSinceLastUpdate the amount of frames that have elapsed
+ *                 since the last update. This should usually equal 1 but can
+ *                 be higher at lower frame rates. This value can be used to
+ *                 calculate appropriate values for timed operations (e.g. animation speed)
  */
-classPrototype.update = function( now ) {
+classPrototype.update = function( now, framesSinceLastUpdate ) {
+
     // override in prototype-extensions or instance
     // recursively update this sprites children :
 
@@ -486,7 +491,7 @@ classPrototype.update = function( now ) {
     // if this sprite has a spritesheet, progress its animation
 
     if ( this._animation ) {
-        this.updateAnimation();
+        this.updateAnimation( framesSinceLastUpdate );
     }
 };
 
@@ -744,7 +749,7 @@ classPrototype.setBitmap = function( aImage, aOptWidth, aOptHeight ) {
         throw new Error( `expected HTMLImageElement, HTMLCanvasElement or String for Image source, got "${aImage}" instead` );
     }
 
-    return new Promise( async ( resolve, reject ) => {
+    return new Promise(( resolve, reject ) => {
         // swapping Bitmaps ? unset the ready state
 
         if ( this._bitmap !== aImage ) {
@@ -776,17 +781,17 @@ classPrototype.setBitmap = function( aImage, aOptWidth, aOptHeight ) {
             const minX = -( this._bounds.width  - this.canvas.getWidth() );
             const minY = -( this._bounds.height - this.canvas.getHeight() );
 
-            if ( this._bounds.left > 0 )
+            if ( this._bounds.left > 0 ) {
                 this._bounds.left = 0;
-
-            else if ( this._bounds.left < minX )
+            } else if ( this._bounds.left < minX ) {
                 this._bounds.left = minX;
+            }
 
-            if ( this._bounds.top > 0 )
+            if ( this._bounds.top > 0 ) {
                 this._bounds.top = 0;
-
-            else if ( this._bounds.top < minY )
+            } else if ( this._bounds.top < minY ) {
                 this._bounds.top = minY;
+            }
         }
 
         if ( isCanvasElement ) {
@@ -799,10 +804,9 @@ classPrototype.setBitmap = function( aImage, aOptWidth, aOptHeight ) {
             return resolve();
         }
         else {
-            try {
-                const { size, image } = await Loader.loadImage(
-                    isImageElement ? aImage.src : aImage, isImageElement ? aImage : null
-                );
+            Loader.loadImage(
+                isImageElement ? aImage.src : aImage, isImageElement ? aImage : null
+            ).then(({ size, image }) => {
                 this._bitmap          = image;
                 this._bitmapReady     = true;
 
@@ -811,11 +815,10 @@ classPrototype.setBitmap = function( aImage, aOptWidth, aOptHeight ) {
 
                 this.invalidate();
 
-                return resolve();
-            }
-            catch ( aOptError ){
-                reject( new Error( `zSprite.setBitmap() "${aOptError.message}" occurred.` ));
-            }
+                resolve();
+            }).catch( aOptError => {
+                reject( new Error( `zSprite.setBitmap() "${aOptError?.message}" occurred.` ));
+            });
         }
     });
 };
@@ -1290,13 +1293,16 @@ classPrototype.handleInteraction = function( x, y, event ) {
  * this will step between the frames in the tilesheet
  *
  * @protected
+ * @param {number=} framesSinceLastRender
  */
-classPrototype.updateAnimation = function() {
+classPrototype.updateAnimation = function( framesSinceLastRender = 1 ) {
     const aniProps = this._animation;
 
-    if ( ++aniProps.counter === aniProps.fpt ) {
+    aniProps.counter += framesSinceLastRender;
+
+    if ( aniProps.counter >= aniProps.fpt ) {
         ++aniProps.col;
-        aniProps.counter = 0;
+        aniProps.counter = aniProps.counter % aniProps.fpt;
     }
 
     // loop animation by starting from first column

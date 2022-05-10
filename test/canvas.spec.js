@@ -241,6 +241,12 @@ describe( "zCanvas.canvas", () => {
         expect( canvas.getChildren().indexOf( sprite2 ) ).toEqual( 1 );
     });
 
+    it( "should be able to get and set a custom frame rate", () => {
+        const canvas = new Canvas({ width, height });
+        canvas.setFrameRate( 30 );
+        expect( canvas.getFrameRate() ).toEqual( 30 );
+    });
+
     describe( "when updating its dimensions", () => {
         it( "should be able to update its dimensions synchronously", () => {
             const canvas = new Canvas({ width, height });
@@ -471,7 +477,9 @@ describe( "zCanvas.canvas", () => {
             const sprite = new Sprite({ width: 10, height: 10 });
             canvas.addChild( sprite );
 
-            sprite.update = () => {
+            sprite.update = ( timestamp, framesSinceLastUpdate ) => {
+                expect( typeof timestamp ).toBe( "number" );
+                expect( typeof framesSinceLastUpdate ).toBe( "number" );
                 done();
             };
             canvas.invalidate();
@@ -480,10 +488,12 @@ describe( "zCanvas.canvas", () => {
         it( "should not invoke the update()-method of its children if a custom external " +
             "update handler was configured", async done => {
 
-            const handler = () => {
-                setTimeout( () => done(), 10 );
+            const customHandler = ( timestamp, framesSinceLastUpdate ) => {
+                expect( typeof timestamp ).toBe( "number" );
+                expect( typeof framesSinceLastUpdate ).toBe( "number" );
+                done();
             };
-            const canvas = new Canvas({ width, height, animate: false, onUpdate: handler });
+            const canvas = new Canvas({ width, height, animate: false, onUpdate: customHandler });
             const sprite = new Sprite({ width: 10, height: 10 });
             canvas.addChild( sprite );
 
@@ -491,6 +501,46 @@ describe( "zCanvas.canvas", () => {
                 throw new Error( "sprite update should not have been called" );
             };
             canvas.invalidate();
+        });
+
+        it( "should defer actual rendering and calculate elapsed frames between render callbacks when a lower frame rate is specified", async done => {
+            const canvas = new Canvas({ fps: 10 });
+            const sprite = new Sprite({ width: 10, height: 10 });
+
+            const now = window.performance.now();
+            canvas._renderHandler = jest.fn();
+            canvas.setAnimatable( true );
+            canvas.addChild( sprite );
+
+            canvas._lastRender = now;
+
+            // if sprite update is triggered we know rendering is executing
+
+            sprite.update = () => {
+                throw new Error( "sprite update should not have been called" );
+            };
+
+            // at 10 fps, we expect 100 ms frame durations (1000ms / 10fps)
+            // as such the following invocations (at 1000ms / 60fps intervals)
+            // will all have delta below 100 ms and should not trigger a render
+
+            canvas.render( now + 16.666 );
+            canvas.render( now + 33.333 );
+            canvas.render( now + 50 );
+            canvas.render( now + 66.664 );
+            canvas.render( now + 83.33 );
+
+            sprite.update = ( timestamp, framesSinceLastRender ) => {
+                expect( timestamp ).toEqual( now + 100 );
+                expect( framesSinceLastRender ).toEqual( 6 ); // there were six render() invocations
+
+                done();
+            };
+
+            // the next render invocation is at a 100 ms delta relative
+            // to last render, this should trigger sprite.update()
+
+            canvas.render( now + 100 );
         });
     });
 
