@@ -1,7 +1,7 @@
 /**
  * The MIT License (MIT)
  *
- * Copyright (c) 2013-2020 Igor Zinken https://www.igorski.nl
+ * Copyright (c) 2013-2022 Igor Zinken https://www.igorski.nl
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of
  * this software and associated documentation files (the "Software"), to deal in
@@ -19,15 +19,18 @@
  * COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER
  * IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
-//  */
-import canvas    from './src/Canvas';
-import sprite    from './src/Sprite';
-import loader    from './src/Loader';
-import { pixelCollision, getChildrenUnderPoint } from './src/Collision';
+ */
+import canvas    from "./src/Canvas";
+import sprite    from "./src/Sprite";
+import loader    from "./src/Loader";
+import { pixelCollision, getChildrenUnderPoint, cache, hasCache, clearCache } from "./src/Collision";
 
 const collision = {
     pixelCollision,
-    getChildrenUnderPoint
+    getChildrenUnderPoint,
+    cache,
+    hasCache,
+    clearCache,
 };
 
 export {

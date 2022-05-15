@@ -474,8 +474,9 @@ classPrototype.setInteractive = function( aValue ) {
  *                              to perform strict timed operations.
  * @param {number} framesSinceLastUpdate the amount of frames that have elapsed
  *                 since the last update. This should usually equal 1 but can
- *                 be higher at lower frame rates. This value can be used to
- *                 calculate appropriate values for timed operations (e.g. animation speed)
+ *                 be higher / lower at canvas frame rates other than the device framerate.
+ *                 This value can be used to calculate appropriate values for timed operations
+ *                 (e.g. animation speed) to compensate for dropped frames
  */
 classPrototype.update = function( now, framesSinceLastUpdate ) {
 
@@ -1337,6 +1338,6 @@ classPrototype.invalidate = function() {
  */
 classPrototype.drawOutline = function( canvasContext ) {
     canvasContext.lineWidth   = 1;
-    canvasContext.strokeStyle = '#FF0000';
+    canvasContext.strokeStyle = "#FF0000";
     canvasContext.strokeRect( this.getX(), this.getY(), this.getWidth(), this.getHeight() )
 };

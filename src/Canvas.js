@@ -26,6 +26,18 @@ import Inheritance  from "./utils/inheritance";
 const { min, max, round } = Math;
 
 /**
+ * In most instances the expected framerate is 60 fps which we consider IDEAL_FPS
+ * Newer devices such as Apple M1 on Chrome manage a refresh rate of 120 fps
+ * This constant is used to balance performance across different hardware / browsers
+ *
+ * When the actual frame rate exceeds the number defined in HIGH_REFRESH_THROTTLE
+ * we consider the rendering environment to be of a high refresh rate, and cap
+ * the speed to 60 fps (unless a framerate higher than IDEAL_FPS was configured)
+ */
+const IDEAL_FPS = 60;
+const HIGH_REFRESH_THROTTLE = IDEAL_FPS + 3;
+
+/**
  * creates an API for an HTMLCanvasElement where all drawables are treated as
  * self-contained Objects that can add/remove themselves from the DisplayList, rather
  * than having a single function aggregating all drawing instructions
@@ -49,7 +61,7 @@ const { min, max, round } = Math;
  *        }}
  */
 function Canvas({
-    width = 300, height = 300, fps = 60, scale = 1, backgroundColor = null,
+    width = 300, height = 300, fps = IDEAL_FPS, scale = 1, backgroundColor = null,
     animate = false, smoothing = true, stretchToFit = false, viewport = null, handler = null,
     preventEventBubbling = false, parentElement = null, debug = false, onUpdate = null
 } = {}) {
@@ -357,10 +369,28 @@ classPrototype.setFrameRate = function( value ) {
     this._fps = value;
 
     /**
+     * The actual framerate (calculated at runtime)
+     *
+     * @protected
+     * @type {number}
+     */
+    this._aFps = value;
+
+    /**
      * @protected
      * @type {number}
      */
      this._renderInterval = 1000 / value; // milliseconds per frame
+};
+
+/**
+ * Returns the actual framerate achieved by the zCanvas renderer
+ *
+ * @public
+ * @return {number}
+ */
+classPrototype.getActualFrameRate = function() {
+    return this._aFps;
 };
 
 /**
@@ -398,8 +428,9 @@ classPrototype.setSmoothing = function( enabled ) {
     const context     = this._canvasContext;
 
     props.forEach( prop => {
-        if ( context[ prop ] !== undefined )
+        if ( context[ prop ] !== undefined ) {
             context[ prop ] = enabled;
+        }
     });
     styles.forEach( style => {
         canvasStyle[ "image-rendering" ] = enabled ? undefined : style;
@@ -491,6 +522,7 @@ classPrototype.setViewport = function( width, height ) {
  */
 classPrototype.panViewport = function( x, y, broadcast = false ) {
     const vp  = this._viewport;
+
     vp.left   = max( 0, min( x, this._width - vp.width ));
     vp.right  = vp.left + vp.width;
     vp.top    = max( 0, min( y, this._height - vp.height ));
@@ -532,16 +564,15 @@ classPrototype.setAnimatable = function( value ) {
     this._animate = value;
 
     /**
-     * Amount of requestAnimationFrame callbacks fired
-     * between the last and next scheduled render
+     * timestamp of last requestAnimationFrame callback
      *
      * @protected
-     * @type {number}
+     * @type {DOMHighResTimeStamp}
      */
-    this._rafs = oldValue ? this._fc : 0;
+    this._lastRaf = window.performance?.now() || Date.now();
 
     if ( value && !this._renderPending ) {
-        this._renderHandler( window.performance?.now() || Date.now() );
+        this._renderHandler( this._lastRaf );
     }
 };
 
@@ -832,23 +863,43 @@ classPrototype.handleInteraction = function( event ) {
  * @protected
  * @param {DOMHighResTimeStamp} now time elapsed since document time origin
  */
-classPrototype.render = function( now = 0 ) {
+classPrototype.render = function( now = 0 )
+{
     this._renderPending = false;
 
     const delta = now - this._lastRender;
 
-    // for animatable canvas instances, ensure we cap the framerate (this prevents
+    // for animatable canvas instances, ensure we cap the framerate
+    // by deferring the render in case the actual framerate is above the
+    // configured framerate of the canvas (this for instance prevents
     // 120 Hz Apple M1 rendering things too fast when you were expecting 60 fps)
 
-    if ( this._animate && ( delta / this._renderInterval ) < 1 ) {
+    if ( this._animate && ( delta / this._renderInterval ) < 0.999 ) {
         this._renderId = window.requestAnimationFrame( this._renderHandler );
-        ++this._rafs;
+        this._lastRaf = now;
         return;
     }
 
-    const framesSinceLastRender = this._rafs + 1;
+    // calculate frame rate relative to last actual render
 
-    this._rafs = 0;
+    this._aFps = 1000 / ( now - this._lastRaf );
+
+    // the amount of frames the Sprite.update() steps should proceed
+    // when the actual frame rate differs to configured frame rate
+
+    let framesSinceLastRender;
+    if ( this._fps > IDEAL_FPS ) {
+        // zCanvas configured for a high refresh rate
+        framesSinceLastRender = this._fps / this._aFps;
+    } else if ( this._fps === IDEAL_FPS && this._aFps > HIGH_REFRESH_THROTTLE ) {
+        // zCanvas configured for IDEAL_FPS and running on a high refresh rate configuration
+        framesSinceLastRender = 1;
+    } else {
+        // zCanvas configured to run at a lower framerate than the IDEAL_FPS
+        framesSinceLastRender = 1 / ( this._fps / this._aFps );
+    }
+
+    this._lastRaf    = now;
     this._lastRender = now - ( delta % this._renderInterval );
 
     // in case a resize was requested execute it now as we will
@@ -896,8 +947,6 @@ classPrototype.render = function( now = 0 ) {
             theSprite = theSprite.next;
         }
     }
-
-    this._renderPending = false;
 
     // keep render loop going while Canvas is animatable
 

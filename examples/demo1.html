@@ -18,7 +18,8 @@
         <div id="demo"><!-- x --></div>
         <p>
             Demo features : a keyboard / touchscreen-controllable spritesheet character that uses the pixel-accurate (and slightly heavier) collision
-            detection-variant (see API docs) to resolve collisions with the environment. Use arrow keys and spacebar to jump.
+            detection-variant (see API docs) to resolve collisions with the environment. The simulation speed is locked to the configured canvas framerate.
+            Use arrow keys and spacebar to jump.
         </p>
     </div>
     <script type="text/javascript">
@@ -144,11 +145,11 @@
                 // methods overriden from zCanvas.sprite prototype for custom behaviour
                 // --------------------------------------------------------------------
 
-                this.update = function( timestamp ) {
+                this.update = function( timestamp, framesSinceLastUpdate ) {
 
                     // animation update operations (i.e. switch tile in sheet)
 
-                    this.updateAnimation();
+                    this.updateAnimation( framesSinceLastUpdate );
 
                     // movement
 
@@ -175,11 +176,12 @@
 
                         // keep in bounds (exiting screen on left/right result in appearing on right/left)
 
-                        if ( targetX > ( cvsWidth + thisWidth ))
+                        if ( targetX > ( cvsWidth + thisWidth )) {
                             targetX = -thisWidth;
-
-                        if ( targetX < -thisWidth )
+                        }
+                        if ( targetX < -thisWidth ) {
                             targetX = cvsWidth + thisWidth - 1;
+                        }
                     }
 
                     // are we moving vertically ? (e.g. falling or jumping)
@@ -190,9 +192,9 @@
                         targetY += this.GRAVITY;
 
                     // constrain Hero within the vertical bounds of the canvas
-                    if ( targetY > this.canvas.getHeight() + thisHeight )
+                    if ( targetY > this.canvas.getHeight() + thisHeight ) {
                         targetY = -thisHeight;
-
+                    }
                     var movingLeft = ( targetX < prevX );
 
                     // collision detection with the wall/floor Sprite
@@ -207,8 +209,9 @@
                         this.setX( movingLeft ? prevX : targetX );
                         // horizontal collision during any kind of y displacement implies
                         // Hero is jumping/falling against a wall
-                        if ( this.ySpeed !== 0 )
+                        if ( this.ySpeed !== 0 ) {
                             this.setX( movingLeft ? prevX + 1 : prevX - 1 );
+                        }
                     }
 
                     this.setY( targetY );
@@ -216,11 +219,11 @@
                         // vertical collision, e.g. touched ground
                         // link to ground by taking the current position plus the
                         // y-index of the collision minus the total height of the sprite
-                        if ( verticalCollision.y === 0 )
+                        if ( verticalCollision.y === 0 ) {
                             this.setY( prevY );
-                        else
+                        } else {
                             this.setY( this.getY() + verticalCollision.y - this.getHeight());
-
+                        }
                         this.jumping = false;
                     }
 
@@ -228,17 +231,19 @@
                     // slowly reduce the heros speed so he doesn't stop at once
 
                     if ( !this.running ) {
-                        if ( this.xSpeed < 0 )
+                        if ( this.xSpeed < 0 ) {
                             this.xSpeed += .25;
-                        else if ( this.xSpeed > 0 )
+                        } else if ( this.xSpeed > 0 ) {
                             this.xSpeed -= .25;
+                        }
                     }
 
                     // in case the user has stopped holding the jump button down, we
                     // slowly reduce the heros speed so he falls back down
 
-                    if ( this.jumping && !this.falling && --this._jumpCount <= 0 )
+                    if ( this.jumping && !this.falling && --this._jumpCount <= 0 ) {
                         this.falling = true;
+                    }
                 }
             };
             zCanvas.sprite.extend( Hero ); // Hero extends sprite
@@ -249,7 +254,6 @@
             // are four rows in total. (see included "images.js"-file for the assetSpriteSheet-image data)
 
             var tileWidth = 38, tileHeight = 35; // height of a single tile
-
             var hero = new Hero({
                 x: 100,
                 y: 0, // fall from the sky
@@ -269,21 +273,23 @@
             // ----------------------------------
 
             var wallImageWidth = 660, wallImageHeight = 261;
+            var levelBitmap = new Image();
+            levelBitmap.src = IMAGE_LEVEL;
             var wallSprite = new zCanvas.sprite({
                 x: cvsWidth / 2 - wallImageWidth / 2,
                 y: 50,
-                width: wallImageWidth,
-                height: wallImageHeight,
-                bitmap: IMAGE_LEVEL
+                width  : wallImageWidth,
+                height : wallImageHeight,
+                bitmap : levelBitmap
             });
+            // cache the levelBitmap to speed up pixel based collision detection
+            zCanvas.collision.cache( levelBitmap );
             cvs.addChild( wallSprite );
 
             // STEP 5 : ADDING KEYBOARD AND TOUCH INTERACTION
             // ----------------------------------------------
 
-            // we add on-screen controls buttons for touch screens (we cannot test for
-            // touchscreens reliably as most browsers support touch events though the DEVICE
-            // it is running on hasn't got touch support !
+            // we add on-screen controls buttons for touch screens
 
             var leftBtn = document.createElement( "div" );
             leftBtn.id  = "left-btn";

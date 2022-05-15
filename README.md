@@ -26,6 +26,8 @@ and transpiled to work in modern browsers from IE9 onwards. It has been tested a
  * Android browser 4+
  * Chrome for Android 4+
 
+So basically it will work in _any recent browser_ without the need for any polyfills.
+
 ## Optimized for high performance
 
 zCanvas has been optimized extensively for the best performance and works a treat on mobile devices too. The amount of event listeners attached to DOM elements are limited to the _HTMLCanvasElement_ only, where the internal interactions are delegated to the sprites by the canvas. Events triggering updates on the display list are automatically debounced to only render once per animation frame.
@@ -115,9 +117,9 @@ Unit tests go in the _./test_-folder. The file name for a unit test must be equa
 
 # Live Demos
 
-You can view some basic features in the down-and-dirty demos here, note the demos were written in
-ES5 without the use of any libraries (other than RequireJS to load zCanvas), to make them instantly
-available to the browser:
+You can view some basic features in the down-and-dirty demos here. Note the demos were written in
+ES5 without the use of any libraries (other than RequireJS to load a transpiled zCanvas), just to make
+them instantly available to even the oldest of browsers:
 
 ### Game demos
 

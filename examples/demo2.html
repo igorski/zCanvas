@@ -16,8 +16,8 @@
     <div id="container">
         <h1>zCanvas demo #2: Shoot 'em up with fast collision detection</h1>
         <div id="demo"><!-- x --></div>
-        <label for="fps">Framerate</label>
-        <input type="range" id="fps" min="10" max="60" value="60" step="1" />
+        <label for="fps">Framerate (15 to 60 fps)</label>
+        <input type="range" id="fps" min="15" max="60" value="60" step="1" />
         <p>
             Demo features : multiple layers of parallax scrolling, endless waves of enemies, spritesheet explosions
             and tons of bullets using the high performing collision detection routine (which is less precise but adequate
@@ -64,7 +64,7 @@
             // to maintain a consistent movement at different frame rates
 
             var IDEAL_FPS = 60; // see #fps range slider
-            var MAX_SPEED = 5; // maximum amount of pixels player can move per frame (e.g. "speed")
+            var MAX_SPEED = 8; // maximum amount of pixels player can move per frame (e.g. "speed")
             var SPEED_INCREMENT = MAX_SPEED / IDEAL_FPS; // max speed increment per frame
 
             // STEP 2 : DEFINING CUSTOM SPRITE CLASSES
@@ -263,7 +263,6 @@
             });
 
             cloud.update = function( timestamp, framesSinceLastUpdate ) {
-                //console.warn(framesSinceLastUpdate + " @ " + cvs.getFrameRate());
                 // cloud moves slowly out of the screen and then resets its position to the top
                 this._bounds.top += framesSinceLastUpdate;
                 if ( this._bounds.top > cvsHeight ) {
@@ -451,9 +450,7 @@
 
             var playerXmovement = false, playerYmovement = false;
 
-            // we add on-screen controls buttons for touch screens (we cannot test for
-            // touchscreens reliably as most browsers support touch events though the DEVICE
-            // it is running on hasn't got touch support !
+            // we add on-screen controls buttons for touch screens
 
             var leftBtn = document.createElement( "div" );
             leftBtn.id  = "left-btn";

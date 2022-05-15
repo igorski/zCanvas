@@ -414,11 +414,11 @@ describe( "zCanvas.canvas", () => {
             let renders = 0;
 
             canvas._renderHandler = () => {
-
-                if ( ++renders === 5 )
+                if ( ++renders === 5 ) {
                     done();
-                else
+                } else {
                     hijackedHandler();
+                }
             };
             canvas.setAnimatable( true );
         });
@@ -468,12 +468,21 @@ describe( "zCanvas.canvas", () => {
     });
 
     describe( "when rendering", () => {
+        it( "should keep track of the actual framerate", () => {
+            const canvas = new Canvas({ width, height, animate: false });
+
+            canvas.render( 0 );
+            canvas.render( 1000 / 120 ); // second render at 1/120th of a second further
+
+            expect( Math.round( canvas.getActualFrameRate() )).toBe( 120 );
+
+            canvas.render( 1000 / 120 + 1000 / 60 ); // third render at 1/60th of a second further
+
+            expect( Math.round( canvas.getActualFrameRate() )).toBe( 60 );
+        });
+
         it( "should invoke the update()-method of its children upon render", done => {
-            const canvas = new Canvas({
-                width: width,
-                height: height,
-                animate: false
-            });
+            const canvas = new Canvas({ width, height, animate: false });
             const sprite = new Sprite({ width: 10, height: 10 });
             canvas.addChild( sprite );
 
@@ -505,42 +514,99 @@ describe( "zCanvas.canvas", () => {
 
         it( "should defer actual rendering and calculate elapsed frames between render callbacks when a lower frame rate is specified", async done => {
             const canvas = new Canvas({ fps: 10 });
-            const sprite = new Sprite({ width: 10, height: 10 });
 
             const now = window.performance.now();
-            canvas._renderHandler = jest.fn();
+            canvas._renderHandler = jest.fn(); // stub the RAF handler
             canvas.setAnimatable( true );
-            canvas.addChild( sprite );
-
             canvas._lastRender = now;
 
-            // if sprite update is triggered we know rendering is executing
+            // if update handler is triggered we know rendering is executing
 
-            sprite.update = () => {
-                throw new Error( "sprite update should not have been called" );
+            canvas._updateHandler = () => {
+                throw new Error( "render update handler should not have been called" );
             };
 
             // at 10 fps, we expect 100 ms frame durations (1000ms / 10fps)
             // as such the following invocations (at 1000ms / 60fps intervals)
             // will all have delta below 100 ms and should not trigger a render
 
-            canvas.render( now + 16.666 );
-            canvas.render( now + 33.333 );
-            canvas.render( now + 50 );
-            canvas.render( now + 66.664 );
-            canvas.render( now + 83.33 );
+            const incr = 1000 / 60;
+            for ( let i = 1; i < 6; ++i ) {
+                canvas.render( now + ( i * incr ));
+            }
 
-            sprite.update = ( timestamp, framesSinceLastRender ) => {
+            canvas._updateHandler = ( timestamp, framesSinceLastRender ) => {
                 expect( timestamp ).toEqual( now + 100 );
-                expect( framesSinceLastRender ).toEqual( 6 ); // there were six render() invocations
+                expect( Math.round( framesSinceLastRender )).toEqual( 6 ); // there were six render() invocations
 
                 done();
             };
 
-            // the next render invocation is at a 100 ms delta relative
-            // to last render, this should trigger sprite.update()
+            // the next (6th) render invocation is at a 100 ms delta relative
+            // to last render, this should trigger the update handler
 
             canvas.render( now + 100 );
+        });
+
+        it( "should defer actual rendering and calculate elapsed frames between render callbacks when running on a high refresh rate environment", async done => {
+            const canvas = new Canvas({ fps: 60 }); // 60 fps being the norm
+
+            const now = window.performance.now();
+            canvas._renderHandler = jest.fn(); // stub the RAF handler
+            canvas.setAnimatable( true );
+            canvas._lastRender = now;
+
+            // if update handler is triggered we know rendering is executing
+
+            canvas._updateHandler = () => {
+                throw new Error( "render update handler should not have been called" );
+            };
+
+            // at 60 fps, we expect 16.66 ms frame durations (1000ms / 60fps)
+            // we will however run the callbacks at 8.33 ms (1000ms / 120fps)
+            // to emulate an Apple M1 120 Hz refresh rate
+
+            const incr = 1000 / 120;
+            canvas.render( now + incr );
+
+            canvas._updateHandler = ( timestamp, framesSinceLastRender ) => {
+                expect( timestamp ).toEqual( now + ( 1000 / 60 ));
+                // the deferred rendering should have capped the rendering to 60
+                // (thus we are progressing exactly one frame per render iteration
+                // we can disregard the skipped render)
+                expect( framesSinceLastRender ).toEqual( 1 );
+
+                done();
+            };
+
+            // the next (2nd) render invocation is at a 16.66 ms delta relative
+            // to last render, this should trigger the update handler
+
+            canvas.render( now + ( incr * 2 ));
+        });
+
+        it( "should calculate the correct elapsed frames multiplier when the actual frame rate is lower than the configured frame rate", async done => {
+            const canvas = new Canvas({ fps: 120 });
+
+            const now = window.performance.now();
+            canvas._renderHandler = jest.fn(); // stub the RAF handler
+            canvas.setAnimatable( true );
+            canvas._lastRender = now;
+
+            canvas._updateHandler = ( timestamp, framesSinceLastRender ) => {
+                expect( timestamp ).toEqual( now + ( 1000 / 60 ));
+                // as the environment manages less fps than the configured value, we
+                // should progress the update() by more frames
+                expect( Math.round( framesSinceLastRender )).toEqual( 2 );
+
+                done();
+            };
+
+            // at 120 fps, we expect 8.33 ms frame durations (1000ms / 120fps)
+            // we will however run the callback at 16.66 ms (1000ms / 60fps)
+            // to emulate a device that can't match the configured rate
+
+            canvas.render( now + ( 1000 / 60 ));
         });
     });
 
