@@ -14,10 +14,21 @@ Where the _HTMLCanvasElement_ differs from other HTML elements (in that its cont
 
 zCanvas follows the concept of the DisplayList where drawable objects become visible on screen once they have been added to a container. Sprites are also containers, so you can stack Sprites onto other Sprites, without having to worry about z indices.
 
+## Optimized for high performance
+
+zCanvas has been optimized extensively for the best performance and works a treat on mobile devices too. The amount of event listeners attached to DOM elements are limited to the _HTMLCanvasElement_ only, where the internal interactions are delegated to the sprites by the canvas. Events triggering updates on the display list are automatically debounced to only render once per animation frame.
+
+## Easily animatable
+
+As all rendering logic resides within a single method of your Sprite, you can easily attach animation libraries such as the excellent TweenMax by Greensock to alter the visible properties of your sprites for maximum eye candy.
+
+Additionally, zCanvas comes with built-in frame throttling logic that allows game like implementations to
+update at the same speed, regardless of the rendering (frames per second) capabilities of the environment.
+
 ## Works practically everywhere
 
-zCanvas has been written to work within a CommonJS/ES6-module structure, but comes prebuilt
-and transpiled to work in modern browsers from IE9 onwards. It has been tested and verified to work on:
+zCanvas has been written to work within a ES module structure, but comes prebuilt and transpiled to work
+in either a module, CommonJS or browser environment (23K before GZip). zCanvas has been tested and verified to work on:
 
  * Internet Explorer 9+ (note: requires polyfill for _requestAnimationFrame_ and _Promise_)
  * Chrome for Windows, OS X and Linux
@@ -26,15 +37,15 @@ and transpiled to work in modern browsers from IE9 onwards. It has been tested a
  * Android browser 4+
  * Chrome for Android 4+
 
-So basically it will work in _any recent browser_ without the need for any polyfills.
+Judging from those ancient version numbers, it's safe to state zCanvas will work in _any recent browser without the need for any polyfills_.
 
-## Optimized for high performance
+# The API / Documentation
 
-zCanvas has been optimized extensively for the best performance and works a treat on mobile devices too. The amount of event listeners attached to DOM elements are limited to the _HTMLCanvasElement_ only, where the internal interactions are delegated to the sprites by the canvas. Events triggering updates on the display list are automatically debounced to only render once per animation frame.
+Want to view the API? You can check the [zCanvas Wiki](https://github.com/igorski/zcanvas/wiki) which describes
+all the common actors, functions and utilities while also providing documentation with regards to performance
+optimizations as well as catering for several use cases.
 
-## Easily animatable
-
-As all rendering logic resides within a single method of your Sprite, you can easily attach animation libraries such as the excellent TweenMax by Greensock to alter the visible properties of your sprites for maximum eye candy.
+_(for those craving a more hands-on approach, you can also view the source contents of the demos listed below)_
 
 ## Installation
 
@@ -117,9 +128,9 @@ Unit tests go in the _./test_-folder. The file name for a unit test must be equa
 
 # Live Demos
 
-You can view some basic features in the down-and-dirty demos here. Note the demos were written in
-ES5 without the use of any libraries (other than RequireJS to load a transpiled zCanvas), just to make
-them instantly available to even the oldest of browsers:
+You can view some basic features in the down-and-dirty demos here.
+
+Note these demos were written in good old ES5 without the use of any libraries (other than RequireJS to load a transpiled zCanvas), just to make them instantly available to even the oldest of browsers.
 
 ### Game demos
 
@@ -136,10 +147,4 @@ them instantly available to even the oldest of browsers:
 ## Real-life examples
 
 zCanvas is used in proprietary image editing software, but is also the rendering engine behind
-[Bitmappery](https://www.igorski.nl/application/bitmappery/), which is also [open source](https://github.com/igorski/bitmappery).
-
-# The API / Documentation
-
-Want to view the API? You can check the [zCanvas Wiki](https://github.com/igorski/zcanvas/wiki)
-
-(or view the source contents of the demos listed above).
+[Bitmappery](https://www.igorski.nl/application/bitmappery/), a Vue based application which is also fully [open source](https://github.com/igorski/bitmappery).

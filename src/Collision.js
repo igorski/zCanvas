@@ -185,7 +185,7 @@ export const getPixelArray = ( sprite, rect, pixels ) => {
  *
  * @return {Array<Sprite>}
  */
-export const getChildrenUnderPoint = ( aSpriteList, aX, aY, aWidth, aHeight, aOnlyCollidables ) => {
+export const getChildrenUnderPoint = ( aSpriteList, aX, aY, aWidth, aHeight, aOnlyCollidables = false ) => {
 
     const out = [];
     let i = aSpriteList.length, theChild, childX, childY, childWidth, childHeight;

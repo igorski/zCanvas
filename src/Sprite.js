@@ -870,7 +870,7 @@ classPrototype.setSheet = function( sheet, width, height ) {
  * switch the current animation that should be playing from this Sprites tile sheet
  *
  * @public
- * @param {Object} sheetIndex index of the animation as defined in the _tileSheet Array
+ * @param {number} sheetIndex index of the animation as defined in the _tileSheet Array
  */
 classPrototype.switchAnimation = function( sheetIndex ) {
 

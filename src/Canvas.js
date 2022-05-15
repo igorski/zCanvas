@@ -590,7 +590,7 @@ classPrototype.isAnimatable = function() {
  *
  * @public
  *
- * @param {Image} aSource HTMLImageElement to draw
+ * @param {Image|HTMLCanvasElement} aSource canvas drawable to draw
  * @param {number} destX destination x-coordinate of given image
  * @param {number} destY destination y-coordinate of given image
  * @param {number} destWidth destination width of given image
