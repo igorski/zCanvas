@@ -1,4 +1,4 @@
-import Loader from '../src/Loader';
+import Loader from "../src/Loader";
 
 describe( "zCanvas.loader", () => {
 
@@ -11,6 +11,11 @@ describe( "zCanvas.loader", () => {
     beforeAll( () => {
         // prepare 1x1 red PNG as Bitmap Image source
         imgSource = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP4z8DwHwAFAAH/VscvDQAAAABJRU5ErkJggg==";
+        Loader.onReady = jest.fn(() => new Promise( resolve => resolve() ));
+    });
+
+    afterAll(() => {
+        jest.restoreMocks();
     });
 
     describe( "when loading images", () => {

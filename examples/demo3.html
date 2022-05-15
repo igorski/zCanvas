@@ -64,12 +64,15 @@
                 preventEventBubbling: true,
                 parentElement: container
             });
+            var cvsCenterX = cvs.getWidth() / 2;
+            var cvsCenterY = cvs.getHeight() / 2;
 
             // STEP 2 : ADDING THE SPRITES
             // ---------------------------
 
             // first sprite will act as a background
             // (see included "assets.js"-file for the assetBackground-image data)
+
             var bgWidth  = 800, bgHeight = 1067;
             var bgSprite = new zCanvas.sprite({ width: bgWidth, height: bgHeight, bitmap: IMAGE_BACKGROUND });
             cvs.addChild( bgSprite );   // add the background to the canvas so it is visible
@@ -81,7 +84,14 @@
 
             var starSize = cvsWidth * .3; // make the star slightly smaller than the canvas
 
-            var spriteMask = new zCanvas.sprite({ width: starSize, height: starSize, bitmap: IMAGE_STAR, mask: true });
+            var spriteMask = new zCanvas.sprite({
+                x: cvsCenterX - starSize / 2,
+                y: cvsCenterY - starSize / 2,
+                width: starSize,
+                height: starSize,
+                bitmap: IMAGE_STAR,
+                mask: true
+            });
 
             // custom overrides, to demonstrate a simple custom behaviour
             // where animation is perfectly timed (test by switching tabs in
@@ -89,16 +99,16 @@
             // position by verifying elapsed time, it appears as if the application
             // hasn't been paused. Though you could actually prefer a "pause" depending on context...
 
-            var direction      = 1;    // 0 being left, 1 being right
-            var speed          = 2;    // the amount of pixels we move per frame
-            var prevStamp      = Date.now();
+            var direction      = 1; // 0 being left, 1 being right
+            var speed          = 2; // the amount of pixels we move per frame
+            var prevStamp      = window.performance.now();
             var renderInterval = cvs.getRenderInterval();
             var maxXPosition   = cvsWidth - starSize;
 
-            spriteMask.update = function( aCurrentTimestamp ) {
+            spriteMask.update = function( timestamp ) {
 
-                var delta = ( aCurrentTimestamp - prevStamp ); // should roughly equal the render interval of the canvas
-                prevStamp = aCurrentTimestamp;                 // store last timestamp
+                var delta = ( timestamp - prevStamp ); // should roughly equal the render interval of the canvas
+                prevStamp = timestamp;                 // store last timestamp
 
                 // slide the background either up or down
 
@@ -127,8 +137,8 @@
             var CircleSprite = function( x, y, aRadius, aColor ) {
 
                 var opts = {
-                    x: x - aRadius * 2,
-                    y: y - aRadius * 1.5,
+                    x: x,
+                    y: y,
                     width: aRadius * 2,
                     height: aRadius * 2
                 };
@@ -143,16 +153,11 @@
 
                 /* overridden zCanvas.sprite methods */
 
-                // here we override the getters and setters to accommodate for the radius of the circle as
-                // the circles center point is the x- and y-coordinate to provide from-center-snapping
-
-                this.getX = function() { return CircleSprite.super( this, "getX" ) + this.radius; };
-                this.getY = function() { return CircleSprite.super( this, "getY" ) + this.radius; };
                 this.draw = function( ctx ) {
 
                     ctx.beginPath();
                     ctx.arc( this.getX() + this.radius, this.getY() + this.radius, this.radius, 0, 2 * Math.PI, false );
-                    ctx.fillStyle = this.hover ? '#FFFFFF' : this.color; // when hovering the circle is white
+                    ctx.fillStyle = this.hover ? "#FFFFFF" : this.color; // when hovering the circle is white
                     ctx.fill();
 
                     // when hovering, we add an outline to the circle
@@ -172,9 +177,9 @@
             // (and thus should move according to the mutations of circle1)
             var largeCircleSize = cvsHeight / 5, smallCircleSize = cvsHeight / 10;
 
-            var circle1 = new CircleSprite( cvsWidth / 2, cvsHeight / 2, largeCircleSize, "#FF0000" );
-            var circle2 = new CircleSprite( cvsWidth / 2, circle1.getY() - smallCircleSize / 2,               smallCircleSize, "#0000FF" );
-            var circle3 = new CircleSprite( cvsWidth / 2, circle1.getY() + largeCircleSize + smallCircleSize, smallCircleSize, "#00FF00" );
+            var circle1 = new CircleSprite( cvsCenterX - largeCircleSize, cvsCenterY - largeCircleSize, largeCircleSize, "#FF0000" );
+            var circle2 = new CircleSprite( cvsCenterX, circle1.getY() - smallCircleSize / 2, smallCircleSize, "#0000FF" );
+            var circle3 = new CircleSprite( cvsCenterX, circle1.getY() + largeCircleSize + smallCircleSize, smallCircleSize, "#00FF00" );
 
             // CONSTRAINED RECTANGLE SPRITE
             // ----------------------------
@@ -193,8 +198,7 @@
             // Rectangle draw logic
             rectangle.draw = function( ctx ) {
 
-                // draw rectangle
-                ctx.fillStyle = '#FF00FF';
+                ctx.fillStyle = this.hover ? "#FF0000" : "#FF00FF"; // when hovering the rectangle is red
                 ctx.fillRect( this.getX(), this.getY(), this.getWidth(), this.getHeight() );
 
                 // but also draw its bounding box just for demonstration purposes

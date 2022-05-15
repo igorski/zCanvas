@@ -95,7 +95,7 @@ const Loader = {
             }
 
             if ( instantCallback ) {
-                resolve( wrapOutput( out ));
+                Loader.onReady( out ).then( result => resolve( wrapOutput( out ))).catch( reject );
             }
         });
     },

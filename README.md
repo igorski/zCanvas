@@ -65,14 +65,7 @@ zCanvas is compatible with ES6 modules, CommonJS, AMD/RequireJS or can be includ
 import { canvas, sprite, loader, collision } from "zcanvas";
 ```
 
-### CommonJS:
-
-```
-const zCanvas = require( "zcanvas" ); // CommonJS
-const { canvas, sprite, loader, collision } = zCanvas;
-```
-
-After which you can subsequently use a tool like Webpack to build your application for the browser.
+After which you can subsequently use a tool like Webpack to bundle your application for the browser.
 
 ### RequireJS
 
