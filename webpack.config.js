@@ -1,7 +1,7 @@
-const path = require( 'path' );
+const path = require( "path" );
 
 const config = {
-    entry: './zcanvas.js',
+    entry: "./zcanvas.js",
     module: {
         rules: [
             {
@@ -19,17 +19,17 @@ const config = {
 const browserConfig = {
     ...config,
     output: {
-        filename: 'zcanvas.min.js',
-        path: path.resolve( __dirname, 'dist' )
+        filename: "zcanvas.min.js",
+        path: path.resolve( __dirname, "dist" )
     }
 };
 
 const amdConfig = {
     ...config,
     output: {
-        filename: 'zcanvas.amd.js',
-        path: path.resolve( __dirname, 'dist' ),
-        libraryTarget: 'amd',
+        filename: "zcanvas.amd.js",
+        path: path.resolve( __dirname, "dist" ),
+        libraryTarget: "amd",
         umdNamedDefine: true
     }
 };
@@ -37,9 +37,9 @@ const amdConfig = {
 const moduleConfig = {
     ...config,
     output: {
-        filename: 'zcanvas.js',
-        path: path.resolve( __dirname, 'dist' ),
-        libraryTarget: 'commonjs-module',
+        filename: "zcanvas.js",
+        path: path.resolve( __dirname, "dist" ),
+        libraryTarget: "commonjs-module",
         umdNamedDefine: true
     }
 };
