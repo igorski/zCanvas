@@ -1,4 +1,4 @@
-import { isInsideViewport, calculateDrawRectangle } from "../../src/utils/image-math";
+import { isInsideViewport, calculateDrawRectangle } from "../../src/utils/image-math.js";
 
 describe( "Image math utilities", () => {
     const viewport = {

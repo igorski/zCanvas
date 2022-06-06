@@ -1,7 +1,7 @@
 /**
  * The MIT License (MIT)
  *
- * Igor Zinken 2020 - https://www.igorski.nl
+ * Igor Zinken 2020-2022 - https://www.igorski.nl
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of
  * this software and associated documentation files (the "Software"), to deal in
@@ -47,7 +47,10 @@ export const isInsideViewport = ( spriteBounds, viewport ) => {
  *
  * @param {{ left: number, top: number, width: number, height: number }} spriteBounds
  * @param {{ left: number, top: number, width: number, height: number }} viewport
- * @return {{ source: Object, dest: Object }}
+ * @return {{
+ *              source: { left: number, top: number, width: number, height: number },
+ *              dest: { left: number, top: number, width: number, height: number }
+ *         }}
  */
 export const calculateDrawRectangle = ( spriteBounds, viewport ) => {
     let { left, top, width, height } = spriteBounds;

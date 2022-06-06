@@ -20,10 +20,10 @@
  * IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-import canvas    from "./src/Canvas";
-import sprite    from "./src/Sprite";
-import loader    from "./src/Loader";
-import { pixelCollision, getChildrenUnderPoint, cache, hasCache, clearCache } from "./src/Collision";
+import canvas    from "./src/Canvas.js";
+import sprite    from "./src/Sprite.js";
+import loader    from "./src/Loader.js";
+import { pixelCollision, getChildrenUnderPoint, cache, hasCache, clearCache } from "./src/Collision.js";
 
 const collision = {
     pixelCollision,

@@ -1,6 +1,6 @@
-import Canvas from "../src/Canvas";
-import Sprite from "../src/Sprite";
-import Loader from "../src/Loader";
+import Canvas from "../src/Canvas.js";
+import Sprite from "../src/Sprite.js";
+import Loader from "../src/Loader.js";
 
 // stub the loader process
 let mockLoadImage;

@@ -1,0 +1,11 @@
+{
+    "include": ["zcanvas.js"],
+    "compilerOptions": {
+        "allowJs": true,
+        "declaration": true,
+        "emitDeclarationOnly": true,
+        "outFile": "dist/types/zcanvas.d.ts",
+        "declarationMap": true,
+        "removeComments": true,
+    }
+}

@@ -1,4 +1,4 @@
-import Loader from "../src/Loader";
+import Loader from "../src/Loader.js";
 
 describe( "zCanvas.loader", () => {
 

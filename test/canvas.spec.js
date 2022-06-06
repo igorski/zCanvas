@@ -1,5 +1,5 @@
-import Canvas from "../src/Canvas";
-import Sprite from "../src/Sprite";
+import Canvas from "../src/Canvas.js";
+import Sprite from "../src/Sprite.js";
 
 describe( "zCanvas.canvas", () => {
 

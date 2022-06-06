@@ -20,9 +20,9 @@
  * IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-import Inheritance from "./utils/inheritance";
-import Loader      from "./Loader";
-import { isInsideViewport, calculateDrawRectangle } from "./utils/image-math";
+import Inheritance from "./utils/inheritance.js";
+import Loader      from "./Loader.js";
+import { isInsideViewport, calculateDrawRectangle } from "./utils/image-math.js";
 
 const { min, max } = Math;
 const HALF = .5;
@@ -40,17 +40,17 @@ const HALF = .5;
  *
  * @constructor
  * @param {{
- *            x: number,
- *            y: number,
  *            width: number,
  *            height: number,
- *            bitmap: Image|HTMLCanvasElement|string,
- *            collidable: boolean,
- *            interactive: boolean,
- *            mask: boolean,
- *            sheet: Array<{ row: number, col: number, amount: number, fpt: 5 }>,
- *            sheetTileWidth: number,
- *            sheetTileHeight: number
+ *            x?: number,
+ *            y?: number,
+ *            bitmap?: Image|HTMLCanvasElement|string,
+ *            collidable?: boolean,
+ *            interactive?: boolean,
+ *            mask?: boolean,
+ *            sheet?: Array<{ row: number, col: number, amount: number, fpt: 5 }>,
+ *            sheetTileWidth?: number,
+ *            sheetTileHeight?: number
  *        }}
  */
 function Sprite({
@@ -144,7 +144,7 @@ function Sprite({
 
     /**
      * @protected
-     * @type {Image}
+     * @type {HTMLImageElement|HTMLCanvasElement}
      */
     this._bitmap;
 
@@ -197,8 +197,6 @@ function Sprite({
 }
 export default Sprite;
 
-const classPrototype = Sprite.prototype;
-
 /* static methods */
 
 /**
@@ -227,7 +225,7 @@ Sprite.extend = function( extendingFunction ) {
  * @public
  * @return {boolean}
  */
-classPrototype.getDraggable = function() {
+Sprite.prototype.getDraggable = function() {
     return this._draggable;
 };
 
@@ -240,7 +238,7 @@ classPrototype.getDraggable = function() {
  *                   this will default to the bounds of the canvas, or can be a custom
  *                   restraint (see "setConstraint")
  */
-classPrototype.setDraggable = function( aValue, aKeepInBounds = false ) {
+Sprite.prototype.setDraggable = function( aValue, aKeepInBounds = false ) {
     this._draggable    = aValue;
     this._keepInBounds = this._constraint ? true : aKeepInBounds;
 
@@ -256,7 +254,7 @@ classPrototype.setDraggable = function( aValue, aKeepInBounds = false ) {
  * @public
  * @return {number}
  */
-classPrototype.getX = function() {
+Sprite.prototype.getX = function() {
     return this._bounds.left;
 };
 
@@ -264,7 +262,7 @@ classPrototype.getX = function() {
  * @public
  * @param {number} aValue
  */
-classPrototype.setX = function( aValue ) {
+Sprite.prototype.setX = function( aValue ) {
     const delta       = aValue - this._bounds.left;
     this._bounds.left = this._constraint ? aValue + this._constraint.left : aValue;
 
@@ -284,7 +282,7 @@ classPrototype.setX = function( aValue ) {
  * @public
  * @return {number}
  */
-classPrototype.getY = function() {
+Sprite.prototype.getY = function() {
     return this._bounds.top;
 };
 
@@ -292,7 +290,7 @@ classPrototype.getY = function() {
  * @public
  * @param {number} aValue
  */
-classPrototype.setY = function( aValue ) {
+Sprite.prototype.setY = function( aValue ) {
     const delta        = aValue - this._bounds.top;
     this._bounds.top = this._constraint ? aValue + this._constraint.top : aValue;
 
@@ -312,7 +310,7 @@ classPrototype.setY = function( aValue ) {
  * @public
  * @return {number}
  */
-classPrototype.getWidth = function() {
+Sprite.prototype.getWidth = function() {
     return this._bounds.width;
 };
 
@@ -320,7 +318,7 @@ classPrototype.getWidth = function() {
  * @public
  * @param {number} aValue
  */
-classPrototype.setWidth = function( aValue ) {
+Sprite.prototype.setWidth = function( aValue ) {
     const prevWidth    = this._bounds.width || 0;
     this._bounds.width = aValue;
 
@@ -337,7 +335,7 @@ classPrototype.setWidth = function( aValue ) {
  * @public
  * @return {number}
  */
-classPrototype.getHeight = function() {
+Sprite.prototype.getHeight = function() {
     return this._bounds.height;
 };
 
@@ -345,7 +343,7 @@ classPrototype.getHeight = function() {
  * @public
  * @param {number} aValue
  */
-classPrototype.setHeight = function( aValue ) {
+Sprite.prototype.setHeight = function( aValue ) {
     const prevHeight    = this._bounds.height || 0;
     this._bounds.height = aValue;
 
@@ -369,7 +367,7 @@ classPrototype.setHeight = function( aValue ) {
  * @param {number=} width optionally desired width, defaults to current size
  * @param {number=} height optionally desired width, defaults to current size
  */
-classPrototype.setBounds = function( left, top, width, height ) {
+Sprite.prototype.setBounds = function( left, top, width, height ) {
     if ( this._constraint ) {
         left -= this._constraint.left;
         top  -= this._constraint.top;
@@ -430,7 +428,7 @@ classPrototype.setBounds = function( left, top, width, height ) {
  * @public
  * @return {{ left: number, top: number, width: number, height: number }}
  */
-classPrototype.getBounds = function() {
+Sprite.prototype.getBounds = function() {
     return this._bounds;
 };
 
@@ -441,7 +439,7 @@ classPrototype.getBounds = function() {
  * @public
  * @return {boolean}
  */
-classPrototype.getInteractive = function() {
+Sprite.prototype.getInteractive = function() {
     return this._interactive;
 };
 
@@ -453,7 +451,7 @@ classPrototype.getInteractive = function() {
  * @public
  * @param {boolean} aValue
  */
-classPrototype.setInteractive = function( aValue ) {
+Sprite.prototype.setInteractive = function( aValue ) {
     /**
      * @protected
      * @type {boolean}
@@ -478,7 +476,7 @@ classPrototype.setInteractive = function( aValue ) {
  *                 This value can be used to calculate appropriate values for timed operations
  *                 (e.g. animation speed) to compensate for dropped frames
  */
-classPrototype.update = function( now, framesSinceLastUpdate ) {
+Sprite.prototype.update = function( now, framesSinceLastUpdate ) {
 
     // override in prototype-extensions or instance
     // recursively update this sprites children :
@@ -513,7 +511,7 @@ classPrototype.update = function( now, framesSinceLastUpdate ) {
  *            bottom: number
  *        }|null} viewport optional viewport defining the currently visible canvas area
  */
-classPrototype.draw = function( canvasContext, viewport = null ) {
+Sprite.prototype.draw = function( canvasContext, viewport = null ) {
 
     // extend in subclass if you're drawing a custom object instead of a graphical Image asset
     // don't forget to draw the child display list when overriding this method!
@@ -632,7 +630,7 @@ classPrototype.draw = function( canvasContext, viewport = null ) {
  * @param {number} y coordinate
  * @return {boolean}
  */
-classPrototype.insideBounds = function( x, y ) {
+Sprite.prototype.insideBounds = function( x, y ) {
     const { left, top, width, height } = this._bounds;
     return x >= left && x <= ( left + width ) &&
            y >= top  && y <= ( top  + height );
@@ -647,7 +645,7 @@ classPrototype.insideBounds = function( x, y ) {
  * @param {Sprite} aSprite the sprite to check against
  * @return {boolean} whether a collision has been detected
  */
-classPrototype.collidesWith = function( aSprite ) {
+Sprite.prototype.collidesWith = function( aSprite ) {
     if ( aSprite === this ) {
         return false;
     }
@@ -669,7 +667,7 @@ classPrototype.collidesWith = function( aSprite ) {
  * @param {Sprite} aSprite
  * @return {{ left: number, top: number, width: number, height: number }|null}
  */
-classPrototype.getIntersection = function( aSprite ) {
+Sprite.prototype.getIntersection = function( aSprite ) {
     if ( this.collidesWith( aSprite )) {
         const self = this._bounds, compare = aSprite.getBounds();
 
@@ -698,7 +696,7 @@ classPrototype.getIntersection = function( aSprite ) {
  *
  * @return {boolean} whether collision with the given edge has been detected
  */
-classPrototype.collidesWithEdge = function( aSprite, aEdge ) {
+Sprite.prototype.collidesWithEdge = function( aSprite, aEdge ) {
     if ( aSprite === this ) {
         return false;
     }
@@ -726,7 +724,7 @@ classPrototype.collidesWithEdge = function( aSprite, aEdge ) {
  * @public
  * @return {Image|HTMLCanvasElement|string}
  */
-classPrototype.getBitmap = function() {
+Sprite.prototype.getBitmap = function() {
     return this._bitmap;
 };
 
@@ -735,13 +733,14 @@ classPrototype.getBitmap = function() {
  * to swap spritesheets (for instance)
  *
  * @public
- * @param {Image|HTMLCanvasElement|string|null=} aImage image, can be either HTMLImageElement, HTMLCanvasElement
- *        or String (remote URL, base64 encoded string or Blob URL)
+ * @param {HTMLImageElement|HTMLCanvasElement|string|null=} aImage image, can be
+ *        either HTMLImageElement, HTMLCanvasElement or String (when string, either
+ *        remote URL, base64 encoded string or Blob URL)
  * @param {number=} aOptWidth optional new width to use for this Sprites bounds
  * @param {number=} aOptHeight optional new width to use for this Sprites bounds
- * @return {Promise}
+ * @return {Promise<void>}
  */
-classPrototype.setBitmap = function( aImage, aOptWidth, aOptHeight ) {
+Sprite.prototype.setBitmap = function( aImage, aOptWidth, aOptHeight ) {
     const isCanvasElement = aImage instanceof window.HTMLCanvasElement;
     const isImageElement  = aImage instanceof window.HTMLImageElement;
     const isDataSource    = typeof aImage === "string";
@@ -833,7 +832,7 @@ classPrototype.setBitmap = function( aImage, aOptWidth, aOptHeight ) {
  * @param {number=} width optional width to use for a single tile, defaults to Sprite bounds width
  * @param {number=} height optional height to use for a single tile, defaults to Sprite bounds height
  */
-classPrototype.setSheet = function( sheet, width, height ) {
+Sprite.prototype.setSheet = function( sheet, width, height ) {
     /**
      * @protected
      * @type {Array<{ row: number, col: number, amount: number, fpt: 5, onComplete: Function= }>}
@@ -847,7 +846,13 @@ classPrototype.setSheet = function( sheet, width, height ) {
 
     /**
      * @protected
-     * @type {Object}
+     * @type {{
+     *     type: string | null,
+     *     col: number,
+     *     maxCol: number,
+     *     fpt: number,
+     *     counter: number
+     * }}
      */
     this._animation = {
         type       : null,
@@ -872,7 +877,7 @@ classPrototype.setSheet = function( sheet, width, height ) {
  * @public
  * @param {number} sheetIndex index of the animation as defined in the _tileSheet Array
  */
-classPrototype.switchAnimation = function( sheetIndex ) {
+Sprite.prototype.switchAnimation = function( sheetIndex ) {
 
     const aniProps = this._animation, sheet = this._sheet[ sheetIndex ];
 
@@ -890,7 +895,7 @@ classPrototype.switchAnimation = function( sheetIndex ) {
  * @public
  * @param {Sprite|Canvas} aParent
  */
-classPrototype.setParent = function( aParent ) {
+Sprite.prototype.setParent = function( aParent ) {
     this._parent = aParent;
 };
 
@@ -898,7 +903,7 @@ classPrototype.setParent = function( aParent ) {
  * @public
  * @return {Sprite|Canvas} parent
  */
-classPrototype.getParent = function() {
+Sprite.prototype.getParent = function() {
     return this._parent;
 };
 
@@ -908,7 +913,7 @@ classPrototype.getParent = function() {
  * @public
  * @param {Canvas} aCanvas
  */
-classPrototype.setCanvas = function( aCanvas ) {
+Sprite.prototype.setCanvas = function( aCanvas ) {
     this.canvas = aCanvas;
 };
 
@@ -929,7 +934,7 @@ classPrototype.setCanvas = function( aCanvas ) {
  *
  * @return {{ left: number, top: number, width: number, height: number }} the generated constraint Rectangle
  */
-classPrototype.setConstraint = function( left, top, width, height) {
+Sprite.prototype.setConstraint = function( left, top, width, height) {
     /**
      * rectangle describing this sprites restrictions (only applicable
      * to draggable Sprites to ensure they remain within these bounds)
@@ -951,7 +956,7 @@ classPrototype.setConstraint = function( left, top, width, height) {
  * @public
  * @return {{ left: number, top: number, width: number, height: number }}
  */
-classPrototype.getConstraint = function() {
+Sprite.prototype.getConstraint = function() {
     return this._constraint;
 };
 
@@ -962,7 +967,7 @@ classPrototype.getConstraint = function() {
  * @param {Sprite} aChild to append
  * @return {Sprite} this object - for chaining purposes
  */
-classPrototype.addChild = function( aChild ) {
+Sprite.prototype.addChild = function( aChild ) {
     if ( this.contains( aChild )) {
         return this;
     }
@@ -994,7 +999,7 @@ classPrototype.addChild = function( aChild ) {
  * @param {Sprite} aChild the child to remove
  * @return {Sprite} the removed child
  */
-classPrototype.removeChild = function( aChild ) {
+Sprite.prototype.removeChild = function( aChild ) {
     aChild.setParent( null );
     aChild.setCanvas( null );
 
@@ -1032,7 +1037,7 @@ classPrototype.removeChild = function( aChild ) {
  * @param {number} index of the object in the Display List
  * @return {Sprite} the Sprite present at the given index
  */
-classPrototype.getChildAt = function( index ) {
+Sprite.prototype.getChildAt = function( index ) {
     return this._children[ index ];
 };
 
@@ -1043,7 +1048,7 @@ classPrototype.getChildAt = function( index ) {
  * @param {number} index of the object to remove
  * @return {Sprite} the Sprite removed at the given index
  */
-classPrototype.removeChildAt = function( index ) {
+Sprite.prototype.removeChildAt = function( index ) {
     return this.removeChild( this.getChildAt( index ));
 };
 
@@ -1051,7 +1056,7 @@ classPrototype.removeChildAt = function( index ) {
  * @public
  * @return {number} the amount of children in this object's Display List
  */
-classPrototype.numChildren = function() {
+Sprite.prototype.numChildren = function() {
     return this._children.length;
 };
 
@@ -1062,7 +1067,7 @@ classPrototype.numChildren = function() {
  * @param {Sprite} aChild
  * @return {boolean}
  */
-classPrototype.contains = function( aChild ) {
+Sprite.prototype.contains = function( aChild ) {
     return aChild._parent === this;
 };
 
@@ -1071,7 +1076,7 @@ classPrototype.contains = function( aChild ) {
  *
  * @public
  */
-classPrototype.dispose = function() {
+Sprite.prototype.dispose = function() {
     if ( this._disposed ) {
         return;
     }
@@ -1107,7 +1112,7 @@ classPrototype.dispose = function() {
  * @param {number} y position of the touch / cursor
  * @param {Event} event the original event that triggered this action
  */
-classPrototype.handlePress = function( x, y, event ) {
+Sprite.prototype.handlePress = function( x, y, event ) {
     // override in prototype-extensions or instance
 };
 
@@ -1119,7 +1124,7 @@ classPrototype.handlePress = function( x, y, event ) {
  * @param {number} y position of the touch / cursor
  * @param {Event} event the original event that triggered this action
  */
-classPrototype.handleRelease = function( x, y, event ) {
+Sprite.prototype.handleRelease = function( x, y, event ) {
     // override in prototype-extensions or instance
 };
 
@@ -1129,7 +1134,7 @@ classPrototype.handleRelease = function( x, y, event ) {
  *
  * @protected
  */
-classPrototype.handleClick = function() {
+Sprite.prototype.handleClick = function() {
     // override in prototype-extensions or instance
 };
 
@@ -1142,7 +1147,7 @@ classPrototype.handleClick = function() {
  * @param {number} y
  * @param {Event} event the original event that triggered this action
  */
-classPrototype.handleMove = function( x, y, event ) {
+Sprite.prototype.handleMove = function( x, y, event ) {
     const theX = this._dragStartOffset.x + ( x - this._dragStartEventCoordinates.x );
     const theY = this._dragStartOffset.y + ( y - this._dragStartEventCoordinates.y );
 
@@ -1164,7 +1169,7 @@ classPrototype.handleMove = function( x, y, event ) {
  *
  * @return {boolean} whether this Sprite is handling the event
  */
-classPrototype.handleInteraction = function( x, y, event ) {
+Sprite.prototype.handleInteraction = function( x, y, event ) {
     // first traverse the children of this sprite
     let foundInteractionInChild = false, theChild;
 
@@ -1248,7 +1253,7 @@ classPrototype.handleInteraction = function( x, y, event ) {
                  * this Sprites coordinates at the moment drag was enabled
                  *
                  * @protected
-                 * @type {Object} w/ properties x and y
+                 * @type {{ x:number, y: number }}
                  */
                 this._dragStartOffset = {
                     x: this._bounds.left,
@@ -1260,7 +1265,7 @@ classPrototype.handleInteraction = function( x, y, event ) {
                  * drag was enabled
                  *
                  * @protected
-                 * @type {Object} w/ properties x and y
+                 * @type {{ x:number, y: number }}
                  */
                 this._dragStartEventCoordinates = { x, y };
             }
@@ -1296,7 +1301,7 @@ classPrototype.handleInteraction = function( x, y, event ) {
  * @protected
  * @param {number=} framesSinceLastRender
  */
-classPrototype.updateAnimation = function( framesSinceLastRender = 1 ) {
+Sprite.prototype.updateAnimation = function( framesSinceLastRender = 1 ) {
     const aniProps = this._animation;
 
     aniProps.counter += framesSinceLastRender;
@@ -1325,7 +1330,7 @@ classPrototype.updateAnimation = function( framesSinceLastRender = 1 ) {
  *
  * @protected
  */
-classPrototype.invalidate = function() {
+Sprite.prototype.invalidate = function() {
     this.canvas && this.canvas.invalidate();
 };
 
@@ -1336,7 +1341,7 @@ classPrototype.invalidate = function() {
  * @protected
  * @param {CanvasRenderingContext2D} canvasContext to draw on
  */
-classPrototype.drawOutline = function( canvasContext ) {
+Sprite.prototype.drawOutline = function( canvasContext ) {
     canvasContext.lineWidth   = 1;
     canvasContext.strokeStyle = "#FF0000";
     canvasContext.strokeRect( this.getX(), this.getY(), this.getWidth(), this.getHeight() )

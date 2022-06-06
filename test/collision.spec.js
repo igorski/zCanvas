@@ -1,4 +1,4 @@
-import { cache, clearCache, hasCache } from "../src/Collision";
+import { cache, clearCache, hasCache } from "../src/Collision.js";
 
 describe( "zCanvas.collision", () => {
     it( "should be able to maintain a cache for multiple Bitmaps", async () => {

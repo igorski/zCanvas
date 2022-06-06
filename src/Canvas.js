@@ -20,8 +20,8 @@
  * IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-import EventHandler from "./utils/event-handler";
-import Inheritance  from "./utils/inheritance";
+import EventHandler from "./utils/event-handler.js";
+import Inheritance  from "./utils/inheritance.js";
 
 const { min, max, round } = Math;
 
@@ -44,20 +44,20 @@ const HIGH_REFRESH_THROTTLE = IDEAL_FPS + 3;
  *
  * @constructor
  * @param {{
- *            width: number,
- *            height: number,
- *            fps: number,
- *            scale: number,
- *            backgroundColor: string,
- *            animate: boolean,
- *            smoothing: boolean,
- *            stretchToFit: boolean,
- *            viewport: {{ width: number, height: number }}
- *            handler: Function,
- *            preventEventBubbling: boolean,
- *            parentElement: null,
- *            onUpdate: Function,
- *            debug: boolean
+ *            width?: number,
+ *            height?: number,
+ *            fps?: number,
+ *            scale?: number,
+ *            backgroundColor?: string,
+ *            animate?: boolean,
+ *            smoothing?: boolean,
+ *            stretchToFit?: boolean,
+ *            viewport?: { width: number, height: number },
+ *            handler?: Function,
+ *            preventEventBubbling?: boolean,
+ *            parentElement?: null,
+ *            onUpdate?: Function,
+ *            debug?: boolean
  *        }}
  */
 function Canvas({
@@ -144,8 +144,6 @@ function Canvas({
 }
 export default Canvas;
 
-const classPrototype = Canvas.prototype;
-
 /**
  * extend a given Function reference with the Canvas prototype, you
  * can use this to create custom Canvas extensions. From the extensions
@@ -171,9 +169,9 @@ Canvas.extend = function( extendingFunction ) {
  * element into the supplied container
  *
  * @public
- * @param {Element} aContainer DOM node to append the Canvas to
+ * @param {HTMLElement} aContainer DOM node to append the Canvas to
  */
-classPrototype.insertInPage = function( aContainer ) {
+Canvas.prototype.insertInPage = function( aContainer ) {
     if ( this._element.parentNode ) {
         throw new Error( "Canvas already present in DOM" );
     }
@@ -187,9 +185,9 @@ classPrototype.insertInPage = function( aContainer ) {
  * @override
  * @public
  *
- * @return {Element}
+ * @return {HTMLElement}
  */
-classPrototype.getElement = function() {
+Canvas.prototype.getElement = function() {
 
     return this._element;
 };
@@ -203,7 +201,7 @@ classPrototype.getElement = function() {
  * @public
  * @param {boolean} value
  */
-classPrototype.preventEventBubbling = function( value ) {
+Canvas.prototype.preventEventBubbling = function( value ) {
     /**
      * @protected
      * @type {boolean}
@@ -216,7 +214,7 @@ classPrototype.preventEventBubbling = function( value ) {
  * @param {Sprite} aChild
  * @return {Canvas} this Canvas - for chaining purposes
  */
-classPrototype.addChild = function( aChild ) {
+Canvas.prototype.addChild = function( aChild ) {
     if ( this.contains( aChild )) {
         return this;
     }
@@ -243,7 +241,7 @@ classPrototype.addChild = function( aChild ) {
  *
  * @return {Sprite} the removed child - for chaining purposes
  */
-classPrototype.removeChild = function( aChild ) {
+Canvas.prototype.removeChild = function( aChild ) {
     aChild.setParent( null );
     aChild.setCanvas( null );
 
@@ -282,7 +280,7 @@ classPrototype.removeChild = function( aChild ) {
  * @param {number} index of the object in the Display List
  * @return {Sprite} the referenced object
  */
-classPrototype.getChildAt = function( index ) {
+Canvas.prototype.getChildAt = function( index ) {
     return this._children[ index ];
 };
 
@@ -293,7 +291,7 @@ classPrototype.getChildAt = function( index ) {
  * @param {number} index of the object to remove
  * @return {Sprite} the removed sprite
  */
-classPrototype.removeChildAt = function( index ) {
+Canvas.prototype.removeChildAt = function( index ) {
     return this.removeChild( this.getChildAt( index ));
 };
 
@@ -301,7 +299,7 @@ classPrototype.removeChildAt = function( index ) {
  * @public
  * @return {number} the amount of children in this object's Display List
  */
-classPrototype.numChildren = function() {
+Canvas.prototype.numChildren = function() {
     return this._children.length;
 };
 
@@ -309,7 +307,7 @@ classPrototype.numChildren = function() {
  * @public
  * @return {Array<Sprite>}
  */
-classPrototype.getChildren = function() {
+Canvas.prototype.getChildren = function() {
     return this._children;
 };
 
@@ -321,7 +319,7 @@ classPrototype.getChildren = function() {
  *
  * @return {boolean}
  */
-classPrototype.contains = function( aChild ) {
+Canvas.prototype.contains = function( aChild ) {
     return aChild._parent === this;
 };
 
@@ -337,7 +335,7 @@ classPrototype.contains = function( aChild ) {
  *
  * @public
  */
-classPrototype.invalidate = function() {
+Canvas.prototype.invalidate = function() {
     if ( !this._animate && !this._renderPending ) {
         this._renderPending = true;
         this._renderId = window.requestAnimationFrame( this._renderHandler );
@@ -351,7 +349,7 @@ classPrototype.invalidate = function() {
  * @public
  * @return {number}
  */
-classPrototype.getFrameRate = function() {
+Canvas.prototype.getFrameRate = function() {
     return this._fps;
 };
 
@@ -361,7 +359,7 @@ classPrototype.getFrameRate = function() {
  * @public
  * @param {number} value
  */
-classPrototype.setFrameRate = function( value ) {
+Canvas.prototype.setFrameRate = function( value ) {
     /**
      * @protected
      * @type {number}
@@ -389,7 +387,7 @@ classPrototype.setFrameRate = function( value ) {
  * @public
  * @return {number}
  */
-classPrototype.getActualFrameRate = function() {
+Canvas.prototype.getActualFrameRate = function() {
     return this._aFps;
 };
 
@@ -401,7 +399,7 @@ classPrototype.getActualFrameRate = function() {
  * @public
  * @return {number}
  */
-classPrototype.getRenderInterval = function() {
+Canvas.prototype.getRenderInterval = function() {
     return this._renderInterval;
 };
 
@@ -413,7 +411,7 @@ classPrototype.getRenderInterval = function() {
  * @public
  * @param {boolean} enabled
  */
-classPrototype.setSmoothing = function( enabled ) {
+Canvas.prototype.setSmoothing = function( enabled ) {
     // 1. context smoothing state
     const props = [ "imageSmoothingEnabled",  "mozImageSmoothingEnabled",
                     "oImageSmoothingEnabled", "webkitImageSmoothingEnabled" ];
@@ -442,7 +440,7 @@ classPrototype.setSmoothing = function( enabled ) {
  * @public
  * @return {number}
  */
-classPrototype.getWidth = function() {
+Canvas.prototype.getWidth = function() {
     return ( this._enqueuedSize ) ? this._enqueuedSize.width : this._width;
 };
 
@@ -450,7 +448,7 @@ classPrototype.getWidth = function() {
  * @public
  * @return {number}
  */
-classPrototype.getHeight = function() {
+Canvas.prototype.getHeight = function() {
     return ( this._enqueuedSize ) ? this._enqueuedSize.height : this._height;
 };
 
@@ -467,7 +465,7 @@ classPrototype.getHeight = function() {
  * @param {boolean=} optImmediate optional, whether to apply immediately, defaults to false
  *        to prevent flickering of existing screen contents during repeated resize
  */
-classPrototype.setDimensions = function( width, height, setAsPreferredDimensions = true, optImmediate = false ) {
+Canvas.prototype.setDimensions = function( width, height, setAsPreferredDimensions = true, optImmediate = false ) {
     /**
      * @protected
      * @type {{ width: number, height: number }}
@@ -495,7 +493,7 @@ classPrototype.setDimensions = function( width, height, setAsPreferredDimensions
  * @param {number} width
  * @param {number} height
  */
-classPrototype.setViewport = function( width, height ) {
+Canvas.prototype.setViewport = function( width, height ) {
     /**
      * @protected
      * @type {{
@@ -516,11 +514,11 @@ classPrototype.setViewport = function( width, height ) {
  * Updates the horizontal and vertical position of the viewport.
  *
  * @public
- * @param {number} left
- * @param {number} top
+ * @param {number} x
+ * @param {number} y
  * @param {boolean=} broadcast optionally broadcast change to registered handler
  */
-classPrototype.panViewport = function( x, y, broadcast = false ) {
+Canvas.prototype.panViewport = function( x, y, broadcast = false ) {
     const vp  = this._viewport;
 
     vp.left   = max( 0, min( x, this._width - vp.width ));
@@ -542,7 +540,7 @@ classPrototype.panViewport = function( x, y, broadcast = false ) {
  * @public
  * @param {string} color
  */
-classPrototype.setBackgroundColor = function( color ) {
+Canvas.prototype.setBackgroundColor = function( color ) {
     /**
      * @protected
      * @type {string}
@@ -554,7 +552,7 @@ classPrototype.setBackgroundColor = function( color ) {
  * @public
  * @param {boolean} value
  */
-classPrototype.setAnimatable = function( value ) {
+Canvas.prototype.setAnimatable = function( value ) {
     const oldValue = this._animate;
 
     /**
@@ -580,7 +578,7 @@ classPrototype.setAnimatable = function( value ) {
  * @public
  * @return {boolean}
  */
-classPrototype.isAnimatable = function() {
+Canvas.prototype.isAnimatable = function() {
     return this._animate;
 };
 
@@ -600,7 +598,7 @@ classPrototype.isAnimatable = function() {
  * @param {number=} aOptSourceWidth optional, whether to use an alternative width for the source rectangle
  * @param {number=} aOptSourceHeight optional, whether to use an alternative height for the source rectangle
  */
-classPrototype.drawImage = function( aSource, destX, destY, destWidth, destHeight,
+Canvas.prototype.drawImage = function( aSource, destX, destY, destWidth, destHeight,
     aOptSourceX, aOptSourceY, aOptSourceWidth, aOptSourceHeight ) {
 
     // we add .5 to have a pixel perfect outline
@@ -664,7 +662,7 @@ classPrototype.drawImage = function( aSource, destX, destY, destWidth, destHeigh
  * @param {number} x the factor to scale the horizontal axis by
  * @param {number=} y the factor to scale the vertical axis by, defaults to x
  */
-classPrototype.scale = function( x, y = x ) {
+Canvas.prototype.scale = function( x, y = x ) {
     this._scale = { x, y };
 
     const scaleStyle = x === 1 && y === 1 ? '' : `scale(${x}, ${y})`;
@@ -687,7 +685,7 @@ classPrototype.scale = function( x, y = x ) {
  * @public
  * @param {boolean=} value whether to stretch the canvas to fit the window size
  */
-classPrototype.stretchToFit = function( value ) {
+Canvas.prototype.stretchToFit = function( value ) {
     /**
      * @protected
      * @type {boolean}
@@ -723,7 +721,7 @@ classPrototype.stretchToFit = function( value ) {
 /**
  * @public
  */
-classPrototype.dispose = function() {
+Canvas.prototype.dispose = function() {
     if ( this._disposed ) {
         return;
     }
@@ -752,7 +750,7 @@ classPrototype.dispose = function() {
  * @protected
  * @param {Event} event
  */
-classPrototype.handleInteraction = function( event ) {
+Canvas.prototype.handleInteraction = function( event ) {
     const numChildren = this._children.length;
     const viewport    = this._viewport;
     let theChild;
@@ -863,7 +861,7 @@ classPrototype.handleInteraction = function( event ) {
  * @protected
  * @param {DOMHighResTimeStamp} now time elapsed since document time origin
  */
-classPrototype.render = function( now = 0 )
+Canvas.prototype.render = function( now = 0 )
 {
     this._renderPending = false;
 
@@ -963,7 +961,7 @@ classPrototype.render = function( now = 0 )
  *
  * @protected
  */
-classPrototype.addListeners = function() {
+Canvas.prototype.addListeners = function() {
 
     if ( !this._eventHandler ) {
 
@@ -1006,7 +1004,7 @@ classPrototype.addListeners = function() {
  *
  * @protected
  */
-classPrototype.removeListeners = function() {
+Canvas.prototype.removeListeners = function() {
     if ( this._eventHandler ) {
         this._eventHandler.dispose();
     }
@@ -1018,9 +1016,9 @@ classPrototype.removeListeners = function() {
  * return its x and y coordinates
  *
  * @protected
- * @return {Object} w/ x and y properties
+ * @return {{ x: number, y: number }}
  */
-classPrototype.getCoordinate = function() {
+Canvas.prototype.getCoordinate = function() {
     let x = 0;
     let y = 0;
     let theElement = this._element;

@@ -44,19 +44,17 @@ function EventHandler() {
 }
 export default EventHandler;
 
-const classPrototype = EventHandler.prototype;
-
 /* public methods */
 
 /**
  * attach a listener and an event handler to an element
  *
- * @param {Element} aElement
+ * @param {HTMLElement} aElement
  * @param {string} aType
  * @param {!Function} aCallback *
  * @return {boolean} whether the listener has been attached successfully
  */
-classPrototype.add = function( aElement, aType, aCallback ) {
+EventHandler.prototype.add = function( aElement, aType, aCallback ) {
     if ( !this.has( aElement, aType )) {
         aElement.addEventListener( aType, aCallback, false );
         this._eventMappings.push({
@@ -73,11 +71,11 @@ classPrototype.add = function( aElement, aType, aCallback ) {
  * query whether a listener for a specific event type has already
  * been registered for the given element
  *
- * @param {Element} aElement
+ * @param {HTMLElement} aElement
  * @param {string} aType
  * @return {boolean} whether the listener already exists
  */
-classPrototype.has = function( aElement, aType ) {
+EventHandler.prototype.has = function( aElement, aType ) {
     let i = this._eventMappings.length;
     while ( i-- ) {
         const theMapping = this._eventMappings[ i ];
@@ -91,11 +89,11 @@ classPrototype.has = function( aElement, aType ) {
 /**
  * remove a previously registered handler from an element
  *
- * @param {Element} aElement
+ * @param {HTMLElement} aElement
  * @param {string} aType *
  * @return {boolean} whether the listener has been found and removed
  */
-classPrototype.remove = function( aElement, aType ) {
+EventHandler.prototype.remove = function( aElement, aType ) {
     let i = this._eventMappings.length;
     while ( i-- ) {
         const theMapping = this._eventMappings[ i ];
@@ -108,7 +106,7 @@ classPrototype.remove = function( aElement, aType ) {
     return false;
 };
 
-classPrototype.dispose = function() {
+EventHandler.prototype.dispose = function() {
     if ( this._disposed ) {
         return;
     }

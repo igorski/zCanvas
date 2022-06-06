@@ -20,7 +20,7 @@
  * IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-import EventHandler from "./utils/event-handler";
+import EventHandler from "./utils/event-handler.js";
 
 /**
  * loader provides an interface that allows the loading of Images
@@ -46,7 +46,7 @@ const Loader = {
      *
      * @param {string}    aSource either base64 encoded bitmap data or (web)path
      *                    to an image file
-     * @param {Image=}    aOptImage optional HTMLImageElement to load the aSource
+     * @param {HTMLImageElement=} aOptImage optional HTMLImageElement to load the aSource
      *                    into, in case we'd like to re-use an existing Element
      *                    (will not work in Firefox repeatedly as load handlers
      *                    will only fire once)
@@ -104,7 +104,7 @@ const Loader = {
      * a quick query to check whether the Image is ready for rendering
      *
      * @public
-     * @param {Image} aImage
+     * @param {HTMLImageElement} aImage
      * @return {boolean}
      */
     isReady( aImage ) {
@@ -122,8 +122,8 @@ const Loader = {
      * if not it will be made asynchronous via RAF delegation
      *
      * @public
-     * @param {Image} aImage
-     * @return {Promise}
+     * @param {HTMLImageElement} aImage
+     * @return {Promise<void>}
      */
     onReady( aImage ) {
         return new Promise(( resolve, reject ) => {
@@ -156,7 +156,7 @@ export default Loader;
  * this method applies the correct value accordingly
  *
  * @param {string} aImageURL
- * @param {Image} aImage
+ * @param {HTMLImageElement} aImage
  */
 function applyOrigin( aImageURL, aImage ) {
     if ( !isLocalURL( aImageURL )) {
@@ -182,7 +182,7 @@ function isDataSource( image ) {
 }
 
 /**
- * @param {Image} image
+ * @param {HTMLImageElement} image
  * @return {{ width: number, height: number }}
  */
 function getSize( image ) {

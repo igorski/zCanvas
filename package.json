@@ -1,7 +1,7 @@
 {
   "name": "zcanvas",
   "homepage": "https://www.igorski.nl/",
-  "version": "5.1.1",
+  "version": "5.1.2",
   "license": "MIT",
   "author": {
     "name": "Igor Zinken",
@@ -10,6 +10,9 @@
   "directories": {},
   "main": "dist/zcanvas.js",
   "jsnext:main": "zcanvas.js",
+  "module": "zcanvas.js",
+  "type": "module",
+  "types": "dist/types/zcanvas.d.ts",
   "bugs": {
     "url": "https://github.com/igorski/zcanvas/issues/"
   },
@@ -46,13 +49,15 @@
     "canvas": "^2.9.0",
     "clean-webpack-plugin": "^4.0.0",
     "jest": "^26.1.0",
+    "typescript": "^4.7.3",
     "webpack": "^5.72.1",
     "webpack-cli": "^4.9.2"
   },
   "scripts": {
     "test": "jest",
     "build": "webpack --mode=production",
-    "prepublish": "npm run test && npm run build"
+    "types": "npx -p typescript tsc",
+    "prepublish": "npm run test && npm run build && npm run types"
   },
   "preferGlobal": false,
   "engines": {

@@ -20,7 +20,7 @@
  * IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-import Loader from "./Loader";
+import Loader from "./Loader.js";
 
 /* create and pool canvas for pixel retrieval upfront */
 
@@ -210,6 +210,13 @@ export const getChildrenUnderPoint = ( aSpriteList, aX, aY, aWidth, aHeight, aOn
     return out;
 };
 
+/**
+ * Add given Bitmap into the collision cache for faster collision handling
+ * at the expense of using more memory
+ *
+ * @param {HTMLCanvasElement|HTMLImageElement} bitmap
+ * @return {Promise<boolean>}
+ */
 export const cache = bitmap => {
     return new Promise(( resolve, reject ) => {
         const createCanvas = !( bitmap instanceof window.HTMLCanvasElement );
@@ -231,6 +238,12 @@ export const cache = bitmap => {
     });
 };
 
+/**
+ * Removes given Bitmap from the collision cache
+ *
+ * @param {HTMLCanvasElement|HTMLImageElement} bitmap
+ * @return {boolean}
+ */
 export const clearCache = bitmap => {
     if ( hasCache( bitmap )) {
         cacheMap.delete( bitmap );
@@ -239,6 +252,12 @@ export const clearCache = bitmap => {
     return false;
 };
 
+/**
+ * Whether given Bitmap is present inside the collision cache
+ *
+ * @param {HTMLCanvasElement|HTMLImageElement} bitmap
+ * @return {boolean}
+ */
 export const hasCache = bitmap => cacheMap.has( bitmap );
 
 /* internal methods */
