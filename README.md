@@ -6,7 +6,7 @@ The concept of zCanvas encourages an object oriented approach, where each custom
 
 zCanvas will provide an API that takes care of all animation and update logic you'd associate with, for instance, a game loop, rendering images or even using animated spritesheets. You'll find that in regular use you'll hardly ever have to override the basic sprite behaviour. However, the rendering logic (i.e. the "drawing" of the visual content) can be as low level as you'd like, by drawing straight onto the HTMLCanvasElement using the browsers _CanvasRenderingContext2D_-API.
 
-zCanvas has been written in vanilla JavaScript (ES2018 dialect) and works independently from (and should work with) any other JavaScript framework.
+zCanvas has been written in vanilla JavaScript (ES2018 dialect) but comes TypeScript annotations and works independently from (and thus _works with_) any other JavaScript framework.
 
 ## DisplayList convention
 
