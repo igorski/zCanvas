@@ -157,6 +157,7 @@ export default Canvas;
  * @public
  * @param {!Function} extendingFunction reference to
  *        function which should inherit the Canvas prototype
+ * @returns {Canvas} subclass
  */
 Canvas.extend = function( extendingFunction ) {
     Inheritance.extend( extendingFunction, Canvas );

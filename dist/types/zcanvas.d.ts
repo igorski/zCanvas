@@ -134,7 +134,7 @@ declare module "src/Canvas" {
         };
     }
     namespace Canvas {
-        function extend(extendingFunction: Function): void;
+        function extend(extendingFunction: Function): Canvas;
     }
     import EventHandler from "src/utils/event-handler";
 }
@@ -369,7 +369,7 @@ declare module "src/Sprite" {
         protected drawOutline(canvasContext: CanvasRenderingContext2D): void;
     }
     namespace Sprite {
-        function extend(extendingFunction: Function): void;
+        function extend(extendingFunction: Function): Sprite;
     }
 }
 declare module "src/Collision" {

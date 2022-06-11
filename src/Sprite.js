@@ -212,6 +212,7 @@ export default Sprite;
  * @public
  * @param {!Function} extendingFunction reference to
  *        function which should inherit the Sprite prototype
+ * @returns {Sprite} subclass
  */
 Sprite.extend = function( extendingFunction ) {
     Inheritance.extend( extendingFunction, Sprite );
