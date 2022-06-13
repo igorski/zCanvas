@@ -138,7 +138,7 @@ function Sprite({
      * is null if the Sprite isn't present on the canvas' display list
      *
      * @public
-     * @type {canvas}
+     * @type {Canvas}
      */
     this.canvas = null;
 
@@ -912,10 +912,13 @@ Sprite.prototype.getParent = function() {
  * set a reference to the canvas that is rendering this sprite
  *
  * @public
- * @param {Canvas} aCanvas
+ * @param {Canvas} canvas
  */
-Sprite.prototype.setCanvas = function( aCanvas ) {
-    this.canvas = aCanvas;
+Sprite.prototype.setCanvas = function( canvas ) {
+    this.canvas = canvas;
+    this._children.forEach( sprite => {
+        sprite.setCanvas( canvas );
+    });
 };
 
 /**
@@ -1059,6 +1062,14 @@ Sprite.prototype.removeChildAt = function( index ) {
  */
 Sprite.prototype.numChildren = function() {
     return this._children.length;
+};
+
+/**
+ * @public
+ * @return {Array<Sprite>}
+ */
+Sprite.prototype.getChildren = function() {
+    return this._children;
 };
 
 /**

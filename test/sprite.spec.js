@@ -349,6 +349,22 @@ describe( "zCanvas.sprite", () => {
         expect( child.getParent() ).toBe( null );
     });
 
+    it( "should be able to set the Canvas onto itself and inner children", () => {
+        const sprite = new Sprite({ x, y, width, height });
+        const child = new Sprite({ x, y, width, height });
+
+        sprite.addChild( child );
+
+        expect( sprite.canvas ).toBeNull();
+        expect( child.canvas ).toBeNull();
+
+        const canvas = new Canvas({ width, height });
+        sprite.setCanvas( canvas );
+
+        expect( sprite.canvas ).toEqual( canvas );
+        expect( child.canvas ).toEqual( canvas );
+    });
+
     // it doesn't, question is... SHOULD it?
     it.skip( "should by default set its constraints to the Canvas bounds", () => {
         const sprite = new Sprite({ x, y, width, height });

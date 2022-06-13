@@ -251,7 +251,7 @@ declare module "src/Sprite" {
         protected _parent: Sprite | canvas;
         public last: Sprite;
         public next: Sprite;
-        public canvas: canvas;
+        public canvas: Canvas;
         protected _bitmap: HTMLImageElement | HTMLCanvasElement;
         protected _bitmapReady: boolean;
         protected _draggable: boolean;
@@ -323,7 +323,7 @@ declare module "src/Sprite" {
         public switchAnimation(sheetIndex: number): void;
         public setParent(aParent: Sprite | Canvas): void;
         public getParent(): Sprite | Canvas;
-        public setCanvas(aCanvas: Canvas): void;
+        public setCanvas(canvas: Canvas): void;
         public setConstraint(left: number, top: number, width: number, height: number): {
             left: number;
             top: number;
@@ -347,6 +347,7 @@ declare module "src/Sprite" {
         public getChildAt(index: number): Sprite;
         public removeChildAt(index: number): Sprite;
         public numChildren(): number;
+        public getChildren(): Array<Sprite>;
         public contains(aChild: Sprite): boolean;
         public dispose(): void;
         protected handlePress(x: number, y: number, event: Event): void;
