@@ -84,6 +84,7 @@ function Canvas({
     /** @protected @type {Function} */      this._handler        = handler;
     /** @protected @type {Array<Sprite>} */ this._activeTouches  = [];
     /** @protected @type {Array<Sprite>} */ this._children       = [];
+    /** @protected @type {DOMRect} */       this._coords         = null;
 
     /* initialization */
 
@@ -770,10 +771,10 @@ Canvas.prototype.handleInteraction = function( event ) {
                 let i = 0, l = touches.length;
 
                 if ( l > 0 ) {
-                    const offset = this.getCoordinate();
+                    let { x, y } = this.getCoordinate();
                     if ( viewport ) {
-                        offset.x -= viewport.left;
-                        offset.y -= viewport.top;
+                        x -= viewport.left;
+                        y -= viewport.top;
                     }
 
                     // zCanvas supports multitouch, process all pointers
@@ -782,8 +783,8 @@ Canvas.prototype.handleInteraction = function( event ) {
                         const touch          = touches[ i ];
                         const { identifier } = touch;
 
-                        eventOffsetX = touch.pageX - offset.x;
-                        eventOffsetY = touch.pageY - offset.y;
+                        eventOffsetX = touch.pageX - x;
+                        eventOffsetY = touch.pageY - y;
 
                         switch ( event.type ) {
                             // on touchstart events, when we a Sprite handles the event, we
@@ -1017,22 +1018,15 @@ Canvas.prototype.removeListeners = function() {
  * return its x and y coordinates
  *
  * @protected
- * @return {{ x: number, y: number }}
+ * @return {DOMRect}
  */
 Canvas.prototype.getCoordinate = function() {
-    let x = 0;
-    let y = 0;
-    let theElement = this._element;
-
-    while ( theElement.offsetParent ) {
-        x         += theElement.offsetLeft;
-        y         += theElement.offsetTop;
-        theElement = theElement.offsetParent;
+    if ( this._coords === null ) {
+        // to prevent expensive repeated calls to this method
+        // coords should be nulled upon canvas resize or DOM layout changes
+        this._coords = this._element.getBoundingClientRect();
     }
-    x += theElement.offsetLeft;
-    y += theElement.offsetTop;
-
-    return { x, y };
+    return this._coords;
 };
 
 /* internal methods */
@@ -1090,4 +1084,5 @@ function updateCanvasSize( canvasInstance ) {
     if ( canvasInstance._smoothing === false ) {
         canvasInstance.setSmoothing( false );
     }
+    canvasInstance._coords = null; // invalidate cached bounding box
 }

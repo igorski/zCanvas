@@ -251,14 +251,8 @@ describe( "zCanvas.canvas", () => {
         it( "should be able to update its dimensions synchronously", () => {
             const canvas = new Canvas({ width, height });
 
-            let newWidth  = width,
-                newHeight = height;
-
-            while ( newWidth === width )
-                newWidth = Math.round( Math.random() * 1000 ) + 1;
-
-            while ( newHeight === height )
-                newHeight = Math.round( Math.random() * 1000 ) + 1;
+            const newWidth  = width + 1;
+            const newHeight = height + 1;
 
             canvas.setDimensions( newWidth, newHeight, false, true );
 
@@ -266,19 +260,27 @@ describe( "zCanvas.canvas", () => {
             expect( canvas.getHeight() ).toEqual( newHeight );
         });
 
+        it( "should invalidate the cached element coordinates", () => {
+            const canvas = new Canvas({ width, height });
+            canvas.getCoordinate();
+
+            expect( canvas._coords ).not.toBeNull();
+
+            const newWidth  = width + 1;
+            const newHeight = height + 1;
+
+            canvas.setDimensions( newWidth, newHeight, false, true );
+
+            expect( canvas._coords ).toBeNull();
+        });
+
         it( "should be able to update its dimensions asynchronously on next render", done => {
             const canvas = new Canvas({ width, height });
 
             const oldWidth = width, oldHeight = height;
 
-            let newWidth  = width,
-                newHeight = height;
-
-            while ( newWidth === width )
-                newWidth = Math.round( Math.random() * 1000 ) + 1;
-
-            while ( newHeight === height )
-                newHeight = Math.round( Math.random() * 1000 ) + 1;
+            const newWidth  = width + 1;
+            const newHeight = height + 1;
 
             canvas.setDimensions( newWidth, newHeight );
 
@@ -607,6 +609,32 @@ describe( "zCanvas.canvas", () => {
             // to emulate a device that can't match the configured rate
 
             canvas.render( now + ( 1000 / 60 ));
+        });
+    });
+
+    describe( "when getting the canvas coordinates", () => {
+        it( "should lazily retrieve the coordinates and cache the result", () => {
+            const canvas  = new Canvas({ width, height });
+            const gbcrSpy = jest.spyOn( canvas.getElement(), "getBoundingClientRect" );
+
+            const coords = canvas.getCoordinate();
+            expect( gbcrSpy ).toHaveBeenCalledTimes( 1 );
+
+            const coords2 = canvas.getCoordinate();
+            expect( coords2 ).toEqual( coords );
+            expect( gbcrSpy ).toHaveBeenCalledTimes( 1 );
+        });
+
+        it( "should recalculate the coordinates when the cached result is cleared", () => {
+            const canvas = new Canvas({ width, height });
+            const gbcrSpy = jest.spyOn( canvas.getElement(), "getBoundingClientRect" );
+
+            canvas.getCoordinate();
+            canvas._coords = null;
+
+            canvas.getCoordinate();
+
+            expect( gbcrSpy ).toHaveBeenCalledTimes( 2 );
         });
     });
 

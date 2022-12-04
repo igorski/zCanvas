@@ -14,7 +14,6 @@ declare module "src/utils/inheritance" {
     export default Inheritance;
     namespace Inheritance {
         function extend(aSubClass: Function, aSuperClass: Function): void;
-        function extend(aSubClass: Function, aSuperClass: Function): void;
     }
 }
 declare module "src/Canvas" {
@@ -70,6 +69,7 @@ declare module "src/Canvas" {
         protected _handler: Function;
         protected _activeTouches: Array<Sprite>;
         protected _children: Array<Sprite>;
+        protected _coords: DOMRect;
         protected _element: HTMLCanvasElement;
         protected _canvasContext: CanvasRenderingContext2D;
         protected _HDPIscaleRatio: number;
@@ -128,10 +128,7 @@ declare module "src/Canvas" {
         protected addListeners(): void;
         protected _eventHandler: EventHandler;
         protected removeListeners(): void;
-        protected getCoordinate(): {
-            x: number;
-            y: number;
-        };
+        protected getCoordinate(): DOMRect;
     }
     namespace Canvas {
         function extend(extendingFunction: Function): Canvas;
@@ -148,16 +145,7 @@ declare module "src/Loader" {
             };
             image: HTMLImageElement;
         }>;
-        function loadImage(aSource: string, aOptImage?: HTMLImageElement): Promise<{
-            size: {
-                width: number;
-                height: number;
-            };
-            image: HTMLImageElement;
-        }>;
         function isReady(aImage: HTMLImageElement): boolean;
-        function isReady(aImage: HTMLImageElement): boolean;
-        function onReady(aImage: HTMLImageElement): Promise<void>;
         function onReady(aImage: HTMLImageElement): Promise<void>;
     }
 }
