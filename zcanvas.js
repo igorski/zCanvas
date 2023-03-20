@@ -20,10 +20,39 @@
  * IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-import canvas    from "./src/Canvas.js";
-import sprite    from "./src/Sprite.js";
-import loader    from "./src/Loader.js";
+import canvas from "./src/Canvas.js";
+import sprite from "./src/Sprite.js";
+import loader from "./src/Loader.js";
 import { pixelCollision, getChildrenUnderPoint, cache, hasCache, clearCache } from "./src/Collision.js";
+
+/**
+ * @typedef {{ width: number, height: number }} Size
+ * @typedef {{ x: number, y: number }} Point
+ * @typedef {{ left: number, top: number, width: number, height: number }} Rectangle
+ * @typedef {{ size: Size, image: HTMLImageElement }} SizedImage
+ *
+ * @typedef {{
+ *     left: number,
+ *     top: number,
+ *     width: number,
+ *     height: number,
+ *     right: number,
+ *     bottom: number
+ * }} Viewport
+ *
+ * @typedef {{
+ *      row: number,
+ *      col: number,
+ *      amount: number,
+ *      fpt: 5,
+ *      onComplete?: () => void
+ *  }} SpriteSheet
+ *
+ * @typedef {{
+ *    src: Rectangle,
+ *    dest: Rectangle
+ * }} TransformedDrawBounds
+ */
 
 const collision = {
     pixelCollision,

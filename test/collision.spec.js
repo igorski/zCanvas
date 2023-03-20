@@ -1,3 +1,5 @@
+import "jest-canvas-mock";
+
 import { cache, clearCache, hasCache } from "../src/Collision.js";
 
 describe( "zCanvas.collision", () => {

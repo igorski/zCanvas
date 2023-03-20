@@ -1,7 +1,7 @@
 /**
  * The MIT License (MIT)
  *
- * Igor Zinken 2013-2022 - https://www.igorski.nl
+ * Igor Zinken 2013-2023 - https://www.igorski.nl
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of
  * this software and associated documentation files (the "Software"), to deal in
@@ -32,15 +32,7 @@ const Loader = {
     /**
      * Load the image contents described in aSource and fire a callback when the
      * resulting Bitmap has been loaded and is ready for rendering, the callback
-     * method will receive the following result as its first argument:
-     *
-     * {{
-     *     image: HTMLImageElement,
-     *     size: {{
-     *               width: number,
-     *               height: number
-     *           }}
-     * }}
+     * method will receive a SizedImage object as its first argument.
      *
      * if an Error has occurred the second argument will be the Error
      *
@@ -50,7 +42,7 @@ const Loader = {
      *                    into, in case we'd like to re-use an existing Element
      *                    (will not work in Firefox repeatedly as load handlers
      *                    will only fire once)
-     * @return {Promise<{ size: { width: number, height: number }, image: HTMLImageElement }>}
+     * @return {Promise<SizedImage>}
      */
     loadImage( aSource, aOptImage = null ) {
         return new Promise(( resolve, reject ) => {
@@ -183,7 +175,7 @@ function isDataSource( image ) {
 
 /**
  * @param {HTMLImageElement} image
- * @return {{ width: number, height: number }}
+ * @return {Size}
  */
 function getSize( image ) {
     return {

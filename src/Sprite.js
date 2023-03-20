@@ -1,7 +1,7 @@
 /**
  * The MIT License (MIT)
  *
- * Igor Zinken 2013-2022 - https://www.igorski.nl
+ * Igor Zinken 2013-2023 - https://www.igorski.nl
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of
  * this software and associated documentation files (the "Software"), to deal in
@@ -48,7 +48,7 @@ const HALF = .5;
  *            collidable?: boolean,
  *            interactive?: boolean,
  *            mask?: boolean,
- *            sheet?: Array<{ row: number, col: number, amount: number, fpt: 5 }>,
+ *            sheet?: Array<SpriteSheet>,
  *            sheetTileWidth?: number,
  *            sheetTileHeight?: number
  *        }}
@@ -103,7 +103,7 @@ function Sprite({
      * basically this describes its x- and y- coordinates and its dimensions
      *
      * @protected
-     * @type {{ left: number, top: number, width: number, height: number }}
+     * @type {Rectangle}
      */
     this._bounds = { left: 0, top: 0, width, height };
 
@@ -427,7 +427,7 @@ Sprite.prototype.setBounds = function( left, top, width, height ) {
 
 /**
  * @public
- * @return {{ left: number, top: number, width: number, height: number }}
+ * @return {Rectangle}
  */
 Sprite.prototype.getBounds = function() {
     return this._bounds;
@@ -503,14 +503,7 @@ Sprite.prototype.update = function( now, framesSinceLastUpdate ) {
  *
  * @public
  * @param {CanvasRenderingContext2D} canvasContext to draw on
- * @param {{
- *            left: number,
- *            top: number,
- *            width: number,
- *            height: number,
- *            right: number,
- *            bottom: number
- *        }|null} viewport optional viewport defining the currently visible canvas area
+ * @param {Viewport|null} viewport optional viewport defining the currently visible canvas area
  */
 Sprite.prototype.draw = function( canvasContext, viewport = null ) {
 
@@ -666,7 +659,7 @@ Sprite.prototype.collidesWith = function( aSprite ) {
  *
  * @public
  * @param {Sprite} aSprite
- * @return {{ left: number, top: number, width: number, height: number }|null}
+ * @return {Rectangle|null}
  */
 Sprite.prototype.getIntersection = function( aSprite ) {
     if ( this.collidesWith( aSprite )) {
@@ -723,7 +716,7 @@ Sprite.prototype.collidesWithEdge = function( aSprite, aEdge ) {
 
 /**
  * @public
- * @return {Image|HTMLCanvasElement|string}
+ * @return {HTMLImageElement|HTMLCanvasElement|string}
  */
 Sprite.prototype.getBitmap = function() {
     return this._bitmap;
@@ -829,14 +822,14 @@ Sprite.prototype.setBitmap = function( aImage, aOptWidth, aOptHeight ) {
  * from its Bitmap, use in conjunction with setBitmap()
  *
  * @public
- * @param {Array<{ row: number, col: number, amount: number, fpt: 5, onComplete: Function= }>} sheet
+ * @param {Array<SpriteSheet>} sheet
  * @param {number=} width optional width to use for a single tile, defaults to Sprite bounds width
  * @param {number=} height optional height to use for a single tile, defaults to Sprite bounds height
  */
 Sprite.prototype.setSheet = function( sheet, width, height ) {
     /**
      * @protected
-     * @type {Array<{ row: number, col: number, amount: number, fpt: 5, onComplete: Function= }>}
+     * @type {Array<SpriteSheet>}
      */
     this._sheet = sheet;
 
@@ -863,12 +856,12 @@ Sprite.prototype.setSheet = function( sheet, width, height ) {
         counter    : 0  // the frame counter that is increased on each frame render
     };
 
-    if ( typeof width  === "number" )
+    if ( typeof width  === "number" ) {
         this._animation.tileWidth = width;
-
-    if ( typeof height === "number" )
+    }
+    if ( typeof height === "number" ) {
         this._animation.tileHeight = height;
-
+    }
     this.switchAnimation( 0 ); // by default select first animation from list
 };
 
@@ -935,8 +928,7 @@ Sprite.prototype.setCanvas = function( canvas ) {
  * @param {number} top
  * @param {number} width
  * @param {number} height
- *
- * @return {{ left: number, top: number, width: number, height: number }} the generated constraint Rectangle
+ * @return {Rectangle} the generated constraint Rectangle
  */
 Sprite.prototype.setConstraint = function( left, top, width, height) {
     /**
@@ -944,7 +936,7 @@ Sprite.prototype.setConstraint = function( left, top, width, height) {
      * to draggable Sprites to ensure they remain within these bounds)
      *
      * @protected
-     * @type {{ left: number, top: number, width: number, height: number }}
+     * @type {Rectangle}
      */
     this._constraint = { left, top, width, height };
 
@@ -958,7 +950,7 @@ Sprite.prototype.setConstraint = function( left, top, width, height) {
 
 /**
  * @public
- * @return {{ left: number, top: number, width: number, height: number }}
+ * @return {Rectangle}
  */
 Sprite.prototype.getConstraint = function() {
     return this._constraint;
@@ -1178,7 +1170,6 @@ Sprite.prototype.handleMove = function( x, y, event ) {
  * @param {number} x the events X offset, passed for quick evaluation of position updates
  * @param {number} y the events Y offset, passed for quick evaluation of position updates
  * @param {Event} event the original event that triggered this action
- *
  * @return {boolean} whether this Sprite is handling the event
  */
 Sprite.prototype.handleInteraction = function( x, y, event ) {
@@ -1265,7 +1256,7 @@ Sprite.prototype.handleInteraction = function( x, y, event ) {
                  * this Sprites coordinates at the moment drag was enabled
                  *
                  * @protected
-                 * @type {{ x:number, y: number }}
+                 * @type {Point}
                  */
                 this._dragStartOffset = {
                     x: this._bounds.left,
@@ -1277,7 +1268,7 @@ Sprite.prototype.handleInteraction = function( x, y, event ) {
                  * drag was enabled
                  *
                  * @protected
-                 * @type {{ x:number, y: number }}
+                 * @type {Point}
                  */
                 this._dragStartEventCoordinates = { x, y };
             }

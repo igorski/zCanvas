@@ -24,8 +24,8 @@
 /**
  * Determines whether a Sprites bounding box is visible within the current viewport.
  *
- * @param {{ left: number, top: number, width: number, height: number }} spriteBounds
- * @param {{ left: number, top: number, width: number, height: number }} viewport
+ * @param {Rectangle} spriteBounds
+ * @param {Viewport} viewport
  * @return {boolean}
  */
 export const isInsideViewport = ( spriteBounds, viewport ) => {
@@ -45,12 +45,9 @@ export const isInsideViewport = ( spriteBounds, viewport ) => {
  * NOTE: the returned destination coordinates are relative to the canvas, not the viewport !
  * As such this can directly be used with CanvasRenderingContext2D.drawImage()
  *
- * @param {{ left: number, top: number, width: number, height: number }} spriteBounds
- * @param {{ left: number, top: number, width: number, height: number }} viewport
- * @return {{
- *              source: { left: number, top: number, width: number, height: number },
- *              dest: { left: number, top: number, width: number, height: number }
- *         }}
+ * @param {Rectangle} spriteBounds
+ * @param {Viewport} viewport
+ * @return {TransformedDrawBounds}
  */
 export const calculateDrawRectangle = ( spriteBounds, viewport ) => {
     let { left, top, width, height } = spriteBounds;

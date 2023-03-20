@@ -54,7 +54,7 @@ const pixels2 = [];
  *        to determine where the collision occurred (e.g. left, bottom, etc.) If no
  *        collision occurred, boolean false is returned
  *
- * @return {boolean|{ x: number, y: number }}
+ * @return {boolean|Point}
  */
 export const pixelCollision = ( sprite1, sprite2, optReturnAsCoordinate = false ) => {
 
@@ -103,7 +103,7 @@ export const pixelCollision = ( sprite1, sprite2, optReturnAsCoordinate = false 
  * inside the Bitmap of given sprite
  *
  * @param {Sprite} sprite
- * @param {{ left: number, top: number, width: number, height: number }} rect
+ * @param {Rectangle} rect
  * @param {Array<number>} pixels Array to write pixels into
  */
 export const getPixelArray = ( sprite, rect, pixels ) => {

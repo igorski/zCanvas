@@ -27,10 +27,7 @@ declare module "src/Canvas" {
         animate?: boolean;
         smoothing?: boolean;
         stretchToFit?: boolean;
-        viewport?: {
-            width: number;
-            height: number;
-        };
+        viewport?: Size;
         handler?: Function;
         preventEventBubbling?: boolean;
         parentElement?: null;
@@ -47,10 +44,7 @@ declare module "src/Canvas" {
             animate?: boolean;
             smoothing?: boolean;
             stretchToFit?: boolean;
-            viewport?: {
-                width: number;
-                height: number;
-            };
+            viewport?: Size;
             handler?: Function;
             preventEventBubbling?: boolean;
             parentElement?: null;
@@ -74,7 +68,8 @@ declare module "src/Canvas" {
         protected _canvasContext: CanvasRenderingContext2D;
         protected _HDPIscaleRatio: number;
         public insertInPage(aContainer: HTMLElement): void;
-        public override getElement(): HTMLElement;
+        public getElement(): HTMLCanvasElement;
+        public getCanvasContext(): CanvasRenderingContext2D;
         public preventEventBubbling(value: boolean): void;
         protected _preventDefaults: boolean;
         public addChild(aChild: Sprite): Canvas;
@@ -92,25 +87,17 @@ declare module "src/Canvas" {
         protected _renderInterval: number;
         public getActualFrameRate(): number;
         public getRenderInterval(): number;
+        public getSmoothing(): boolean;
         public setSmoothing(enabled: boolean): void;
         public getWidth(): number;
         public getHeight(): number;
         public setDimensions(width: number, height: number, setAsPreferredDimensions?: boolean | undefined, optImmediate?: boolean | undefined): void;
-        protected _enqueuedSize: {
-            width: number;
-            height: number;
-        };
+        protected _enqueuedSize: Size;
         protected _preferredWidth: number;
         protected _preferredHeight: number;
+        public getViewport(): Viewport;
         public setViewport(width: number, height: number): void;
-        protected _viewport: {
-            left: number;
-            top: number;
-            width: number;
-            height: number;
-            right: number;
-            bottom: number;
-        };
+        protected _viewport: Viewport;
         public panViewport(x: number, y: number, broadcast?: boolean | undefined): void;
         public setBackgroundColor(color: string): void;
         protected _bgColor: string;
@@ -118,7 +105,7 @@ declare module "src/Canvas" {
         protected _animate: boolean;
         protected _lastRaf: DOMHighResTimeStamp;
         public isAnimatable(): boolean;
-        public drawImage(aSource: (new (width?: number, height?: number) => HTMLImageElement) | HTMLCanvasElement, destX: number, destY: number, destWidth: number, destHeight: number, aOptSourceX?: number | undefined, aOptSourceY?: number | undefined, aOptSourceWidth?: number | undefined, aOptSourceHeight?: number | undefined): void;
+        public drawImage(aSource: HTMLImageElement | HTMLCanvasElement, destX: number, destY: number, destWidth: number, destHeight: number, aOptSourceX?: number | undefined, aOptSourceY?: number | undefined, aOptSourceWidth?: number | undefined, aOptSourceHeight?: number | undefined): void;
         public scale(x: number, y?: number | undefined): void;
         public stretchToFit(value?: boolean | undefined): void;
         protected _stretchToFit: boolean;
@@ -138,53 +125,14 @@ declare module "src/Canvas" {
 declare module "src/Loader" {
     export default Loader;
     namespace Loader {
-        function loadImage(aSource: string, aOptImage?: HTMLImageElement): Promise<{
-            size: {
-                width: number;
-                height: number;
-            };
-            image: HTMLImageElement;
-        }>;
+        function loadImage(aSource: string, aOptImage?: HTMLImageElement): Promise<SizedImage>;
         function isReady(aImage: HTMLImageElement): boolean;
         function onReady(aImage: HTMLImageElement): Promise<void>;
     }
 }
 declare module "src/utils/image-math" {
-    export function isInsideViewport(spriteBounds: {
-        left: number;
-        top: number;
-        width: number;
-        height: number;
-    }, viewport: {
-        left: number;
-        top: number;
-        width: number;
-        height: number;
-    }): boolean;
-    export function calculateDrawRectangle(spriteBounds: {
-        left: number;
-        top: number;
-        width: number;
-        height: number;
-    }, viewport: {
-        left: number;
-        top: number;
-        width: number;
-        height: number;
-    }): {
-        source: {
-            left: number;
-            top: number;
-            width: number;
-            height: number;
-        };
-        dest: {
-            left: number;
-            top: number;
-            width: number;
-            height: number;
-        };
-    };
+    export function isInsideViewport(spriteBounds: Rectangle, viewport: Viewport): boolean;
+    export function calculateDrawRectangle(spriteBounds: Rectangle, viewport: Viewport): TransformedDrawBounds;
 }
 declare module "src/Sprite" {
     export default Sprite;
@@ -197,12 +145,7 @@ declare module "src/Sprite" {
         collidable?: boolean;
         interactive?: boolean;
         mask?: boolean;
-        sheet?: Array<{
-            row: number;
-            col: number;
-            amount: number;
-            fpt: 5;
-        }>;
+        sheet?: Array<SpriteSheet>;
         sheetTileWidth?: number;
         sheetTileHeight?: number;
     }): void;
@@ -216,12 +159,7 @@ declare module "src/Sprite" {
             collidable?: boolean;
             interactive?: boolean;
             mask?: boolean;
-            sheet?: Array<{
-                row: number;
-                col: number;
-                amount: number;
-                fpt: 5;
-            }>;
+            sheet?: Array<SpriteSheet>;
             sheetTileWidth?: number;
             sheetTileHeight?: number;
         });
@@ -230,12 +168,7 @@ declare module "src/Sprite" {
         public collidable: boolean;
         public hover: boolean;
         protected _mask: boolean;
-        protected _bounds: {
-            left: number;
-            top: number;
-            width: number;
-            height: number;
-        };
+        protected _bounds: Rectangle;
         protected _parent: Sprite | canvas;
         public last: Sprite;
         public next: Sprite;
@@ -256,51 +189,22 @@ declare module "src/Sprite" {
         public getHeight(): number;
         public setHeight(aValue: number): void;
         public setBounds(left: number, top: number, width?: number | undefined, height?: number | undefined): void;
-        public getBounds(): {
-            left: number;
-            top: number;
-            width: number;
-            height: number;
-        };
+        public getBounds(): Rectangle;
         public getInteractive(): boolean;
         public setInteractive(aValue: boolean): void;
         protected _interactive: boolean;
         public update(now: DOMHighResTimeStamp, framesSinceLastUpdate: number): void;
-        public draw(canvasContext: CanvasRenderingContext2D, viewport?: {
-            left: number;
-            top: number;
-            width: number;
-            height: number;
-            right: number;
-            bottom: number;
-        }): void;
+        public draw(canvasContext: CanvasRenderingContext2D, viewport?: Viewport | null): void;
         public insideBounds(x: number, y: number): boolean;
         public collidesWith(aSprite: Sprite): boolean;
-        public getIntersection(aSprite: Sprite): {
-            left: number;
-            top: number;
-            width: number;
-            height: number;
-        } | null;
+        public getIntersection(aSprite: Sprite): Rectangle | null;
         public collidesWithEdge(aSprite: Sprite, aEdge: number): boolean;
-        public getBitmap(): (new (width?: number, height?: number) => HTMLImageElement) | HTMLCanvasElement | string;
+        public getBitmap(): HTMLImageElement | HTMLCanvasElement | string;
         public setBitmap(aImage?: (HTMLImageElement | HTMLCanvasElement | string | null) | undefined, aOptWidth?: number | undefined, aOptHeight?: number | undefined): Promise<void>;
         protected _bitmapWidth: number;
         protected _bitmapHeight: number;
-        public setSheet(sheet: {
-            row: number;
-            col: number;
-            amount: number;
-            fpt: 5;
-            onComplete: Function;
-        }[], width?: number | undefined, height?: number | undefined): void;
-        protected _sheet: {
-            row: number;
-            col: number;
-            amount: number;
-            fpt: 5;
-            onComplete: Function;
-        }[];
+        public setSheet(sheet: Array<SpriteSheet>, width?: number | undefined, height?: number | undefined): void;
+        protected _sheet: Array<SpriteSheet>;
         _animation: {
             type: string | null;
             col: number;
@@ -312,24 +216,9 @@ declare module "src/Sprite" {
         public setParent(aParent: Sprite | Canvas): void;
         public getParent(): Sprite | Canvas;
         public setCanvas(canvas: Canvas): void;
-        public setConstraint(left: number, top: number, width: number, height: number): {
-            left: number;
-            top: number;
-            width: number;
-            height: number;
-        };
-        protected _constraint: {
-            left: number;
-            top: number;
-            width: number;
-            height: number;
-        };
-        public getConstraint(): {
-            left: number;
-            top: number;
-            width: number;
-            height: number;
-        };
+        public setConstraint(left: number, top: number, width: number, height: number): Rectangle;
+        protected _constraint: Rectangle;
+        public getConstraint(): Rectangle;
         public addChild(aChild: Sprite): Sprite;
         public removeChild(aChild: Sprite): Sprite;
         public getChildAt(index: number): Sprite;
@@ -345,14 +234,8 @@ declare module "src/Sprite" {
         public handleInteraction(x: number, y: number, event: Event): boolean;
         _pressed: boolean;
         protected _pressTime: number;
-        protected _dragStartOffset: {
-            x: number;
-            y: number;
-        };
-        protected _dragStartEventCoordinates: {
-            x: number;
-            y: number;
-        };
+        protected _dragStartOffset: Point;
+        protected _dragStartEventCoordinates: Point;
         protected updateAnimation(framesSinceLastRender?: number | undefined): void;
         protected invalidate(): void;
         protected drawOutline(canvasContext: CanvasRenderingContext2D): void;
@@ -362,22 +245,51 @@ declare module "src/Sprite" {
     }
 }
 declare module "src/Collision" {
-    export function pixelCollision(sprite1: Sprite, sprite2: Sprite, optReturnAsCoordinate?: boolean | undefined): boolean | {
-        x: number;
-        y: number;
-    };
-    export function getPixelArray(sprite: Sprite, rect: {
-        left: number;
-        top: number;
-        width: number;
-        height: number;
-    }, pixels: Array<number>): number;
+    export function pixelCollision(sprite1: Sprite, sprite2: Sprite, optReturnAsCoordinate?: boolean | undefined): boolean | Point;
+    export function getPixelArray(sprite: Sprite, rect: Rectangle, pixels: Array<number>): number;
     export function getChildrenUnderPoint(aSpriteList: Array<Sprite>, aX: number, aY: number, aWidth: number, aHeight: number, aOnlyCollidables?: boolean | undefined): Array<Sprite>;
     export function cache(bitmap: HTMLCanvasElement | HTMLImageElement): Promise<boolean>;
     export function clearCache(bitmap: HTMLCanvasElement | HTMLImageElement): boolean;
     export function hasCache(bitmap: HTMLCanvasElement | HTMLImageElement): boolean;
 }
 declare module "zcanvas" {
+    export type Size = {
+        width: number;
+        height: number;
+    };
+    export type Point = {
+        x: number;
+        y: number;
+    };
+    export type Rectangle = {
+        left: number;
+        top: number;
+        width: number;
+        height: number;
+    };
+    export type SizedImage = {
+        size: Size;
+        image: HTMLImageElement;
+    };
+    export type Viewport = {
+        left: number;
+        top: number;
+        width: number;
+        height: number;
+        right: number;
+        bottom: number;
+    };
+    export type SpriteSheet = {
+        row: number;
+        col: number;
+        amount: number;
+        fpt: 5;
+        onComplete?: () => void;
+    };
+    export type TransformedDrawBounds = {
+        src: Rectangle;
+        dest: Rectangle;
+    };
     import canvas from "src/Canvas";
     import sprite from "src/Sprite";
     import loader from "src/Loader";

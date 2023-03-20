@@ -1,3 +1,5 @@
+import "jest-canvas-mock";
+
 import Canvas from "../src/Canvas.js";
 import Sprite from "../src/Sprite.js";
 import Loader from "../src/Loader.js";

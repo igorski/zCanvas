@@ -1,7 +1,7 @@
 /**
  * The MIT License (MIT)
  *
- * Igor Zinken 2013-2022 - https://www.igorski.nl
+ * Igor Zinken 2013-2023 - https://www.igorski.nl
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of
  * this software and associated documentation files (the "Software"), to deal in
@@ -52,7 +52,7 @@ const HIGH_REFRESH_THROTTLE = IDEAL_FPS + 3;
  *            animate?: boolean,
  *            smoothing?: boolean,
  *            stretchToFit?: boolean,
- *            viewport?: { width: number, height: number },
+ *            viewport?: Size,
  *            handler?: Function,
  *            preventEventBubbling?: boolean,
  *            parentElement?: null,
@@ -184,14 +184,19 @@ Canvas.prototype.insertInPage = function( aContainer ) {
  * get the <canvas>-element inside the DOM that is used
  * to render this Canvas' contents
  *
- * @override
  * @public
- *
- * @return {HTMLElement}
+ * @return {HTMLCanvasElement}
  */
 Canvas.prototype.getElement = function() {
-
     return this._element;
+};
+
+/**
+ * @public
+ * @return {CanvasRenderingContext2D}
+ */
+Canvas.prototype.getCanvasContext = function() {
+    return this._canvasContext;
 };
 
 /**
@@ -406,6 +411,14 @@ Canvas.prototype.getRenderInterval = function() {
 };
 
 /**
+ * @public
+ * @return {boolean}
+ */
+Canvas.prototype.getSmoothing = function() {
+    return this._smoothing;
+};
+
+/**
  * toggle the smoothing of the Canvas' contents.
  * for pixel art-type graphics, setting the smoothing to
  * false will yield crisper results
@@ -470,7 +483,7 @@ Canvas.prototype.getHeight = function() {
 Canvas.prototype.setDimensions = function( width, height, setAsPreferredDimensions = true, optImmediate = false ) {
     /**
      * @protected
-     * @type {{ width: number, height: number }}
+     * @type {Size}
      */
     this._enqueuedSize = { width, height };
 
@@ -486,6 +499,14 @@ Canvas.prototype.setDimensions = function( width, height, setAsPreferredDimensio
 };
 
 /**
+ * @public
+ * @return {Viewport}
+ */
+Canvas.prototype.getViewport = function() {
+    return this._viewport;
+};
+
+/**
  * In case the Canvas isn't fully visible (for instance because it is part
  * of a scrollable container), you can define the visible bounds (relative to
  * the full Canvas width/height) here. This can be used to improve rendering
@@ -498,14 +519,7 @@ Canvas.prototype.setDimensions = function( width, height, setAsPreferredDimensio
 Canvas.prototype.setViewport = function( width, height ) {
     /**
      * @protected
-     * @type {{
-     *           left: number,
-     *           top: number,
-     *           width: number,
-     *           height: number,
-     *           right: number,
-     *           bottom: number
-     *       }}
+     * @type {Viewport}
      */
      this._viewport = { width, height };
      this.panViewport( 0, 0 );
@@ -590,7 +604,7 @@ Canvas.prototype.isAnimatable = function() {
  *
  * @public
  *
- * @param {Image|HTMLCanvasElement} aSource canvas drawable to draw
+ * @param {HTMLImageElement|HTMLCanvasElement} aSource canvas drawable to draw
  * @param {number} destX destination x-coordinate of given image
  * @param {number} destY destination y-coordinate of given image
  * @param {number} destWidth destination width of given image
