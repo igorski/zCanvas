@@ -1295,6 +1295,17 @@ Sprite.prototype.handleInteraction = function( x, y, event ) {
     return false;
 };
 
+/**
+ * Whenever a change has occurred, this Sprite can request an
+ * invalidation of the Canvas to ensure the on screen representation
+ * matches the latest state.
+ *
+ * @public
+ */
+Sprite.prototype.invalidate = function() {
+    this.canvas && this.canvas.invalidate();
+};
+
 /* protected methods */
 
 /**
@@ -1324,17 +1335,6 @@ Sprite.prototype.updateAnimation = function( framesSinceLastRender = 1 ) {
             aniProps.onComplete( this );
         }
     }
-};
-
-/**
- * Whenever a change has occurred, this Sprite can request an
- * invalidation of the Canvas to ensure the on screen representation
- * matches the latest state.
- *
- * @protected
- */
-Sprite.prototype.invalidate = function() {
-    this.canvas && this.canvas.invalidate();
 };
 
 /**

@@ -64,6 +64,8 @@ declare module "src/Canvas" {
         protected _activeTouches: Array<Sprite>;
         protected _children: Array<Sprite>;
         protected _coords: DOMRect;
+        protected _width: number;
+        protected _height: number;
         protected _element: HTMLCanvasElement;
         protected _canvasContext: CanvasRenderingContext2D;
         protected _HDPIscaleRatio: number;
@@ -236,8 +238,8 @@ declare module "src/Sprite" {
         protected _pressTime: number;
         protected _dragStartOffset: Point;
         protected _dragStartEventCoordinates: Point;
+        public invalidate(): void;
         protected updateAnimation(framesSinceLastRender?: number | undefined): void;
-        protected invalidate(): void;
         protected drawOutline(canvasContext: CanvasRenderingContext2D): void;
     }
     namespace Sprite {

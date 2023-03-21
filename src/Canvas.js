@@ -85,6 +85,8 @@ function Canvas({
     /** @protected @type {Array<Sprite>} */ this._activeTouches  = [];
     /** @protected @type {Array<Sprite>} */ this._children       = [];
     /** @protected @type {DOMRect} */       this._coords         = null;
+    /** @protected @type {number} */        this._width          = 0;
+    /** @protected @type {number} */        this._height         = 0;
 
     /* initialization */
 
@@ -1057,8 +1059,8 @@ function updateCanvasSize( canvasInstance ) {
     if ( canvasInstance._enqueuedSize ) {
         ({ width, height } = canvasInstance._enqueuedSize );
         canvasInstance._enqueuedSize = null;
-        /** @protected @type {number} */ canvasInstance._width  = width;
-        /** @protected @type {number} */ canvasInstance._height = height;
+        canvasInstance._width  = width;
+        canvasInstance._height = height;
     }
 
     if ( viewport ) {
