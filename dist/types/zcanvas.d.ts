@@ -301,12 +301,14 @@ declare module "zcanvas" {
         export { cache };
         export { hasCache };
         export { clearCache };
+        export { isInsideViewport };
     }
     import { pixelCollision } from "src/Collision";
     import { getChildrenUnderPoint } from "src/Collision";
     import { cache } from "src/Collision";
     import { hasCache } from "src/Collision";
     import { clearCache } from "src/Collision";
+    import { isInsideViewport } from "src/utils/image-math";
     export { canvas, sprite, loader };
 }
 //# sourceMappingURL=zcanvas.d.ts.map
