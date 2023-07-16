@@ -650,12 +650,12 @@ Canvas.prototype.drawImage = function( aSource, destX, destY, destWidth, destHei
         // when clipping the source region should remain within the image dimensions
 
         if ( aOptSourceX + aOptSourceWidth > aSource.width ) {
-            destWidth       -= xScale * (aOptSourceX + aOptSourceWidth - aSource.width);
+            destWidth       -= xScale * ( aOptSourceX + aOptSourceWidth - aSource.width );
             aOptSourceWidth -= (aOptSourceX + aOptSourceWidth - aSource.width);
         }
         if ( aOptSourceY + aOptSourceHeight > aSource.height ) {
-            destHeight       -= yScale * (aOptSourceY + aOptSourceHeight - aSource.height);
-            aOptSourceHeight -= (aOptSourceY + aOptSourceHeight - aSource.height);
+            destHeight       -= yScale * ( aOptSourceY + aOptSourceHeight - aSource.height );
+            aOptSourceHeight -= ( aOptSourceY + aOptSourceHeight - aSource.height );
         }
 
         ctx.drawImage(

@@ -24,6 +24,7 @@ import canvas from "./src/Canvas.js";
 import sprite from "./src/Sprite.js";
 import loader from "./src/Loader.js";
 import { pixelCollision, getChildrenUnderPoint, cache, hasCache, clearCache } from "./src/Collision.js";
+import { isInsideViewport } from "./src/utils/image-math.js";
 
 /**
  * @typedef {{ width: number, height: number }} Size
@@ -60,6 +61,7 @@ const collision = {
     cache,
     hasCache,
     clearCache,
+    isInsideViewport,
 };
 
 export {
