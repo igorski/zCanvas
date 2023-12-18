@@ -20,18 +20,10 @@
  * IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-import Loader from "./Loader.js";
+import Loader from "./Loader";
+import { getTempCanvas, clearTempCanvas, imageToCanvas } from "./utils/draw-util";
 
-/* lazily create a pooled canvas for pixel retrieval operations */
-
-let _tempCanvas = undefined;
-const getTempCanvas = () => {
-    if ( !_tempCanvas ) {
-        _tempCanvas = document.createElement( "canvas" );
-    }
-    return _tempCanvas;
-}
-
+// @type Map<string, CanvasRenderingContext2D>
 const cacheMap = new Map();
 
 // keep strong references to avoid garbage collection hit
@@ -60,7 +52,7 @@ export const pixelCollision = ( sprite1, sprite2, optReturnAsCoordinate = false 
 
     const rect = sprite1.getIntersection( sprite2 ); // check if sprites actually overlap
 
-    if ( rect === null ) {
+    if ( rect === undefined ) {
         return false;
     }
 
@@ -233,7 +225,7 @@ export const cache = bitmap => {
                     bitmap,
                     imageToCanvas( tempCanvas, bitmap, width, height ).getImageData( 0, 0, width, height ).data
                 );
-                tempCanvas.width = tempCanvas.height = 1; // minimize memory consumption
+                clearTempCanvas();
 
                 resolve( true );
             }).catch( reject );
@@ -265,16 +257,3 @@ export const clearCache = bitmap => {
  * @return {boolean}
  */
 export const hasCache = bitmap => cacheMap.has( bitmap );
-
-/* internal methods */
-
-function imageToCanvas( cvs, image, width, height ) {
-    const ctx = cvs.getContext( "2d" );
-
-    cvs.width  = width;
-    cvs.height = height;
-    ctx.clearRect( 0, 0, width, height );
-    ctx.drawImage( image, 0, 0, width, height );
-
-    return ctx;
-}

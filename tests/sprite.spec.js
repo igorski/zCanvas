@@ -236,8 +236,8 @@ describe( "zCanvas.sprite", () => {
 
         // hijack update Function
 
-        const orgUpdateFn = Sprite.prototype.update;
-        Sprite.prototype.update = function() {
+        const orgUpdateFn = update;
+        update = function() {
             ++updated;
             orgUpdateFn.call( this );
         };
@@ -257,7 +257,7 @@ describe( "zCanvas.sprite", () => {
         expect( updated ).toEqual( expectedUpdates );
 
         // restore update Function
-        Sprite.prototype.update = orgUpdateFn;
+        update = orgUpdateFn;
     });
 
     it( "should be able to determine whether a coordinate is inside the sprites bounding box", () => {

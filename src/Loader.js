@@ -20,7 +20,7 @@
  * IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-import EventHandler from "./utils/event-handler.js";
+import EventHandler from "./utils/EventHandler";
 
 /**
  * loader provides an interface that allows the loading of Images
@@ -77,16 +77,9 @@ const Loader = {
             out.src = aSource;
 
             // invoke callback immediately for data strings when no load is required
+            // TODO: stub
 
-            let instantCallback = isDataURL;
-            if ( process.env.NODE_ENV !== "production" ) {
-                // and also when unit testing using jsdom (as jsdom won't fire onload event)
-                if ( window.navigator.userAgent.includes( "jsdom" )) {
-                    instantCallback = true;
-                }
-            }
-
-            if ( instantCallback ) {
+            if ( isDataURL ) {
                 Loader.onReady( out ).then( result => resolve( wrapOutput( out ))).catch( reject );
             }
         });
@@ -128,6 +121,7 @@ const Loader = {
                 if ( Loader.isReady( aImage )) {
                     resolve();
                 } else if ( ++iterations === MAX_ITERATIONS ) {
+                    console.error( typeof aImage );
                     reject( new Error( "Image could not be resolved. This shouldn't occur." ));
                 } else {
                     // requestAnimationFrame preferred over a timeout as

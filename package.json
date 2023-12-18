@@ -1,17 +1,15 @@
 {
   "name": "zcanvas",
   "homepage": "https://www.igorski.nl/",
-  "version": "5.1.10",
+  "version": "6.0.0",
   "license": "MIT",
   "author": {
     "name": "Igor Zinken",
     "url": "https://github.com/igorski/"
   },
-  "directories": {},
   "main": "dist/zcanvas.js",
   "jsnext:main": "zcanvas.js",
   "module": "zcanvas.js",
-  "type": "module",
   "types": "dist/types/zcanvas.d.ts",
   "bugs": {
     "url": "https://github.com/igorski/zcanvas/issues/"
@@ -42,20 +40,15 @@
     "detection"
   ],
   "devDependencies": {
-    "@babel/core": "^7.20.2",
-    "@babel/plugin-transform-runtime": "^7.17.0",
-    "@babel/preset-env": "^7.20.2",
-    "babel-loader": "8.2.5",
-    "clean-webpack-plugin": "^4.0.0",
-    "jest": "^26.1.0",
-    "jest-canvas-mock": "^2.4.0",
     "typescript": "^5.0.2",
-    "webpack": "^5.76.2",
-    "webpack-cli": "^4.9.2"
+    "vite": "^4.1.4",
+    "vite-plugin-static-copy": "^0.13.1",
+    "vitest": "^0.29.3"
   },
   "scripts": {
-    "test": "jest",
-    "build": "webpack --mode=production",
+    "build": "vite build",
+    "test": "vitest --environment jsdom --no-watch",
+    "typecheck": "npx -p typescript tsc -p tsconfig.check.json --noEmit",
     "types": "npx -p typescript tsc",
     "prepublish": "npm run test && npm run build && npm run types"
   },
