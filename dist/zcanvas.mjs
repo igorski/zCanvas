@@ -55,7 +55,7 @@ class G {
   drawImage(t, e, i, s, n) {
     this._context.drawImage(t, e, i, s, n);
   }
-  drawImageCropped(t, e, i, s, n, r, a, o, d) {
+  drawImageCropped(t, e, i, s, n, r, a, o, l) {
     this._context.drawImage(
       t,
       // TODO via Cache key identifier!!
@@ -66,7 +66,7 @@ class G {
       0.5 + r << 0,
       0.5 + a << 0,
       0.5 + o << 0,
-      0.5 + d << 0
+      0.5 + l << 0
     );
   }
 }
@@ -148,12 +148,12 @@ const b = {
    */
   loadImage(h, t = null) {
     return new Promise((e, i) => {
-      const s = t || new window.Image(), n = J(h), r = new q(), a = (d) => {
-        r.dispose(), i(d);
+      const s = t || new window.Image(), n = J(h), r = new q(), a = (l) => {
+        r.dispose(), i(l);
       }, o = () => {
-        r.dispose(), b.onReady(s).then((d) => e(W(s))).catch(i);
+        r.dispose(), b.onReady(s).then((l) => e(W(s))).catch(i);
       };
-      n || (j(h, s), r.add(s, "load", o), r.add(s, "error", a)), s.src = h, n && b.onReady(s).then((d) => e(W(s))).catch(i);
+      n || (j(h, s), r.add(s, "load", o), r.add(s, "error", a)), s.src = h, n && b.onReady(s).then((l) => e(W(s))).catch(i);
     });
   },
   /**
@@ -229,18 +229,18 @@ function T(h, t, e, i) {
   const s = h.getContext("2d");
   return h.width = e, h.height = i, s.clearRect(0, 0, e, i), s.drawImage(t, 0, 0, e, i), s;
 }
-var g;
+var p;
 class V {
   constructor() {
     /**
      * @private
      * @type {Map<string, CachedBitmapEntry>}
      */
-    z(this, g, void 0);
-    P(this, g, /* @__PURE__ */ new Map());
+    z(this, p, void 0);
+    P(this, p, /* @__PURE__ */ new Map());
   }
   dispose() {
-    x(this, g).clear(), P(this, g, void 0);
+    x(this, p).clear(), P(this, p, void 0);
   }
   /**
    * @param {string} key 
@@ -248,10 +248,10 @@ class V {
    */
   get(t) {
     var e;
-    return (e = x(this, g).get(t)) == null ? void 0 : e.bitmap;
+    return (e = x(this, p).get(t)) == null ? void 0 : e.bitmap;
   }
   set(t, e, i, s) {
-    return x(this, g).set(t, {
+    return x(this, p).set(t, {
       original: e,
       resizedImage: i,
       size: s
@@ -279,7 +279,7 @@ class V {
     return (i > 0 && a.width !== i || s > 0 && a.height !== s) && (o = await Z({ size: a, image: e }, i, s)), this.set(t, e, o, a), o;
   }
   has(t, e, i) {
-    const s = x(this, g).get(t);
+    const s = x(this, p).get(t);
     return s ? (console.info("has entry for " + t + ":" + (s.size.width === e && s.size.height === i)), s.size.width === e && s.size.height === i) : !1;
   }
   /**
@@ -287,10 +287,10 @@ class V {
    * @return {boolean}
    */
   clear(t) {
-    return x(this, g).delete(t);
+    return x(this, p).delete(t);
   }
 }
-g = new WeakMap();
+p = new WeakMap();
 class tt {
   constructor(t, e = !1) {
     if (this._element = t, e && typeof this._element.transferControlToOffscreen == "function") {
@@ -332,7 +332,7 @@ class tt {
   drawImage(t, e, i, s, n) {
     this._renderer.drawImage(t, e, i, s, n);
   }
-  drawImageCropped(t, e, i, s, n, r, a, o, d) {
+  drawImageCropped(t, e, i, s, n, r, a, o, l) {
     this._renderer.drawImageCropped(
       t,
       e,
@@ -342,7 +342,7 @@ class tt {
       r,
       a,
       o,
-      d
+      l
     );
   }
 }
@@ -357,11 +357,11 @@ class ot {
     animate: r = !1,
     smoothing: a = !0,
     stretchToFit: o = !1,
-    viewport: d = null,
+    viewport: l = null,
     preventEventBubbling: f = !1,
-    parentElement: l = null,
+    parentElement: d = null,
     debug: c = !1,
-    viewportHandler: p,
+    viewportHandler: _,
     onUpdate: m,
     useOffscreen: H = !1
   } = {}) {
@@ -372,9 +372,9 @@ class ot {
       maxFps: -1 / 0
     }, this.cache = new V(), this._smoothing = !1, this._stretchToFit = !1, this._HDPIscaleRatio = 1, this._preventDefaults = !1, this._lastRender = 0, this._renderId = 0, this._renderPending = !1, this._disposed = !1, this._scale = { x: 1, y: 1 }, this._activeTouches = [], this._children = [], this._animate = !1, t <= 0 || e <= 0)
       throw new Error("cannot construct a zCanvas without valid dimensions");
-    this.DEBUG = c, this._element = document.createElement("canvas"), this._renderer = new tt(this._element, H), this._updateHandler = m, this._renderHandler = this.render.bind(this), this._viewportHandler = p, this.setFrameRate(i), this.setAnimatable(r), n && this.setBackgroundColor(n);
-    const C = window.devicePixelRatio || 1, _ = this._renderer.getBackingStoreRatio(), u = C / _;
-    this._HDPIscaleRatio = C !== _ ? u : 1, this.setDimensions(t, e, !0, !0), d && this.setViewport(d.width, d.height), s !== 1 && this.scale(s, s), o && this.stretchToFit(!0), l instanceof HTMLElement && this.insertInPage(l), this.setSmoothing(a), this.preventEventBubbling(f), this.addListeners(), this._animate && this.render();
+    this.DEBUG = c, this._element = document.createElement("canvas"), this._renderer = new tt(this._element, H), this._updateHandler = m, this._renderHandler = this.render.bind(this), this._viewportHandler = _, this.setFrameRate(i), this.setAnimatable(r), n && this.setBackgroundColor(n);
+    const C = window.devicePixelRatio || 1, u = this._renderer.getBackingStoreRatio(), g = C / u;
+    this._HDPIscaleRatio = C !== u ? g : 1, this.setDimensions(t, e, !0, !0), l && this.setViewport(l.width, l.height), s !== 1 && this.scale(s, s), o && this.stretchToFit(!0), d instanceof HTMLElement && this.insertInPage(d), this.setSmoothing(a), this.preventEventBubbling(f), this.addListeners(), this._animate && this.render();
   }
   /* public methods */
   /**
@@ -578,18 +578,18 @@ class ot {
    * @param {number=} optSourceWidth optional, whether to use an alternative width for the source rectangle
    * @param {number=} optSourceHeight optional, whether to use an alternative height for the source rectangle
    */
-  drawImage(t, e, i, s, n, r, a, o, d) {
+  drawImage(t, e, i, s, n, r, a, o, l) {
     if (e = 0.5 + e << 0, i = 0.5 + i << 0, s = 0.5 + s << 0, n = 0.5 + n << 0, !(s <= 0 || n <= 0))
       if (typeof r == "number") {
         s = y(this._element.width, s), n = y(this._element.height, n);
-        const f = s / o, l = n / d;
-        r + o > t.width && (s -= f * (r + o - t.width), o -= r + o - t.width), a + d > t.height && (n -= l * (a + d - t.height), d -= a + d - t.height), this._renderer.drawImageCropped(
+        const f = s / o, d = n / l;
+        r + o > t.width && (s -= f * (r + o - t.width), o -= r + o - t.width), a + l > t.height && (n -= d * (a + l - t.height), l -= a + l - t.height), this._renderer.drawImageCropped(
           t,
           // no rounding required here as these are integer values
           r,
           a,
           o,
-          d,
+          l,
           // but we do round the target coordinates
           e,
           i,
@@ -643,12 +643,12 @@ class ot {
         default:
           let n = 0, r = 0;
           const a = t.changedTouches;
-          let o = 0, d = a.length;
-          if (d > 0) {
-            let { x: _, y: u } = this.getCoordinate();
-            for (i && (_ -= i.left, u -= i.top), o = 0; o < d; ++o) {
+          let o = 0, l = a.length;
+          if (l > 0) {
+            let { x: u, y: g } = this.getCoordinate();
+            for (i && (u -= i.left, g -= i.top), o = 0; o < l; ++o) {
               const w = a[o], { identifier: B } = w;
-              switch (n = w.pageX - _, r = w.pageY - u, t.type) {
+              switch (n = w.pageX - u, r = w.pageY - g, t.type) {
                 case "touchstart":
                   for (; s; ) {
                     if (!this._activeTouches.includes(s) && s.handleInteraction(n, r, t)) {
@@ -669,12 +669,12 @@ class ot {
         case "mousedown":
         case "mousemove":
         case "mouseup":
-          let { offsetX: f, offsetY: l } = t;
-          for (i && (f += i.left, l += i.top); s && !s.handleInteraction(f, l, t); )
+          let { offsetX: f, offsetY: d } = t;
+          for (i && (f += i.left, d += i.top); s && !s.handleInteraction(f, d, t); )
             s = s.last;
           break;
         case "wheel":
-          const { deltaX: c, deltaY: p } = t, m = 20, H = c === 0 ? 0 : c > 0 ? m : -m, C = p === 0 ? 0 : p > 0 ? m : -m;
+          const { deltaX: c, deltaY: _ } = t, m = 20, H = c === 0 ? 0 : c > 0 ? m : -m, C = _ === 0 ? 0 : _ > 0 ? m : -m;
           this.panViewport(i.left + H, i.top + C, !0);
           break;
       }
@@ -761,9 +761,9 @@ const N = (h, t) => {
     left: r,
     top: a,
     width: o,
-    height: d
+    height: l
   } = t;
-  return e > r ? s = Math.min(s, o - (e - r)) : s = Math.min(o, s - (r - e)), i > a ? n = Math.min(n, d - (i - a)) : n = Math.min(d, n - (a - i)), {
+  return e > r ? s = Math.min(s, o - (e - r)) : s = Math.min(o, s - (r - e)), i > a ? n = Math.min(n, l - (i - a)) : n = Math.min(l, n - (a - i)), {
     src: {
       // NOTE by default all Sprites draw their content from top left coordinate
       // we only correct for this if the visible area starts within the viewport
@@ -780,7 +780,7 @@ const N = (h, t) => {
     }
   };
 }, { min: I, max: R } = Math, v = 0.5;
-class dt {
+class lt {
   // coordinates of the event at the moment drag was started
   constructor({
     width: t,
@@ -791,16 +791,16 @@ class dt {
     collidable: r = !1,
     interactive: a = !1,
     mask: o = !1,
-    sheet: d = [],
+    sheet: l = [],
     sheetTileWidth: f = 0,
-    sheetTileHeight: l = 0
+    sheetTileHeight: d = 0
   } = { width: 64, height: 64 }) {
     if (this.hover = !1, this.isDragging = !1, this._children = [], this._disposed = !1, this._mask = !1, this._interactive = !1, this._draggable = !1, this._keepInBounds = !1, this._bitmapReady = !1, this._pressed = !1, t <= 0 || e <= 0)
       throw new Error("cannot construct a zSprite without valid dimensions");
-    if (this.collidable = r, this._mask = o, this._bounds = { left: 0, top: 0, width: t, height: e }, this.setX(i), this.setY(s), this.setInteractive(a), n && this.setBitmap(n), Array.isArray(d) && d.length > 0) {
+    if (this.collidable = r, this._mask = o, this._bounds = { left: 0, top: 0, width: t, height: e }, this.setX(i), this.setY(s), this.setInteractive(a), n && this.setBitmap(n), Array.isArray(l) && l.length > 0) {
       if (!n)
         throw new Error("cannot use a spritesheet without a valid Bitmap");
-      this.setSheet(d, f, l);
+      this.setSheet(l, f, d);
     }
   }
   /* public methods */
@@ -872,12 +872,12 @@ class dt {
       throw new Error("cannot update position of a Sprite that has no constraint or is not added to a canvas");
     let n = !1;
     typeof i == "number" && (n = this._bounds.width !== i, this._bounds.width = i), typeof s == "number" && (n = n || this._bounds.height !== s, this._bounds.height = s);
-    const r = this._bounds.width, a = this._bounds.height, o = this._constraint ? this._constraint.width : this.canvas.getWidth(), d = this._constraint ? this._constraint.height : this.canvas.getHeight();
+    const r = this._bounds.width, a = this._bounds.height, o = this._constraint ? this._constraint.width : this.canvas.getWidth(), l = this._constraint ? this._constraint.height : this.canvas.getHeight();
     if (this._keepInBounds) {
-      const f = I(0, -(r - o)), l = I(0, -(a - d)), c = o - r, p = d - a;
-      t = I(c, R(t, f)), e = I(p, R(e, l));
+      const f = I(0, -(r - o)), d = I(0, -(a - l)), c = o - r, _ = l - a;
+      t = I(c, R(t, f)), e = I(_, R(e, d));
     } else
-      t > o && (t = t + r * v), e > d && (e = e + a * v);
+      t > o && (t = t + r * v), e > l && (e = e + a * v);
     this.setX(t), this.setY(e), n && this.invalidate();
   }
   getBounds() {
@@ -935,53 +935,55 @@ class dt {
       return;
     const i = this._bounds;
     let s = this._bitmapReady;
-    if (s && e && (s = N(i, e)), t.save(), this._mask && t.setBlendMode("destination-in"), s) {
-      const r = this._animation;
-      let { left: a, top: o, width: d, height: f } = i;
-      if (r) {
-        const l = r.tileWidth ? r.tileWidth : v + d << 0, c = r.tileHeight ? r.tileHeight : v + f << 0;
-        e && (a -= e.left, o -= e.top), t.drawImageCropped(
+    s && e && (s = N(i, e));
+    let n = this._mask;
+    if (n && t.save(), this._mask && t.setBlendMode("destination-in"), s) {
+      const a = this._animation;
+      let { left: o, top: l, width: f, height: d } = i;
+      if (a) {
+        const c = a.tileWidth ? a.tileWidth : v + f << 0, _ = a.tileHeight ? a.tileHeight : v + d << 0;
+        e && (o -= e.left, l -= e.top), t.drawImageCropped(
           this._bitmap,
           // TODO via Cache key identifier
-          r.col * l,
+          a.col * c,
           // tile x offset
-          r.type.row * c,
+          a.type.row * _,
           // tile y offset
-          l,
           c,
-          a,
+          _,
           o,
-          d,
-          f
+          l,
+          f,
+          d
         );
       } else if (e) {
-        const { src: l, dest: c } = it(i, e);
+        const { src: c, dest: _ } = it(i, e);
         t.drawImageCropped(
           this._bitmap,
           // TODO via Cache key identifier!!
-          l.left,
-          l.top,
-          l.width,
-          l.height,
           c.left,
           c.top,
           c.width,
-          c.height
+          c.height,
+          _.left,
+          _.top,
+          _.width,
+          _.height
         );
       } else
         t.drawImage(
           this._bitmap,
           // TODO via Cache key identifier!!
-          a,
           o,
-          d,
-          f
+          l,
+          f,
+          d
         );
     }
-    let n = this._children[0];
-    for (; n; )
-      n.draw(t, e), n = n.next;
-    this._mask && t.setBlendMode("source-over"), this.canvas.DEBUG && t.drawRect(this.getX(), this.getY(), this.getWidth(), this.getHeight(), "#FF0000", "stroke"), t.restore();
+    let r = this._children[0];
+    for (; r; )
+      r.draw(t, e), r = r.next;
+    this._mask && t.setBlendMode("source-over"), this.canvas.DEBUG && t.drawRect(this.getX(), this.getY(), this.getWidth(), this.getHeight(), "#FF0000", "stroke"), n && t.restore();
   }
   /**
    * evaluates whether given coordinate is within the Sprite bounds
@@ -1066,20 +1068,20 @@ class dt {
         this._bitmap = void 0;
         return;
       }
-      const d = typeof e == "number", f = typeof i == "number";
-      if (d && this.setWidth(e), f && this.setHeight(i), this._keepInBounds && this.canvas && (d || f)) {
-        const l = -(this._bounds.width - this.canvas.getWidth()), c = -(this._bounds.height - this.canvas.getHeight());
-        this._bounds.left > 0 ? this._bounds.left = 0 : this._bounds.left < l && (this._bounds.left = l), this._bounds.top > 0 ? this._bounds.top = 0 : this._bounds.top < c && (this._bounds.top = c);
+      const l = typeof e == "number", f = typeof i == "number";
+      if (l && this.setWidth(e), f && this.setHeight(i), this._keepInBounds && this.canvas && (l || f)) {
+        const d = -(this._bounds.width - this.canvas.getWidth()), c = -(this._bounds.height - this.canvas.getHeight());
+        this._bounds.left > 0 ? this._bounds.left = 0 : this._bounds.left < d && (this._bounds.left = d), this._bounds.top > 0 ? this._bounds.top = 0 : this._bounds.top < c && (this._bounds.top = c);
       }
       if (s)
         return this._bitmap = t, this._bitmapReady = !0, this.invalidate(), a();
       b.loadImage(
         n ? t.src : t,
         n ? t : null
-      ).then(({ size: l, image: c }) => {
+      ).then(({ size: d, image: c }) => {
         this._bitmap = c, this._bitmapReady = !0, this.invalidate(), a();
-      }).catch((l) => {
-        o(new Error(`zSprite.setBitmap() "${l == null ? void 0 : l.message}" occurred.`));
+      }).catch((d) => {
+        o(new Error(`zSprite.setBitmap() "${d == null ? void 0 : d.message}" occurred.`));
       });
     });
   }
@@ -1341,26 +1343,26 @@ const S = /* @__PURE__ */ new Map(), F = [], D = [], st = (h, t, e = !1) => {
   if (a === 0 || o === 0)
     return e.length = 0;
   e.length = parseInt(a * o);
-  let d, f, l, c;
-  const p = S.get(i);
-  if (p && n + a < i.width)
-    d = p, f = i.width, c = r, l = n;
+  let l, f, d, c;
+  const _ = S.get(i);
+  if (_ && n + a < i.width)
+    l = _, f = i.width, c = r, d = n;
   else {
-    const _ = !(i instanceof window.HTMLCanvasElement), u = (_ ? k() : i).getContext("2d");
-    _ && T(k(), i, s.width, s.height), d = u.getImageData(n, r, a, o).data, f = a, c = 0, l = 0;
+    const u = !(i instanceof window.HTMLCanvasElement), g = (u ? k() : i).getContext("2d");
+    u && T(k(), i, s.width, s.height), l = g.getImageData(n, r, a, o).data, f = a, c = 0, d = 0;
   }
-  const m = c + o, H = l + a;
+  const m = c + o, H = d + a;
   let C = -1;
-  for (let _ = c; _ < m; ++_)
-    for (let u = l; u < H; ++u) {
-      const w = (_ * f + u) * 4;
-      e[++C] = d[w + 3] << 24 | d[w] << 16 | d[w + 1] << 8 | d[w + 2];
+  for (let u = c; u < m; ++u)
+    for (let g = d; g < H; ++g) {
+      const w = (u * f + g) * 4;
+      e[++C] = l[w + 3] << 24 | l[w] << 16 | l[w + 1] << 8 | l[w + 2];
     }
 }, nt = (h, t, e, i, s, n = !1) => {
   const r = [];
-  let a = h.length, o, d, f, l, c;
+  let a = h.length, o, l, f, d, c;
   for (; a--; )
-    o = h[a], d = o.getX(), f = o.getY(), l = o.getWidth(), c = o.getHeight(), d < t + i && d + l > t && f < e + s && f + c > e && (!n || n && o.collidable) && r.push(o);
+    o = h[a], l = o.getX(), f = o.getY(), d = o.getWidth(), c = o.getHeight(), l < t + i && l + d > t && f < e + s && f + c > e && (!n || n && o.collidable) && r.push(o);
   return r;
 }, ht = (h) => new Promise((t, e) => {
   !(h instanceof window.HTMLCanvasElement) ? b.onReady(h).then(() => {
@@ -1370,7 +1372,7 @@ const S = /* @__PURE__ */ new Map(), F = [], D = [], st = (h, t, e = !1) => {
       T(r, h, s, n).getImageData(0, 0, s, n).data
     ), O(), t(!0);
   }).catch(e) : (S.set(h, h.getContext("2d").getImageData(0, 0, h.width, h.height).data), t(!0));
-}), rt = (h) => U(h) ? (S.delete(h), !0) : !1, U = (h) => S.has(h), lt = {
+}), rt = (h) => U(h) ? (S.delete(h), !0) : !1, U = (h) => S.has(h), dt = {
   pixelCollision: st,
   getChildrenUnderPoint: nt,
   cache: ht,
@@ -1380,7 +1382,7 @@ const S = /* @__PURE__ */ new Map(), F = [], D = [], st = (h, t, e = !1) => {
 };
 export {
   ot as canvas,
-  lt as collision,
+  dt as collision,
   b as loader,
-  dt as sprite
+  lt as sprite
 };

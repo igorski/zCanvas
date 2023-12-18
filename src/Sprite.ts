@@ -401,7 +401,11 @@ export default class Sprite {
             render = isInsideViewport( bounds, viewport );
         }
 
-        renderer.save();
+        let saveState = this._mask; // save() and restore() come with a performance hit, omit when possible
+
+        if ( saveState ) {
+            renderer.save();
+        }
 
         // Sprite acts as a mask for underlying Sprites ?
 
@@ -476,7 +480,9 @@ export default class Sprite {
             renderer.drawRect( this.getX(), this.getY(), this.getWidth(), this.getHeight(), "#FF0000", "stroke" );
         }
 
-        renderer.restore();
+        if ( saveState ) {
+            renderer.restore();
+        }
     }
 
     /**
