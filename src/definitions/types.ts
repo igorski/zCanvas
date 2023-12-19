@@ -39,6 +39,8 @@ export type Rectangle = {
     height: number;
 };
 
+export type ImageSource = HTMLImageElement | HTMLCanvasElement | File | Blob | ImageData | ImageBitmap | string;
+
 export type SizedImage = {
     size: Size;
     image: HTMLImageElement;
@@ -60,8 +62,6 @@ export type SpriteSheet = {
     fpt: number;
     onComplete?: ( sprite: Sprite ) => void;
 };
-
-export type SpriteSource = ImageBitmap | HTMLCanvasElement | HTMLImageElement;
 
 export type TransformedDrawBounds = {
     src: Rectangle;

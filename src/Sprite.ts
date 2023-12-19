@@ -22,7 +22,7 @@
  */
 import Loader from "./Loader";
 import type Canvas from "./Canvas";
-import type { Point, Rectangle, SpriteSheet, SpriteSource, Viewport } from "./definitions/types";
+import type { Point, Rectangle, SpriteSheet, Viewport } from "./definitions/types";
 import { type IRenderer } from "./rendering/IRenderer";
 import { isInsideViewport, calculateDrawRectangle } from "./utils/image-math";
 
@@ -34,7 +34,7 @@ interface SpriteProps {
     height: number,
     x?: number,
     y?: number,
-    bitmap?: ImageBitmap | HTMLCanvasElement | HTMLImageElement;
+    resourceId?: string,
     collidable?: boolean,
     interactive?: boolean,
     mask?: boolean,
@@ -84,8 +84,7 @@ export default class Sprite {
         onComplete?: ( sprite: Sprite ) => void;
     } | undefined;
 
-    protected _bitmap: ImageBitmap;
-    protected _bitmapReady = false;
+    protected _resourceId: string; // resourceId registered in renderer Cache
 
     protected _pressTime: number;
     protected _pressed = false;
@@ -95,9 +94,9 @@ export default class Sprite {
     constructor({
         width,
         height,
+        resourceId,
         x = 0,
         y = 0,
-        bitmap = undefined,
         collidable = false,
         interactive = false,
         mask = false,
@@ -122,13 +121,13 @@ export default class Sprite {
         this.setY( y );
         this.setInteractive( interactive );
 
-        if ( bitmap ) {
-            this.setBitmap( bitmap );
+        if ( resourceId ) {
+            this.setResource( resourceId );
         }
 
         if ( Array.isArray( sheet ) && sheet.length > 0 ) {
-            if ( !bitmap ) {
-                throw new Error( "cannot use a spritesheet without a valid Bitmap" );
+            if ( !resourceId ) {
+                throw new Error( "cannot use a spritesheet without a valid resource id" );
             }
             this.setSheet( sheet, sheetTileWidth, sheetTileHeight );
         }
@@ -394,8 +393,7 @@ export default class Sprite {
 
         const bounds = this._bounds;
 
-        // only render when associated bitmap is ready
-        let render = this._bitmapReady;
+        let render = !!this._resourceId; // only render when a resource has been provided
         if ( render && viewport ) {
             // ...and content is within visual bounds if a viewport was defined
             render = isInsideViewport( bounds, viewport );
@@ -428,14 +426,11 @@ export default class Sprite {
                     // bounds are defined, draw partial Bitmap
                     const { src, dest } = calculateDrawRectangle( bounds, viewport );
                     renderer.drawImageCropped(
-                        this._bitmap, // TODO via Cache key identifier!!
+                        this._resourceId,
                         src.left, src.top, src.width, src.height, dest.left, dest.top, dest.width, dest.height
                     );
                 } else {
-                    renderer.drawImage(
-                        this._bitmap, // TODO via Cache key identifier!!
-                        left, top, width, height
-                    );
+                    renderer.drawImage( this._resourceId, left, top, width, height );
                 }
             }
             else {
@@ -451,7 +446,7 @@ export default class Sprite {
                 }
 
                 renderer.drawImageCropped(
-                    this._bitmap, // TODO via Cache key identifier
+                    this._resourceId,
                     aniProps.col      * tileWidth,  // tile x offset
                     aniProps.type.row * tileHeight, // tile y offset
                     tileWidth, tileHeight,
@@ -572,98 +567,59 @@ export default class Sprite {
         return false;
     }
 
-    getBitmap(): ImageBitmap {
-        return this._bitmap;
-    }
-
     /**
      * update / replace the Image contents of this Sprite, can be used
      * to swap spritesheets (for instance)
      *
-     * @param {SpriteSource|null} bitmap
+     * @param {string} resourceId
      * @param {number=} width optional new width to use for this Sprites bounds
      * @param {number=} height optional new width to use for this Sprites bounds
      */
-    setBitmap( image: SpriteSource | null, width?: number, height?: number ): Promise<void> {
-        const isCanvasElement = image instanceof window.HTMLCanvasElement;
-        const isImageElement  = image instanceof window.HTMLImageElement;
-        const isDataSource    = typeof image === "string";
+    setResource( resourceId: string | null, width?: number, height?: number ): void {
+        // @todo can we validate this exists ? QQQ
+        this._resourceId = resourceId;
 
-        if ( !!image && ( !isCanvasElement && !isImageElement && !isDataSource )) {
-            throw new Error( `expected HTMLImageElement, HTMLCanvasElement or String for Image source, got "${image}" instead` );
+        // update dimensions, when given
+
+        const hasWidth  = ( typeof width  === "number" );
+        const hasHeight = ( typeof height === "number" );
+
+        if ( hasWidth ) {
+            this.setWidth( width );
         }
 
-        return new Promise(( resolve, reject ) => {
-            this._bitmapReady = false; // swapping Bitmaps ? unset the ready state
+        if ( hasHeight ) {
+            this.setHeight( height );
+        }
 
-            if ( !image ) {
-                this._bitmap = undefined;
-                return;
+        // make sure the image is still within bounds
+
+        if ( this._keepInBounds && this.canvas && ( hasWidth || hasHeight )) {
+
+            const minX = -( this._bounds.width  - this.canvas.getWidth() );
+            const minY = -( this._bounds.height - this.canvas.getHeight() );
+
+            if ( this._bounds.left > 0 ) {
+                this._bounds.left = 0;
+            } else if ( this._bounds.left < minX ) {
+                this._bounds.left = minX;
             }
 
-            // update dimensions, when given
-
-            const hasWidth  = ( typeof width  === "number" );
-            const hasHeight = ( typeof height === "number" );
-
-            if ( hasWidth ) {
-                this.setWidth( width );
+            if ( this._bounds.top > 0 ) {
+                this._bounds.top = 0;
+            } else if ( this._bounds.top < minY ) {
+                this._bounds.top = minY;
             }
+        }
+    }
 
-            if ( hasHeight ) {
-                this.setHeight( height );
-            }
-
-            // make sure the image is still within bounds
-
-            if ( this._keepInBounds && this.canvas && ( hasWidth || hasHeight )) {
-
-                const minX = -( this._bounds.width  - this.canvas.getWidth() );
-                const minY = -( this._bounds.height - this.canvas.getHeight() );
-
-                if ( this._bounds.left > 0 ) {
-                    this._bounds.left = 0;
-                } else if ( this._bounds.left < minX ) {
-                    this._bounds.left = minX;
-                }
-
-                if ( this._bounds.top > 0 ) {
-                    this._bounds.top = 0;
-                } else if ( this._bounds.top < minY ) {
-                    this._bounds.top = minY;
-                }
-            }
-
-            if ( isCanvasElement ) {
-
-                // nothing to load, HTMLCanvasElement is ready for rendering
-
-                this._bitmap      = image; // TODO make CacheKey it needs to be accessible TO THE RENDERER !!!
-                this._bitmapReady = true;
-
-                this.invalidate();
-
-                return resolve();
-            }
-            else {
-                Loader.loadImage(
-                    isImageElement ? image.src : image, isImageElement ? image : null
-                ).then(({ size, image }) => {
-                    this._bitmap  = image;
-                    this._bitmapReady = true;
-
-                    this.invalidate();
-                    resolve();
-                }).catch( aOptError => {
-                    reject( new Error( `zSprite.setBitmap() "${aOptError?.message}" occurred.` ));
-                });
-            }
-        });
+    getResourceId(): string | undefined {
+        return this._resourceId;
     }
 
     /**
      * Define the sprite sheet for this Sprite to use tile based animation
-     * from its Bitmap, use in conjunction with setBitmap()
+     * from its Bitmap, use in conjunction with setResource()
      *
      * @param {SpriteSheet[]} sheet
      * @param {number=} width optional width to use for a single tile, defaults to Sprite bounds width
@@ -900,6 +856,7 @@ export default class Sprite {
      * @param {number} y position of the touch / cursor
      * @param {Event} event the original event that triggered this action
      */
+    // @ts-expect-error TS6133 unused parameters. They are here to provide a clear API for overrides in subclasses
     protected handlePress( x: number, y: number, event: Event ): void {
         // override in inheriting classes
     }
@@ -911,6 +868,7 @@ export default class Sprite {
      * @param {number} y position of the touch / cursor
      * @param {Event} event the original event that triggered this action
      */
+    // @ts-expect-error TS6133 unused parameters. They are here to provide a clear API for overrides in subclasses
     protected handleRelease( x: number, y: number, event: Event ): void {
         // override in inheriting classes
     }
@@ -927,6 +885,7 @@ export default class Sprite {
      * move handler, invoked by the "handleInteraction"-method
      * to delegate drag logic
      */
+    // @ts-expect-error TS6133 unused parameters. They are here to provide a clear API for overrides in subclasses
     protected handleMove( x: number, y: number, event: Event ): void {
         const theX = this._dragStartOffset.x + ( x - this._dragStartEventCoordinates.x );
         const theY = this._dragStartOffset.y + ( y - this._dragStartEventCoordinates.y );

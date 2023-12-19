@@ -35,27 +35,32 @@
             urlArgs : "bust=" + Date.now()
         });
 
-        require( [ "zcanvas.amd" ], function( zCanvas ) {
+        require( [ "zcanvas.umd" ], zCanvas => {
+           setup( zCanvas );
+        });
+
+        async function setup( zCanvas ) {
+
+            const { Canvas, Sprite } = zCanvas;
 
             // STEP 1 : SETUP
             // --------------
 
-            var container = document.getElementById( "demo" );
+            const container = document.getElementById( "demo" );
 
             // get window dimensions
 
-            var w, h;
+            let w, h;
             if ( window.outerHeight ) {
                 w = window.outerWidth;
                 h = window.outerHeight;
-            }
-            else {
+            } else {
                 w = document.body.clientWidth;
                 h = document.body.clientHeight;
             }
-            var cvsWidth  = ( w < 400 ) ? w * .93 : 400;
-            var cvsHeight = ( h < 400 ) ? h : 400;
-            container.style.width = cvsWidth + "px";
+            const cvsWidth  = ( w < 400 ) ? w * .93 : 400;
+            const cvsHeight = ( h < 400 ) ? h : 400;
+            container.style.width = `${cvsWidth}px`;
 
             // 1.2 simulation variables
 
@@ -63,86 +68,83 @@
             // this is scaled against the actual framerate in sprite.update() methods
             // to maintain a consistent movement at different frame rates
 
-            var IDEAL_FPS = 60; // see #fps range slider
-            var MAX_SPEED = 8; // maximum amount of pixels player can move per frame (e.g. "speed")
-            var SPEED_INCREMENT = MAX_SPEED / IDEAL_FPS; // max speed increment per frame
+            const IDEAL_FPS = 60; // see #fps range slider
+            const MAX_SPEED = 8; // maximum amount of pixels player can move per frame (e.g. "speed")
+            const SPEED_INCREMENT = MAX_SPEED / IDEAL_FPS; // max speed increment per frame
 
             // STEP 2 : DEFINING CUSTOM SPRITE CLASSES
             // ---------------------------------------
 
             // 2.1 create a custom class for Actors (generic status Objects within this game)
 
-            var Actor = function( x, y ) {
-                // call zCanvas.sprite prototype, by default Actors are 5x5 in size
-                Actor.super( this, "constructor", { x: x, y: y, width: 5, height: 5 });
+            class Actor extends Sprite {
+                constructor( x, y ) {
+                    // call Sprite prototype, by default Actors are 5 x 5 in size
+                    super({ x, y, width: 5, height: 5 });
 
-                /* instance properties */
+                    /* instance properties */
 
-                this.maxSpeed = MAX_SPEED;
+                    this.maxSpeed = MAX_SPEED;
 
-                this.xSpeed = 0; // current horizontal movement speed
-                this.ySpeed = 0; // current vertical movement speed
+                    this.xSpeed = 0; // current horizontal movement speed
+                    this.ySpeed = 0; // current vertical movement speed
+                }
 
                 /* public methods */
 
-                this.hit = function( actor ) {
-                    // will be overridden in derived prototypes
-                };
+                hit( actor ) {
+                    // will be overridden in derived classes
+                }
 
-                this.update = function( timestamp, framesSinceLastUpdate ) {
+                update( timestamp, framesSinceLastUpdate ) {
                     // on each update the Actors update their position according to their speed
                     this._bounds.left += ( this.xSpeed * framesSinceLastUpdate );
                     this._bounds.top  += ( this.ySpeed * framesSinceLastUpdate );
-                };
+                }
             };
-            zCanvas.sprite.extend( Actor ); // Actor extends zCanvas.sprite
 
             // 2.2 custom class for Bullets, which inherits properties and actions from Actor
 
-            var Bullet = function( damage ) {
-                // call Actor prototype (no coordinates and speed during construction here)
-                Bullet.super( this, "constructor", 0, 0, 0, 0 );
+            class Bullet extends Actor {
+                damage; // the damage this Bullet deals
 
-                /* instance properties */
+                constructor( damage ) {
+                    super( 0, 0, 0, 0 ); // call Actor prototype (no coordinates and speed during construction here)
 
-                this.damage = ( typeof damage === "number" ) ? damage : 1; // the damage this Bullet deals
+                    this.damage = ( typeof damage === "number" ) ? damage : 1;
+                }
 
                 /* public methods */
 
-                this.draw = function( canvasContext ) {
-
-                    // override draw()-method from zCanvas.sprite-prototype to draw custom graphics
-                    canvasContext.fillStyle = "#FF0000";
-                    canvasContext.fillRect( this._bounds.left, this._bounds.top, this._bounds.width, this._bounds.height );
+                draw( renderer ) {
+                    // override draw()-method from Sprite-prototype to draw custom graphics
+                    renderer.drawRect( this._bounds.left, this._bounds.top, this._bounds.width, this._bounds.height, "#FF0000" );
                 }
             };
-            Actor.extend( Bullet ); // Bullet extends Actor and in turn zCanvas.sprite
 
             // 2.3 custom class for Ships, which inherits properties and actions from Actor
 
-            var Ship = function( x, y, energy ) {
-                // call Actor prototype (no speed during construction here)
-                Ship.super( this, "constructor", x, y );
-                // set custom Bitmap for the Ship
-                this.setBitmap( IMAGE_SHIP_SHEET, 64, 64 ); // each tile is 64x64 pixels
-                this.setSheet([
-                    { row: 0, col: 0, fpt: 1, amount: 1 },  // Player ship, facing up
-                    { row: 1, col: 0, fpt: 1, amount: 1 },  // Enemy ship, facing down
-                    { row: 2, col: 0, fpt: IDEAL_FPS / 16 * 2, amount: 16, onComplete: disposeActor } // Explosion animation
-                ]);
-
-                /* instance properties */
-
-                this.energy = ( typeof energy === "number" ) ? energy : 1; // the energy (power bar) this actor has
+            class Ship extends Actor {
+                constructor( x, y, energy ) {
+                    // call Actor prototype (no speed during construction here)
+                    super( x, y );
+                    // set custom Bitmap for the Ship
+                    this.setResource( "spritesheet", 64, 64 ); // each tile is 64x64 pixels
+                    this.setSheet([
+                        { row: 0, col: 0, fpt: 1, amount: 1 },  // Player ship, facing up
+                        { row: 1, col: 0, fpt: 1, amount: 1 },  // Enemy ship, facing down
+                        { row: 2, col: 0, fpt: IDEAL_FPS / 16 * 2, amount: 16, onComplete: disposeActor } // Explosion animation
+                    ]);
+                    this.energy = ( typeof energy === "number" ) ? energy : 1; // the energy (power bar) this actor has
+                }
 
                 /* public methods */
 
-                this.fire = function() {
+                fire() {
                     createBulletForActor( this );
-                };
+                }
 
-                this.hit = function( actor ) {
-
+                hit( actor ) {
                     if ( actor instanceof Bullet ) {
                         disposeActor( actor ); // bullets are disposed after a hit
                     }
@@ -155,21 +157,21 @@
                     if ( this.energy <= 0 ) {
                         this.switchAnimation( 2 ); // all energy depleted, start explosion animation
                     }
-                };
+                }
 
                 // set vertical thrusters (0 == idle, 1 == going left, 2 == going right)
-                this.setHorizontalThrust = function( thrusterState ) {
+                setHorizontalThrust( thrusterState ) {
                     this.horizontalThrust = thrusterState;
-                };
+                }
 
                 // set vertical thrusters (0 == idle, 1 == going up, 2 == going down)
-                this.setVerticalThrust = function( thrusterState ) {
+                setVerticalThrust( thrusterState ) {
                     this.verticalThrust = thrusterState;
-                };
+                }
 
                 /* overridden methods */
 
-                this.update = function( timestamp, framesSinceLastUpdate ) {
+                update( timestamp, framesSinceLastUpdate ) {
                     switch ( this.horizontalThrust ) {
                         default:
                         case 0: // no thrust, decrease speed
@@ -210,18 +212,17 @@
                     this.updateAnimation( framesSinceLastUpdate ); // update spritesheet animation
                 }
             };
-            Actor.extend( Ship ); // Ship extends Actor which in turn extends zCanvas.sprite
 
             // STEP 3 : CREATING A POOL FOR HEAVILY REUSED OBJECTS
             // ---------------------------------------------------
 
-            var bulletPool = new Array( 100 ); // Array size defines the maximum amount of bullets existing simultaneously
-            for ( var i = 0, total = bulletPool.length; i < total; ++i ) {
+            const bulletPool = new Array( 100 ); // Array size defines the maximum amount of bullets existing simultaneously
+            for ( let i = 0, total = bulletPool.length; i < total; ++i ) {
                 bulletPool[ i ] = new Bullet( 1 );
             }
 
-            var enemyPool = new Array( 5 );
-            for ( i = 0, total = enemyPool.length; i < total; ++i ) {
+            const enemyPool = new Array( 5 );
+            for ( let i = 0, total = enemyPool.length; i < total; ++i ) {
                 enemyPool[ i ] = new Ship( 0, 0, 1 );
             }
 
@@ -237,7 +238,7 @@
             // helper function to retrieve an Actor from the pool and apply given properties onto it
 
             function getActorFromPool( pool, x, y, xSpeed, ySpeed ) {
-                var actor = pool.shift(); // get first Actor from the pool (can be null if all pool Actors are in the game)
+                const actor = pool.shift(); // get first Actor from the pool (can be null if all pool Actors are in the game)
                 if ( actor ) {
                     actor.setX( x );
                     actor.setY( y );
@@ -250,26 +251,31 @@
             // STEP 4 : INITIALIZING THE GAME ENVIRONMENT
             // ------------------------------------------
 
-            var player = new Ship( cvsWidth / 2, cvsHeight - 100, 5 );
-            var actors = []; // all actors currently in the game (this excludes the player!)
+            const player = new Ship( cvsWidth / 2, cvsHeight - 100, 5 );
+            const actors = []; // all actors currently in the game (this excludes the player!)
 
             // create some scenery clouds
-            var cloud = new zCanvas.sprite({
-                x: Math.random() * cvsWidth,
-                y: -100,
-                width: 300,
-                height: 508,
-                bitmap: IMAGE_CLOUD
-            });
-
-            cloud.update = function( timestamp, framesSinceLastUpdate ) {
-                // cloud moves slowly out of the screen and then resets its position to the top
-                this._bounds.top += framesSinceLastUpdate;
-                if ( this._bounds.top > cvsHeight ) {
-                    this._bounds.top = -this._bounds.height;
-                    this._bounds.left = Math.random() * cvsWidth;
+            class CloudRenderer extends Sprite {
+                constructor() {
+                    super({
+                        x: Math.random() * cvsWidth,
+                        y: -100,
+                        width: 300,
+                        height: 508,
+                        resourceId: "cloud",
+                    })
                 }
-            };
+
+                update( timestamp, framesSinceLastUpdate ) {
+                    // cloud moves slowly out of the screen and then resets its position to the top
+                    this._bounds.top += framesSinceLastUpdate;
+                    if ( this._bounds.top > cvsHeight ) {
+                        this._bounds.top = -this._bounds.height;
+                        this._bounds.left = Math.random() * cvsWidth;
+                    }
+                }
+            }
+            const cloud = new CloudRenderer();
 
             // STEP 5 : INITIALIZING THE CANVAS
             // --------------------------------
@@ -277,7 +283,7 @@
             // create a new canvas that renders at IDEAL_FPS fps
             // for each update prior to rendering we invoke a custom handler
 
-            var cvs = new zCanvas.canvas({
+            const cvs = new Canvas({
                 width: cvsWidth,
                 height: cvsHeight,
                 animate: true,
@@ -286,13 +292,21 @@
                 backgroundColor: "#000099",
                 preventEventBubbling: true,
                 parentElement: container,
+                useOffscreen: true, // QQQ
                 onUpdate: handleGameLoop // see below
             });
+
+            // 5.1 register assets
+            
+            await Promise.all([
+                cvs.loadResource( "spritesheet", IMAGE_SHIP_SHEET ),
+                cvs.loadResource( "cloud", IMAGE_CLOUD )
+            ]);
 
             // add game actors to the display list
 
             cvs.addChild( player );
-            for ( i = 0, total = enemyPool.length; i < total; ++i ) {
+            for ( let i = 0, total = enemyPool.length; i < total; ++i ) {
                 createEnemyFromPool();
             }
             cvs.addChild( cloud );
@@ -311,20 +325,20 @@
                 player.update( timestamp, framesSinceLastUpdate );
                 cloud.update( timestamp, framesSinceLastUpdate );
 
-                var i = actors.length, actor;
-
+                let i = actors.length;
+                
                 while ( i-- ) {
-                    actor = actors[ i ];
+                    const actor = actors[ i ];
                     if ( !actor ) {
                         continue; // can be removed during game loop
                     }
                     actor.update( timestamp, framesSinceLastUpdate );
 
-                    var actorBounds = actor.getBounds(),
-                        actorX      = actorBounds.left,
-                        actorY      = actorBounds.top,
-                        actorWidth  = actorBounds.width,
-                        actorHeight = actorBounds.height;
+                    const actorBounds = actor.getBounds(),
+                         actorX      = actorBounds.left,
+                         actorY      = actorBounds.top,
+                         actorWidth  = actorBounds.width,
+                         actorHeight = actorBounds.height;
 
                     // if Actor exceeds world bounds, remove it from the Actors list
                     // note: Bullets are also removed when they are out of the top vertical bounds
@@ -337,9 +351,9 @@
 
                     // resolve collisions with other Actors in its vicinity
 
-                    var others = zCanvas.collision.getChildrenUnderPoint( actors, actorX, actorY, actorWidth, actorHeight );
+                    const others = cvs.collision.getChildrenUnderPoint( actors, actorX, actorY, actorWidth, actorHeight );
                     if ( others.length > 0 ) {
-                        var j, l, other;
+                        let j, l, other;
                         for ( j = 0, l = others.length; j <l; ++j ) {
                             other = others[ j ];
                             if ( actor.collidesWith( other )) {
@@ -352,7 +366,7 @@
             }
 
             function createEnemyFromPool() {
-                var enemy = enemyPool.shift();
+                const enemy = enemyPool.shift();
                 actors.push( enemy ); // add enemy to Actors list
                 enemy.setX( Math.random() * cvsWidth );
                 enemy.setY(( Math.random() * -cvsHeight ) - 300 );
@@ -364,8 +378,10 @@
             }
 
             function createBulletForActor( actor ) {
-                var bullets = [], bullet;
                 actor.weapon = 1;
+                const bullets = []
+                let bullet;
+               
                 switch ( actor.weapon ) {
 
                     default:
@@ -378,17 +394,17 @@
                             0,
                             ( actor === player ) ? -5 : 5 // Player shoots up, enemies shoot down
                         );
-                        if ( bullet )
+                        if ( bullet ) {
                             bullets.push( bullet );
+                        }
                         break;
 
                     case 1:
-
-                        var angle, startPos, targetPos;
-                        var actorBounds = actor.getBounds();
-
+                        const actorBounds = actor.getBounds();
+                        let angle, startPos, targetPos;
+                        
                         // spray Bullets
-                        for ( var i = 0, total = 16; i < total; ++i ) {
+                        for ( let i = 0, total = 16; i < total; ++i ) {
                             angle = ( 360 / total ) * i;
                             startPos = calcPosition(
                                 actorBounds.left + actorBounds.width / 2,
@@ -414,7 +430,7 @@
                         break;
                 }
                 // add Bullet(s) into the active Actors list and onto the Display List
-                for ( i = 0, total = bullets.length; i < total; ++i ) {
+                for ( let i = 0, total = bullets.length; i < total; ++i ) {
                     bullet = bullets.shift();
                     actors.push( bullet );
                     cvs.addChild( bullet );
@@ -422,19 +438,19 @@
             }
 
             function disposeActor( actor ) {
-
                 cvs.removeChild( actor ); // removes Actor from display list
 
-                var actorIndex = actors.indexOf( actor );
-                if ( actorIndex !== -1 )
+                const actorIndex = actors.indexOf( actor );
+                if ( actorIndex !== -1 ) {
                     actors.splice( actorIndex, 1 ); // remove Actor from active Actors list
+                }
 
                 // return Actor to the pool so it can be reused
                 if ( actor instanceof Bullet ) {
                     bulletPool.push( actor );
                 }
                 else if ( actor !== player ) {
-                    enemyPool.push( actor ); // Actor isn't a Bullet nor the payer, so it's an enemy
+                    enemyPool.push( actor ); // Actor isn't a Bullet nor the player, so it's an enemy
                     setTimeout( createEnemyFromPool, 1000 ); // reintroduce enemy after a short period
                 } else {
                     alert( "PLAYER DIED!" );
@@ -448,17 +464,18 @@
             // STEP 7 : ADDING KEYBOARD AND TOUCH INTERACTION
             // ----------------------------------------------
 
-            var playerXmovement = false, playerYmovement = false;
+            let playerXmovement = false;
+            let playerYmovement = false;
 
             // we add on-screen controls buttons for touch screens
 
-            var leftBtn = document.createElement( "div" );
+            const leftBtn = document.createElement( "div" );
             leftBtn.id  = "left-btn";
 
-            var rightBtn = document.createElement( "div" );
+            const rightBtn = document.createElement( "div" );
             rightBtn.id  = "right-btn";
 
-            var shootBtn = document.createElement( "div" );
+            const shootBtn = document.createElement( "div" );
             shootBtn.id  = "action-btn";
 
             container.appendChild( leftBtn );
@@ -475,11 +492,10 @@
 
             // keyboard control for desktop devices
 
-            var blockedCodes = [ 32, 38, 40, 37, 39 ]; // keycodes to block default behaviour of
+            const blockedCodes = [ 32, 38, 40, 37, 39 ]; // keycodes to block default behaviour of
 
-            window.addEventListener( "keydown", function( e ) {
+            window.addEventListener( "keydown", e => {
                 switch ( e.keyCode ) {
-
                     case 32: // spacebar
                         handleFire();
                         break;
@@ -506,11 +522,12 @@
                         handleRight();
                         break;
                 }
-                if ( blockedCodes.indexOf( e.keyCode ) > -1 )
+                if ( blockedCodes.indexOf( e.keyCode ) > -1 ) {
                     e.preventDefault(); // prevents document panning (if Canvas doesn't fit entirely)
+                }
             });
 
-            window.addEventListener( "keyup", function( e ) {
+            window.addEventListener( "keyup", e => {
                 switch ( e.keyCode ) {
                     case 38:
                     case 40:
@@ -523,7 +540,7 @@
 
                 }
             });
-            var fireHandler = player.fire.bind( player ); // wait until RAF as bullet calculations can be expensive!
+            const fireHandler = player.fire.bind( player ); // wait until RAF as bullet calculations can be expensive!
             function handleFire() {
                 window.requestAnimationFrame( fireHandler );
             }
@@ -553,7 +570,7 @@
                 playerXmovement = false;
                 player.setHorizontalThrust( 0 ); // idle horizontal thrust
             }
-        });
+        };
 
     </script>
 </body>

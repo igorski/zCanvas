@@ -20,11 +20,10 @@
  * IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-import type { Size, Point, Viewport, SpriteSource } from "./definitions/types";
-import RenderAPI from "./rendering/api";
-import { type IRenderer } from "./rendering/IRenderer";
-import Cache from "./utils/cache";
+import type { Size, Point, Viewport, ImageSource } from "./definitions/types";
+import RenderAPI from "./rendering/RenderAPI";
 import EventHandler from "./utils/EventHandler";
+import Collision from "./Collision";
 import type Sprite from "./Sprite";
 
 const { min, max, round } = Math;
@@ -72,7 +71,8 @@ export default class Canvas {
         minFps: Infinity,
         maxFps: -Infinity,
     };
-    public cache = new Cache(); // @todo qqq
+
+    public collision: Collision;
 
     protected _element: HTMLCanvasElement;
     protected _renderer: RenderAPI;
@@ -134,6 +134,7 @@ export default class Canvas {
 
         this._element  = document.createElement( "canvas" );
         this._renderer = new RenderAPI( this._element, useOffscreen );
+        this.collision = new Collision();
 
         this._updateHandler = onUpdate;
         this._renderHandler = this.render.bind( this );
@@ -148,11 +149,7 @@ export default class Canvas {
 
         // ensure all is crisp clear on HDPI screens
 
-        const devicePixelRatio  = window.devicePixelRatio || 1;
-        const backingStoreRatio = this._renderer.getBackingStoreRatio();
-
-        const ratio = devicePixelRatio / backingStoreRatio;
-        this._HDPIscaleRatio = ( devicePixelRatio !== backingStoreRatio ) ? ratio : 1;
+        this._HDPIscaleRatio = window.devicePixelRatio || 1;
 
         this.setDimensions( width, height, true, true );
         if ( viewport ) {
@@ -178,6 +175,18 @@ export default class Canvas {
     }
 
     /* public methods */
+
+    loadResource( id: string, source: ImageSource ): Promise<Size> {
+        return this._renderer.loadResource( id, source );
+    }
+
+    getResource( id: string ): Promise<ImageBitmap | undefined> {
+        return this._renderer.getResource( id );
+    }
+
+    disposeResource( id: string ): void {
+        return this._renderer.disposeResource( id );
+    }
 
     /**
      * appends this Canvas to the DOM (i.e. adds the references <canvas>-
@@ -364,7 +373,17 @@ export default class Canvas {
      * false will yield crisper results
      */
     setSmoothing( enabled: boolean ): void {
+        // 1. update context
         this._renderer.setSmoothing( enabled );
+        // 2. update Canvas Elementin DOM
+        const styles = [
+            "-moz-crisp-edges", "-webkit-crisp-edges", "pixelated", "crisp-edges"
+        ];
+        const canvasStyle = this._element.style;
+        styles.forEach( style => {
+            // @ts-expect-error TS7015: Element implicitly has an 'any' type because index expression is not of type 'number'.
+            canvasStyle[ "image-rendering" ] = enabled ? undefined : style;
+        });
         this._smoothing = enabled;
         this.invalidate();
     }
@@ -398,7 +417,7 @@ export default class Canvas {
         }
 
         if ( optImmediate === true ) {
-            updateCanvasSize( this, this._renderer );
+            this.updateCanvasSize();
         }
         this.invalidate();
     }
@@ -416,7 +435,7 @@ export default class Canvas {
     setViewport( width: number, height: number ): void {
         this._viewport = { width, height, left: 0, top: 0, right: width, bottom: height };
         this.panViewport( 0, 0 );
-        updateCanvasSize( this, this._renderer );
+        this.updateCanvasSize();
     }
 
     /**
@@ -465,73 +484,6 @@ export default class Canvas {
     }
 
     /**
-     * safe method to draw Image data onto canvas while sanitizing the destination values to
-     * overcome IndexSizeErrors and other nastiness
-     *
-     * @param {SpriteSource} source canvas drawable to draw
-     * @param {number} destX destination x-coordinate of given image
-     * @param {number} destY destination y-coordinate of given image
-     * @param {number} destWidth destination width of given image
-     * @param {number} destHeight destination width of given image
-     * @param {number=} optSourceX optional, whether to use an alternative x-coordinate for the source rectangle
-     * @param {number=} optSourceY optional, whether to use an alternative y-coordinate for the source rectangle
-     * @param {number=} optSourceWidth optional, whether to use an alternative width for the source rectangle
-     * @param {number=} optSourceHeight optional, whether to use an alternative height for the source rectangle
-     */
-    drawImage( source: SpriteSource, destX: number, destY: number, destWidth: number, destHeight: number,
-        optSourceX?: number, optSourceY?: number, optSourceWidth?: number, optSourceHeight?: number ) {
-
-        // we add .5 to have a pixel perfect outline
-        // << 0 is a fast bitwise rounding operation (Firefox does not like fractions and we like speed ;)
-
-        destX      = ( .5 + destX ) << 0;
-        destY      = ( .5 + destY ) << 0;
-        destWidth  = ( .5 + destWidth )  << 0;
-        destHeight = ( .5 + destHeight ) << 0;
-
-        // INDEX_SIZE_ERR is thrown when target dimensions are zero or negative
-        // nothing worthwhile to render in that case, do nothing please.
-
-        if ( destWidth <= 0 || destHeight <= 0 ) {
-            return;
-        }
-
-        // use 9-arity draw method if source rectangle is defined
-
-        if ( typeof optSourceX === "number" ) {
-
-            // clipping rectangle doesn't have to exceed <canvas> dimensions
-            destWidth  = min( this._element.width,  destWidth );
-            destHeight = min( this._element.height, destHeight );
-
-            const xScale = destWidth  / optSourceWidth;
-            const yScale = destHeight / optSourceHeight;
-
-            // when clipping the source region should remain within the image dimensions
-
-            if ( optSourceX + optSourceWidth > source.width ) {
-                destWidth      -= xScale * ( optSourceX + optSourceWidth - source.width );
-                optSourceWidth -= ( optSourceX + optSourceWidth - source.width );
-            }
-            if ( optSourceY + optSourceHeight > source.height ) {
-                destHeight       -= yScale * ( optSourceY + optSourceHeight - source.height );
-                optSourceHeight -= ( optSourceY + optSourceHeight - source.height );
-            }
-
-            this._renderer.drawImageCropped(
-                source,
-                // no rounding required here as these are integer values
-                optSourceX, optSourceY, optSourceWidth, optSourceHeight,
-                // but we do round the target coordinates
-                destX, destY, destWidth, destHeight
-            );
-        }
-        else {
-            this._renderer.drawImage( source, destX, destY, destWidth, destHeight );
-        }
-    }
-
-    /**
      * Scales the canvas Element. This can be used to render content at a lower
      * resolution but scale it up to fit the screen (for instance when rendering pixel art
      * with smoothing disabled for crisp definition).
@@ -545,11 +497,11 @@ export default class Canvas {
         const scaleStyle = x === 1 && y === 1 ? '' : `scale(${x}, ${y})`;
         const { style }  = this._element;
 
-        style[ "-webkit-transform-origin" ] =
-                style[ "transform-origin" ] = "0 0";
+        // @ts-expect-error TS7015: Element implicitly has an 'any' type because index expression is not of type 'number'.
+        style[ "-webkit-transform-origin" ] = style[ "transform-origin" ] = "0 0";
 
-        style[ "-webkit-transform" ] =
-                style[ "transform" ] = scaleStyle;
+        // @ts-expect-error TS7015: Element implicitly has an 'any' type because index expression is not of type 'number'.
+        style[ "-webkit-transform" ] = style[ "transform" ] = scaleStyle;
 
         this.invalidate();
     }
@@ -610,7 +562,14 @@ export default class Canvas {
         if ( this._element.parentNode ) {
             this._element.parentNode.removeChild( this._element );
         }
-        this.cache.dispose();
+        
+        // debounce disposing the renderer to not conflict with running render cycle
+        requestAnimationFrame(() => {
+            this._renderer.dispose();
+            this._renderer = undefined;
+            this.collision.dispose();
+            this.collision = undefined;
+        });
         this._disposed = true;
     }
 
@@ -768,7 +727,7 @@ export default class Canvas {
         // immediately draw new contents onto the screen
 
         if ( this._enqueuedSize ) {
-            updateCanvasSize( this, this._renderer );
+            this.updateCanvasSize();
         }
 
         let theSprite;
@@ -832,7 +791,6 @@ export default class Canvas {
      * the "children" of the canvas' Display List
      */
     protected addListeners(): void {
-
         if ( !this._eventHandler ) {
             this._eventHandler = new EventHandler();
         }
@@ -862,15 +820,8 @@ export default class Canvas {
         }
     }
 
-    /**
-     * sprites have no HTML elements, the actual HTML listeners are
-     * added onto the canvas, the Canvas will delegate events onto
-     * the "children" of the canvas' Display List
-     */
     protected removeListeners(): void {
-        if ( this._eventHandler ) {
-            this._eventHandler.dispose();
-        }
+        this._eventHandler?.dispose();
         this._eventHandler = undefined;
     }
 
@@ -885,56 +836,54 @@ export default class Canvas {
         }
         return this._coords;
     }
-}
 
-/* internal methods */
+    private updateCanvasSize(): void {
+        const scaleFactor = this._HDPIscaleRatio;
 
-function updateCanvasSize( canvasInstance: Canvas, renderer: IRenderer ) {
-    const scaleFactor = canvasInstance._HDPIscaleRatio;
-    const viewport    = canvasInstance.getViewport();
-    let width, height;
-
-    if ( canvasInstance._enqueuedSize ) {
-        ({ width, height } = canvasInstance._enqueuedSize );
-        canvasInstance._enqueuedSize = undefined;
-        canvasInstance._width  = width;
-        canvasInstance._height = height;
-    }
-
-    if ( viewport ) {
-        const cvsWidth  = canvasInstance._width;
-        const cvsHeight = canvasInstance._height;
-
-        width  = min( viewport.width,  cvsWidth );
-        height = min( viewport.height, cvsHeight );
-
-        // in case viewport was panned beyond the new canvas dimensions
-        // reset pan to center.
-/*
-        if ( viewport.left > cvsWidth ) {
-            viewport.left  = cvsWidth * .5;
-            viewport.right = viewport.width + viewport.left;
+        let width: number;
+        let height: number;
+    
+        if ( this._enqueuedSize ) {
+            ({ width, height } = this._enqueuedSize );
+            this._enqueuedSize = undefined;
+            this._width  = width;
+            this._height = height;
         }
-        if ( viewport.top > cvsHeight ) {
-            viewport.top    = cvsHeight * .5;
-            viewport.bottom = viewport.height + viewport.top;
+    
+        if ( this._viewport ) {
+            const cvsWidth  = this._width;
+            const cvsHeight = this._height;
+    
+            width  = min( this._viewport.width,  cvsWidth );
+            height = min( this._viewport.height, cvsHeight );
+    
+            // in case viewport was panned beyond the new canvas dimensions
+            // reset pan to center.
+            /*
+            if ( this._viewport.left > cvsWidth ) {
+                this._viewport.left  = cvsWidth * .5;
+                this._viewport.right = this._viewport.width + this._viewport.left;
+            }
+            if ( viewport.top > cvsHeight ) {
+                this._viewport.top    = cvsHeight * .5;
+                this._viewport.bottom = this._viewport.height + this._viewport.top;
+            }
+            */
         }
-*/
-    }
-
-    if ( width && height ) {
-        const element = canvasInstance.getElement();
-
-        element.width  = width  * scaleFactor;
-        element.height = height * scaleFactor;
-
-        element.style.width  = `${width}px`;
-        element.style.height = `${height}px`;
-    }
-    renderer.scale( scaleFactor, scaleFactor );
-
-    // non-smoothing must be re-applied when the canvas dimensions change...
-
-    canvasInstance.setSmoothing( canvasInstance._smoothing );
-    canvasInstance._coords = undefined; // invalidate cached bounding box
+    
+        if ( width && height ) {
+            const element = this.getElement();
+    
+            this._renderer.setDimensions( width * scaleFactor, height * scaleFactor );
+    
+            element.style.width  = `${width}px`;
+            element.style.height = `${height}px`;
+        }
+        this._renderer.scale( scaleFactor, scaleFactor );
+    
+        // non-smoothing must be re-applied when the canvas dimensions change...
+    
+        this.setSmoothing( this._smoothing );
+        this._coords = undefined; // invalidate cached bounding box
+    }    
 }

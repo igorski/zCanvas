@@ -16,7 +16,10 @@ zCanvas follows the concept of the DisplayList where drawable objects become vis
 
 ## Optimized for high performance
 
-zCanvas has been optimized extensively for the best performance and works a treat on mobile devices too. The amount of event listeners attached to DOM elements are limited to the _HTMLCanvasElement_ only, where the internal interactions are delegated to the sprites by the canvas. Events triggering updates on the display list are automatically debounced to only render once per animation frame.
+zCanvas has been optimized extensively for the best performance and works a treat on mobile devices too. The amount of event listeners attached to DOM elements are limited to the `HTMLCanvasElement` only, where the internal interactions are delegated to the sprites by the canvas. Events triggering updates on the display list are automatically debounced to only render _once per animation frame_.
+
+In environments where `OffscreenCanvas` is supported, the rendering will _automatically_ be offloaded onto
+a Worker, freeing up the main thread of your application considerably.
 
 ## Easily animatable
 
@@ -28,7 +31,10 @@ update at the same speed, regardless of the rendering (frames per second) capabi
 ## Works practically everywhere
 
 zCanvas has been written to work within a ES module structure, but comes prebuilt and transpiled to work
-in either a module, CommonJS or browser environment (23K before GZip). zCanvas has been tested and verified to work on:
+in either a module, CommonJS or browser environment (23K before GZip). zCanvas has been tested and verified to work on all half-decent, half-recent browsers.
+
+Should you however wish to support one of the ancient browsers listed below, zCanvas up to version 5.1.10
+can cater to these equally:
 
  * Internet Explorer 9+ (note: requires polyfill for _requestAnimationFrame_ and _Promise_)
  * Chrome for Windows, OS X and Linux
@@ -36,8 +42,6 @@ in either a module, CommonJS or browser environment (23K before GZip). zCanvas h
  * Firefox 3.6+
  * Android browser 4+
  * Chrome for Android 4+
-
-Judging from those ancient version numbers, it's safe to state zCanvas will work in _any recent browser without the need for any polyfills_.
 
 # The API / Documentation
 

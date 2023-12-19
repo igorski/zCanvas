@@ -20,8 +20,44 @@
  * IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-import Renderer from "./canvas.worker";
+export default class Cache {
+    private _map: Map<string, ImageBitmap>;
 
-onmessage = e => {
-    console.info('WORKER',e);
-};
+    constructor() {
+        this._map = new Map();
+    }
+
+    dispose(): void {
+        this._map.clear();
+        this._map = undefined;
+    }
+
+    get( key: string ): ImageBitmap | undefined {
+        return this._map.get( key );
+    }
+
+    set( key: string, bitmap: ImageBitmap ): void {
+        if ( this.has( key )) {
+            const existingBitmap = this.get( key );
+            if ( existingBitmap === bitmap ) {
+                return;
+            }
+            this.remove( key );
+        }
+        this._map.set( key, bitmap );
+    }
+
+    has( key: string ): boolean {
+        return this._map.has( key );
+    }
+
+    remove( key: string ): boolean {
+        if ( !this.has( key )) {
+            return false;
+        }
+        const bitmap = this.get( key );
+        bitmap.close();
+
+        return this._map.delete( key );
+    }
+}

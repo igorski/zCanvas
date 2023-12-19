@@ -1,7 +1,7 @@
 /**
  * The MIT License (MIT)
  *
- * Copyright (c) 2013-2023 Igor Zinken https://www.igorski.nl
+ * Igor Zinken 2023 - https://www.igorski.nl
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of
  * this software and associated documentation files (the "Software"), to deal in
@@ -20,10 +20,17 @@
  * IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-import Canvas from "./src/Canvas";
-import Sprite from "./src/Sprite";
-import { isInsideViewport } from "./src/utils/image-math.js";
+export async function readFile( file: File ): Promise<Blob> {
+    const reader = new FileReader();
 
-// @todo Review
-
-export { Canvas, Sprite, isInsideViewport };
+    return new Promise(( resolve, reject ) => {
+        reader.onload = ( e: ProgressEvent<FileReader> ) => {
+            if ( !e?.target?. result ) {
+                return reject();
+            }
+            resolve( new Blob([ e.target.result as ArrayBuffer ], { type: file.type }));
+        };
+        reader.onerror = e => reject( e );
+        reader.readAsArrayBuffer( file );
+    });
+};
