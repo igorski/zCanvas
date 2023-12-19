@@ -1,49 +1,34 @@
-import "jest-canvas-mock";
+import { describe, it, expect, beforeAll, beforeEach, afterEach, vi } from "vitest";
+import Canvas from "../src/Canvas";
+import Sprite from "../src/Sprite";
+import type { IRenderer } from "../src/rendering/IRenderer";
+import { createMockRenderer } from "./__mocks";
 
-import Canvas from "../src/Canvas.js";
-import Sprite from "../src/Sprite.js";
-import Loader from "../src/Loader.js";
-
-// stub the loader process
-let mockLoadImage;
-jest.mock('../src/Loader', () => ({
-    loadImage: ( ...args ) => mockLoadImage( ...args )
-}));
 let mockMathFn;
-jest.mock('../src/utils/image-math', () => ({
+vi.mock('../src/utils/ImageMath', () => ({
     isInsideViewport       : ( ...args ) => mockMathFn?.( "isInsideViewport", ...args ),
     calculateDrawRectangle : ( ...args ) => mockMathFn?.( "calculateDrawRectangle", ...args )
 }));
 
-describe( "zCanvas.sprite", () => {
+describe( "Sprite", () => {
 
     /* setup */
 
-    let canvas, x, y, width, height, imgSource, imageElement, collidable, mask;
+    const resourceId = "foo";
+
+    let canvas: Canvas;
+    let x: number;
+    let y: number;
+    let width: number;
+    let height: number;
+    let collidable: boolean;
+    let mask: boolean;
 
     // executed before the tests start running
 
     beforeAll( () => {
         // prepare Canvas
         canvas = new Canvas({ width: 200, height: 200 });
-
-        mockLoadImage = async ( src, optImage ) => {
-            const out  = optImage ? optImage : new window.Image();
-            out.src    = src;
-            out.width  = 1;
-            out.height = 1;
-            return {
-                image: out,
-                size: {
-                    width: out.width,
-                    height: out.height
-                }
-            };
-        };
-        // prepare 1x1 red PNG as Bitmap Image source
-        imgSource = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP4z8DwHwAFAAH/VscvDQAAAABJRU5ErkJggg==";
-        imageElement     = new window.Image();
-        imageElement.src = imgSource;
     });
 
     // executed before each individual test
@@ -60,76 +45,51 @@ describe( "zCanvas.sprite", () => {
         mask       = ( Math.random() > .5 );
     });
 
-    // executed after each individual test
-
-    afterEach( () => {
-        while ( canvas.numChildren() > 0 ) {
-            canvas.removeChildAt( 0 ).dispose();
-        }
+    afterEach(() => {
+        vi.restoreAllMocks();
     });
 
-    /* actual unit tests */
-
-    it( "should construct with a single data Object", done => {
+    it( "should construct with a single data Object", () => {
         const interactive = Math.random() > .5;
         const sprite = new Sprite({
-            x, y, width, height, collidable, mask, interactive, bitmap: imgSource,
+            x, y, width, height, collidable, mask, interactive, resourceId,
         });
-        // setting of Bitmap is async
-        window.requestAnimationFrame(() => {
-            expect( sprite.getX() ).toEqual( x );
-            expect( sprite.getY() ).toEqual( y );
-            expect( sprite.getWidth() ).toEqual( width );
-            expect( sprite.getHeight() ).toEqual( height );
-            expect( sprite._bitmap.src ).toEqual( imgSource );
-            expect( sprite.collidable ).toEqual( collidable );
-            expect( sprite.getInteractive() ).toEqual( interactive );
-            expect( sprite._mask ).toEqual( mask );
-            done();
-        });
+
+        expect( sprite.getX() ).toEqual( x );
+        expect( sprite.getY() ).toEqual( y );
+        expect( sprite.getWidth() ).toEqual( width );
+        expect( sprite.getHeight() ).toEqual( height );
+        expect( sprite.getResourceId() ).toEqual( resourceId );
+        expect( sprite.collidable ).toEqual( collidable );
+        expect( sprite.getInteractive() ).toEqual( interactive );
+        expect( sprite._mask ).toEqual( mask );
     });
 
     it( "should not construct without valid dimensions specified", () => {
         expect(() => {
             new Sprite({ width: 0, height: 0 });
-        }).toThrow( /cannot construct a zSprite without valid dimensions/ );
+        }).toThrow( /cannot construct a Sprite without valid dimensions/ );
 
         expect(() => {
             new Sprite({ width: -1, height: -1 });
-        }).toThrow( /cannot construct a zSprite without valid dimensions/ );
+        }).toThrow( /cannot construct a Sprite without valid dimensions/ );
 
         expect(() => {
             new Sprite({ width: 10, height: 10 });
         }).not.toThrow();
     });
 
-    it( "should not construct when providing an invalid Image type", () => {
-        expect(() => {
-            new Sprite({ width, height, bitmap: {} });
-        }).toThrow( /expected HTMLImageElement, HTMLCanvasElement or String for Image source/ );
-
-        expect(() => {
-            new Sprite({ width, height, bitmap: imgSource });
-        }).not.toThrow();
-    });
-
-    it( "should not construct with a spritesheet if no Bitmap was specified", () => {
+    it( "should not construct with a spritesheet if no resource id was specified", () => {
         expect(() => {
             new Sprite({ width, height, sheet: [ {} ] });
-        }).toThrow( /cannot use a spritesheet without a valid Bitmap/ );
+        }).toThrow( /cannot use a spritesheet without a valid resource id/ );
 
         expect(() => {
-            new Sprite({ width, height, bitmap: imgSource, sheet: [ {} ] });
+            new Sprite({ width, height, resourceId, sheet: [ {} ] });
         }).not.toThrow();
     });
 
-    it( "should be able to extend its prototype into new function references", () => {
-        const newClass = function() {};
-        Sprite.extend( newClass );
-        expect( new newClass() instanceof Sprite ).toBe( true );
-    });
-
-    it( "should by default construct for a 0, 0 coordinate", () => {
+    it( "should by default construct at a 0, 0 coordinate", () => {
         const sprite = new Sprite({ width, height });
 
         expect( sprite.getX() ).toEqual( 0 );
@@ -144,12 +104,15 @@ describe( "zCanvas.sprite", () => {
         sprite.setDraggable( true );
         expect( sprite.getDraggable() ).toBe( true );
         expect( sprite.getInteractive() ).toBe( true );
+
+        // @ts-expect-error protected propery
         expect( sprite._keepInBounds ).toBe( false );
 
         sprite.setDraggable( false );
         expect( sprite.getDraggable() ).toBe( false );
 
         sprite.setDraggable( true, true );
+        // @ts-expect-error protected propery
         expect( sprite._keepInBounds ).toBe( true );
     });
 
@@ -236,11 +199,11 @@ describe( "zCanvas.sprite", () => {
 
         // hijack update Function
 
-        const orgUpdateFn = update;
-        update = function() {
+        const orgUpdateFn = Sprite.prototype.update;
+        vi.spyOn( Sprite.prototype, "update" ).mockImplementation( function() {
             ++updated;
             orgUpdateFn.call( this );
-        };
+        });
         const sprite = new Sprite({ width, height });
         const child1 = new Sprite({ width, height });
         const child2 = new Sprite({ width, height });
@@ -250,14 +213,11 @@ describe( "zCanvas.sprite", () => {
 
         // update
 
-        sprite.update( 0 );
+        sprite.update( 0, 1 );
 
         // evaluate
 
         expect( updated ).toEqual( expectedUpdates );
-
-        // restore update Function
-        update = orgUpdateFn;
     });
 
     it( "should be able to determine whether a coordinate is inside the sprites bounding box", () => {
@@ -307,13 +267,13 @@ describe( "zCanvas.sprite", () => {
         const sprite = new Sprite({ x, y, width, height });
 
         // expected sprite not collide with itself
-        expect( sprite.collidesWithEdge( sprite )).toBe( false );
+        expect( sprite.collidesWithEdge( sprite, 0 )).toBe( false );
 
         const sprite2 = new Sprite({ x, y, width, height });
         canvas.addChild( sprite2 );
 
         expect(() => {
-            sprite.collidesWithEdge( sprite2 );
+            sprite.collidesWithEdge( sprite2, 5 );
         }).toThrow( /invalid argument for edge/ );
 
         // test left collision
@@ -342,13 +302,13 @@ describe( "zCanvas.sprite", () => {
         const sprite = new Sprite({ x, y, width, height });
         const child = new Sprite({ x, y, width, height });
 
-        expect( child.getParent() ).toBeNull();
+        expect( child.getParent() ).toBeUndefined();
 
         sprite.addChild( child );
         expect( child.getParent() ).toEqual( sprite );
 
         sprite.removeChild( child );
-        expect( child.getParent() ).toBe( null );
+        expect( child.getParent() ).toBeUndefined();
     });
 
     it( "should be able to set the Canvas onto itself and inner children", () => {
@@ -357,8 +317,8 @@ describe( "zCanvas.sprite", () => {
 
         sprite.addChild( child );
 
-        expect( sprite.canvas ).toBeNull();
-        expect( child.canvas ).toBeNull();
+        expect( sprite.canvas ).toBeUndefined();
+        expect( child.canvas ).toBeUndefined();
 
         const canvas = new Canvas({ width, height });
         sprite.setCanvas( canvas );
@@ -388,9 +348,11 @@ describe( "zCanvas.sprite", () => {
         const cWidth  = Math.round( width / 2 );
         const cHeight = Math.round( height / 2 );
 
+        // @ts-expect-error protected propery
         expect( sprite._keepInBounds ).toBe( false );
 
         sprite.setConstraint( cX, cY, cWidth, cHeight );
+        // @ts-expect-error protected propery
         expect( sprite._keepInBounds ).toBe( true );
 
         const constraint = sprite.getConstraint();
@@ -473,35 +435,35 @@ describe( "zCanvas.sprite", () => {
         const sprite2 = new Sprite({ width, height });
         const sprite3 = new Sprite({ width, height });
 
-        expect( sprite1.next ).toBeNull();
-        expect( sprite1.last ).toBeNull();
+        expect( sprite1.next ).toBeUndefined();
+        expect( sprite1.last ).toBeUndefined();
 
         // add first child
 
         canvas.addChild( sprite1 );
 
-        expect( sprite1.last ).toBeNull();
-        expect( sprite1.next ).toBeNull();
+        expect( sprite1.last ).toBeUndefined();
+        expect( sprite1.next ).toBeUndefined();
 
         // add second child
 
         canvas.addChild( sprite2 );
 
-        expect( sprite1.last ).toBeNull();
+        expect( sprite1.last ).toBeUndefined();
         expect( sprite1.next ).toEqual( sprite2 );
         expect( sprite2.last ).toEqual( sprite1 );
-        expect( sprite2.next ).toBeNull();
+        expect( sprite2.next ).toBeUndefined();
 
         // add third child
 
         canvas.addChild( sprite3 );
 
-        expect( sprite1.last ).toBeNull();
+        expect( sprite1.last ).toBeUndefined();
         expect( sprite1.next ).toEqual( sprite2 );
         expect( sprite2.last ).toEqual( sprite1 );
         expect( sprite2.next ).toEqual( sprite3 );
         expect( sprite3.last ).toEqual( sprite2 );
-        expect( sprite3.next ).toBeNull();
+        expect( sprite3.next ).toBeUndefined();
     });
 
     it( "should be able to update the linked list of its child sprites", () => {
@@ -520,8 +482,8 @@ describe( "zCanvas.sprite", () => {
 
         canvas.removeChild( sprite2 );
 
-        expect( sprite2.last ).toBeNull();
-        expect( sprite2.next ).toBeNull();
+        expect( sprite2.last ).toBeUndefined();
+        expect( sprite2.next ).toBeUndefined();
         expect( sprite1.next ).toEqual( sprite3 );
         expect( sprite3.last ).toEqual( sprite1 );
 
@@ -529,53 +491,45 @@ describe( "zCanvas.sprite", () => {
 
         canvas.removeChild( sprite3 );
 
-        expect( sprite3.last ).toBeNull();
-        expect( sprite3.next ).toBeNull();
-        expect( sprite1.next ).toBeNull();
+        expect( sprite3.last ).toBeUndefined();
+        expect( sprite3.next ).toBeUndefined();
+        expect( sprite1.next ).toBeUndefined();
     });
 
-    // TODO: add setPosition test
-
-    it( "should be able to update its bitmap", async () => {
+    it( "should be able to update its resource", () => {
         const sprite = new Sprite({ x, y, width, height });
-        const newImage = imgSource;
 
-        sprite._bitmapWidth  =
-        sprite._bitmapHeight = 100;
+        sprite.setResource( resourceId );
 
-        await sprite.setBitmap( newImage );
+        expect( sprite.getResourceId() ).toEqual( resourceId );
 
-        expect( sprite._bitmap.src ).toEqual( newImage );
-        expect( sprite._bitmapWidth ).toEqual( 1 );
-        expect( sprite._bitmapHeight ).toEqual( 1 );
-
-        sprite.setBitmap( null );
-        expect( sprite._bitmap ).toBeNull();
+        sprite.setResource( null );
+        expect( sprite.getResourceId() ).toBeNull();
     });
 
-    it( "should by default keep its current size when updating Bitmaps", () => {
+    it( "should by default keep its current size when updating resources", () => {
         const sprite = new Sprite({ x, y, width, height });
 
-        sprite.setBitmap( imgSource );
+        sprite.setResource( resourceId );
 
         expect( sprite.getWidth() ).toEqual( width );
         expect( sprite.getHeight() ).toEqual( height );
     });
 
-    it( "should be able to update its bitmap and size", () => {
+    it( "should be able to update its resource and size", () => {
         const sprite = new Sprite({ x, y, width, height });
-        const newImage = imgSource;
+        const newResourceId = "bar";
 
         const newWidth = 10, newHeight = 10;
 
-        sprite.setBitmap( newImage, newWidth, newHeight );
+        sprite.setResource( newResourceId, newWidth, newHeight );
 
         expect( sprite.getWidth() ).toEqual( newWidth );
         expect( sprite.getHeight() ).toEqual( newHeight );
     });
 
     it( "should be able to update its width", () => {
-        const sprite = new Sprite({ x, y, width, height, bitmap: imgSource });
+        const sprite = new Sprite({ x, y, width, height, resourceId });
         let newWidth = width;
 
         while ( width === newWidth ) {
@@ -587,7 +541,7 @@ describe( "zCanvas.sprite", () => {
     });
 
     it( "should be able to update its height", () => {
-        const sprite = new Sprite({ x, y, width, height, bitmap: imgSource });
+        const sprite = new Sprite({ x, y, width, height, resourceId });
         let newHeight = height;
 
         while ( height === newHeight ) {
@@ -602,7 +556,7 @@ describe( "zCanvas.sprite", () => {
         const sheet = [
             { row: 0, col: 0, amount: 5, fpt: 5 }
         ];
-        const sprite = new Sprite({ width, height, sheet, bitmap: imgSource });
+        const sprite = new Sprite({ width, height, sheet, resourceId });
         const aniProps = sprite._animation;
         const animation = sheet[ 0 ];
 
@@ -640,29 +594,31 @@ describe( "zCanvas.sprite", () => {
         const tileWidth  = Math.round( Math.random() * 100 );
         const tileHeight = Math.round( Math.random() * 100 );
         const sprite = new Sprite({
-            width, height, sheet, bitmap: imgSource,
+            width, height, sheet, resourceId,
             sheetTileWidth: tileWidth, sheetTileHeight: tileHeight
         });
         expect( sprite._animation.tileWidth ).toEqual( tileWidth );
         expect( sprite._animation.tileHeight ).toEqual( tileHeight );
     });
 
-    it( "should fire an animation callback if a sheet animation has completed", done => {
-        const sheet = [
-            { row: 0, col: 0, amount: 5, fpt: 5, onComplete: spriteRef => {
-                // expected animation complete handler to have returned reference to its calling Sprite
-                expect( spriteRef ).toEqual( sprite );
-                done();
-            }}
-        ];
-        const sprite = new Sprite({ width, height, sheet, bitmap: imgSource });
-        const animation = sheet[ 0 ];
+    it( "should fire an animation callback if a sheet animation has completed", (): Promise<void> => {
+        return new Promise( resolve => {
+            const sheet = [
+                { row: 0, col: 0, amount: 5, fpt: 5, onComplete: spriteRef => {
+                    // expected animation complete handler to have returned reference to its calling Sprite
+                    expect( spriteRef ).toEqual( sprite );
+                    resolve();
+                }}
+            ];
+            const sprite = new Sprite({ width, height, sheet, resourceId });
+            const animation = sheet[ 0 ];
 
-        for ( let i = 0; i < animation.amount; ++i ) {
-            for ( let j = 0; j < animation.fpt; ++j ) {
-                sprite.update( Date.now() + i + j );
+            for ( let i = 0; i < animation.amount; ++i ) {
+                for ( let j = 0; j < animation.fpt; ++j ) {
+                    sprite.update( Date.now() + i + j, 1 );
+                }
             }
-        }
+        });
     });
 
     describe( "when handling events", () => {
@@ -718,7 +674,7 @@ describe( "zCanvas.sprite", () => {
 
                 it( "should call its handlePress handler", () => {
                     const sprite = new Sprite({ x: 5, y: 5, width: 10, height: 10, interactive: true });
-                    jest.spyOn( sprite, "handlePress" );
+                    vi.spyOn( sprite, "handlePress" );
                     const handled = sprite.handleInteraction( mockEvent.offsetX, mockEvent.offsetY, mockEvent );
                     expect( sprite.handlePress ).toHaveBeenCalledWith( mockEvent.offsetX, mockEvent.offsetY, mockEvent );
                     expect( handled ).toBe( true );
@@ -747,7 +703,7 @@ describe( "zCanvas.sprite", () => {
 
                 it( "should not do anything for a non draggable sprite", () => {
                     const sprite = new Sprite({ x: 5, y: 5, width: 10, height: 10, interactive: true });
-                    jest.spyOn( sprite, "handleMove" );
+                    vi.spyOn( sprite, "handleMove" );
                     sprite.handleInteraction( mockEvent.offsetX, mockEvent.offsetY, mockEvent );
                     expect( sprite.handleMove ).not.toHaveBeenCalled();
                 });
@@ -756,7 +712,7 @@ describe( "zCanvas.sprite", () => {
                     const canvas = new Canvas({ width: 10, height: 10 });
                     const sprite = new Sprite({ x: 5, y: 5, width: 10, height: 10, interactive: true });
                     canvas.addChild( sprite );
-                    jest.spyOn( sprite, "handleMove" );
+                    vi.spyOn( sprite, "handleMove" );
                     sprite.setDraggable( true );
                     sprite.isDragging = true;
                     sprite._dragStartOffset = { x: sprite.getX(), y: sprite.getY() };
@@ -780,21 +736,27 @@ describe( "zCanvas.sprite", () => {
 
                 it( "should call its handleClick handler if the elapsed time between press and release was below 250 ms, along with handleRelease", () => {
                     sprite._pressTime = Date.now() - 249;
-                    jest.spyOn( sprite, "handleClick" );
-                    jest.spyOn( sprite, "handleRelease" );
+
+                    const clickSpy   = vi.spyOn( sprite, "handleClick" );
+                    const releaseSpy = vi.spyOn( sprite, "handleRelease" );
+
                     const handled = sprite.handleInteraction( mockEvent.offsetX, mockEvent.offsetY, mockEvent );
-                    expect( sprite.handleClick ).toHaveBeenCalled();
-                    expect( sprite.handleRelease ).toHaveBeenCalled();
+
+                    expect( clickSpy ).toHaveBeenCalled();
+                    expect( releaseSpy ).toHaveBeenCalled();
                     expect( handled ).toBe( true );
                 });
 
                 it( "should only call its handleRelease handler if the elapsed time between press and release was over 250 ms", () => {
                     sprite._pressTime = Date.now() - 250;
-                    jest.spyOn( sprite, "handleRelease" );
-                    jest.spyOn( sprite, "handleClick" );
+                    
+                    const clickSpy   = vi.spyOn( sprite, "handleClick" );
+                    const releaseSpy = vi.spyOn( sprite, "handleRelease" );
+
                     const handled = sprite.handleInteraction( mockEvent.offsetX, mockEvent.offsetY, mockEvent );
-                    expect( sprite.handleClick ).not.toHaveBeenCalled();
-                    expect( sprite.handleRelease ).toHaveBeenCalled();
+
+                    expect( clickSpy ).not.toHaveBeenCalled();
+                    expect( releaseSpy ).toHaveBeenCalled();
                     expect( handled ).toBe( true );
                 });
 
@@ -814,46 +776,47 @@ describe( "zCanvas.sprite", () => {
     });
 
     describe( "when rendering its contents", () => {
-        const canvas      = new Canvas();
-        const sprite      = new Sprite({ x: 5, y: 5, width: 50, height: 50, bitmap: imageElement });
-        const viewport    = { left: 10, top: 10, width: 100, height: 50, right: 110, bottom: 60 };
-
-        canvas.addChild( sprite );
-        let mockContext;
+        const viewport = { left: 10, top: 10, width: 100, height: 50, right: 110, bottom: 60 };
+        
+        let mockRenderer: IRenderer;
+        let sprite: Sprite;
 
         beforeEach(() => {
-            mockContext = { save: jest.fn(), restore: jest.fn(), drawImage: jest.fn() };
-            sprite._bitmapReady = true;
+            mockRenderer = createMockRenderer();
+            sprite = new Sprite({ x: 5, y: 5, width: 50, height: 50, resourceId });
+            canvas.addChild( sprite );
         });
 
-        it ( "should not draw when its bitmap is not ready", () => {
-            sprite._bitmapReady = false;
-            sprite.draw( mockContext, viewport );
-            expect( mockContext.drawImage ).not.toHaveBeenCalled();
+        it ( "should not draw when it has no resource associated with it", () => {
+            sprite.setResource( null );
+            sprite.draw( mockRenderer, viewport );
+            expect( mockRenderer.drawImage ).not.toHaveBeenCalled();
         });
 
-        it( "should draw a when its bitmap is ready", () => {
-            sprite.draw( mockContext );
-            expect( mockContext.drawImage ).toHaveBeenCalledWith(
-                sprite._bitmap,
+        it( "should draw a when it has a resource", () => {
+            sprite.draw( mockRenderer );
+            expect( mockRenderer.drawImage ).toHaveBeenCalledWith(
+                resourceId,
                 expect.any( Number ), expect.any( Number ), expect.any( Number ), expect.any( Number )
             );
         });
 
         describe( "and a viewport is passed", () => {
             it( "should perform a boundary check and not draw when the Sprite is outside of viewport bounds", () => {
-                mockMathFn = jest.fn( fn => {
+                mockMathFn = vi.fn( fn => {
                     if ( fn === "isInsideViewport" ) {
                         return false;
                     }
                 });
-                sprite.draw( mockContext, viewport );
+                
+                sprite.draw( mockRenderer, viewport );
+
                 expect( mockMathFn ).toHaveBeenCalledWith( "isInsideViewport", sprite.getBounds(), viewport );
-                expect( mockContext.drawImage ).not.toHaveBeenCalled();
+                expect( mockRenderer.drawImage ).not.toHaveBeenCalled();
             });
 
-            it( "should perform a boundary check and not draw when the Sprite is outside of viewport bounds", () => {
-                mockMathFn = jest.fn( fn => {
+            it( "should perform a boundary check and draw when the Sprite is inside of viewport bounds", () => {
+                mockMathFn = vi.fn( fn => {
                     if ( fn === "isInsideViewport" ) {
                         return true;
                     }
@@ -864,11 +827,13 @@ describe( "zCanvas.sprite", () => {
                         };
                     }
                 });
-                sprite.draw( mockContext, viewport );
+
+                sprite.draw( mockRenderer, viewport );
+
                 expect( mockMathFn ).toHaveBeenCalledWith( "isInsideViewport", sprite.getBounds(), viewport );
                 expect( mockMathFn ).toHaveBeenCalledWith( "calculateDrawRectangle", sprite.getBounds(), viewport );
-                expect( mockContext.drawImage ).toHaveBeenCalledWith(
-                    sprite._bitmap,
+                expect( mockRenderer.drawImageCropped ).toHaveBeenCalledWith(
+                    sprite.getResourceId(),
                     expect.any( Number ), expect.any( Number ), expect.any( Number ), expect.any( Number ),
                     expect.any( Number ), expect.any( Number ), expect.any( Number ), expect.any( Number )
                 );

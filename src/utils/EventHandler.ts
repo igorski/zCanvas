@@ -31,9 +31,7 @@ export default class EventHandler {
     private _eventMap: { target: EventTarget, type: string, listener: EventListenerOrEventListenerObject }[] = [];
     protected _disposed = false;
 
-    constructor() {
-
-    }
+    constructor() {}
 
     /* public methods */
 

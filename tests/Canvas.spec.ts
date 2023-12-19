@@ -1,23 +1,31 @@
-import "jest-canvas-mock";
+import { describe, it, beforeEach, afterEach, expect, vi } from "vitest";
+import Canvas from "../src/Canvas";
+import Sprite from "../src/Sprite";
+import RendererImpl from "../src/rendering/RendererImpl";
 
-import Canvas from "../src/Canvas.js";
-import Sprite from "../src/Sprite.js";
-
-describe( "zCanvas.canvas", () => {
+describe( "Canvas", () => {
 
     /* setup */
 
-    let width, height, fps, animate, smoothing;
+    let width: number;
+    let height: number;
+    let fps: number;
+    let animate: boolean;
+    let smoothing: boolean;
 
     // executed before each individual test
 
-    beforeEach( () => {
+    beforeEach(() => {
         // generate random values
         width     = Math.round( Math.random() * 100 ) + 400;
         height    = Math.round( Math.random() * 100 ) + 300;
         fps       = Math.round( Math.random() * 50 )  + 10;
         animate   = ( Math.random() > .5 );
         smoothing = ( Math.random() > .5 );
+    });
+
+    afterEach(() => {
+        vi.restoreAllMocks();
     });
 
     /* actual unit tests */
@@ -43,35 +51,20 @@ describe( "zCanvas.canvas", () => {
 
     it( "should by default construct with 300 x 300 dimensions", () => {
         const canvas = new Canvas();
+
         expect( canvas.getWidth() ).toEqual( 300 );
         expect( canvas.getHeight() ).toEqual( 300 );
     });
 
-    it( "should be able to extend its prototype into new function references", () => {
-        const newClass = function() {};
-        Canvas.extend( newClass );
-
-        expect( new newClass() instanceof Canvas ).toBe( true );
-    });
-
     it( "should return the construction arguments unchanged", () => {
-        const scale = 2;
-        const backgroundColor = '#FF00FF';
-        const preventEventBubbling = Math.random() > .5;
-
         const canvas = new Canvas({
             width, height, fps, smoothing, animate,
-            scale, backgroundColor, preventEventBubbling
         });
         expect( canvas.getWidth() ).toEqual( width );
         expect( canvas.getHeight() ).toEqual( height );
         expect( canvas.getFrameRate() ).toEqual( fps );
-        expect( canvas._smoothing ).toEqual( smoothing );
+        expect( canvas.getSmoothing() ).toEqual( smoothing );
         expect( canvas.isAnimatable() ).toEqual( animate );
-        expect( canvas._scale.x ).toEqual( scale );
-        expect( canvas._scale.y ).toEqual( scale );
-        expect( canvas._bgColor ).toEqual( backgroundColor );
-        expect( canvas._preventDefaults ).toEqual( preventEventBubbling );
     });
 
     it( "should be able to insert itself into DOM", () => {
@@ -172,28 +165,28 @@ describe( "zCanvas.canvas", () => {
 
         canvas.addChild( sprite1 );
 
-        expect( sprite1.last ).toBeNull();
-        expect( sprite1.next ).toBeNull();
+        expect( sprite1.last ).toBeUndefined();
+        expect( sprite1.next ).toBeUndefined();
 
         // add second child
 
         canvas.addChild( sprite2 );
 
-        expect( sprite1.last ).toBeNull();
+        expect( sprite1.last ).toBeUndefined();
         expect( sprite1.next ).toEqual( sprite2 );
         expect( sprite2.last ).toEqual( sprite1 );
-        expect( sprite2.next ).toBeNull();
+        expect( sprite2.next ).toBeUndefined();
 
         // add third child
 
         canvas.addChild( sprite3 );
 
-        expect( sprite1.last ).toBeNull();
+        expect( sprite1.last ).toBeUndefined();
         expect( sprite1.next ).toEqual( sprite2 );
         expect( sprite2.last ).toEqual( sprite1 );
         expect( sprite2.next ).toEqual( sprite3 );
         expect( sprite3.last ).toEqual( sprite2 );
-        expect( sprite3.next ).toBeNull();
+        expect( sprite3.next ).toBeUndefined();
     });
 
     it( "should be able to update the linked list of its children", () => {
@@ -212,8 +205,8 @@ describe( "zCanvas.canvas", () => {
 
         canvas.removeChild( sprite2 );
 
-        expect( sprite2.last ).toBeNull();
-        expect( sprite2.next ).toBeNull();
+        expect( sprite2.last ).toBeUndefined();
+        expect( sprite2.next ).toBeUndefined();
         expect( sprite1.next ).toEqual( sprite3 );
         expect( sprite3.last ).toEqual( sprite1 );
 
@@ -221,9 +214,9 @@ describe( "zCanvas.canvas", () => {
 
         canvas.removeChild( sprite3 );
 
-        expect( sprite3.last ).toBeNull();
-        expect( sprite3.next ).toBeNull();
-        expect( sprite1.next ).toBeNull();
+        expect( sprite3.last ).toBeUndefined();
+        expect( sprite3.next ).toBeUndefined();
+        expect( sprite1.next ).toBeUndefined();
     });
 
     it( "should be able to return all lowest level children in its display list", () => {
@@ -262,21 +255,37 @@ describe( "zCanvas.canvas", () => {
             expect( canvas.getHeight() ).toEqual( newHeight );
         });
 
+        it( "should cache its dimensions upon request", () => {
+            const canvas = new Canvas({ width, height });
+
+            // @ts-expect-error protected property
+            expect( canvas._coords ).toBeUndefined();
+
+            canvas.getCoordinate();
+            // @ts-expect-error protected property
+            expect( canvas._coords ).not.toBeUndefined();
+
+            // @ts-expect-error protected property
+            expect( canvas.getCoordinate()).toEqual( canvas._coords );
+        });
+
         it( "should invalidate the cached element coordinates", () => {
             const canvas = new Canvas({ width, height });
-            canvas.getCoordinate();
+            canvas.getCoordinate(); // cache coordinates
 
-            expect( canvas._coords ).not.toBeNull();
+            // @ts-expect-error protected property
+            expect( canvas._coords ).not.toBeUndefined();
 
             const newWidth  = width + 1;
             const newHeight = height + 1;
 
             canvas.setDimensions( newWidth, newHeight, false, true );
 
-            expect( canvas._coords ).toBeNull();
+            // @ts-expect-error protected property
+            expect( canvas._coords ).toBeUndefined();
         });
 
-        it( "should be able to update its dimensions asynchronously on next render", done => {
+        it( "should be able to update its dimensions asynchronously on next render", (): Promise<void> => {
             const canvas = new Canvas({ width, height });
 
             const oldWidth = width, oldHeight = height;
@@ -284,25 +293,27 @@ describe( "zCanvas.canvas", () => {
             const newWidth  = width + 1;
             const newHeight = height + 1;
 
-            canvas.setDimensions( newWidth, newHeight );
+            return new Promise( resolve => {
+                canvas.setDimensions( newWidth, newHeight );
 
-            // actual values should not have been updated yet
-
-            expect( canvas._width ).toEqual( oldWidth );
-            expect( canvas._height ).toEqual( oldHeight );
-
-            // we do expect the getters to return the enqueued dimensions
-
-            expect( canvas.getWidth() ).toEqual( newWidth );
-            expect( canvas.getHeight() ).toEqual( newHeight );
-
-            window.requestAnimationFrame(() => {
+                // actual values should not have been updated yet
+    
+                expect( canvas._width ).toEqual( oldWidth );
+                expect( canvas._height ).toEqual( oldHeight );
+    
+                // we do expect the getters to return the enqueued dimensions
+    
                 expect( canvas.getWidth() ).toEqual( newWidth );
-                expect( canvas._width ).toEqual( newWidth );
                 expect( canvas.getHeight() ).toEqual( newHeight );
-                expect( canvas._height ).toEqual( newHeight );
-
-                done();
+    
+                window.requestAnimationFrame(() => {
+                    expect( canvas.getWidth() ).toEqual( newWidth );
+                    expect( canvas._width ).toEqual( newWidth );
+                    expect( canvas.getHeight() ).toEqual( newHeight );
+                    expect( canvas._height ).toEqual( newHeight );
+    
+                    resolve();
+                });
             });
         });
     });
@@ -311,7 +322,7 @@ describe( "zCanvas.canvas", () => {
         it( "should be able to set its optional viewport and calculate its bounding box", () => {
             const canvas = new Canvas({ width, height });
             canvas.setViewport( 100, 50 );
-            expect( canvas._viewport ).toEqual({
+            expect( canvas.getViewport() ).toEqual({
                 left: 0,
                 top: 0,
                 width: 100,
@@ -325,7 +336,7 @@ describe( "zCanvas.canvas", () => {
             const canvas = new Canvas({ width, height });
             canvas.setViewport( 100, 50 );
             canvas.panViewport( 10, 20 );
-            expect( canvas._viewport ).toEqual({
+            expect( canvas.getViewport() ).toEqual({
                 left: 10,
                 top: 20,
                 width: 100,
@@ -338,7 +349,7 @@ describe( "zCanvas.canvas", () => {
         it( "should not allow negative panning of the viewport", () => {
             const canvas = new Canvas({ width, height, viewport: { width: 100, height: 50 } });
             canvas.panViewport( -50, -50 );
-            expect( canvas._viewport ).toEqual({
+            expect( canvas.getViewport() ).toEqual({
                 left: 0,
                 top: 0,
                 width: 100,
@@ -351,7 +362,7 @@ describe( "zCanvas.canvas", () => {
         it( "should not allow panning the viewport beyond the document bounds", () => {
             const canvas = new Canvas({ width, height, viewport: { width: 100, height: 50 } });
             canvas.panViewport( width, height );
-            expect( canvas._viewport ).toEqual({
+            expect( canvas.getViewport() ).toEqual({
                 left: width - 100,
                 top: height - 50,
                 width: 100,
@@ -362,32 +373,39 @@ describe( "zCanvas.canvas", () => {
         });
 
         it( "should by default not broadcast a change event to the optionally registered handler", () => {
-            const handler = jest.fn();
-            const canvas = new Canvas({ width, height, handler, viewport: { width: 100, height: 50 } });
+            const viewportHandler = vi.fn();
+            const canvas = new Canvas({ width, height, viewportHandler, viewport: { width: 100, height: 50 } });
             canvas.panViewport( width, height );
-            expect( handler ).not.toHaveBeenCalled();
+            expect( viewportHandler ).not.toHaveBeenCalled();
         });
 
         it( "should broadcast a change event to the optionally registered handler, when requested", () => {
-            const handler = jest.fn();
-            const canvas = new Canvas({ width, height, handler, viewport: { width: 100, height: 50 } });
+            const viewportHandler = vi.fn();
+            const canvas = new Canvas({ width, height, viewportHandler, viewport: { width: 100, height: 50 } });
             canvas.panViewport( width, height, true );
-            expect( handler ).toHaveBeenCalled();
+            expect( viewportHandler ).toHaveBeenCalled();
         });
     });
 
-    it( "should be able to activate image smoothing", () => {
-        const canvas = new Canvas({ width, height, smoothing: false });
-        expect( canvas.getElement().getContext( '2d' ).imageSmoothingEnabled ).toBe( false );
-        canvas.setSmoothing( true );
-        expect( canvas.getElement().getContext( '2d' ).imageSmoothingEnabled ).toBe( true );
+    it( "should be able to activate image smoothing on the Canvas' context", () => {
+        const smoothingSpy = vi.spyOn( RendererImpl.prototype, "setSmoothing" );
+        const canvas = new Canvas({ width, height, smoothing: true });
+        
+        expect( smoothingSpy ).toHaveBeenCalledWith( true );
+
+        canvas.setSmoothing( false );
+
+        expect( smoothingSpy ).toHaveBeenCalledWith( false );
     });
 
     it( "should be able to render crisp pixel art when image smoothing is disabled", () => {
-        const canvas = new Canvas({ width, height, smoothing: true });
-        expect( canvas.getElement() )?.style?.[ "image-rendering" ].toBeUndefined();
-        canvas.setSmoothing( false );
-        expect( canvas.getElement() )?.style?.[ "image-rendering" ].toEqual( "crisp-edges" );
+        const canvas = new Canvas({ width, height, smoothing: false });
+
+        expect( canvas.getElement().style[ "image-rendering" ]).toEqual( "crisp-edges" );
+
+        canvas.setSmoothing( true );
+        
+        expect( canvas.getElement().style[ "image-rendering" ]).toEqual( "" );
     });
 
     describe( "when dealing with the animatable state", () => {
@@ -409,7 +427,7 @@ describe( "zCanvas.canvas", () => {
             expect( canvas.isAnimatable() ).toBe( false );
         });
 
-        it( "should continuously render on each animation frame when animatable", done => {
+        it( "should continuously render on each animation frame when animatable", (): Promise<void> => {
             const canvas = new Canvas({ width, height, animate: false });
 
             // hijack bound render handlers
@@ -417,17 +435,19 @@ describe( "zCanvas.canvas", () => {
             const hijackedHandler = canvas._renderHandler;
             let renders = 0;
 
-            canvas._renderHandler = () => {
-                if ( ++renders === 5 ) {
-                    done();
-                } else {
-                    hijackedHandler();
-                }
-            };
-            canvas.setAnimatable( true );
+            return new Promise( resolve => {
+                canvas._renderHandler = () => {
+                    if ( ++renders === 5 ) {
+                        resolve();
+                    } else {
+                        hijackedHandler();
+                    }
+                };
+                canvas.setAnimatable( true );
+            });
         });
 
-        it( "should only render on invalidation when not animatable", done => {
+        it( "should only render on invalidation when not animatable", (): Promise<void> => {
             // construct as animatable
             const canvas = new Canvas({ width, height, animate: true });
 
@@ -436,39 +456,49 @@ describe( "zCanvas.canvas", () => {
 
             // hijack bound render handlers
 
+            // @ts-expect-error protected method
             const hijackedHandler = canvas._renderHandler;
             let renders = 0;
 
-            canvas._renderHandler = () => {
-                ++renders;
-                hijackedHandler();
-            };
+            return new Promise( resolve => {
+                // @ts-expect-error protected method
+                canvas._renderHandler = (...args) => {
+                    ++renders;
+                    hijackedHandler(...args);
+                };
 
-            window.requestAnimationFrame( () => {
-                // expected render count not to have incremented after disabling of animatable state
-                expect( renders ).toEqual( 0 );
+                window.requestAnimationFrame(( now: number ) => {
+                    // expected render count not to have incremented after disabling of animatable state
+                    expect( renders ).toEqual( 0 );
 
-                canvas._renderHandler = () => done(); // hijack render to end test
-                canvas.invalidate(); // call invalidate to render and end this test
+                    // @ts-expect-error protected method
+                    canvas._renderHandler = ( now ) => resolve(); // hijack render to end test
+                    canvas.invalidate(); // call invalidate to render and end this test
+                });
             });
         });
     });
 
-    it( "should invoke a render upon invalidation request", done => {
+    it( "should invoke a render upon invalidation request", (): Promise<void> => {
+        // @ts-expect-error protected method
         const orgRender = Canvas.prototype.render;
 
-        // hijack render method
+        return new Promise( resolve => {
+            // hijack render method
 
-        Canvas.prototype.render = () => {
-            Canvas.prototype.render = orgRender; // restore hijacked method
-            done();
-        };
-        const canvas = new Canvas({
-            width: width,
-            height: height,
-            animate: false
+            // @ts-expect-error protected method
+            Canvas.prototype.render = () => {
+                // @ts-expect-error protected method
+                Canvas.prototype.render = orgRender; // restore hijacked method
+                resolve();
+            };
+            const canvas = new Canvas({
+                width: width,
+                height: height,
+                animate: false
+            });
+            canvas.invalidate();
         });
-        canvas.invalidate();
     });
 
     describe( "when rendering", () => {
@@ -485,139 +515,155 @@ describe( "zCanvas.canvas", () => {
             expect( Math.round( canvas.getActualFrameRate() )).toBe( 60 );
         });
 
-        it( "should invoke the update()-method of its children upon render", done => {
+        it( "should invoke the update()-method of its children upon render", (): Promise<void> => {
             const canvas = new Canvas({ width, height, animate: false });
             const sprite = new Sprite({ width: 10, height: 10 });
             canvas.addChild( sprite );
 
-            sprite.update = ( timestamp, framesSinceLastUpdate ) => {
-                expect( typeof timestamp ).toBe( "number" );
-                expect( typeof framesSinceLastUpdate ).toBe( "number" );
-                done();
-            };
-            canvas.invalidate();
+            return new Promise( resolve => {
+                sprite.update = ( timestamp, framesSinceLastUpdate ) => {
+                    expect( typeof timestamp ).toBe( "number" );
+                    expect( typeof framesSinceLastUpdate ).toBe( "number" );
+                    resolve();
+                };
+                canvas.invalidate();
+            });
         });
 
         it( "should not invoke the update()-method of its children if a custom external " +
-            "update handler was configured", async done => {
+            "update handler was configured", (): Promise<void> => {
 
-            const customHandler = ( timestamp, framesSinceLastUpdate ) => {
-                expect( typeof timestamp ).toBe( "number" );
-                expect( typeof framesSinceLastUpdate ).toBe( "number" );
-                done();
-            };
-            const canvas = new Canvas({ width, height, animate: false, onUpdate: customHandler });
-            const sprite = new Sprite({ width: 10, height: 10 });
-            canvas.addChild( sprite );
+            return new Promise(( resolve, reject ) => {
+                const customHandler = ( timestamp, framesSinceLastUpdate ) => {
+                    expect( typeof timestamp ).toBe( "number" );
+                    expect( typeof framesSinceLastUpdate ).toBe( "number" );
+                    resolve();
+                };
+                const canvas = new Canvas({ width, height, animate: false, onUpdate: customHandler });
+                const sprite = new Sprite({ width: 10, height: 10 });
+                canvas.addChild( sprite );
 
-            sprite.update = () => {
-                throw new Error( "sprite update should not have been called" );
-            };
-            canvas.invalidate();
+                sprite.update = () => {
+                    reject( new Error( "sprite update should not have been called" ));
+                };
+                canvas.invalidate();
+            });
         });
 
-        it( "should defer actual rendering and calculate elapsed frames between render callbacks when a lower frame rate is specified", async done => {
+        it( "should defer actual rendering and calculate elapsed frames between render callbacks when a lower frame rate is specified", (): Promise<void> => {
             const canvas = new Canvas({ fps: 10 });
 
             const now = window.performance.now();
-            canvas._renderHandler = jest.fn(); // stub the RAF handler
+            canvas._renderHandler = vi.fn(); // stub the RAF handler
             canvas.setAnimatable( true );
             canvas._lastRender = now;
 
-            // if update handler is triggered we know rendering is executing
+            return new Promise(( resolve, reject ) => {
 
-            canvas._updateHandler = () => {
-                throw new Error( "render update handler should not have been called" );
-            };
+                // if update handler is triggered we know rendering is executing
 
-            // at 10 fps, we expect 100 ms frame durations (1000ms / 10fps)
-            // as such the following invocations (at 1000ms / 60fps intervals)
-            // will all have delta below 100 ms and should not trigger a render
+                canvas._updateHandler = () => {
+                    reject( new Error( "render update handler should not have been called" ));
+                };
 
-            const incr = 1000 / 60;
-            for ( let i = 1; i < 6; ++i ) {
-                canvas.render( now + ( i * incr ));
-            }
+                // at 10 fps, we expect 100 ms frame durations (1000ms / 10fps)
+                // as such the following invocations (at 1000ms / 60fps intervals)
+                // will all have delta below 100 ms and should not trigger a render
 
-            canvas._updateHandler = ( timestamp, framesSinceLastRender ) => {
-                expect( timestamp ).toEqual( now + 100 );
-                expect( Math.round( framesSinceLastRender )).toEqual( 6 ); // there were six render() invocations
+                const incr = 1000 / 60;
+                for ( let i = 1; i < 6; ++i ) {
+                    canvas.render( now + ( i * incr ));
+                }
 
-                done();
-            };
+                canvas._updateHandler = ( timestamp, framesSinceLastRender ) => {
+                    expect( timestamp ).toEqual( now + 100 );
+                    expect( Math.round( framesSinceLastRender )).toEqual( 6 ); // there were six render() invocations
 
-            // the next (6th) render invocation is at a 100 ms delta relative
-            // to last render, this should trigger the update handler
+                    resolve();
+                };
 
-            canvas.render( now + 100 );
+                // the next (6th) render invocation is at a 100 ms delta relative
+                // to last render, this should trigger the update handler
+
+                // @ts-expect-error protected property
+                canvas.render( now + 100 );
+            });
         });
 
-        it( "should defer actual rendering and calculate elapsed frames between render callbacks when running on a high refresh rate environment", async done => {
+        it( "should defer actual rendering and calculate elapsed frames between render callbacks when running on a high refresh rate environment", (): Promise<void> => {
             const canvas = new Canvas({ fps: 60 }); // 60 fps being the norm
 
             const now = window.performance.now();
-            canvas._renderHandler = jest.fn(); // stub the RAF handler
+            canvas._renderHandler = vi.fn(); // stub the RAF handler
             canvas.setAnimatable( true );
             canvas._lastRender = now;
 
-            // if update handler is triggered we know rendering is executing
+            return new Promise(( resolve, reject ) => {
+                // if update handler is triggered we know rendering is executing
+                // @ts-expect-error protected property
+                canvas._updateHandler = () => {
+                    reject( new Error( "render update handler should not have been called" ))
+                };
 
-            canvas._updateHandler = () => {
-                throw new Error( "render update handler should not have been called" );
-            };
+                // at 60 fps, we expect 16.66 ms frame durations (1000ms / 60fps)
+                // we will however run the callbacks at 8.33 ms (1000ms / 120fps)
+                // to emulate an Apple M1 120 Hz refresh rate
 
-            // at 60 fps, we expect 16.66 ms frame durations (1000ms / 60fps)
-            // we will however run the callbacks at 8.33 ms (1000ms / 120fps)
-            // to emulate an Apple M1 120 Hz refresh rate
+                const incr = 1000 / 120;
 
-            const incr = 1000 / 120;
-            canvas.render( now + incr );
+                // @ts-expect-error protected property
+                canvas.render( now + incr );
 
-            canvas._updateHandler = ( timestamp, framesSinceLastRender ) => {
-                expect( timestamp ).toEqual( now + ( 1000 / 60 ));
-                // the deferred rendering should have capped the rendering to 60
-                // (thus we are progressing exactly one frame per render iteration
-                // we can disregard the skipped render)
-                expect( framesSinceLastRender ).toEqual( 1 );
+                canvas._updateHandler = ( timestamp, framesSinceLastRender ) => {
+                    expect( timestamp ).toEqual( now + ( 1000 / 60 ));
+                    // the deferred rendering should have capped the rendering to 60
+                    // (thus we are progressing exactly one frame per render iteration
+                    // we can disregard the skipped render)
+                    expect( framesSinceLastRender ).toEqual( 1 );
 
-                done();
-            };
+                    resolve();
+                };
 
-            // the next (2nd) render invocation is at a 16.66 ms delta relative
-            // to last render, this should trigger the update handler
+                // the next (2nd) render invocation is at a 16.66 ms delta relative
+                // to last render, this should trigger the update handler
 
-            canvas.render( now + ( incr * 2 ));
+                // @ts-expect-error protected property
+                canvas.render( now + ( incr * 2 ));
+            });
         });
 
-        it( "should calculate the correct elapsed frames multiplier when the actual frame rate is lower than the configured frame rate", async done => {
+        it( "should calculate the correct elapsed frames multiplier when the actual frame rate is lower than the configured frame rate", (): Promise<void> => {
             const canvas = new Canvas({ fps: 120 });
 
             const now = window.performance.now();
-            canvas._renderHandler = jest.fn(); // stub the RAF handler
+            canvas._renderHandler = vi.fn(); // stub the RAF handler
             canvas.setAnimatable( true );
             canvas._lastRender = now;
 
-            canvas._updateHandler = ( timestamp, framesSinceLastRender ) => {
-                expect( timestamp ).toEqual( now + ( 1000 / 60 ));
-                // as the environment manages less fps than the configured value, we
-                // should progress the update() by more frames
-                expect( Math.round( framesSinceLastRender )).toEqual( 2 );
-
-                done();
-            };
-
-            // at 120 fps, we expect 8.33 ms frame durations (1000ms / 120fps)
-            // we will however run the callback at 16.66 ms (1000ms / 60fps)
-            // to emulate a device that can't match the configured rate
-
-            canvas.render( now + ( 1000 / 60 ));
+            return new Promise(( resolve, reject ) =>  {
+                canvas._updateHandler = ( timestamp, framesSinceLastRender ) => {
+                    expect( timestamp ).toEqual( now + ( 1000 / 60 ));
+                    // as the environment manages less fps than the configured value, we
+                    // should progress the update() by more frames
+                    expect( Math.round( framesSinceLastRender )).toEqual( 2 );
+    
+                    resolve();
+                };
+    
+                // at 120 fps, we expect 8.33 ms frame durations (1000ms / 120fps)
+                // we will however run the callback at 16.66 ms (1000ms / 60fps)
+                // to emulate a device that can't match the configured rate
+    
+                // @ts-expect-error protected property
+                canvas.render( now + ( 1000 / 60 ));
+            });
         });
     });
 
     describe( "when getting the canvas coordinates", () => {
         it( "should lazily retrieve the coordinates and cache the result", () => {
             const canvas  = new Canvas({ width, height });
-            const gbcrSpy = jest.spyOn( canvas.getElement(), "getBoundingClientRect" );
+            const gbcrSpy = vi.spyOn( canvas.getElement(), "getBoundingClientRect" );
 
             const coords = canvas.getCoordinate();
             expect( gbcrSpy ).toHaveBeenCalledTimes( 1 );
@@ -629,10 +675,11 @@ describe( "zCanvas.canvas", () => {
 
         it( "should recalculate the coordinates when the cached result is cleared", () => {
             const canvas = new Canvas({ width, height });
-            const gbcrSpy = jest.spyOn( canvas.getElement(), "getBoundingClientRect" );
+            const gbcrSpy = vi.spyOn( canvas.getElement(), "getBoundingClientRect" ).mockImplementation(() => ({}));
 
             canvas.getCoordinate();
-            canvas._coords = null;
+            // @ts-expect-error protected property
+            canvas._coords = undefined;
 
             canvas.getCoordinate();
 
@@ -670,7 +717,7 @@ describe( "zCanvas.canvas", () => {
 
         it( "should invalidate the current contents even when stretch to fit isn't set", () => {
             const canvas = new Canvas({ width, height, stretchToFit: false });
-            canvas.invalidate = jest.fn();
+            canvas.invalidate = vi.fn();
             canvas.scale( 2 );
             expect( canvas.invalidate ).toHaveBeenCalled();
         });
@@ -741,8 +788,8 @@ describe( "zCanvas.canvas", () => {
                 changedTouches: [],
                 offsetX: 10,
                 offsetY: 10,
-                stopPropagation: jest.fn(),
-                preventDefault: jest.fn(),
+                stopPropagation: vi.fn(),
+                preventDefault: vi.fn(),
             };
         });
 
@@ -751,7 +798,7 @@ describe( "zCanvas.canvas", () => {
 
             // note sprite is inside of event bounds
             canvas.addChild( new Sprite({ x: 5, y: 5, width: 10, height: 10, interactive: true }));
-            canvas.invalidate = jest.fn();
+            canvas.invalidate = vi.fn();
             canvas.handleInteraction( mockEvent );
 
             expect(canvas.invalidate).toHaveBeenCalled();
@@ -762,8 +809,8 @@ describe( "zCanvas.canvas", () => {
             const sprite1 = new Sprite({ x: 5, y: 5, width: 10, height: 10, interactive: true });
             const sprite2 = new Sprite({ x: 5, y: 5, width: 10, height: 10, interactive: true });
 
-            jest.spyOn( sprite1, "handleInteraction" );
-            jest.spyOn( sprite2, "handleInteraction" );
+            vi.spyOn( sprite1, "handleInteraction" );
+            vi.spyOn( sprite2, "handleInteraction" );
 
             canvas.addChild( sprite1 );
             canvas.addChild( sprite2 );
@@ -783,8 +830,8 @@ describe( "zCanvas.canvas", () => {
                 const sprite1 = new Sprite({ x: 5, y: 5, width: 10, height: 10, interactive: true });
                 const sprite2 = new Sprite({ x: 5, y: 5, width: 10, height: 10, interactive: true });
 
-                jest.spyOn( sprite1, "handleInteraction" );
-                jest.spyOn( sprite2, "handleInteraction" );
+                vi.spyOn( sprite1, "handleInteraction" );
+                vi.spyOn( sprite2, "handleInteraction" );
 
                 canvas.addChild( sprite1 );
                 canvas.addChild( sprite2 );
@@ -803,8 +850,8 @@ describe( "zCanvas.canvas", () => {
                 const sprite1 = new Sprite({ x: 5,  y: 5,  width: 10, height: 10, interactive: true });
                 const sprite2 = new Sprite({ x: 15, y: 15, width: 10, height: 10, interactive: true });
 
-                jest.spyOn( sprite1, "handleInteraction" );
-                jest.spyOn( sprite2, "handleInteraction" );
+                vi.spyOn( sprite1, "handleInteraction" );
+                vi.spyOn( sprite2, "handleInteraction" );
 
                 canvas.addChild( sprite1 );
                 canvas.addChild( sprite2 );

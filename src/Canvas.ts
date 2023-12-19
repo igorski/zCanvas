@@ -54,7 +54,6 @@ interface CanvasProps {
     preventEventBubbling?: boolean;
     parentElement?: HTMLElement;
     onUpdate?: ( now: DOMHighResTimeStamp, framesSinceLastRender: number ) => void;
-    useOffscreen?: boolean;
     debug?: boolean;
 }
 
@@ -124,7 +123,6 @@ export default class Canvas {
         debug = false,
         viewportHandler,
         onUpdate,
-        useOffscreen = false,
     }: CanvasProps = {}) {
         if ( width <= 0 || height <= 0 ) {
             throw new Error( "cannot construct a zCanvas without valid dimensions" );
@@ -133,7 +131,7 @@ export default class Canvas {
         this.DEBUG = debug;
 
         this._element  = document.createElement( "canvas" );
-        this._renderer = new RenderAPI( this._element, useOffscreen );
+        this._renderer = new RenderAPI( this._element, true );
         this.collision = new Collision();
 
         this._updateHandler = onUpdate;
@@ -375,15 +373,16 @@ export default class Canvas {
     setSmoothing( enabled: boolean ): void {
         // 1. update context
         this._renderer.setSmoothing( enabled );
-        // 2. update Canvas Elementin DOM
-        const styles = [
-            "-moz-crisp-edges", "-webkit-crisp-edges", "pixelated", "crisp-edges"
-        ];
-        const canvasStyle = this._element.style;
-        styles.forEach( style => {
-            // @ts-expect-error TS7015: Element implicitly has an 'any' type because index expression is not of type 'number'.
-            canvasStyle[ "image-rendering" ] = enabled ? undefined : style;
-        });
+        // 2. update Canvas Element in DOM
+        if ( enabled ) {
+            this._element.style[ "image-rendering" ] = "";
+        } else {
+            [ "-moz-crisp-edges", "-webkit-crisp-edges", "pixelated", "crisp-edges" ]
+            .forEach( style => {
+                // @ts-expect-error TS7015: Element implicitly has an 'any' type because index expression is not of type 'number'.
+                this._element.style[ "image-rendering" ] = style;
+            });
+        }
         this._smoothing = enabled;
         this.invalidate();
     }
@@ -405,18 +404,18 @@ export default class Canvas {
      * @param {number} height
      * @param {boolean=} setAsPreferredDimensions optional, defaults to true, stretchToFit handler
      *        overrides this to ensure returning to correct dimensions when disabling stretchToFit
-     * @param {boolean=} optImmediate optional, whether to apply immediately, defaults to false
+     * @param {boolean=} immediate optional, whether to apply immediately, defaults to false
      *        to prevent flickering of existing screen contents during repeated resize
      */
-    setDimensions( width: number, height: number, setAsPreferredDimensions = true, optImmediate = false ): void {
+    setDimensions( width: number, height: number, setAsPreferredDimensions = true, immediate = false ): void {
         this._enqueuedSize = { width, height };
 
-        if ( setAsPreferredDimensions === true ) {
+        if ( setAsPreferredDimensions ) {
             this._preferredWidth  = width;
             this._preferredHeight = height;
         }
 
-        if ( optImmediate === true ) {
+        if ( immediate ) {
             this.updateCanvasSize();
         }
         this.invalidate();
@@ -540,6 +539,18 @@ export default class Canvas {
         // we override the scale adjustment performed by updateCanvasSize as
         // we lock the scale to the ratio of the desired to actual screen dimensions
         this.scale( xScale, yScale );
+    }
+
+    /**
+     * return the bounding box of the canvas Element in the DOM
+     */
+    getCoordinate(): DOMRect {
+        if ( this._coords === undefined ) {
+            // to prevent expensive repeated calls to this method
+            // coords should be nulled upon canvas resize or DOM layout changes
+            this._coords = this._element.getBoundingClientRect();
+        }
+        return this._coords;
     }
 
     dispose(): void {
@@ -825,25 +836,13 @@ export default class Canvas {
         this._eventHandler = undefined;
     }
 
-    /**
-     * return the bounding box of the canvas Element in the DOM
-     */
-    protected getCoordinate(): DOMRect {
-        if ( this._coords === undefined ) {
-            // to prevent expensive repeated calls to this method
-            // coords should be nulled upon canvas resize or DOM layout changes
-            this._coords = this._element.getBoundingClientRect();
-        }
-        return this._coords;
-    }
-
     private updateCanvasSize(): void {
         const scaleFactor = this._HDPIscaleRatio;
 
         let width: number;
         let height: number;
     
-        if ( this._enqueuedSize ) {
+        if ( this._enqueuedSize !== undefined ) {
             ({ width, height } = this._enqueuedSize );
             this._enqueuedSize = undefined;
             this._width  = width;

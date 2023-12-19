@@ -107,7 +107,7 @@ export default class Sprite {
         /* assertions */
 
         if ( width <= 0 || height <= 0 ) {
-            throw new Error( "cannot construct a zSprite without valid dimensions" );
+            throw new Error( "cannot construct a Sprite without valid dimensions" );
         }
 
         this.collidable = collidable;

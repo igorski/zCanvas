@@ -99,7 +99,10 @@ class o {
     this._map = /* @__PURE__ */ new Map();
   }
   dispose() {
-    this._map.clear(), this._map = void 0;
+    const t2 = [...this._map].map(([t3]) => t3);
+    for (; t2.length > 0; )
+      this.remove(t2.shift());
+    this._map = void 0;
   }
   get(t2) {
     return this._map.get(t2);
@@ -188,7 +191,7 @@ class l {
     }
   }
 }
-const c = "IWZ1bmN0aW9uKCl7InVzZSBzdHJpY3QiO2NsYXNzIGV7Y29uc3RydWN0b3IoKXt0aGlzLl9tYXA9bmV3IE1hcH1kaXNwb3NlKCl7dGhpcy5fbWFwLmNsZWFyKCksdGhpcy5fbWFwPXZvaWQgMH1nZXQoZSl7cmV0dXJuIHRoaXMuX21hcC5nZXQoZSl9c2V0KGUsdCl7aWYodGhpcy5oYXMoZSkpe2lmKHRoaXMuZ2V0KGUpPT09dClyZXR1cm47dGhpcy5yZW1vdmUoZSl9dGhpcy5fbWFwLnNldChlLHQpfWhhcyhlKXtyZXR1cm4gdGhpcy5fbWFwLmhhcyhlKX1yZW1vdmUoZSl7cmV0dXJuISF0aGlzLmhhcyhlKSYmKHRoaXMuZ2V0KGUpLmNsb3NlKCksdGhpcy5fbWFwLmRlbGV0ZShlKSl9fWNvbnN0IHQ9LjU7Y2xhc3Mgc3tjb25zdHJ1Y3Rvcih0KXt0aGlzLl9jYW52YXM9dCx0aGlzLl9jb250ZXh0PXQuZ2V0Q29udGV4dCgiMmQiKSx0aGlzLl9jYWNoZT1uZXcgZX1kaXNwb3NlKCl7dGhpcy5fY2FjaGUuZGlzcG9zZSgpLHRoaXMuX2NhY2hlPXZvaWQgMCx0aGlzLl9jYW52YXM9dm9pZCAwfWNhY2hlUmVzb3VyY2UoZSx0KXt0aGlzLl9jYWNoZS5zZXQoZSx0KX1nZXRSZXNvdXJjZShlKXtyZXR1cm4gdGhpcy5fY2FjaGUuZ2V0KGUpfWRpc3Bvc2VSZXNvdXJjZShlKXt0aGlzLl9jYWNoZS5yZW1vdmUoZSl9c2V0RGltZW5zaW9ucyhlLHQpe3RoaXMuX2NhbnZhcy53aWR0aD1lLHRoaXMuX2NhbnZhcy5oZWlnaHQ9dH1zZXRTbW9vdGhpbmcoZSl7Y29uc3QgdD10aGlzLl9jb250ZXh0O1siaW1hZ2VTbW9vdGhpbmdFbmFibGVkIiwibW96SW1hZ2VTbW9vdGhpbmdFbmFibGVkIiwib0ltYWdlU21vb3RoaW5nRW5hYmxlZCIsIndlYmtpdEltYWdlU21vb3RoaW5nRW5hYmxlZCJdLmZvckVhY2goKHM9Pnt2b2lkIDAhPT10W3NdJiYodFtzXT1lKX0pKX1zYXZlKCl7dGhpcy5fY29udGV4dC5zYXZlKCl9cmVzdG9yZSgpe3RoaXMuX2NvbnRleHQucmVzdG9yZSgpfXNjYWxlKGUsdD1lKXt0aGlzLl9jb250ZXh0LnNjYWxlKGUsdCl9c2V0QmxlbmRNb2RlKGUpe3RoaXMuX2NvbnRleHQuZ2xvYmFsQ29tcG9zaXRlT3BlcmF0aW9uPWV9Y2xlYXJSZWN0KGUsdCxzLGEpe3RoaXMuX2NvbnRleHQuY2xlYXJSZWN0KGUsdCxzLGEpfWRyYXdSZWN0KGUscyxhLGksYyxvPSJmaWxsIil7aWYoImZpbGwiPT09byl0aGlzLl9jb250ZXh0LmZpbGxTdHlsZT1jLHRoaXMuX2NvbnRleHQuZmlsbFJlY3QoZSxzLGEsaSk7ZWxzZSBpZigic3Ryb2tlIj09PW8pe2NvbnN0IG89MTt0aGlzLl9jb250ZXh0LmxpbmVXaWR0aD1vLHRoaXMuX2NvbnRleHQuc3Ryb2tlU3R5bGU9Yyx0aGlzLl9jb250ZXh0LnN0cm9rZVJlY3QodCsoZS1vKSx0KyhzLW8pLGEsaSl9fWRyYXdDaXJjbGUoZSx0LHMsYSxpKXt0aGlzLl9jb250ZXh0LmJlZ2luUGF0aCgpLHRoaXMuX2NvbnRleHQuYXJjKGUrcyx0K3MscywwLDIqTWF0aC5QSSwhMSksdGhpcy5fY29udGV4dC5maWxsU3R5bGU9YSx0aGlzLl9jb250ZXh0LmZpbGwoKSxpJiYodGhpcy5fY29udGV4dC5saW5lV2lkdGg9NSx0aGlzLl9jb250ZXh0LnN0cm9rZVN0eWxlPWksdGhpcy5fY29udGV4dC5zdHJva2UoKSksdGhpcy5fY29udGV4dC5jbG9zZVBhdGgoKX1kcmF3SW1hZ2UoZSx0LHMsYSxpKXt0aGlzLl9jYWNoZS5oYXMoZSkmJihhPD0wfHxpPD0wfHx0aGlzLl9jb250ZXh0LmRyYXdJbWFnZSh0aGlzLl9jYWNoZS5nZXQoZSksdCxzLGEsaSkpfWRyYXdJbWFnZUNyb3BwZWQoZSxzLGEsaSxjLG8sbixoLHIsZD0hMSl7aWYodGhpcy5fY2FjaGUuaGFzKGUpKXtpZihkKXtpZihoPD0wfHxyPD0wKXJldHVybjtjb25zdCB0PXRoaXMuX2NhY2hlLmdldChlKSxvPShoPU1hdGgubWluKHRoaXMuX2NvbnRleHQuY2FudmFzLndpZHRoLGgpKS9pLG49KHI9TWF0aC5taW4odGhpcy5fY29udGV4dC5jYW52YXMuaGVpZ2h0LHIpKS9jO3MraT50LndpZHRoJiYoaC09byoocytpLXQud2lkdGgpLGktPXMraS10LndpZHRoKSxhK2M+dC5oZWlnaHQmJihyLT1uKihhK2MtdC5oZWlnaHQpLGMtPWErYy10LmhlaWdodCl9dGhpcy5fY29udGV4dC5kcmF3SW1hZ2UodGhpcy5fY2FjaGUuZ2V0KGUpLHQrczw8MCx0K2E8PDAsdCtpPDwwLHQrYzw8MCx0K288PDAsdCtuPDwwLHQraDw8MCx0K3I8PDApfX19bGV0IGEsaTtvbm1lc3NhZ2U9ZT0+e3N3aXRjaChlLmRhdGEuY21kKXtkZWZhdWx0OmJyZWFrO2Nhc2UiaW5pdCI6aT1lLmRhdGEuY2FudmFzLGE9bmV3IHMoaSksY29uc29sZS5pbmZvKCItLS0gaW5pdGlhbGl6ZWQgV29ya2VyIixpLGEpO2JyZWFrO2Nhc2UibG9hZFJlc291cmNlIjohYXN5bmMgZnVuY3Rpb24oZSx0KXt0cnl7bGV0IHM7aWYodCBpbnN0YW5jZW9mIEZpbGUpe2NvbnN0IGU9YXdhaXQgYXN5bmMgZnVuY3Rpb24oZSl7Y29uc3QgdD1uZXcgRmlsZVJlYWRlcjtyZXR1cm4gbmV3IFByb21pc2UoKChzLGEpPT57dC5vbmxvYWQ9dD0+e3ZhciBpO2lmKCEobnVsbD09KGk9bnVsbD09dD92b2lkIDA6dC50YXJnZXQpP3ZvaWQgMDppLnJlc3VsdCkpcmV0dXJuIGEoKTtzKG5ldyBCbG9iKFt0LnRhcmdldC5yZXN1bHRdLHt0eXBlOmUudHlwZX0pKX0sdC5vbmVycm9yPWU9PmEoZSksdC5yZWFkQXNBcnJheUJ1ZmZlcihlKX0pKX0odCk7cz1hd2FpdCBjcmVhdGVJbWFnZUJpdG1hcChlKX1lbHNlIGlmKHQgaW5zdGFuY2VvZiBCbG9iKXM9YXdhaXQgY3JlYXRlSW1hZ2VCaXRtYXAodCk7ZWxzZSBpZigic3RyaW5nIj09dHlwZW9mIHQpe2NvbnN0IGU9YXdhaXQgZmV0Y2godCksYT1hd2FpdCBlLmJsb2IoKTtzPWF3YWl0IGNyZWF0ZUltYWdlQml0bWFwKGEpfWVsc2UgdCBpbnN0YW5jZW9mIEltYWdlQml0bWFwJiYocz10KTtudWxsPT1hfHxhLmNhY2hlUmVzb3VyY2UoZSxzKSxwb3N0TWVzc2FnZSh7Y21kOiJvbmxvYWQiLGlkOmUsc2l6ZTp7d2lkdGg6cy53aWR0aCxoZWlnaHQ6cy5oZWlnaHR9fSl9Y2F0Y2h7cG9zdE1lc3NhZ2Uoe2NtZDoib25lcnJvciIsaWQ6ZX0pfX0oZS5kYXRhLmlkLGUuZGF0YS5zb3VyY2UpO2JyZWFrO2Nhc2UiZ2V0UmVzb3VyY2UiOmNvbnN0IHQ9bnVsbD09YT92b2lkIDA6YS5nZXRSZXNvdXJjZShlLmRhdGEuaWQpO3Bvc3RNZXNzYWdlKHtjbWQ6Im9ucmVzb3VyY2UiLGlkOmUuZGF0YS5pZCxiaXRtYXA6dH0pO2JyZWFrO2Nhc2UiZGlzcG9zZVJlc291cmNlIjpudWxsPT1hfHxhLmRpc3Bvc2VSZXNvdXJjZSguLi5lLmRhdGEuYXJncyk7YnJlYWs7Y2FzZSJkaXNwb3NlIjpudWxsPT1hfHxhLmRpc3Bvc2UoKSxpPXZvaWQgMCxhPXZvaWQgMDticmVhaztjYXNlInNldFNtb290aGluZyI6Y2FzZSJzZXREaW1lbnNpb25zIjpjYXNlInNhdmUiOmNhc2UicmVzdG9yZSI6Y2FzZSJzY2FsZSI6Y2FzZSJzZXRCbGVuZE1vZGUiOmNhc2UiY2xlYXJSZWN0IjpjYXNlImRyYXdSZWN0IjpjYXNlImRyYXdJbWFnZSI6Y2FzZSJkcmF3SW1hZ2VDcm9wcGVkIjphJiZhW2UuZGF0YS5jbWRdKC4uLmUuZGF0YS5hcmdzKX19fSgpOwo=", u = "undefined" != typeof window && window.Blob && new Blob([atob(c)], { type: "text/javascript;charset=utf-8" });
+const c = "IWZ1bmN0aW9uKCl7InVzZSBzdHJpY3QiO2NsYXNzIGV7Y29uc3RydWN0b3IoKXt0aGlzLl9tYXA9bmV3IE1hcH1kaXNwb3NlKCl7Y29uc3QgZT1bLi4udGhpcy5fbWFwXS5tYXAoKChbZV0pPT5lKSk7Zm9yKDtlLmxlbmd0aD4wOyl0aGlzLnJlbW92ZShlLnNoaWZ0KCkpO3RoaXMuX21hcD12b2lkIDB9Z2V0KGUpe3JldHVybiB0aGlzLl9tYXAuZ2V0KGUpfXNldChlLHQpe2lmKHRoaXMuaGFzKGUpKXtpZih0aGlzLmdldChlKT09PXQpcmV0dXJuO3RoaXMucmVtb3ZlKGUpfXRoaXMuX21hcC5zZXQoZSx0KX1oYXMoZSl7cmV0dXJuIHRoaXMuX21hcC5oYXMoZSl9cmVtb3ZlKGUpe3JldHVybiEhdGhpcy5oYXMoZSkmJih0aGlzLmdldChlKS5jbG9zZSgpLHRoaXMuX21hcC5kZWxldGUoZSkpfX1jb25zdCB0PS41O2NsYXNzIHN7Y29uc3RydWN0b3IodCl7dGhpcy5fY2FudmFzPXQsdGhpcy5fY29udGV4dD10LmdldENvbnRleHQoIjJkIiksdGhpcy5fY2FjaGU9bmV3IGV9ZGlzcG9zZSgpe3RoaXMuX2NhY2hlLmRpc3Bvc2UoKSx0aGlzLl9jYWNoZT12b2lkIDAsdGhpcy5fY2FudmFzPXZvaWQgMH1jYWNoZVJlc291cmNlKGUsdCl7dGhpcy5fY2FjaGUuc2V0KGUsdCl9Z2V0UmVzb3VyY2UoZSl7cmV0dXJuIHRoaXMuX2NhY2hlLmdldChlKX1kaXNwb3NlUmVzb3VyY2UoZSl7dGhpcy5fY2FjaGUucmVtb3ZlKGUpfXNldERpbWVuc2lvbnMoZSx0KXt0aGlzLl9jYW52YXMud2lkdGg9ZSx0aGlzLl9jYW52YXMuaGVpZ2h0PXR9c2V0U21vb3RoaW5nKGUpe2NvbnN0IHQ9dGhpcy5fY29udGV4dDtbImltYWdlU21vb3RoaW5nRW5hYmxlZCIsIm1vekltYWdlU21vb3RoaW5nRW5hYmxlZCIsIm9JbWFnZVNtb290aGluZ0VuYWJsZWQiLCJ3ZWJraXRJbWFnZVNtb290aGluZ0VuYWJsZWQiXS5mb3JFYWNoKChzPT57dm9pZCAwIT09dFtzXSYmKHRbc109ZSl9KSl9c2F2ZSgpe3RoaXMuX2NvbnRleHQuc2F2ZSgpfXJlc3RvcmUoKXt0aGlzLl9jb250ZXh0LnJlc3RvcmUoKX1zY2FsZShlLHQ9ZSl7dGhpcy5fY29udGV4dC5zY2FsZShlLHQpfXNldEJsZW5kTW9kZShlKXt0aGlzLl9jb250ZXh0Lmdsb2JhbENvbXBvc2l0ZU9wZXJhdGlvbj1lfWNsZWFyUmVjdChlLHQscyxhKXt0aGlzLl9jb250ZXh0LmNsZWFyUmVjdChlLHQscyxhKX1kcmF3UmVjdChlLHMsYSxpLGMsbz0iZmlsbCIpe2lmKCJmaWxsIj09PW8pdGhpcy5fY29udGV4dC5maWxsU3R5bGU9Yyx0aGlzLl9jb250ZXh0LmZpbGxSZWN0KGUscyxhLGkpO2Vsc2UgaWYoInN0cm9rZSI9PT1vKXtjb25zdCBvPTE7dGhpcy5fY29udGV4dC5saW5lV2lkdGg9byx0aGlzLl9jb250ZXh0LnN0cm9rZVN0eWxlPWMsdGhpcy5fY29udGV4dC5zdHJva2VSZWN0KHQrKGUtbyksdCsocy1vKSxhLGkpfX1kcmF3Q2lyY2xlKGUsdCxzLGEsaSl7dGhpcy5fY29udGV4dC5iZWdpblBhdGgoKSx0aGlzLl9jb250ZXh0LmFyYyhlK3MsdCtzLHMsMCwyKk1hdGguUEksITEpLHRoaXMuX2NvbnRleHQuZmlsbFN0eWxlPWEsdGhpcy5fY29udGV4dC5maWxsKCksaSYmKHRoaXMuX2NvbnRleHQubGluZVdpZHRoPTUsdGhpcy5fY29udGV4dC5zdHJva2VTdHlsZT1pLHRoaXMuX2NvbnRleHQuc3Ryb2tlKCkpLHRoaXMuX2NvbnRleHQuY2xvc2VQYXRoKCl9ZHJhd0ltYWdlKGUsdCxzLGEsaSl7dGhpcy5fY2FjaGUuaGFzKGUpJiYoYTw9MHx8aTw9MHx8dGhpcy5fY29udGV4dC5kcmF3SW1hZ2UodGhpcy5fY2FjaGUuZ2V0KGUpLHQscyxhLGkpKX1kcmF3SW1hZ2VDcm9wcGVkKGUscyxhLGksYyxvLGgsbixyLGQ9ITEpe2lmKHRoaXMuX2NhY2hlLmhhcyhlKSl7aWYoZCl7aWYobjw9MHx8cjw9MClyZXR1cm47Y29uc3QgdD10aGlzLl9jYWNoZS5nZXQoZSksbz0obj1NYXRoLm1pbih0aGlzLl9jb250ZXh0LmNhbnZhcy53aWR0aCxuKSkvaSxoPShyPU1hdGgubWluKHRoaXMuX2NvbnRleHQuY2FudmFzLmhlaWdodCxyKSkvYztzK2k+dC53aWR0aCYmKG4tPW8qKHMraS10LndpZHRoKSxpLT1zK2ktdC53aWR0aCksYStjPnQuaGVpZ2h0JiYoci09aCooYStjLXQuaGVpZ2h0KSxjLT1hK2MtdC5oZWlnaHQpfXRoaXMuX2NvbnRleHQuZHJhd0ltYWdlKHRoaXMuX2NhY2hlLmdldChlKSx0K3M8PDAsdCthPDwwLHQraTw8MCx0K2M8PDAsdCtvPDwwLHQraDw8MCx0K248PDAsdCtyPDwwKX19fWxldCBhLGk7b25tZXNzYWdlPWU9Pntzd2l0Y2goZS5kYXRhLmNtZCl7ZGVmYXVsdDpicmVhaztjYXNlImluaXQiOmk9ZS5kYXRhLmNhbnZhcyxhPW5ldyBzKGkpLGNvbnNvbGUuaW5mbygiLS0tIGluaXRpYWxpemVkIFdvcmtlciIsaSxhKTticmVhaztjYXNlImxvYWRSZXNvdXJjZSI6IWFzeW5jIGZ1bmN0aW9uKGUsdCl7dHJ5e2xldCBzO2lmKHQgaW5zdGFuY2VvZiBGaWxlKXtjb25zdCBlPWF3YWl0IGFzeW5jIGZ1bmN0aW9uKGUpe2NvbnN0IHQ9bmV3IEZpbGVSZWFkZXI7cmV0dXJuIG5ldyBQcm9taXNlKCgocyxhKT0+e3Qub25sb2FkPXQ9Pnt2YXIgaTtpZighKG51bGw9PShpPW51bGw9PXQ/dm9pZCAwOnQudGFyZ2V0KT92b2lkIDA6aS5yZXN1bHQpKXJldHVybiBhKCk7cyhuZXcgQmxvYihbdC50YXJnZXQucmVzdWx0XSx7dHlwZTplLnR5cGV9KSl9LHQub25lcnJvcj1lPT5hKGUpLHQucmVhZEFzQXJyYXlCdWZmZXIoZSl9KSl9KHQpO3M9YXdhaXQgY3JlYXRlSW1hZ2VCaXRtYXAoZSl9ZWxzZSBpZih0IGluc3RhbmNlb2YgQmxvYilzPWF3YWl0IGNyZWF0ZUltYWdlQml0bWFwKHQpO2Vsc2UgaWYoInN0cmluZyI9PXR5cGVvZiB0KXtjb25zdCBlPWF3YWl0IGZldGNoKHQpLGE9YXdhaXQgZS5ibG9iKCk7cz1hd2FpdCBjcmVhdGVJbWFnZUJpdG1hcChhKX1lbHNlIHQgaW5zdGFuY2VvZiBJbWFnZUJpdG1hcCYmKHM9dCk7bnVsbD09YXx8YS5jYWNoZVJlc291cmNlKGUscykscG9zdE1lc3NhZ2Uoe2NtZDoib25sb2FkIixpZDplLHNpemU6e3dpZHRoOnMud2lkdGgsaGVpZ2h0OnMuaGVpZ2h0fX0pfWNhdGNoe3Bvc3RNZXNzYWdlKHtjbWQ6Im9uZXJyb3IiLGlkOmV9KX19KGUuZGF0YS5pZCxlLmRhdGEuc291cmNlKTticmVhaztjYXNlImdldFJlc291cmNlIjpjb25zdCB0PW51bGw9PWE/dm9pZCAwOmEuZ2V0UmVzb3VyY2UoZS5kYXRhLmlkKTtwb3N0TWVzc2FnZSh7Y21kOiJvbnJlc291cmNlIixpZDplLmRhdGEuaWQsYml0bWFwOnR9KTticmVhaztjYXNlImRpc3Bvc2VSZXNvdXJjZSI6bnVsbD09YXx8YS5kaXNwb3NlUmVzb3VyY2UoLi4uZS5kYXRhLmFyZ3MpO2JyZWFrO2Nhc2UiZGlzcG9zZSI6bnVsbD09YXx8YS5kaXNwb3NlKCksaT12b2lkIDAsYT12b2lkIDA7YnJlYWs7Y2FzZSJzZXRTbW9vdGhpbmciOmNhc2Uic2V0RGltZW5zaW9ucyI6Y2FzZSJzYXZlIjpjYXNlInJlc3RvcmUiOmNhc2Uic2NhbGUiOmNhc2Uic2V0QmxlbmRNb2RlIjpjYXNlImNsZWFyUmVjdCI6Y2FzZSJkcmF3UmVjdCI6Y2FzZSJkcmF3SW1hZ2UiOmNhc2UiZHJhd0ltYWdlQ3JvcHBlZCI6YSYmYVtlLmRhdGEuY21kXSguLi5lLmRhdGEuYXJncyl9fX0oKTsK", u = "undefined" != typeof window && window.Blob && new Blob([atob(c)], { type: "text/javascript;charset=utf-8" });
 function p() {
   let t2;
   try {
@@ -327,7 +330,7 @@ class _ {
     this.getBackend("drawImageCropped", t2, e2, i2, s2, h2, n2, r2, a2, o2, d2);
   }
 }
-const g = (t2) => t2 > 0 ? t2 + 0.5 << 0 : 0 | t2, m = [], f = [], w = i(1, 1, true).cvs;
+const m = (t2) => t2 > 0 ? t2 + 0.5 << 0 : 0 | t2, g = [], f = [], w = i(1, 1, true).cvs;
 class b {
   constructor() {
     this._cacheMap = /* @__PURE__ */ new Map();
@@ -346,20 +349,20 @@ class b {
     const s2 = t2.getIntersection(e2);
     if (void 0 === s2)
       return false;
-    this.getPixelArray(t2, s2, m), this.getPixelArray(e2, s2, f);
+    this.getPixelArray(t2, s2, g), this.getPixelArray(e2, s2, f);
     let h2 = 0;
     if (true === i2) {
       const t3 = s2.width, e3 = s2.height;
       for (let i3 = 0; i3 < e3; ++i3)
         for (let e4 = 0; e4 < t3; ++e4) {
-          if (0 !== m[h2] && 0 !== f[h2])
+          if (0 !== g[h2] && 0 !== f[h2])
             return { x: e4, y: i3 };
           ++h2;
         }
     } else {
-      const t3 = m.length;
+      const t3 = g.length;
       for (; h2 < t3; ++h2)
-        if (0 !== m[h2] && 0 !== f[h2])
+        if (0 !== g[h2] && 0 !== f[h2])
           return true;
     }
     return false;
@@ -380,10 +383,10 @@ class b {
     const s2 = t2.getResourceId();
     if (!this.hasCache(s2))
       throw new Error(`Cannot get cached entry for resource "${s2}". Cache it first.`);
-    const h2 = t2.getBounds(), n2 = g(e2.left - h2.left), r2 = g(e2.top - h2.top), a2 = g(e2.width), o2 = g(e2.height), { data: d2, size: l2 } = this._cacheMap.get(s2);
+    const h2 = t2.getBounds(), n2 = m(e2.left - h2.left), r2 = m(e2.top - h2.top), a2 = m(e2.width), o2 = m(e2.height), { data: d2, size: l2 } = this._cacheMap.get(s2);
     if (0 === a2 || 0 === o2)
       return void (i2.length = 0);
-    i2.length = g(a2 * o2);
+    i2.length = m(a2 * o2);
     const c2 = l2.width, u2 = r2 + o2, p2 = n2 + a2;
     let _2 = -1;
     for (let t3 = r2; t3 < u2; ++t3)
@@ -393,12 +396,12 @@ class b {
       }
   }
 }
-const { min: v, max: Z, round: W } = Math;
-class X {
-  constructor({ width: t2 = 300, height: e2 = 300, fps: i2 = 60, scale: s2 = 1, backgroundColor: h2 = null, animate: n2 = false, smoothing: r2 = true, stretchToFit: a2 = false, viewport: o2 = null, preventEventBubbling: d2 = false, parentElement: l2 = null, debug: c2 = false, viewportHandler: u2, onUpdate: p2, useOffscreen: g2 = false } = {}) {
+const { min: v, max: X, round: C } = Math;
+class Z {
+  constructor({ width: t2 = 300, height: e2 = 300, fps: i2 = 60, scale: s2 = 1, backgroundColor: h2 = null, animate: n2 = false, smoothing: r2 = true, stretchToFit: a2 = false, viewport: o2 = null, preventEventBubbling: d2 = false, parentElement: l2 = null, debug: c2 = false, viewportHandler: u2, onUpdate: p2 } = {}) {
     if (this.DEBUG = false, this.benchmark = { minElapsed: 1 / 0, maxElapsed: -1 / 0, minFps: 1 / 0, maxFps: -1 / 0 }, this._smoothing = false, this._stretchToFit = false, this._HDPIscaleRatio = 1, this._preventDefaults = false, this._lastRender = 0, this._renderId = 0, this._renderPending = false, this._disposed = false, this._scale = { x: 1, y: 1 }, this._activeTouches = [], this._children = [], this._animate = false, t2 <= 0 || e2 <= 0)
       throw new Error("cannot construct a zCanvas without valid dimensions");
-    this.DEBUG = c2, this._element = document.createElement("canvas"), this._renderer = new _(this._element, g2), this.collision = new b(), this._updateHandler = p2, this._renderHandler = this.render.bind(this), this._viewportHandler = u2, this.setFrameRate(i2), this.setAnimatable(n2), h2 && this.setBackgroundColor(h2), this._HDPIscaleRatio = window.devicePixelRatio || 1, this.setDimensions(t2, e2, true, true), o2 && this.setViewport(o2.width, o2.height), 1 !== s2 && this.scale(s2, s2), a2 && this.stretchToFit(true), l2 instanceof HTMLElement && this.insertInPage(l2), this.setSmoothing(r2), this.preventEventBubbling(d2), this.addListeners(), this._animate && this.render();
+    this.DEBUG = c2, this._element = document.createElement("canvas"), this._renderer = new _(this._element, true), this.collision = new b(), this._updateHandler = p2, this._renderHandler = this.render.bind(this), this._viewportHandler = u2, this.setFrameRate(i2), this.setAnimatable(n2), h2 && this.setBackgroundColor(h2), this._HDPIscaleRatio = window.devicePixelRatio || 1, this.setDimensions(t2, e2, true, true), o2 && this.setViewport(o2.width, o2.height), 1 !== s2 && this.scale(s2, s2), a2 && this.stretchToFit(true), l2 instanceof HTMLElement && this.insertInPage(l2), this.setSmoothing(r2), this.preventEventBubbling(d2), this.addListeners(), this._animate && this.render();
   }
   loadResource(t2, e2) {
     return this._renderer.loadResource(t2, e2);
@@ -467,10 +470,8 @@ class X {
     return this._smoothing;
   }
   setSmoothing(t2) {
-    this._renderer.setSmoothing(t2);
-    const e2 = this._element.style;
-    ["-moz-crisp-edges", "-webkit-crisp-edges", "pixelated", "crisp-edges"].forEach((i2) => {
-      e2["image-rendering"] = t2 ? void 0 : i2;
+    this._renderer.setSmoothing(t2), t2 ? this._element.style["image-rendering"] = "" : ["-moz-crisp-edges", "-webkit-crisp-edges", "pixelated", "crisp-edges"].forEach((t3) => {
+      this._element.style["image-rendering"] = t3;
     }), this._smoothing = t2, this.invalidate();
   }
   getWidth() {
@@ -480,7 +481,7 @@ class X {
     return this._enqueuedSize ? this._enqueuedSize.height : this._height;
   }
   setDimensions(t2, e2, i2 = true, s2 = false) {
-    this._enqueuedSize = { width: t2, height: e2 }, true === i2 && (this._preferredWidth = t2, this._preferredHeight = e2), true === s2 && this.updateCanvasSize(), this.invalidate();
+    this._enqueuedSize = { width: t2, height: e2 }, i2 && (this._preferredWidth = t2, this._preferredHeight = e2), s2 && this.updateCanvasSize(), this.invalidate();
   }
   getViewport() {
     return this._viewport;
@@ -491,7 +492,7 @@ class X {
   panViewport(t2, e2, i2 = false) {
     var _a;
     const s2 = this._viewport;
-    s2.left = Z(0, v(t2, this._width - s2.width)), s2.right = s2.left + s2.width, s2.top = Z(0, v(e2, this._height - s2.height)), s2.bottom = s2.top + s2.height, this.invalidate(), i2 && ((_a = this._viewportHandler) == null ? void 0 : _a.call(this, { type: "panned", value: s2 }));
+    s2.left = X(0, v(t2, this._width - s2.width)), s2.right = s2.left + s2.width, s2.top = X(0, v(e2, this._height - s2.height)), s2.bottom = s2.top + s2.height, this.invalidate(), i2 && ((_a = this._viewportHandler) == null ? void 0 : _a.call(this, { type: "panned", value: s2 }));
   }
   setBackgroundColor(t2) {
     this._bgColor = t2;
@@ -512,7 +513,10 @@ class X {
     this._stretchToFit = t2;
     const { innerWidth: e2, innerHeight: i2 } = window;
     let s2 = this._preferredWidth, h2 = this._preferredHeight, n2 = 1, r2 = 1;
-    i2 > e2 ? (h2 = t2 ? i2 / e2 * s2 : h2, n2 = e2 / s2, r2 = i2 / h2) : (s2 = t2 ? e2 / i2 * h2 : s2, n2 = e2 / s2, r2 = i2 / h2), this.setDimensions(W(s2), W(h2), false, true), this.scale(n2, r2);
+    i2 > e2 ? (h2 = t2 ? i2 / e2 * s2 : h2, n2 = e2 / s2, r2 = i2 / h2) : (s2 = t2 ? e2 / i2 * h2 : s2, n2 = e2 / s2, r2 = i2 / h2), this.setDimensions(C(s2), C(h2), false, true), this.scale(n2, r2);
+  }
+  getCoordinate() {
+    return void 0 === this._coords && (this._coords = this._element.getBoundingClientRect()), this._coords;
   }
   dispose() {
     if (this._disposed)
@@ -560,8 +564,8 @@ class X {
             s2 = s2.last;
           break;
         case "wheel":
-          const { deltaX: c2, deltaY: u2 } = t2, p2 = 20, _2 = 0 === c2 ? 0 : c2 > 0 ? p2 : -p2, g2 = 0 === u2 ? 0 : u2 > 0 ? p2 : -p2;
-          this.panViewport(i2.left + _2, i2.top + g2, true);
+          const { deltaX: c2, deltaY: u2 } = t2, p2 = 20, _2 = 0 === c2 ? 0 : c2 > 0 ? p2 : -p2, m2 = 0 === u2 ? 0 : u2 > 0 ? p2 : -p2;
+          this.panViewport(i2.left + _2, i2.top + m2, true);
       }
     this._preventDefaults && (t2.stopPropagation(), t2.preventDefault()), this._animate || this.invalidate();
   }
@@ -597,13 +601,10 @@ class X {
     var _a;
     (_a = this._eventHandler) == null ? void 0 : _a.dispose(), this._eventHandler = void 0;
   }
-  getCoordinate() {
-    return void 0 === this._coords && (this._coords = this._element.getBoundingClientRect()), this._coords;
-  }
   updateCanvasSize() {
     const t2 = this._HDPIscaleRatio;
     let e2, i2;
-    if (this._enqueuedSize && ({ width: e2, height: i2 } = this._enqueuedSize, this._enqueuedSize = void 0, this._width = e2, this._height = i2), this._viewport) {
+    if (void 0 !== this._enqueuedSize && ({ width: e2, height: i2 } = this._enqueuedSize, this._enqueuedSize = void 0, this._width = e2, this._height = i2), this._viewport) {
       const t3 = this._width, s2 = this._height;
       e2 = v(this._viewport.width, t3), i2 = v(this._viewport.height, s2);
     }
@@ -614,11 +615,11 @@ class X {
     this._renderer.scale(t2, t2), this.setSmoothing(this._smoothing), this._coords = void 0;
   }
 }
-const { min: y, max: R } = Math, C = 0.5;
-class G {
+const { min: k, max: W } = Math, G = 0.5;
+class Y {
   constructor({ width: t2, height: e2, resourceId: i2, x: s2 = 0, y: h2 = 0, collidable: n2 = false, interactive: r2 = false, mask: a2 = false, sheet: o2 = [], sheetTileWidth: d2 = 0, sheetTileHeight: l2 = 0 } = { width: 64, height: 64 }) {
     if (this.hover = false, this.isDragging = false, this._children = [], this._disposed = false, this._mask = false, this._interactive = false, this._draggable = false, this._keepInBounds = false, this._pressed = false, t2 <= 0 || e2 <= 0)
-      throw new Error("cannot construct a zSprite without valid dimensions");
+      throw new Error("cannot construct a Sprite without valid dimensions");
     if (this.collidable = n2, this._mask = a2, this._bounds = { left: 0, top: 0, width: t2, height: e2 }, this.setX(s2), this.setY(h2), this.setInteractive(r2), i2 && this.setResource(i2), Array.isArray(o2) && o2.length > 0) {
       if (!i2)
         throw new Error("cannot use a spritesheet without a valid resource id");
@@ -656,14 +657,14 @@ class G {
   }
   setWidth(t2) {
     const e2 = this._bounds.width || 0;
-    e2 !== t2 && (this._bounds.width = t2, 0 !== e2 && (this._bounds.left -= t2 * C - e2 * C), this.invalidate());
+    e2 !== t2 && (this._bounds.width = t2, 0 !== e2 && (this._bounds.left -= t2 * G - e2 * G), this.invalidate());
   }
   getHeight() {
     return this._bounds.height;
   }
   setHeight(t2) {
     const e2 = this._bounds.height || 0;
-    e2 !== t2 && (this._bounds.height = t2, 0 !== e2 && (this._bounds.top -= t2 * C - e2 * C), this.invalidate());
+    e2 !== t2 && (this._bounds.height = t2, 0 !== e2 && (this._bounds.top -= t2 * G - e2 * G), this.invalidate());
   }
   setBounds(t2, e2, i2, s2) {
     if (this._constraint)
@@ -674,10 +675,10 @@ class G {
     "number" == typeof i2 && (h2 = this._bounds.width !== i2, this._bounds.width = i2), "number" == typeof s2 && (h2 = h2 || this._bounds.height !== s2, this._bounds.height = s2);
     const n2 = this._bounds.width, r2 = this._bounds.height, a2 = this._constraint ? this._constraint.width : this.canvas.getWidth(), o2 = this._constraint ? this._constraint.height : this.canvas.getHeight();
     if (this._keepInBounds) {
-      const i3 = y(0, -(n2 - a2)), s3 = y(0, -(r2 - o2)), h3 = o2 - r2;
-      t2 = y(a2 - n2, R(t2, i3)), e2 = y(h3, R(e2, s3));
+      const i3 = k(0, -(n2 - a2)), s3 = k(0, -(r2 - o2)), h3 = o2 - r2;
+      t2 = k(a2 - n2, W(t2, i3)), e2 = k(h3, W(e2, s3));
     } else
-      t2 > a2 && (t2 += n2 * C), e2 > o2 && (e2 += r2 * C);
+      t2 > a2 && (t2 += n2 * G), e2 > o2 && (e2 += r2 * G);
     this.setX(t2), this.setY(e2), h2 && this.invalidate();
   }
   getBounds() {
@@ -709,7 +710,7 @@ class G {
       const s3 = this._animation;
       let { left: h3, top: n3, width: r2, height: a2 } = i2;
       if (s3) {
-        const i3 = s3.tileWidth ? s3.tileWidth : C + r2 << 0, o2 = s3.tileHeight ? s3.tileHeight : C + a2 << 0;
+        const i3 = s3.tileWidth ? s3.tileWidth : G + r2 << 0, o2 = s3.tileHeight ? s3.tileHeight : G + a2 << 0;
         e2 && (h3 -= e2.left, n3 -= e2.top), t2.drawImageCropped(this._resourceId, s3.col * i3, s3.type.row * o2, i3, o2, h3, n3, r2, a2);
       } else if (e2) {
         const { src: s4, dest: h4 } = ((t3, e3) => {
@@ -738,8 +739,8 @@ class G {
   }
   getIntersection(t2) {
     if (this.collidesWith(t2)) {
-      const e2 = this._bounds, i2 = t2.getBounds(), s2 = R(e2.left, i2.left), h2 = R(e2.top, i2.top);
-      return { left: s2, top: h2, width: y(e2.left + e2.width, i2.width + i2.height) - s2, height: y(e2.top + e2.height, i2.top + i2.height) - h2 };
+      const e2 = this._bounds, i2 = t2.getBounds(), s2 = W(e2.left, i2.left), h2 = W(e2.top, i2.top);
+      return { left: s2, top: h2, width: k(e2.left + e2.width, i2.width + i2.height) - s2, height: k(e2.top + e2.height, i2.top + i2.height) - h2 };
     }
   }
   collidesWithEdge(t2, e2) {
@@ -789,7 +790,7 @@ class G {
       e2.setCanvas(t2);
   }
   setConstraint(t2, e2, i2, s2) {
-    return this._constraint = { left: t2, top: e2, width: i2, height: s2 }, this._bounds.left = R(t2, this._bounds.left), this._bounds.top = R(e2, this._bounds.top), this._keepInBounds = true, this.getConstraint();
+    return this._constraint = { left: t2, top: e2, width: i2, height: s2 }, this._bounds.left = W(t2, this._bounds.left), this._bounds.top = W(e2, this._bounds.top), this._keepInBounds = true, this.getConstraint();
   }
   getConstraint() {
     return this._constraint;
@@ -873,7 +874,7 @@ class G {
   }
 }
 export {
-  X as Canvas,
+  Z as Canvas,
   r as Loader,
-  G as Sprite
+  Y as Sprite
 };

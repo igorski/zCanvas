@@ -21,6 +21,8 @@ zCanvas has been optimized extensively for the best performance and works a trea
 In environments where `OffscreenCanvas` is supported, the rendering will _automatically_ be offloaded onto
 a Worker, freeing up the main thread of your application considerably.
 
+zCanvas is also very lightweight, coming in at a mere 12K gZipped.
+
 ## Easily animatable
 
 As all rendering logic resides within a single method of your Sprite, you can easily attach animation libraries such as the excellent TweenMax by Greensock to alter the visible properties of your sprites for maximum eye candy.

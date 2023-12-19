@@ -1,21 +1,23 @@
-import Loader from "../src/Loader.js";
+import { describe, expect, it, beforeAll, afterAll, vi } from "vitest";
+import Loader from "../src/Loader";
 
-describe( "zCanvas.loader", () => {
+describe( "Loader", () => {
 
     /* setup */
 
-    let img, imgSource;
+    let img;
+    let imgSource;
 
     // executed before the tests start running
 
     beforeAll( () => {
         // prepare 1x1 red PNG as Bitmap Image source
         imgSource = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP4z8DwHwAFAAH/VscvDQAAAABJRU5ErkJggg==";
-        Loader.onReady = jest.fn(() => new Promise( resolve => resolve() ));
+        Loader.onReady = vi.fn(() => new Promise( resolve => resolve() ));
     });
 
     afterAll(() => {
-        jest.restoreMocks();
+        vi.restoreAllMocks();
     });
 
     describe( "when loading images", () => {

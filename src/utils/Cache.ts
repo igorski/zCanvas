@@ -28,7 +28,10 @@ export default class Cache {
     }
 
     dispose(): void {
-        this._map.clear();
+        const keys = [ ...this._map ].map(([ key ]) => key );
+        while ( keys.length > 0 ) {
+            this.remove( keys.shift() );
+        }
         this._map = undefined;
     }
 
