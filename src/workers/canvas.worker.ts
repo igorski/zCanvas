@@ -65,6 +65,7 @@ onmessage = ( e: MessageEvent ): void => {
         case "restore":
         case "scale":
         case "setBlendMode":
+        case "setAlpha":
         case "clearRect":
         case "drawRect":
         case "drawImage":
@@ -95,7 +96,7 @@ async function loadResource( id: string, source: File | Blob | ImageBitmap | str
         }
         renderer?.cacheResource( id, bitmap! );
         postMessage({ cmd: "onload", id, size: { width: bitmap!.width, height: bitmap!.height } });
-    } catch {
-        postMessage({ cmd: "onerror", id });
+    } catch ( e: any ) {
+        postMessage({ cmd: "onerror", id, error: e?.message ?? e });
     }
 }

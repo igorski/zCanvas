@@ -30,9 +30,10 @@ export interface IRenderer {
     restore(): void
     scale( xScale: number, yScale?: number ): void
     setBlendMode( type: GlobalCompositeOperation ): void
+    setAlpha( value: number ): void
 
     clearRect( x: number, y: number, width: number, height: number ): void;
-    drawRect( x: number, y: number, width: number, height: number, color: string, fillType?: "fill" | "stroke" ): void
+    drawRect( x: number, y: number, width: number, height: number, color: string | CanvasGradient | CanvasPattern, fillType?: "fill" | "stroke" ): void
     drawCircle( x: number, y: number, radius: number, fillColor: string, strokeColor?: string ): void
     drawImage(
         resourceId: string,
@@ -51,6 +52,17 @@ export interface IRenderer {
         destinationY: number,
         destinationWidth: number,
         destinationHeight: number,
-        useSafeMode?: boolean,
+        drawContext?: DrawContext,
     ): void
-}
+};
+
+// when these are set, save() and restore() will be applied as appropriate
+// during image drawing
+
+export type DrawContext = {
+    scale?: number;
+    rotation?: number;
+    alpha?: number;
+    blend?: GlobalCompositeOperation;
+    safeMode?: boolean;
+};

@@ -20,7 +20,7 @@
  * IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-import { type IRenderer } from "./IRenderer";
+import type { IRenderer, DrawContext } from "./IRenderer";
 import Cache from "../utils/Cache";
 
 const HALF = 0.5;
@@ -93,6 +93,10 @@ export default class RendererImpl implements IRenderer {
         this._context.globalCompositeOperation = mode;
     }
 
+    setAlpha( value: number ): void {
+        this._context.globalAlpha = value;
+    }
+
     clearRect( x: number, y: number, width: number, height: number ): void {
         this._context.clearRect( x, y, width, height );
     }
@@ -127,10 +131,8 @@ export default class RendererImpl implements IRenderer {
         if ( !this._cache.has( resourceId )) {
             return;
         }
-        // INDEX_SIZE_ERR is thrown when target dimensions are zero or negative
-        // nothing worthwhile to render in that case, do nothing please.
-
-        if ( width <= 0 || height <= 0 ) {
+        if ( width === undefined ) {
+            this._context.drawImage( this._cache.get( resourceId ), x, y );
             return;
         }
         this._context.drawImage( this._cache.get( resourceId ), x, y, width, height );
@@ -139,7 +141,7 @@ export default class RendererImpl implements IRenderer {
     drawImageCropped( resourceId: string,
         sourceX: number, sourceY: number, sourceWidth: number, sourceHeight: number,
         destinationX: number, destinationY: number, destinationWidth: number, destinationHeight: number,
-        useSafeMode = false,
+        drawContext?: DrawContext,
     ): void {
         if ( !this._cache.has( resourceId )) {
             return;
@@ -149,7 +151,7 @@ export default class RendererImpl implements IRenderer {
         // in case you are uncertain that the provided arguments are within bounds of the
         // canvas, you can use safeMode to perform the corrections
 
-        if ( useSafeMode ) {
+        if ( drawContext?.safeMode ) {
 
             if ( destinationWidth <= 0 || destinationHeight <= 0 ) {
                 return;
@@ -176,6 +178,33 @@ export default class RendererImpl implements IRenderer {
             }
         }
 
+        let saveState = false;
+        // TODO clean up
+        if ( drawContext ) {
+            const hasScale = drawContext.scale !== undefined;
+            const hasAlpha = drawContext.alpha !== undefined;
+            const hasBlend = drawContext.blend !== undefined;
+
+            // TODO rotation
+
+            saveState = hasScale || hasAlpha || hasBlend;
+            if ( saveState ) {
+                this.save();
+            }
+
+            if ( hasScale ) {
+                this.scale( drawContext.scale );
+            }
+
+            if ( hasBlend ) {
+                this.setBlendMode( drawContext.blend );
+            }
+
+            if ( hasAlpha ) {
+                this.setAlpha( drawContext.alpha );
+            }
+        }
+
         // By rounding the values we omit subpixel content which provdes a performance boost
         // Safari also greatly benefits from round numbers as subpixel content is sometimes ommitted from rendering!
 
@@ -190,5 +219,9 @@ export default class RendererImpl implements IRenderer {
             ( HALF + destinationWidth )  << 0,
             ( HALF + destinationHeight ) << 0
         );
+
+        if ( saveState ) {
+            this.restore();
+        }
     }
 }

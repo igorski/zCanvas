@@ -399,6 +399,7 @@ export default class Sprite {
             render = isInsideViewport( bounds, viewport );
         }
 
+        // TODO: can this just go into the DrawContext ? (or maybe not to prevent garbage collector hit, or make a pool!)
         let saveState = this._mask; // save() and restore() come with a performance hit, omit when possible
 
         if ( saveState ) {

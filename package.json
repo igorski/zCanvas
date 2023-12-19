@@ -9,7 +9,7 @@
   },
   "main": "dist/zcanvas.umd.js",
   "jsnext:main": "dist/zcanvas.mjs",
-  "module": "zcanvas.ts",
+  "module": "dist/zcanvas.umd.js",
   "types": "dist/types/zcanvas.d.ts",
   "bugs": {
     "url": "https://github.com/igorski/zcanvas/issues/"

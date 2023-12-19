@@ -25,7 +25,7 @@ import Loader from "../Loader";
 import { readFile } from "../utils/FileUtil";
 import { imageToBitmap } from "../utils/ImageUtil";
 import RendererImpl from "./RendererImpl";
-import { type IRenderer } from "./IRenderer";
+import type { IRenderer, DrawContext } from "./IRenderer";
 // @ts-expect-error cannot handle Vite parameters for inlining as Blob
 import CanvasWorker from "../workers/canvas.worker?worker&inline";
 
@@ -73,6 +73,8 @@ export default class RenderAPI implements IRenderer {
             }
 
             if ( typeof source === "string" ) {
+                // relative paths need to be converted to absolute paths or the Worker won't be able to fetch()
+                source = source.startsWith( "./" ) ? new URL( source, document.baseURI ).href : source;
                 if ( this._useWorker ) {
                     this.wrappedWorkerLoad( id, source as string, resolve, reject );
                 } else {
@@ -164,7 +166,7 @@ export default class RenderAPI implements IRenderer {
                 if ( !this._callbacks.has( id )) {
                     return;
                 }
-                this._callbacks.get( id ).reject( new Error());
+                this._callbacks.get( id ).reject( new Error( message.data.error ));
                 this._callbacks.delete( id );
                 break;
 
@@ -250,11 +252,11 @@ export default class RenderAPI implements IRenderer {
         destinationY: number,
         destinationWidth: number,
         destinationHeight: number,
-        useSafeMode?: boolean,
+        drawContext?: DrawContext,
     ): void {
         this.getBackend( "drawImageCropped",
             resourceId, sourceX, sourceY, sourceWidth, sourceHeight,
-            destinationX, destinationY, destinationWidth, destinationHeight, useSafeMode
+            destinationX, destinationY, destinationWidth, destinationHeight, drawContext
         );
     }
 }
