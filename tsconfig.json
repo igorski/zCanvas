@@ -7,5 +7,7 @@
         "outFile": "dist/types/zcanvas.d.ts",
         "declarationMap": true,
         "removeComments": true,
+        "noUnusedParameters": true,
+        "noImplicitAny": true,
     }
 }

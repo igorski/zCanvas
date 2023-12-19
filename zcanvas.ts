@@ -21,9 +21,13 @@
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 import Canvas from "./src/Canvas";
+import Loader from "./src/Loader";
 import Sprite from "./src/Sprite";
-import { isInsideViewport } from "./src/utils/image-math.js";
 
-// @todo Review
+export * from "./src/definitions/types";
 
-export { Canvas, Sprite, isInsideViewport };
+export {
+    Canvas,
+    Loader,
+    Sprite
+};

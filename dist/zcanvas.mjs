@@ -1,422 +1,303 @@
-class P {
+class t {
   constructor() {
-    this._eventMap = [], this._disposed = !1;
+    this._eventMap = [], this._disposed = false;
   }
-  /* public methods */
-  /**
-   * attach a listener and an event handler to an element
-   *
-   * @param {EventTarget} target
-   * @param {string} type
-   * @param {EventListenerOrEventListenerObject} listener
-   * @return {boolean} whether the listener has been attached successfully
-   */
-  add(t, e, i) {
-    return this.has(t, e) ? !1 : (t.addEventListener(e, i, !1), this._eventMap.push({ target: t, type: e, listener: i }), !0);
+  add(t2, e2, i2) {
+    return !this.has(t2, e2) && (t2.addEventListener(e2, i2, false), this._eventMap.push({ target: t2, type: e2, listener: i2 }), true);
   }
-  /**
-   * query whether a listener for a specific event type has already
-   * been registered for the given element
-   *
-   * @param {EventTarget} target
-   * @param {string} type
-   * @return {boolean} whether the listener already exists
-   */
-  has(t, e) {
-    let i = this._eventMap.length;
-    for (; i--; ) {
-      const s = this._eventMap[i];
-      if (s.target === t && s.type == e)
-        return !0;
+  has(t2, e2) {
+    let i2 = this._eventMap.length;
+    for (; i2--; ) {
+      const s2 = this._eventMap[i2];
+      if (s2.target === t2 && s2.type == e2)
+        return true;
     }
-    return !1;
+    return false;
   }
-  /**
-   * remove a previously registered handler from an element
-   *
-   * @param {EventTarget} target
-   * @param {string} type
-   * @return {boolean} whether the listener has been found and removed
-   */
-  remove(t, e) {
-    let i = this._eventMap.length;
-    for (; i--; ) {
-      const s = this._eventMap[i];
-      if (s.target === t && s.type === e)
-        return t.removeEventListener(e, s.listener, !1), this._eventMap.splice(i, 1), !0;
+  remove(t2, e2) {
+    let i2 = this._eventMap.length;
+    for (; i2--; ) {
+      const s2 = this._eventMap[i2];
+      if (s2.target === t2 && s2.type === e2)
+        return t2.removeEventListener(e2, s2.listener, false), this._eventMap.splice(i2, 1), true;
     }
-    return !1;
+    return false;
   }
   dispose() {
     if (this._disposed)
       return;
-    let t = this._eventMap.length;
-    for (; t--; ) {
-      const e = this._eventMap[t];
-      this.remove(e.target, e.type);
+    let t2 = this._eventMap.length;
+    for (; t2--; ) {
+      const e2 = this._eventMap[t2];
+      this.remove(e2.target, e2.type);
     }
-    this._eventMap = null, this._disposed = !0;
+    this._eventMap = null, this._disposed = true;
   }
 }
-let X;
-function L(h = 0, t = 0, e = !1) {
-  const i = document.createElement("canvas"), s = i.getContext("2d", e ? { willReadFrequently: !0 } : void 0);
-  return h !== 0 && t !== 0 && (i.width = h, i.height = t), { cvs: i, ctx: s };
+let e;
+function i(t2 = 0, e2 = 0, i2 = false) {
+  const s2 = document.createElement("canvas"), h2 = s2.getContext("2d", i2 ? { willReadFrequently: true } : void 0);
+  return 0 !== t2 && 0 !== e2 && (s2.width = t2, s2.height = e2), { cvs: s2, ctx: h2 };
 }
-function F() {
-  return X || (X = L().cvs), X;
+function s() {
+  return e || (e = i().cvs), e;
 }
-function B() {
-  X.width = 1, X.height = 1;
-}
-function U(h, t, e, i) {
-  K(h, t, e, i);
-}
-async function H(h) {
-  h instanceof Blob && (h = await j(h)), K(F(), h);
-  const t = await createImageBitmap(F());
-  return B(), t;
-}
-function K(h, t, e, i) {
-  const s = h.getContext("2d");
-  e = e ?? t.width, i = i ?? t.height, h.width = e, h.height = i, s.clearRect(0, 0, e, i), s.drawImage(t, 0, 0, e, i);
-}
-function j(h) {
-  const t = URL.createObjectURL(h), e = () => {
-    URL.revokeObjectURL(t);
-  };
-  return new Promise((i, s) => {
-    const n = new Image();
-    n.onload = () => {
-      const { cvs: a, ctx: r } = L(n.width, n.height);
-      r.drawImage(n, 0, 0), e(), i(a);
-    }, n.onerror = (a) => {
-      e(), s(a);
-    }, n.src = t;
-  });
-}
-const Z = {
-  /**
-   * Load the image contents described in aSource and fire a callback when the
-   * resulting Bitmap has been loaded and is ready for rendering, the callback
-   * method will receive a SizedImage object as its first argument.
-   *
-   * if an Error has occurred the second argument will be the Error
-   *
-   * @param {string}    source either base64 encoded bitmap data or (web)path
-   *                    to an image file
-   * @param {HTMLImageElement=} optImage optional HTMLImageElement to load the aSource
-   *                    into, in case we'd like to re-use an existing Element
-   *                    (will not work in Firefox repeatedly as load handlers
-   *                    will only fire once)
-   * @return {Promise<SizedImage>}
-   */
-  loadImage(h, t) {
-    return new Promise((e, i) => {
-      const s = t || new window.Image(), n = J(h), a = new P(), r = () => {
-        a.dispose(), i();
-      }, d = () => {
-        a.dispose(), Z.onReady(s).then(() => e(z(s))).catch(i);
-      };
-      n || (T(h, s), a.add(s, "load", d), a.add(s, "error", r)), s.src = h, n && Z.onReady(s).then(() => e(z(s))).catch(i);
+async function h(t2) {
+  t2 instanceof Blob && (t2 = await function(t3) {
+    const e2 = URL.createObjectURL(t3), s2 = () => {
+      URL.revokeObjectURL(e2);
+    };
+    return new Promise((t4, h3) => {
+      const n2 = new Image();
+      n2.onload = () => {
+        const { cvs: e3, ctx: h4 } = i(n2.width, n2.height);
+        h4.drawImage(n2, 0, 0), s2(), t4(e3);
+      }, n2.onerror = (t5) => {
+        s2(), h3(t5);
+      }, n2.src = e2;
     });
-  },
-  async loadBitmap(h) {
-    const { image: t } = await Z.loadImage(h);
-    return H(t);
-  },
-  /**
-   * a quick query to check whether given Image is ready for rendering on Canvas
-   */
-  isReady(h) {
-    return h.complete !== !0 ? !1 : typeof h.naturalWidth == "number" && h.naturalWidth > 0;
-  },
-  /**
-   * Executes given callback when given Image is actually ready for rendering
-   * If the image was ready when this function was called, execution is synchronous
-   * if not it will be made asynchronous via RAF delegation
-   */
-  onReady(h) {
-    return new Promise((t, e) => {
-      let s = 0;
-      function n() {
-        Z.isReady(h) ? t() : ++s === 60 ? (console.error(typeof h), e(new Error("Image could not be resolved. This shouldn't occur."))) : window.requestAnimationFrame(n);
-      }
-      n();
-    });
-  }
-};
-function T(h, t) {
-  D(h) || (t.crossOrigin = "Anonymous");
+  }(t2)), n(s(), t2);
+  const h2 = await createImageBitmap(s());
+  return e.width = 1, e.height = 1, h2;
 }
-function J(h) {
-  const t = (typeof h == "string" ? h : h.src).substring(0, 5);
-  return t === "data:" || t === "blob:";
+function n(t2, e2, i2, s2) {
+  const h2 = t2.getContext("2d");
+  i2 = i2 ?? e2.width, s2 = s2 ?? e2.height, t2.width = i2, t2.height = s2, h2.clearRect(0, 0, i2, s2), h2.drawImage(e2, 0, 0, i2, s2);
 }
-function Q(h) {
-  return {
-    width: h.width || h.naturalWidth,
-    height: h.height || h.naturalHeight
+const r = { loadImage: (e2, i2) => new Promise((s2, h2) => {
+  const n2 = i2 || new window.Image(), o2 = function(t2) {
+    const e3 = ("string" == typeof t2 ? t2 : t2.src).substring(0, 5);
+    return "data:" === e3 || "blob:" === e3;
+  }(e2), d2 = new t(), l2 = () => {
+    d2.dispose(), h2();
+  }, c2 = () => {
+    d2.dispose(), r.onReady(n2).then(() => s2(a(n2))).catch(h2);
   };
+  var u2;
+  o2 || (u2 = n2, function(t2) {
+    const { location: e3 } = window;
+    return !(!t2.startsWith("./") && !t2.startsWith(`${e3.protocol}//${e3.host}`)) || !/^http[s]?:/.test(t2);
+  }(e2) || (u2.crossOrigin = "Anonymous"), d2.add(n2, "load", c2), d2.add(n2, "error", l2)), n2.src = e2, o2 && r.onReady(n2).then(() => s2(a(n2))).catch(h2);
+}), async loadBitmap(t2) {
+  const { image: e2 } = await r.loadImage(t2);
+  return h(e2);
+}, isReady: (t2) => true === t2.complete && ("number" == typeof t2.naturalWidth && t2.naturalWidth > 0), onReady: (t2) => new Promise((e2, i2) => {
+  const s2 = 60;
+  let h2 = 0;
+  !function n2() {
+    r.isReady(t2) ? e2() : ++h2 === s2 ? (console.error(typeof t2), i2(new Error("Image could not be resolved. This shouldn't occur."))) : window.requestAnimationFrame(n2);
+  }();
+}) };
+function a(t2) {
+  const e2 = { image: t2, size: { width: 0, height: 0 } };
+  return t2 instanceof window.HTMLImageElement && (e2.size = function(t3) {
+    return { width: t3.width || t3.naturalWidth, height: t3.height || t3.naturalHeight };
+  }(t2)), e2;
 }
-function D(h) {
-  const { location: t } = window;
-  return h.startsWith("./") || h.startsWith(`${t.protocol}//${t.host}`) ? !0 : !/^http[s]?:/.test(h);
-}
-function z(h) {
-  const t = {
-    image: h,
-    size: { width: 0, height: 0 }
-  };
-  return h instanceof window.HTMLImageElement && (t.size = Q(h)), t;
-}
-async function A(h) {
-  const t = new FileReader();
-  return new Promise((e, i) => {
-    t.onload = (s) => {
-      var n;
-      if (!((n = s == null ? void 0 : s.target) != null && n.result))
-        return i();
-      e(new Blob([s.target.result], { type: h.type }));
-    }, t.onerror = (s) => i(s), t.readAsArrayBuffer(h);
-  });
-}
-class O {
+class o {
   constructor() {
     this._map = /* @__PURE__ */ new Map();
   }
   dispose() {
     this._map.clear(), this._map = void 0;
   }
-  get(t) {
-    return this._map.get(t);
+  get(t2) {
+    return this._map.get(t2);
   }
-  set(t, e) {
-    if (this.has(t)) {
-      if (this.get(t) === e)
+  set(t2, e2) {
+    if (this.has(t2)) {
+      if (this.get(t2) === e2)
         return;
-      this.remove(t);
+      this.remove(t2);
     }
-    this._map.set(t, e);
+    this._map.set(t2, e2);
   }
-  has(t) {
-    return this._map.has(t);
+  has(t2) {
+    return this._map.has(t2);
   }
-  remove(t) {
-    return this.has(t) ? (this.get(t).close(), this._map.delete(t)) : !1;
+  remove(t2) {
+    if (!this.has(t2))
+      return false;
+    return this.get(t2).close(), this._map.delete(t2);
   }
 }
-const f = 0.5;
-class q {
-  constructor(t) {
-    this._canvas = t, this._context = t.getContext("2d"), this._cache = new O();
+const d = 0.5;
+class l {
+  constructor(t2) {
+    this._canvas = t2, this._context = t2.getContext("2d"), this._cache = new o();
   }
   dispose() {
     this._cache.dispose(), this._cache = void 0, this._canvas = void 0;
   }
-  /* public methods */
-  cacheResource(t, e) {
-    this._cache.set(t, e);
+  cacheResource(t2, e2) {
+    this._cache.set(t2, e2);
   }
-  getResource(t) {
-    return this._cache.get(t);
+  getResource(t2) {
+    return this._cache.get(t2);
   }
-  disposeResource(t) {
-    this._cache.remove(t);
+  disposeResource(t2) {
+    this._cache.remove(t2);
   }
-  setDimensions(t, e) {
-    this._canvas.width = t, this._canvas.height = e;
+  setDimensions(t2, e2) {
+    this._canvas.width = t2, this._canvas.height = e2;
   }
-  setSmoothing(t) {
-    const e = [
-      "imageSmoothingEnabled",
-      "mozImageSmoothingEnabled",
-      "oImageSmoothingEnabled",
-      "webkitImageSmoothingEnabled"
-    ], i = this._context;
-    e.forEach((s) => {
-      i[s] !== void 0 && (i[s] = t);
+  setSmoothing(t2) {
+    const e2 = this._context;
+    ["imageSmoothingEnabled", "mozImageSmoothingEnabled", "oImageSmoothingEnabled", "webkitImageSmoothingEnabled"].forEach((i2) => {
+      void 0 !== e2[i2] && (e2[i2] = t2);
     });
   }
-  /* IRenderer wrappers */
   save() {
     this._context.save();
   }
   restore() {
     this._context.restore();
   }
-  scale(t, e = t) {
-    this._context.scale(t, e);
+  scale(t2, e2 = t2) {
+    this._context.scale(t2, e2);
   }
-  setBlendMode(t) {
-    this._context.globalCompositeOperation = t;
+  setBlendMode(t2) {
+    this._context.globalCompositeOperation = t2;
   }
-  clearRect(t, e, i, s) {
-    this._context.clearRect(t, e, i, s);
+  clearRect(t2, e2, i2, s2) {
+    this._context.clearRect(t2, e2, i2, s2);
   }
-  drawRect(t, e, i, s, n, a = "fill") {
-    a === "fill" ? (this._context.fillStyle = n, this._context.fillRect(t, e, i, s)) : a === "stroke" && (this._context.lineWidth = 1, this._context.strokeStyle = n, this._context.strokeRect(f + (t - 1), f + (e - 1), i, s));
+  drawRect(t2, e2, i2, s2, h2, n2 = "fill") {
+    if ("fill" === n2)
+      this._context.fillStyle = h2, this._context.fillRect(t2, e2, i2, s2);
+    else if ("stroke" === n2) {
+      const n3 = 1;
+      this._context.lineWidth = n3, this._context.strokeStyle = h2, this._context.strokeRect(d + (t2 - n3), d + (e2 - n3), i2, s2);
+    }
   }
-  drawCircle(t, e, i, s, n) {
-    this._context.beginPath(), this._context.arc(t + i, e + i, i, 0, 2 * Math.PI, !1), this._context.fillStyle = s, this._context.fill(), n && (this._context.lineWidth = 5, this._context.strokeStyle = n, this._context.stroke()), this._context.closePath();
+  drawCircle(t2, e2, i2, s2, h2) {
+    this._context.beginPath(), this._context.arc(t2 + i2, e2 + i2, i2, 0, 2 * Math.PI, false), this._context.fillStyle = s2, this._context.fill(), h2 && (this._context.lineWidth = 5, this._context.strokeStyle = h2, this._context.stroke()), this._context.closePath();
   }
-  drawImage(t, e, i, s, n) {
-    this._cache.has(t) && (s <= 0 || n <= 0 || this._context.drawImage(this._cache.get(t), e, i, s, n));
+  drawImage(t2, e2, i2, s2, h2) {
+    this._cache.has(t2) && (s2 <= 0 || h2 <= 0 || this._context.drawImage(this._cache.get(t2), e2, i2, s2, h2));
   }
-  drawImageCropped(t, e, i, s, n, a, r, d, o, c = !1) {
-    if (this._cache.has(t)) {
-      if (c) {
-        if (d <= 0 || o <= 0)
+  drawImageCropped(t2, e2, i2, s2, h2, n2, r2, a2, o2, l2 = false) {
+    if (this._cache.has(t2)) {
+      if (l2) {
+        if (a2 <= 0 || o2 <= 0)
           return;
-        const l = this._cache.get(t);
-        d = Math.min(this._context.canvas.width, d), o = Math.min(this._context.canvas.height, o);
-        const u = d / s, p = o / n;
-        e + s > l.width && (d -= u * (e + s - l.width), s -= e + s - l.width), i + n > l.height && (o -= p * (i + n - l.height), n -= i + n - l.height);
+        const n3 = this._cache.get(t2), r3 = (a2 = Math.min(this._context.canvas.width, a2)) / s2, d2 = (o2 = Math.min(this._context.canvas.height, o2)) / h2;
+        e2 + s2 > n3.width && (a2 -= r3 * (e2 + s2 - n3.width), s2 -= e2 + s2 - n3.width), i2 + h2 > n3.height && (o2 -= d2 * (i2 + h2 - n3.height), h2 -= i2 + h2 - n3.height);
       }
-      this._context.drawImage(
-        this._cache.get(t),
-        f + e << 0,
-        f + i << 0,
-        f + s << 0,
-        f + n << 0,
-        f + a << 0,
-        f + r << 0,
-        f + d << 0,
-        f + o << 0
-      );
+      this._context.drawImage(this._cache.get(t2), d + e2 << 0, d + i2 << 0, d + s2 << 0, d + h2 << 0, d + n2 << 0, d + r2 << 0, d + a2 << 0, d + o2 << 0);
     }
   }
 }
-const E = "KGZ1bmN0aW9uKCl7InVzZSBzdHJpY3QiO2NsYXNzIGd7Y29uc3RydWN0b3IoKXt0aGlzLl9tYXA9bmV3IE1hcH1kaXNwb3NlKCl7dGhpcy5fbWFwLmNsZWFyKCksdGhpcy5fbWFwPXZvaWQgMH1nZXQodCl7cmV0dXJuIHRoaXMuX21hcC5nZXQodCl9c2V0KHQsZSl7aWYodGhpcy5oYXModCkpe2lmKHRoaXMuZ2V0KHQpPT09ZSlyZXR1cm47dGhpcy5yZW1vdmUodCl9dGhpcy5fbWFwLnNldCh0LGUpfWhhcyh0KXtyZXR1cm4gdGhpcy5fbWFwLmhhcyh0KX1yZW1vdmUodCl7cmV0dXJuIHRoaXMuaGFzKHQpPyh0aGlzLmdldCh0KS5jbG9zZSgpLHRoaXMuX21hcC5kZWxldGUodCkpOiExfX1jb25zdCBuPS41O2NsYXNzIGZ7Y29uc3RydWN0b3IodCl7dGhpcy5fY2FudmFzPXQsdGhpcy5fY29udGV4dD10LmdldENvbnRleHQoIjJkIiksdGhpcy5fY2FjaGU9bmV3IGd9ZGlzcG9zZSgpe3RoaXMuX2NhY2hlLmRpc3Bvc2UoKSx0aGlzLl9jYWNoZT12b2lkIDAsdGhpcy5fY2FudmFzPXZvaWQgMH1jYWNoZVJlc291cmNlKHQsZSl7dGhpcy5fY2FjaGUuc2V0KHQsZSl9Z2V0UmVzb3VyY2UodCl7cmV0dXJuIHRoaXMuX2NhY2hlLmdldCh0KX1kaXNwb3NlUmVzb3VyY2UodCl7dGhpcy5fY2FjaGUucmVtb3ZlKHQpfXNldERpbWVuc2lvbnModCxlKXt0aGlzLl9jYW52YXMud2lkdGg9dCx0aGlzLl9jYW52YXMuaGVpZ2h0PWV9c2V0U21vb3RoaW5nKHQpe2NvbnN0IGU9WyJpbWFnZVNtb290aGluZ0VuYWJsZWQiLCJtb3pJbWFnZVNtb290aGluZ0VuYWJsZWQiLCJvSW1hZ2VTbW9vdGhpbmdFbmFibGVkIiwid2Via2l0SW1hZ2VTbW9vdGhpbmdFbmFibGVkIl0scz10aGlzLl9jb250ZXh0O2UuZm9yRWFjaChhPT57c1thXSE9PXZvaWQgMCYmKHNbYV09dCl9KX1zYXZlKCl7dGhpcy5fY29udGV4dC5zYXZlKCl9cmVzdG9yZSgpe3RoaXMuX2NvbnRleHQucmVzdG9yZSgpfXNjYWxlKHQsZT10KXt0aGlzLl9jb250ZXh0LnNjYWxlKHQsZSl9c2V0QmxlbmRNb2RlKHQpe3RoaXMuX2NvbnRleHQuZ2xvYmFsQ29tcG9zaXRlT3BlcmF0aW9uPXR9Y2xlYXJSZWN0KHQsZSxzLGEpe3RoaXMuX2NvbnRleHQuY2xlYXJSZWN0KHQsZSxzLGEpfWRyYXdSZWN0KHQsZSxzLGEsYyxfPSJmaWxsIil7Xz09PSJmaWxsIj8odGhpcy5fY29udGV4dC5maWxsU3R5bGU9Yyx0aGlzLl9jb250ZXh0LmZpbGxSZWN0KHQsZSxzLGEpKTpfPT09InN0cm9rZSImJih0aGlzLl9jb250ZXh0LmxpbmVXaWR0aD0xLHRoaXMuX2NvbnRleHQuc3Ryb2tlU3R5bGU9Yyx0aGlzLl9jb250ZXh0LnN0cm9rZVJlY3QobisodC0xKSxuKyhlLTEpLHMsYSkpfWRyYXdDaXJjbGUodCxlLHMsYSxjKXt0aGlzLl9jb250ZXh0LmJlZ2luUGF0aCgpLHRoaXMuX2NvbnRleHQuYXJjKHQrcyxlK3MscywwLDIqTWF0aC5QSSwhMSksdGhpcy5fY29udGV4dC5maWxsU3R5bGU9YSx0aGlzLl9jb250ZXh0LmZpbGwoKSxjJiYodGhpcy5fY29udGV4dC5saW5lV2lkdGg9NSx0aGlzLl9jb250ZXh0LnN0cm9rZVN0eWxlPWMsdGhpcy5fY29udGV4dC5zdHJva2UoKSksdGhpcy5fY29udGV4dC5jbG9zZVBhdGgoKX1kcmF3SW1hZ2UodCxlLHMsYSxjKXt0aGlzLl9jYWNoZS5oYXModCkmJihhPD0wfHxjPD0wfHx0aGlzLl9jb250ZXh0LmRyYXdJbWFnZSh0aGlzLl9jYWNoZS5nZXQodCksZSxzLGEsYykpfWRyYXdJbWFnZUNyb3BwZWQodCxlLHMsYSxjLF8sZCxoLGwseD0hMSl7aWYodGhpcy5fY2FjaGUuaGFzKHQpKXtpZih4KXtpZihoPD0wfHxsPD0wKXJldHVybjtjb25zdCByPXRoaXMuX2NhY2hlLmdldCh0KTtoPU1hdGgubWluKHRoaXMuX2NvbnRleHQuY2FudmFzLndpZHRoLGgpLGw9TWF0aC5taW4odGhpcy5fY29udGV4dC5jYW52YXMuaGVpZ2h0LGwpO2NvbnN0IGI9aC9hLHY9bC9jO2UrYT5yLndpZHRoJiYoaC09YiooZSthLXIud2lkdGgpLGEtPWUrYS1yLndpZHRoKSxzK2M+ci5oZWlnaHQmJihsLT12KihzK2Mtci5oZWlnaHQpLGMtPXMrYy1yLmhlaWdodCl9dGhpcy5fY29udGV4dC5kcmF3SW1hZ2UodGhpcy5fY2FjaGUuZ2V0KHQpLG4rZTw8MCxuK3M8PDAsbithPDwwLG4rYzw8MCxuK188PDAsbitkPDwwLG4raDw8MCxuK2w8PDApfX19YXN5bmMgZnVuY3Rpb24gcChpKXtjb25zdCB0PW5ldyBGaWxlUmVhZGVyO3JldHVybiBuZXcgUHJvbWlzZSgoZSxzKT0+e3Qub25sb2FkPWE9Pnt2YXIgYztpZighKChjPWE9PW51bGw/dm9pZCAwOmEudGFyZ2V0KSE9bnVsbCYmYy5yZXN1bHQpKXJldHVybiBzKCk7ZShuZXcgQmxvYihbYS50YXJnZXQucmVzdWx0XSx7dHlwZTppLnR5cGV9KSl9LHQub25lcnJvcj1hPT5zKGEpLHQucmVhZEFzQXJyYXlCdWZmZXIoaSl9KX1sZXQgbyxtO29ubWVzc2FnZT1pPT57c3dpdGNoKGkuZGF0YS5jbWQpe2RlZmF1bHQ6YnJlYWs7Y2FzZSJpbml0IjptPWkuZGF0YS5jYW52YXMsbz1uZXcgZihtKSxjb25zb2xlLmluZm8oIi0tLSBpbml0aWFsaXplZCBXb3JrZXIiLG0sbyk7YnJlYWs7Y2FzZSJsb2FkUmVzb3VyY2UiOncoaS5kYXRhLmlkLGkuZGF0YS5zb3VyY2UpO2JyZWFrO2Nhc2UiZ2V0UmVzb3VyY2UiOmNvbnN0IHQ9bz09bnVsbD92b2lkIDA6by5nZXRSZXNvdXJjZShpLmRhdGEuaWQpO3Bvc3RNZXNzYWdlKHtjbWQ6Im9ucmVzb3VyY2UiLGlkOmkuZGF0YS5pZCxiaXRtYXA6dH0pO2JyZWFrO2Nhc2UiZGlzcG9zZVJlc291cmNlIjpvPT1udWxsfHxvLmRpc3Bvc2VSZXNvdXJjZSguLi5pLmRhdGEuYXJncyk7YnJlYWs7Y2FzZSJkaXNwb3NlIjpvPT1udWxsfHxvLmRpc3Bvc2UoKSxtPXZvaWQgMCxvPXZvaWQgMDticmVhaztjYXNlInNldFNtb290aGluZyI6Y2FzZSJzZXREaW1lbnNpb25zIjpjYXNlInNhdmUiOmNhc2UicmVzdG9yZSI6Y2FzZSJzY2FsZSI6Y2FzZSJzZXRCbGVuZE1vZGUiOmNhc2UiY2xlYXJSZWN0IjpjYXNlImRyYXdSZWN0IjpjYXNlImRyYXdJbWFnZSI6Y2FzZSJkcmF3SW1hZ2VDcm9wcGVkIjpvJiZvW2kuZGF0YS5jbWRdKC4uLmkuZGF0YS5hcmdzKTticmVha319O2FzeW5jIGZ1bmN0aW9uIHcoaSx0KXt0cnl7bGV0IGU7aWYodCBpbnN0YW5jZW9mIEZpbGUpe2NvbnN0IHM9YXdhaXQgcCh0KTtlPWF3YWl0IGNyZWF0ZUltYWdlQml0bWFwKHMpfWVsc2UgaWYodCBpbnN0YW5jZW9mIEJsb2IpZT1hd2FpdCBjcmVhdGVJbWFnZUJpdG1hcCh0KTtlbHNlIGlmKHR5cGVvZiB0PT0ic3RyaW5nIil7Y29uc3QgYT1hd2FpdChhd2FpdCBmZXRjaCh0KSkuYmxvYigpO2U9YXdhaXQgY3JlYXRlSW1hZ2VCaXRtYXAoYSl9ZWxzZSB0IGluc3RhbmNlb2YgSW1hZ2VCaXRtYXAmJihlPXQpO289PW51bGx8fG8uY2FjaGVSZXNvdXJjZShpLGUpLHBvc3RNZXNzYWdlKHtjbWQ6Im9ubG9hZCIsaWQ6aSxzaXplOnt3aWR0aDplLndpZHRoLGhlaWdodDplLmhlaWdodH19KX1jYXRjaHtwb3N0TWVzc2FnZSh7Y21kOiJvbmVycm9yIixpZDppfSl9fX0pKCk7Cg==", M = typeof window < "u" && window.Blob && new Blob([atob(E)], { type: "text/javascript;charset=utf-8" });
-function $() {
-  let h;
+const c = "IWZ1bmN0aW9uKCl7InVzZSBzdHJpY3QiO2NsYXNzIGV7Y29uc3RydWN0b3IoKXt0aGlzLl9tYXA9bmV3IE1hcH1kaXNwb3NlKCl7dGhpcy5fbWFwLmNsZWFyKCksdGhpcy5fbWFwPXZvaWQgMH1nZXQoZSl7cmV0dXJuIHRoaXMuX21hcC5nZXQoZSl9c2V0KGUsdCl7aWYodGhpcy5oYXMoZSkpe2lmKHRoaXMuZ2V0KGUpPT09dClyZXR1cm47dGhpcy5yZW1vdmUoZSl9dGhpcy5fbWFwLnNldChlLHQpfWhhcyhlKXtyZXR1cm4gdGhpcy5fbWFwLmhhcyhlKX1yZW1vdmUoZSl7cmV0dXJuISF0aGlzLmhhcyhlKSYmKHRoaXMuZ2V0KGUpLmNsb3NlKCksdGhpcy5fbWFwLmRlbGV0ZShlKSl9fWNvbnN0IHQ9LjU7Y2xhc3Mgc3tjb25zdHJ1Y3Rvcih0KXt0aGlzLl9jYW52YXM9dCx0aGlzLl9jb250ZXh0PXQuZ2V0Q29udGV4dCgiMmQiKSx0aGlzLl9jYWNoZT1uZXcgZX1kaXNwb3NlKCl7dGhpcy5fY2FjaGUuZGlzcG9zZSgpLHRoaXMuX2NhY2hlPXZvaWQgMCx0aGlzLl9jYW52YXM9dm9pZCAwfWNhY2hlUmVzb3VyY2UoZSx0KXt0aGlzLl9jYWNoZS5zZXQoZSx0KX1nZXRSZXNvdXJjZShlKXtyZXR1cm4gdGhpcy5fY2FjaGUuZ2V0KGUpfWRpc3Bvc2VSZXNvdXJjZShlKXt0aGlzLl9jYWNoZS5yZW1vdmUoZSl9c2V0RGltZW5zaW9ucyhlLHQpe3RoaXMuX2NhbnZhcy53aWR0aD1lLHRoaXMuX2NhbnZhcy5oZWlnaHQ9dH1zZXRTbW9vdGhpbmcoZSl7Y29uc3QgdD10aGlzLl9jb250ZXh0O1siaW1hZ2VTbW9vdGhpbmdFbmFibGVkIiwibW96SW1hZ2VTbW9vdGhpbmdFbmFibGVkIiwib0ltYWdlU21vb3RoaW5nRW5hYmxlZCIsIndlYmtpdEltYWdlU21vb3RoaW5nRW5hYmxlZCJdLmZvckVhY2goKHM9Pnt2b2lkIDAhPT10W3NdJiYodFtzXT1lKX0pKX1zYXZlKCl7dGhpcy5fY29udGV4dC5zYXZlKCl9cmVzdG9yZSgpe3RoaXMuX2NvbnRleHQucmVzdG9yZSgpfXNjYWxlKGUsdD1lKXt0aGlzLl9jb250ZXh0LnNjYWxlKGUsdCl9c2V0QmxlbmRNb2RlKGUpe3RoaXMuX2NvbnRleHQuZ2xvYmFsQ29tcG9zaXRlT3BlcmF0aW9uPWV9Y2xlYXJSZWN0KGUsdCxzLGEpe3RoaXMuX2NvbnRleHQuY2xlYXJSZWN0KGUsdCxzLGEpfWRyYXdSZWN0KGUscyxhLGksYyxvPSJmaWxsIil7aWYoImZpbGwiPT09byl0aGlzLl9jb250ZXh0LmZpbGxTdHlsZT1jLHRoaXMuX2NvbnRleHQuZmlsbFJlY3QoZSxzLGEsaSk7ZWxzZSBpZigic3Ryb2tlIj09PW8pe2NvbnN0IG89MTt0aGlzLl9jb250ZXh0LmxpbmVXaWR0aD1vLHRoaXMuX2NvbnRleHQuc3Ryb2tlU3R5bGU9Yyx0aGlzLl9jb250ZXh0LnN0cm9rZVJlY3QodCsoZS1vKSx0KyhzLW8pLGEsaSl9fWRyYXdDaXJjbGUoZSx0LHMsYSxpKXt0aGlzLl9jb250ZXh0LmJlZ2luUGF0aCgpLHRoaXMuX2NvbnRleHQuYXJjKGUrcyx0K3MscywwLDIqTWF0aC5QSSwhMSksdGhpcy5fY29udGV4dC5maWxsU3R5bGU9YSx0aGlzLl9jb250ZXh0LmZpbGwoKSxpJiYodGhpcy5fY29udGV4dC5saW5lV2lkdGg9NSx0aGlzLl9jb250ZXh0LnN0cm9rZVN0eWxlPWksdGhpcy5fY29udGV4dC5zdHJva2UoKSksdGhpcy5fY29udGV4dC5jbG9zZVBhdGgoKX1kcmF3SW1hZ2UoZSx0LHMsYSxpKXt0aGlzLl9jYWNoZS5oYXMoZSkmJihhPD0wfHxpPD0wfHx0aGlzLl9jb250ZXh0LmRyYXdJbWFnZSh0aGlzLl9jYWNoZS5nZXQoZSksdCxzLGEsaSkpfWRyYXdJbWFnZUNyb3BwZWQoZSxzLGEsaSxjLG8sbixoLHIsZD0hMSl7aWYodGhpcy5fY2FjaGUuaGFzKGUpKXtpZihkKXtpZihoPD0wfHxyPD0wKXJldHVybjtjb25zdCB0PXRoaXMuX2NhY2hlLmdldChlKSxvPShoPU1hdGgubWluKHRoaXMuX2NvbnRleHQuY2FudmFzLndpZHRoLGgpKS9pLG49KHI9TWF0aC5taW4odGhpcy5fY29udGV4dC5jYW52YXMuaGVpZ2h0LHIpKS9jO3MraT50LndpZHRoJiYoaC09byoocytpLXQud2lkdGgpLGktPXMraS10LndpZHRoKSxhK2M+dC5oZWlnaHQmJihyLT1uKihhK2MtdC5oZWlnaHQpLGMtPWErYy10LmhlaWdodCl9dGhpcy5fY29udGV4dC5kcmF3SW1hZ2UodGhpcy5fY2FjaGUuZ2V0KGUpLHQrczw8MCx0K2E8PDAsdCtpPDwwLHQrYzw8MCx0K288PDAsdCtuPDwwLHQraDw8MCx0K3I8PDApfX19bGV0IGEsaTtvbm1lc3NhZ2U9ZT0+e3N3aXRjaChlLmRhdGEuY21kKXtkZWZhdWx0OmJyZWFrO2Nhc2UiaW5pdCI6aT1lLmRhdGEuY2FudmFzLGE9bmV3IHMoaSksY29uc29sZS5pbmZvKCItLS0gaW5pdGlhbGl6ZWQgV29ya2VyIixpLGEpO2JyZWFrO2Nhc2UibG9hZFJlc291cmNlIjohYXN5bmMgZnVuY3Rpb24oZSx0KXt0cnl7bGV0IHM7aWYodCBpbnN0YW5jZW9mIEZpbGUpe2NvbnN0IGU9YXdhaXQgYXN5bmMgZnVuY3Rpb24oZSl7Y29uc3QgdD1uZXcgRmlsZVJlYWRlcjtyZXR1cm4gbmV3IFByb21pc2UoKChzLGEpPT57dC5vbmxvYWQ9dD0+e3ZhciBpO2lmKCEobnVsbD09KGk9bnVsbD09dD92b2lkIDA6dC50YXJnZXQpP3ZvaWQgMDppLnJlc3VsdCkpcmV0dXJuIGEoKTtzKG5ldyBCbG9iKFt0LnRhcmdldC5yZXN1bHRdLHt0eXBlOmUudHlwZX0pKX0sdC5vbmVycm9yPWU9PmEoZSksdC5yZWFkQXNBcnJheUJ1ZmZlcihlKX0pKX0odCk7cz1hd2FpdCBjcmVhdGVJbWFnZUJpdG1hcChlKX1lbHNlIGlmKHQgaW5zdGFuY2VvZiBCbG9iKXM9YXdhaXQgY3JlYXRlSW1hZ2VCaXRtYXAodCk7ZWxzZSBpZigic3RyaW5nIj09dHlwZW9mIHQpe2NvbnN0IGU9YXdhaXQgZmV0Y2godCksYT1hd2FpdCBlLmJsb2IoKTtzPWF3YWl0IGNyZWF0ZUltYWdlQml0bWFwKGEpfWVsc2UgdCBpbnN0YW5jZW9mIEltYWdlQml0bWFwJiYocz10KTtudWxsPT1hfHxhLmNhY2hlUmVzb3VyY2UoZSxzKSxwb3N0TWVzc2FnZSh7Y21kOiJvbmxvYWQiLGlkOmUsc2l6ZTp7d2lkdGg6cy53aWR0aCxoZWlnaHQ6cy5oZWlnaHR9fSl9Y2F0Y2h7cG9zdE1lc3NhZ2Uoe2NtZDoib25lcnJvciIsaWQ6ZX0pfX0oZS5kYXRhLmlkLGUuZGF0YS5zb3VyY2UpO2JyZWFrO2Nhc2UiZ2V0UmVzb3VyY2UiOmNvbnN0IHQ9bnVsbD09YT92b2lkIDA6YS5nZXRSZXNvdXJjZShlLmRhdGEuaWQpO3Bvc3RNZXNzYWdlKHtjbWQ6Im9ucmVzb3VyY2UiLGlkOmUuZGF0YS5pZCxiaXRtYXA6dH0pO2JyZWFrO2Nhc2UiZGlzcG9zZVJlc291cmNlIjpudWxsPT1hfHxhLmRpc3Bvc2VSZXNvdXJjZSguLi5lLmRhdGEuYXJncyk7YnJlYWs7Y2FzZSJkaXNwb3NlIjpudWxsPT1hfHxhLmRpc3Bvc2UoKSxpPXZvaWQgMCxhPXZvaWQgMDticmVhaztjYXNlInNldFNtb290aGluZyI6Y2FzZSJzZXREaW1lbnNpb25zIjpjYXNlInNhdmUiOmNhc2UicmVzdG9yZSI6Y2FzZSJzY2FsZSI6Y2FzZSJzZXRCbGVuZE1vZGUiOmNhc2UiY2xlYXJSZWN0IjpjYXNlImRyYXdSZWN0IjpjYXNlImRyYXdJbWFnZSI6Y2FzZSJkcmF3SW1hZ2VDcm9wcGVkIjphJiZhW2UuZGF0YS5jbWRdKC4uLmUuZGF0YS5hcmdzKX19fSgpOwo=", u = "undefined" != typeof window && window.Blob && new Blob([atob(c)], { type: "text/javascript;charset=utf-8" });
+function p() {
+  let t2;
   try {
-    if (h = M && (window.URL || window.webkitURL).createObjectURL(M), !h)
+    if (t2 = u && (window.URL || window.webkitURL).createObjectURL(u), !t2)
       throw "";
-    return new Worker(h);
-  } catch {
-    return new Worker("data:application/javascript;base64," + E);
+    return new Worker(t2);
+  } catch (t3) {
+    return new Worker("data:application/javascript;base64," + c);
   } finally {
-    h && (window.URL || window.webkitURL).revokeObjectURL(h);
+    t2 && (window.URL || window.webkitURL).revokeObjectURL(t2);
   }
 }
-class tt {
-  constructor(t, e = !1) {
-    if (this._useWorker = !1, this._element = t, e && typeof this._element.transferControlToOffscreen == "function") {
-      this._useWorker = !0, this._callbacks = /* @__PURE__ */ new Map();
-      const i = t.transferControlToOffscreen();
-      this._worker = new $(), this._worker.postMessage({
-        cmd: "init",
-        canvas: i
-      }, [i]), this._worker.onmessage = this.handleMessage.bind(this);
+class _ {
+  constructor(t2, e2 = false) {
+    if (this._useWorker = false, this._element = t2, e2 && "function" == typeof this._element.transferControlToOffscreen) {
+      this._useWorker = true, this._callbacks = /* @__PURE__ */ new Map();
+      const e3 = t2.transferControlToOffscreen();
+      this._worker = new p(), this._worker.postMessage({ cmd: "init", canvas: e3 }, [e3]), this._worker.onmessage = this.handleMessage.bind(this);
     } else
-      this._renderer = new q(this._element);
+      this._renderer = new l(this._element);
   }
-  loadResource(t, e) {
-    return new Promise(async (i, s) => {
-      if (e instanceof ImageBitmap) {
-        this._useWorker ? this.wrappedWorkerLoad(t, e, i, s, !0) : (this._renderer.cacheResource(t, e), i({ width: e.width, height: e.height }));
-        return;
-      }
-      if (typeof e == "string") {
-        if (this._useWorker)
-          this.wrappedWorkerLoad(t, e, i, s);
-        else {
-          const n = await Z.loadImage(e);
-          this.wrappedLoad(t, n.image, i, s);
+  loadResource(t2, e2) {
+    return new Promise(async (i2, s2) => {
+      if (e2 instanceof ImageBitmap)
+        this._useWorker ? this.wrappedWorkerLoad(t2, e2, i2, s2, true) : (this._renderer.cacheResource(t2, e2), i2({ width: e2.width, height: e2.height }));
+      else if ("string" != typeof e2) {
+        if (e2 instanceof HTMLImageElement || e2 instanceof HTMLCanvasElement) {
+          const s3 = await h(e2);
+          return this.loadResource(t2, s3).then((t3) => i2(t3));
         }
-        return;
+        if (e2 instanceof File)
+          if (this._useWorker)
+            this.wrappedWorkerLoad(t2, e2, i2, s2);
+          else {
+            const h2 = await async function(t3) {
+              const e3 = new FileReader();
+              return new Promise((i3, s3) => {
+                e3.onload = (e4) => {
+                  var _a;
+                  if (!((_a = e4 == null ? void 0 : e4.target) == null ? void 0 : _a.result))
+                    return s3();
+                  i3(new Blob([e4.target.result], { type: t3.type }));
+                }, e3.onerror = (t4) => s3(t4), e3.readAsArrayBuffer(t3);
+              });
+            }(e2);
+            this.wrappedLoad(t2, h2, i2, s2);
+          }
+        else
+          e2 instanceof Blob ? this._useWorker ? this.wrappedWorkerLoad(t2, e2, i2, s2) : this.wrappedLoad(t2, e2, i2, s2) : s2("Unsupported resource type");
+      } else if (this._useWorker)
+        this.wrappedWorkerLoad(t2, e2, i2, s2);
+      else {
+        const h2 = await r.loadImage(e2);
+        this.wrappedLoad(t2, h2.image, i2, s2);
       }
-      if (e instanceof HTMLImageElement || e instanceof HTMLCanvasElement) {
-        const n = await H(e);
-        return this.loadResource(t, n).then((a) => i(a));
-      }
-      if (e instanceof File) {
-        if (this._useWorker)
-          this.wrappedWorkerLoad(t, e, i, s);
-        else {
-          const n = await A(e);
-          this.wrappedLoad(t, n, i, s);
-        }
-        return;
-      } else if (e instanceof Blob) {
-        this._useWorker ? this.wrappedWorkerLoad(t, e, i, s) : this.wrappedLoad(t, e, i, s);
-        return;
-      }
-      s("Unsupported resource type");
     });
   }
-  getResource(t) {
-    return new Promise((e, i) => {
-      this._useWorker ? (this._callbacks.set(t, { resolve: e, reject: i }), this._worker.postMessage({
-        cmd: "getResource",
-        id: t
-      })) : e(this._renderer.getResource(t));
+  getResource(t2) {
+    return new Promise((e2, i2) => {
+      this._useWorker ? (this._callbacks.set(t2, { resolve: e2, reject: i2 }), this._worker.postMessage({ cmd: "getResource", id: t2 })) : e2(this._renderer.getResource(t2));
     });
   }
-  disposeResource(t) {
-    this.getBackend("disposeResource", t);
+  disposeResource(t2) {
+    this.getBackend("disposeResource", t2);
   }
   dispose() {
     this.getBackend("dispose"), setTimeout(() => {
-      var t, e;
-      (t = this._worker) == null || t.terminate(), this._worker = void 0, (e = this._callbacks) == null || e.clear();
+      var _a, _b;
+      (_a = this._worker) == null ? void 0 : _a.terminate(), this._worker = void 0, (_b = this._callbacks) == null ? void 0 : _b.clear();
     }, 50);
   }
-  getBackend(t, ...e) {
-    if (this._useWorker) {
-      this._worker.postMessage({
-        cmd: t,
-        args: [...e]
-      });
-      return;
-    }
-    this._renderer[t](...e);
+  getBackend(t2, ...e2) {
+    this._useWorker ? this._worker.postMessage({ cmd: t2, args: [...e2] }) : this._renderer[t2](...e2);
   }
-  handleMessage(t) {
-    const { cmd: e, id: i } = t.data;
-    switch (e) {
+  handleMessage(t2) {
+    const { cmd: e2, id: i2 } = t2.data;
+    switch (e2) {
       default:
         break;
       case "onload":
-        if (!this._callbacks.has(i))
+        if (!this._callbacks.has(i2))
           return;
-        this._callbacks.get(i).resolve(t.data.size), this._callbacks.delete(i);
+        this._callbacks.get(i2).resolve(t2.data.size), this._callbacks.delete(i2);
         break;
       case "onerror":
-        if (!this._callbacks.has(i))
+        if (!this._callbacks.has(i2))
           return;
-        this._callbacks.get(i).reject(new Error()), this._callbacks.delete(i);
+        this._callbacks.get(i2).reject(new Error()), this._callbacks.delete(i2);
         break;
       case "onresource":
-        this._callbacks.get(i).resolve(t.data.bitmap), this._callbacks.delete(i);
-        break;
+        this._callbacks.get(i2).resolve(t2.data.bitmap), this._callbacks.delete(i2);
     }
   }
-  wrappedWorkerLoad(t, e, i, s, n = !1) {
-    this._callbacks.set(t, { resolve: i, reject: s }), this._worker.postMessage({
-      cmd: "loadResource",
-      source: e,
-      id: t
-    }, n ? [e] : []);
+  wrappedWorkerLoad(t2, e2, i2, s2, h2 = false) {
+    this._callbacks.set(t2, { resolve: i2, reject: s2 }), this._worker.postMessage({ cmd: "loadResource", source: e2, id: t2 }, h2 ? [e2] : []);
   }
-  async wrappedLoad(t, e, i, s) {
+  async wrappedLoad(t2, e2, i2, s2) {
     try {
-      const n = await H(e);
-      this._renderer.cacheResource(t, n), i({ width: n.width, height: n.height });
-    } catch (n) {
-      s(n);
+      const s3 = await h(e2);
+      this._renderer.cacheResource(t2, s3), i2({ width: s3.width, height: s3.height });
+    } catch (t3) {
+      s2(t3);
     }
   }
-  /* rendering API */
-  // @TODO when using offscreenCanvas post messages (will be difficult with getters though...)
-  // @TODO can we maybe just Proxy this upfront to prevent duplicate calls ??
-  // @TODO can we just return a direct reference to the Renderer class when we're not using the offscreen canvas ???
-  setDimensions(t, e) {
-    this.getBackend("setDimensions", t, e);
+  setDimensions(t2, e2) {
+    this.getBackend("setDimensions", t2, e2);
   }
-  setSmoothing(t) {
-    this.getBackend("setSmoothing", t);
+  setSmoothing(t2) {
+    this.getBackend("setSmoothing", t2);
   }
   save() {
     this.getBackend("save");
@@ -424,336 +305,173 @@ class tt {
   restore() {
     this.getBackend("restore");
   }
-  scale(t, e) {
-    this.getBackend("scale", t, e);
+  scale(t2, e2) {
+    this.getBackend("scale", t2, e2);
   }
-  setBlendMode(t) {
-    this.getBackend("setBlendMode", t);
+  setBlendMode(t2) {
+    this.getBackend("setBlendMode", t2);
   }
-  clearRect(t, e, i, s) {
-    this.getBackend("clearRect", t, e, i, s);
+  clearRect(t2, e2, i2, s2) {
+    this.getBackend("clearRect", t2, e2, i2, s2);
   }
-  drawRect(t, e, i, s, n, a) {
-    this.getBackend("drawRect", t, e, i, s, n, a);
+  drawRect(t2, e2, i2, s2, h2, n2) {
+    this.getBackend("drawRect", t2, e2, i2, s2, h2, n2);
   }
-  drawCircle(t, e, i, s, n) {
-    this.getBackend("drawCircle", t, e, i, s, n);
+  drawCircle(t2, e2, i2, s2, h2) {
+    this.getBackend("drawCircle", t2, e2, i2, s2, h2);
   }
-  drawImage(t, e, i, s, n) {
-    this.getBackend("drawImage", t, e, i, s, n);
+  drawImage(t2, e2, i2, s2, h2) {
+    this.getBackend("drawImage", t2, e2, i2, s2, h2);
   }
-  drawImageCropped(t, e, i, s, n, a, r, d, o, c) {
-    this.getBackend(
-      "drawImageCropped",
-      t,
-      e,
-      i,
-      s,
-      n,
-      a,
-      r,
-      d,
-      o,
-      c
-    );
+  drawImageCropped(t2, e2, i2, s2, h2, n2, r2, a2, o2, d2) {
+    this.getBackend("drawImageCropped", t2, e2, i2, s2, h2, n2, r2, a2, o2, d2);
   }
 }
-const W = (h) => h > 0 ? h + 0.5 << 0 : h | 0, x = [], k = [], R = L(1, 1, !0).cvs;
-class et {
+const g = (t2) => t2 > 0 ? t2 + 0.5 << 0 : 0 | t2, m = [], f = [], w = i(1, 1, true).cvs;
+class b {
   constructor() {
     this._cacheMap = /* @__PURE__ */ new Map();
   }
   dispose() {
     this._cacheMap.clear(), this._cacheMap = void 0;
   }
-  /**
-   * retrieve all children in given Sprite list that are currently residing at
-   * a given coordinate and rectangle, can be used in conjunction with sprite
-   * "collidesWith"-method to query only the objects that are in its vicinity, greatly
-   * freeing up CPU resources by not checking against out of bounds objects
-   *
-   * @param {Sprite[]} sprites
-   * @param {number} aX x-coordinate
-   * @param {number} aY y-coordinate
-   * @param {number} aWidth rectangle width
-   * @param {number} aHeight rectangle height
-   * @param {boolean=} aOnlyCollidables optionally only return children that are collidable. defaults to false
-   * @return {Sprite[]}
-   */
-  getChildrenUnderPoint(t, e, i, s, n, a = !1) {
-    const r = [];
-    let d = t.length, o, c, l, u, p;
-    for (; d--; )
-      o = t[d], c = o.getX(), l = o.getY(), u = o.getWidth(), p = o.getHeight(), c < e + s && c + u > e && l < i + n && l + p > i && (!a || a && o.collidable) && r.push(o);
-    return r;
+  getChildrenUnderPoint(t2, e2, i2, s2, h2, n2 = false) {
+    const r2 = [];
+    let a2, o2, d2, l2, c2, u2 = t2.length;
+    for (; u2--; )
+      a2 = t2[u2], o2 = a2.getX(), d2 = a2.getY(), l2 = a2.getWidth(), c2 = a2.getHeight(), o2 < e2 + s2 && o2 + l2 > e2 && d2 < i2 + h2 && d2 + c2 > i2 && (!n2 || n2 && a2.collidable) && r2.push(a2);
+    return r2;
   }
-  /**
-   * query whether the current position of given sprite1 and sprite2
-   * result in a collision at the pixel level. This method increases
-   * accuracy when transparency should be taken into account. While it is
-   * reasonably fast, rely on sprite.getIntersection() when rectangular, non-
-   * transparent bounding boxes suffice
-   *
-   * @param {Sprite} sprite1
-   * @param {Sprite} sprite2
-   * @param {boolean=} optReturnAsCoordinate optional (defaults to false), when false
-   *        boolean value is returned for the collision, when true an Object with
-   *        x- and y-coordinates is returned to specify at which x- and y-coordinate
-   *        a pixel collision occurred. This can be verified against sprite1's bounds
-   *        to determine where the collision occurred (e.g. left, bottom, etc.) If no
-   *        collision occurred, boolean false is returned
-   *
-   * @return {boolean|Point}
-   */
-  pixelCollision(t, e, i = !1) {
-    const s = t.getIntersection(e);
-    if (s === void 0)
-      return !1;
-    this.getPixelArray(t, s, x), this.getPixelArray(e, s, k);
-    let n = 0;
-    if (i === !0) {
-      const a = s.width, r = s.height;
-      for (let d = 0; d < r; ++d)
-        for (let o = 0; o < a; ++o) {
-          if (x[n] !== 0 && k[n] !== 0)
-            return { x: o, y: d };
-          ++n;
+  pixelCollision(t2, e2, i2 = false) {
+    const s2 = t2.getIntersection(e2);
+    if (void 0 === s2)
+      return false;
+    this.getPixelArray(t2, s2, m), this.getPixelArray(e2, s2, f);
+    let h2 = 0;
+    if (true === i2) {
+      const t3 = s2.width, e3 = s2.height;
+      for (let i3 = 0; i3 < e3; ++i3)
+        for (let e4 = 0; e4 < t3; ++e4) {
+          if (0 !== m[h2] && 0 !== f[h2])
+            return { x: e4, y: i3 };
+          ++h2;
         }
     } else {
-      const a = x.length;
-      for (n; n < a; ++n)
-        if (x[n] !== 0 && k[n] !== 0)
-          return !0;
+      const t3 = m.length;
+      for (; h2 < t3; ++h2)
+        if (0 !== m[h2] && 0 !== f[h2])
+          return true;
     }
-    return !1;
+    return false;
   }
-  /**
-   * Add given Bitmap into the collision cache for faster collision handling
-   * at the expense of using more memory
-   */
-  cache(t, e) {
-    const { width: i, height: s } = e;
-    U(R, e, i, s), this._cacheMap.set(
-      t,
-      {
-        data: R.getContext("2d").getImageData(0, 0, i, s).data,
-        size: { width: i, height: s }
-      }
-    ), R.width = R.height = 1;
+  cache(t2, e2) {
+    const { width: i2, height: s2 } = e2;
+    !function(t3, e3, i3, s3) {
+      n(t3, e3, i3, s3);
+    }(w, e2, i2, s2), this._cacheMap.set(t2, { data: w.getContext("2d").getImageData(0, 0, i2, s2).data, size: { width: i2, height: s2 } }), w.width = w.height = 1;
   }
-  /**
-   * Removes given Bitmap from the collision cache
-   */
-  clearCache(t) {
-    return this.hasCache(t) ? (this._cacheMap.delete(t), !0) : !1;
+  clearCache(t2) {
+    return !!this.hasCache(t2) && (this._cacheMap.delete(t2), true);
   }
-  /**
-   * Whether given Bitmap is present inside the collision cache
-   */
-  hasCache(t) {
-    return this._cacheMap.has(t);
+  hasCache(t2) {
+    return this._cacheMap.has(t2);
   }
-  /**
-   * Get an Array of pixels for the area described by given rect
-   * inside the Bitmap of given sprite
-   *
-   * @param {Sprite} sprite
-   * @param {Rectangle} rect
-   * @param {number[]} pixels Array to write pixels into
-   */
-  getPixelArray(t, e, i) {
-    const s = t.getResourceId();
-    if (!this.hasCache(s))
-      throw new Error(`Cannot get cached entry for resource "${s}". Cache it first.`);
-    const n = t.getBounds(), a = W(e.left - n.left), r = W(e.top - n.top), d = W(e.width), o = W(e.height), { data: c, size: l } = this._cacheMap.get(s);
-    if (d === 0 || o === 0) {
-      i.length = 0;
-      return;
-    }
-    i.length = W(d * o);
-    const u = l.width, p = r + o, _ = a + d;
-    let v = -1;
-    for (let C = r; C < p; ++C)
-      for (let g = a; g < _; ++g) {
-        const Y = (C * u + g) * 4;
-        i[++v] = c[Y + 3];
+  getPixelArray(t2, e2, i2) {
+    const s2 = t2.getResourceId();
+    if (!this.hasCache(s2))
+      throw new Error(`Cannot get cached entry for resource "${s2}". Cache it first.`);
+    const h2 = t2.getBounds(), n2 = g(e2.left - h2.left), r2 = g(e2.top - h2.top), a2 = g(e2.width), o2 = g(e2.height), { data: d2, size: l2 } = this._cacheMap.get(s2);
+    if (0 === a2 || 0 === o2)
+      return void (i2.length = 0);
+    i2.length = g(a2 * o2);
+    const c2 = l2.width, u2 = r2 + o2, p2 = n2 + a2;
+    let _2 = -1;
+    for (let t3 = r2; t3 < u2; ++t3)
+      for (let e3 = n2; e3 < p2; ++e3) {
+        const s3 = 4 * (t3 * c2 + e3);
+        i2[++_2] = d2[s3 + 3];
       }
   }
 }
-const { min: S, max: V, round: N } = Math, y = 60, it = y + 3;
-class ht {
-  constructor({
-    width: t = 300,
-    height: e = 300,
-    fps: i = y,
-    scale: s = 1,
-    backgroundColor: n = null,
-    animate: a = !1,
-    smoothing: r = !0,
-    stretchToFit: d = !1,
-    viewport: o = null,
-    preventEventBubbling: c = !1,
-    parentElement: l = null,
-    debug: u = !1,
-    viewportHandler: p,
-    onUpdate: _,
-    useOffscreen: v = !1
-  } = {}) {
-    if (this.DEBUG = !1, this.benchmark = {
-      minElapsed: 1 / 0,
-      maxElapsed: -1 / 0,
-      minFps: 1 / 0,
-      maxFps: -1 / 0
-    }, this._smoothing = !1, this._stretchToFit = !1, this._HDPIscaleRatio = 1, this._preventDefaults = !1, this._lastRender = 0, this._renderId = 0, this._renderPending = !1, this._disposed = !1, this._scale = { x: 1, y: 1 }, this._activeTouches = [], this._children = [], this._animate = !1, t <= 0 || e <= 0)
+const { min: v, max: Z, round: W } = Math;
+class X {
+  constructor({ width: t2 = 300, height: e2 = 300, fps: i2 = 60, scale: s2 = 1, backgroundColor: h2 = null, animate: n2 = false, smoothing: r2 = true, stretchToFit: a2 = false, viewport: o2 = null, preventEventBubbling: d2 = false, parentElement: l2 = null, debug: c2 = false, viewportHandler: u2, onUpdate: p2, useOffscreen: g2 = false } = {}) {
+    if (this.DEBUG = false, this.benchmark = { minElapsed: 1 / 0, maxElapsed: -1 / 0, minFps: 1 / 0, maxFps: -1 / 0 }, this._smoothing = false, this._stretchToFit = false, this._HDPIscaleRatio = 1, this._preventDefaults = false, this._lastRender = 0, this._renderId = 0, this._renderPending = false, this._disposed = false, this._scale = { x: 1, y: 1 }, this._activeTouches = [], this._children = [], this._animate = false, t2 <= 0 || e2 <= 0)
       throw new Error("cannot construct a zCanvas without valid dimensions");
-    this.DEBUG = u, this._element = document.createElement("canvas"), this._renderer = new tt(this._element, v), this.collision = new et(), this._updateHandler = _, this._renderHandler = this.render.bind(this), this._viewportHandler = p, this.setFrameRate(i), this.setAnimatable(a), n && this.setBackgroundColor(n), this._HDPIscaleRatio = window.devicePixelRatio || 1, this.setDimensions(t, e, !0, !0), o && this.setViewport(o.width, o.height), s !== 1 && this.scale(s, s), d && this.stretchToFit(!0), l instanceof HTMLElement && this.insertInPage(l), this.setSmoothing(r), this.preventEventBubbling(c), this.addListeners(), this._animate && this.render();
+    this.DEBUG = c2, this._element = document.createElement("canvas"), this._renderer = new _(this._element, g2), this.collision = new b(), this._updateHandler = p2, this._renderHandler = this.render.bind(this), this._viewportHandler = u2, this.setFrameRate(i2), this.setAnimatable(n2), h2 && this.setBackgroundColor(h2), this._HDPIscaleRatio = window.devicePixelRatio || 1, this.setDimensions(t2, e2, true, true), o2 && this.setViewport(o2.width, o2.height), 1 !== s2 && this.scale(s2, s2), a2 && this.stretchToFit(true), l2 instanceof HTMLElement && this.insertInPage(l2), this.setSmoothing(r2), this.preventEventBubbling(d2), this.addListeners(), this._animate && this.render();
   }
-  /* public methods */
-  loadResource(t, e) {
-    return this._renderer.loadResource(t, e);
+  loadResource(t2, e2) {
+    return this._renderer.loadResource(t2, e2);
   }
-  getResource(t) {
-    return this._renderer.getResource(t);
+  getResource(t2) {
+    return this._renderer.getResource(t2);
   }
-  disposeResource(t) {
-    return this._renderer.disposeResource(t);
+  disposeResource(t2) {
+    return this._renderer.disposeResource(t2);
   }
-  /**
-   * appends this Canvas to the DOM (i.e. adds the references <canvas>-
-   * element into the supplied container
-   *
-   * @param {HTMLElement} container DOM node to append the Canvas to
-   */
-  insertInPage(t) {
+  insertInPage(t2) {
     if (this._element.parentNode)
       throw new Error("Canvas already present in DOM");
-    t.appendChild(this._element);
+    t2.appendChild(this._element);
   }
-  /**
-   * get the <canvas>-element inside the DOM that is used
-   * to render this Canvas' contents
-   */
   getElement() {
     return this._element;
   }
-  /**
-   * whether or not all events captured by the Canvas can
-   * bubble down in the document, when true, DOM events that
-   * have interacted with the Canvas will stop their propagation
-   * and prevent their default behaviour
-   */
-  preventEventBubbling(t) {
-    this._preventDefaults = t;
+  preventEventBubbling(t2) {
+    this._preventDefaults = t2;
   }
-  /**
-   * @param {Sprite} child
-   * @return {Canvas} this Canvas - for chaining purposes
-   */
-  addChild(t) {
-    if (this.contains(t))
+  addChild(t2) {
+    if (this.contains(t2))
       return this;
-    const e = this._children.length;
-    return e > 0 && (t.last = this._children[e - 1], t.last.next = t), t.next = void 0, t.setCanvas(this), t.setParent(this), this._children.push(t), this.invalidate(), this;
+    const e2 = this._children.length;
+    return e2 > 0 && (t2.last = this._children[e2 - 1], t2.last.next = t2), t2.next = void 0, t2.setCanvas(this), t2.setParent(this), this._children.push(t2), this.invalidate(), this;
   }
-  /**
-   * @param {Sprite} child the child to remove from this Canvas
-   * @return {Sprite} the removed child - for chaining purposes
-   */
-  removeChild(t) {
-    t.setParent(void 0), t.setCanvas(void 0);
-    const e = this._children.indexOf(t);
-    e !== -1 && this._children.splice(e, 1);
-    const i = t.last, s = t.next;
-    return i && (i.next = s), s && (s.last = i), t.last = t.next = void 0, this.invalidate(), t;
+  removeChild(t2) {
+    t2.setParent(void 0), t2.setCanvas(void 0);
+    const e2 = this._children.indexOf(t2);
+    -1 !== e2 && this._children.splice(e2, 1);
+    const i2 = t2.last, s2 = t2.next;
+    return i2 && (i2.next = s2), s2 && (s2.last = i2), t2.last = t2.next = void 0, this.invalidate(), t2;
   }
-  /**
-   * retrieve a child of this Canvas by its index in the Display List
-   * @param {number} index of the object in the Display List
-   * @return {Sprite} the referenced object
-   */
-  getChildAt(t) {
-    return this._children[t];
+  getChildAt(t2) {
+    return this._children[t2];
   }
-  /**
-   * remove a child from this Canvas' Display List at the given index
-   *
-   * @param {number} index of the object to remove
-   * @return {Sprite} the removed sprite
-   */
-  removeChildAt(t) {
-    return this.removeChild(this.getChildAt(t));
+  removeChildAt(t2) {
+    return this.removeChild(this.getChildAt(t2));
   }
-  /**
-   * @return {number} the amount of children in this Canvas' Display List
-   */
   numChildren() {
     return this._children.length;
   }
   getChildren() {
     return this._children;
   }
-  /**
-   * check whether a given display object is present in this object's display list
-   */
-  contains(t) {
-    return t.canvas === this;
+  contains(t2) {
+    return t2.canvas === this;
   }
-  /**
-   * invoke when the state of the Canvas has changed (i.e.
-   * the visual contents should change), this will invoke
-   * a new render request
-   *
-   * render requests are only executed when the UI is ready
-   * to render (on animationFrame), as such this method can be invoked
-   * repeatedly between render cycles without actually triggering
-   * multiple render executions (a single one will suffice)
-   */
   invalidate() {
-    !this._animate && !this._renderPending && (this._renderPending = !0, this._renderId = window.requestAnimationFrame(this._renderHandler));
+    this._animate || this._renderPending || (this._renderPending = true, this._renderId = window.requestAnimationFrame(this._renderHandler));
   }
-  /**
-   * return the framerate of the Canvas, can be queried by
-   * child sprites to calculate strictly timed animated operations
-   */
   getFrameRate() {
     return this._fps;
   }
-  setFrameRate(t) {
-    this._fps = t, this._aFps = t, this._renderInterval = 1e3 / t;
+  setFrameRate(t2) {
+    this._fps = t2, this._aFps = t2, this._renderInterval = 1e3 / t2;
   }
-  /**
-   * Returns the actual framerate achieved by the zCanvas renderer
-   */
   getActualFrameRate() {
     return this._aFps;
   }
-  /**
-   * retrieve the render interval for this Canvas, this basically
-   * describes the elapsed time in milliseconds between each successive
-   * render at the current framerate
-   */
   getRenderInterval() {
     return this._renderInterval;
   }
   getSmoothing() {
     return this._smoothing;
   }
-  /**
-   * toggle the smoothing of the Canvas' contents.
-   * for pixel art-type graphics, setting the smoothing to
-   * false will yield crisper results
-   */
-  setSmoothing(t) {
-    this._renderer.setSmoothing(t);
-    const e = [
-      "-moz-crisp-edges",
-      "-webkit-crisp-edges",
-      "pixelated",
-      "crisp-edges"
-    ], i = this._element.style;
-    e.forEach((s) => {
-      i["image-rendering"] = t ? void 0 : s;
-    }), this._smoothing = t, this.invalidate();
+  setSmoothing(t2) {
+    this._renderer.setSmoothing(t2);
+    const e2 = this._element.style;
+    ["-moz-crisp-edges", "-webkit-crisp-edges", "pixelated", "crisp-edges"].forEach((i2) => {
+      e2["image-rendering"] = t2 ? void 0 : i2;
+    }), this._smoothing = t2, this.invalidate();
   }
   getWidth() {
     return this._enqueuedSize ? this._enqueuedSize.width : this._width;
@@ -761,752 +479,401 @@ class ht {
   getHeight() {
     return this._enqueuedSize ? this._enqueuedSize.height : this._height;
   }
-  /**
-   * updates the dimensions of the Canvas (this actually enqueues the update and will only
-   * execute it once the canvas draws to prevent flickering on constants resize operations
-   * as browsers will clear the existing Canvas content when adjusting its dimensions)
-   *
-   * @param {number} width
-   * @param {number} height
-   * @param {boolean=} setAsPreferredDimensions optional, defaults to true, stretchToFit handler
-   *        overrides this to ensure returning to correct dimensions when disabling stretchToFit
-   * @param {boolean=} optImmediate optional, whether to apply immediately, defaults to false
-   *        to prevent flickering of existing screen contents during repeated resize
-   */
-  setDimensions(t, e, i = !0, s = !1) {
-    this._enqueuedSize = { width: t, height: e }, i === !0 && (this._preferredWidth = t, this._preferredHeight = e), s === !0 && this.updateCanvasSize(), this.invalidate();
+  setDimensions(t2, e2, i2 = true, s2 = false) {
+    this._enqueuedSize = { width: t2, height: e2 }, true === i2 && (this._preferredWidth = t2, this._preferredHeight = e2), true === s2 && this.updateCanvasSize(), this.invalidate();
   }
   getViewport() {
     return this._viewport;
   }
-  /**
-   * In case the Canvas isn't fully visible (for instance because it is part
-   * of a scrollable container), you can define the visible bounds (relative to
-   * the full Canvas width/height) here. This can be used to improve rendering
-   * performance on large Canvas instances by only rendering the visible area.
-   */
-  setViewport(t, e) {
-    this._viewport = { width: t, height: e, left: 0, top: 0, right: t, bottom: e }, this.panViewport(0, 0), this.updateCanvasSize();
+  setViewport(t2, e2) {
+    this._viewport = { width: t2, height: e2, left: 0, top: 0, right: t2, bottom: e2 }, this.panViewport(0, 0), this.updateCanvasSize();
   }
-  /**
-   * Updates the horizontal and vertical position of the viewport.
-   *
-   * @param {number} x
-   * @param {number} y
-   * @param {boolean=} broadcast optionally broadcast change to registered handler
-   */
-  panViewport(t, e, i = !1) {
-    var n;
-    const s = this._viewport;
-    s.left = V(0, S(t, this._width - s.width)), s.right = s.left + s.width, s.top = V(0, S(e, this._height - s.height)), s.bottom = s.top + s.height, this.invalidate(), i && ((n = this._viewportHandler) == null || n.call(this, { type: "panned", value: s }));
+  panViewport(t2, e2, i2 = false) {
+    var _a;
+    const s2 = this._viewport;
+    s2.left = Z(0, v(t2, this._width - s2.width)), s2.right = s2.left + s2.width, s2.top = Z(0, v(e2, this._height - s2.height)), s2.bottom = s2.top + s2.height, this.invalidate(), i2 && ((_a = this._viewportHandler) == null ? void 0 : _a.call(this, { type: "panned", value: s2 }));
   }
-  /**
-   * set the background color for the Canvas, either hexadecimal
-   * or RGB/RGBA, e.g. "#FF0000" or "rgba(255,0,0,1)";
-   */
-  setBackgroundColor(t) {
-    this._bgColor = t;
+  setBackgroundColor(t2) {
+    this._bgColor = t2;
   }
-  setAnimatable(t) {
-    var e;
-    this._animate, this._animate = t, this._lastRaf = ((e = window.performance) == null ? void 0 : e.now()) || Date.now(), t && !this._renderPending && this._renderHandler(this._lastRaf);
+  setAnimatable(t2) {
+    var _a;
+    this._animate, this._animate = t2, this._lastRaf = ((_a = window.performance) == null ? void 0 : _a.now()) || Date.now(), t2 && !this._renderPending && this._renderHandler(this._lastRaf);
   }
   isAnimatable() {
     return this._animate;
   }
-  /**
-   * Scales the canvas Element. This can be used to render content at a lower
-   * resolution but scale it up to fit the screen (for instance when rendering pixel art
-   * with smoothing disabled for crisp definition).
-   *
-   * @param {number} x the factor to scale the horizontal axis by
-   * @param {number=} y the factor to scale the vertical axis by, defaults to x
-   */
-  scale(t, e = t) {
-    this._scale = { x: t, y: e };
-    const i = t === 1 && e === 1 ? "" : `scale(${t}, ${e})`, { style: s } = this._element;
-    s["-webkit-transform-origin"] = s["transform-origin"] = "0 0", s["-webkit-transform"] = s.transform = i, this.invalidate();
+  scale(t2, e2 = t2) {
+    this._scale = { x: t2, y: e2 };
+    const i2 = 1 === t2 && 1 === e2 ? "" : `scale(${t2}, ${e2})`, { style: s2 } = this._element;
+    s2["-webkit-transform-origin"] = s2["transform-origin"] = "0 0", s2["-webkit-transform"] = s2.transform = i2, this.invalidate();
   }
-  /**
-   * Stretches the Canvas to fit inside the available window size, keeping the
-   * dominant sides of the preferred dimensions in relation to the window dimensions.
-   * This method will disregard scaling factors.
-   *
-   * @param {boolean=} value whether to stretch the canvas to fit the window size
-   */
-  stretchToFit(t) {
-    this._stretchToFit = t;
-    const { innerWidth: e, innerHeight: i } = window;
-    let s = this._preferredWidth, n = this._preferredHeight, a = 1, r = 1;
-    i > e ? (n = t ? i / e * s : n, a = e / s, r = i / n) : (s = t ? e / i * n : s, a = e / s, r = i / n), this.setDimensions(N(s), N(n), !1, !0), this.scale(a, r);
+  stretchToFit(t2) {
+    this._stretchToFit = t2;
+    const { innerWidth: e2, innerHeight: i2 } = window;
+    let s2 = this._preferredWidth, h2 = this._preferredHeight, n2 = 1, r2 = 1;
+    i2 > e2 ? (h2 = t2 ? i2 / e2 * s2 : h2, n2 = e2 / s2, r2 = i2 / h2) : (s2 = t2 ? e2 / i2 * h2 : s2, n2 = e2 / s2, r2 = i2 / h2), this.setDimensions(W(s2), W(h2), false, true), this.scale(n2, r2);
   }
   dispose() {
     if (this._disposed)
       return;
-    this._animate = !1, window.cancelAnimationFrame(this._renderId), this.removeListeners();
-    let t = this.numChildren();
-    for (; t--; )
-      this._children[t].dispose();
+    this._animate = false, window.cancelAnimationFrame(this._renderId), this.removeListeners();
+    let t2 = this.numChildren();
+    for (; t2--; )
+      this._children[t2].dispose();
     this._children = [], this._element.parentNode && this._element.parentNode.removeChild(this._element), requestAnimationFrame(() => {
       this._renderer.dispose(), this._renderer = void 0, this.collision.dispose(), this.collision = void 0;
-    }), this._disposed = !0;
+    }), this._disposed = true;
   }
-  /* event handlers */
-  handleInteraction(t) {
-    const e = this._children.length, i = this._viewport;
-    let s;
-    if (e > 0)
-      switch (s = this._children[e - 1], t.type) {
+  handleInteraction(t2) {
+    const e2 = this._children.length, i2 = this._viewport;
+    let s2;
+    if (e2 > 0)
+      switch (s2 = this._children[e2 - 1], t2.type) {
         default:
-          let n = 0, a = 0;
-          const r = t.changedTouches;
-          let d = 0, o = r.length;
-          if (o > 0) {
-            let { x: g, y: Y } = this.getCoordinate();
-            for (i && (g -= i.left, Y -= i.top), d = 0; d < o; ++d) {
-              const G = r[d], { identifier: I } = G;
-              switch (n = G.pageX - g, a = G.pageY - Y, t.type) {
-                case "touchstart":
-                  for (; s; ) {
-                    if (!this._activeTouches.includes(s) && s.handleInteraction(n, a, t)) {
-                      this._activeTouches[I] = s;
-                      break;
-                    }
-                    s = s.last;
+          let h2 = 0, n2 = 0;
+          const r2 = t2.changedTouches;
+          let a2 = 0, o2 = r2.length;
+          if (o2 > 0) {
+            let { x: d3, y: l3 } = this.getCoordinate();
+            for (i2 && (d3 -= i2.left, l3 -= i2.top), a2 = 0; a2 < o2; ++a2) {
+              const i3 = r2[a2], { identifier: o3 } = i3;
+              if (h2 = i3.pageX - d3, n2 = i3.pageY - l3, "touchstart" === t2.type) {
+                for (; s2; ) {
+                  if (!this._activeTouches.includes(s2) && s2.handleInteraction(h2, n2, t2)) {
+                    this._activeTouches[o3] = s2;
+                    break;
                   }
-                  s = this._children[e - 1];
-                  break;
-                default:
-                  s = this._activeTouches[I], s != null && s.handleInteraction(n, a, t) && t.type !== "touchmove" && (this._activeTouches[I] = null);
-                  break;
-              }
+                  s2 = s2.last;
+                }
+                s2 = this._children[e2 - 1];
+              } else
+                s2 = this._activeTouches[o3], (s2 == null ? void 0 : s2.handleInteraction(h2, n2, t2)) && "touchmove" !== t2.type && (this._activeTouches[o3] = null);
             }
           }
           break;
         case "mousedown":
         case "mousemove":
         case "mouseup":
-          let { offsetX: c, offsetY: l } = t;
-          for (i && (c += i.left, l += i.top); s && !s.handleInteraction(c, l, t); )
-            s = s.last;
+          let { offsetX: d2, offsetY: l2 } = t2;
+          for (i2 && (d2 += i2.left, l2 += i2.top); s2 && !s2.handleInteraction(d2, l2, t2); )
+            s2 = s2.last;
           break;
         case "wheel":
-          const { deltaX: u, deltaY: p } = t, _ = 20, v = u === 0 ? 0 : u > 0 ? _ : -_, C = p === 0 ? 0 : p > 0 ? _ : -_;
-          this.panViewport(i.left + v, i.top + C, !0);
-          break;
+          const { deltaX: c2, deltaY: u2 } = t2, p2 = 20, _2 = 0 === c2 ? 0 : c2 > 0 ? p2 : -p2, g2 = 0 === u2 ? 0 : u2 > 0 ? p2 : -p2;
+          this.panViewport(i2.left + _2, i2.top + g2, true);
       }
-    this._preventDefaults && (t.stopPropagation(), t.preventDefault()), this._animate || this.invalidate();
+    this._preventDefaults && (t2.stopPropagation(), t2.preventDefault()), this._animate || this.invalidate();
   }
-  /* protected methods */
-  /**
-   * the render loop drawing the Objects onto the Canvas, shouldn't be
-   * invoked directly but by the animation loop or an update request
-   *
-   * @param {DOMHighResTimeStamp} now time elapsed since document time origin
-   */
-  render(t = 0) {
-    this._renderPending = !1;
-    const e = t - this._lastRender;
-    if (this._animate && e / this._renderInterval < 0.999) {
-      this._renderId = window.requestAnimationFrame(this._renderHandler), this._lastRaf = t;
-      return;
-    }
-    this._aFps = 1e3 / (t - this._lastRaf);
-    let i;
-    this._fps > y ? i = this._fps / this._aFps : this._fps === y && this._aFps > it ? i = 1 : i = 1 / (this._fps / this._aFps), this._lastRaf = t, this._lastRender = t - e % this._renderInterval, this._enqueuedSize && this.updateCanvasSize();
-    let s;
-    const n = this._width, a = this._height;
-    this._bgColor ? this._renderer.drawRect(0, 0, n, a, this._bgColor) : this._renderer.clearRect(0, 0, n, a);
-    const r = typeof this._updateHandler == "function";
-    for (r && this._updateHandler(t, i), s = this._children[0]; s; )
-      r || s.update(t, i), s.draw(this._renderer, this._viewport), s = s.next;
-    if (!this._disposed && this._animate && (this._renderPending = !0, this._renderId = window.requestAnimationFrame(this._renderHandler)), this.DEBUG && t > 2) {
-      const d = window.performance.now() - t;
-      this.benchmark.minElapsed = Math.min(this.benchmark.minElapsed, d), this.benchmark.maxElapsed = Math.max(this.benchmark.maxElapsed, d), this._aFps !== 1 / 0 && (this.benchmark.minFps = Math.min(this.benchmark.minFps, this._aFps), this.benchmark.maxFps = Math.max(this.benchmark.maxFps, this._aFps));
+  render(t2 = 0) {
+    this._renderPending = false;
+    const e2 = t2 - this._lastRender;
+    if (this._animate && e2 / this._renderInterval < 0.999)
+      return this._renderId = window.requestAnimationFrame(this._renderHandler), void (this._lastRaf = t2);
+    let i2, s2;
+    this._aFps = 1e3 / (t2 - this._lastRaf), i2 = this._fps > 60 ? this._fps / this._aFps : 60 === this._fps && this._aFps > 63 ? 1 : 1 / (this._fps / this._aFps), this._lastRaf = t2, this._lastRender = t2 - e2 % this._renderInterval, this._enqueuedSize && this.updateCanvasSize();
+    const h2 = this._width, n2 = this._height;
+    this._bgColor ? this._renderer.drawRect(0, 0, h2, n2, this._bgColor) : this._renderer.clearRect(0, 0, h2, n2);
+    const r2 = "function" == typeof this._updateHandler;
+    for (r2 && this._updateHandler(t2, i2), s2 = this._children[0]; s2; )
+      r2 || s2.update(t2, i2), s2.draw(this._renderer, this._viewport), s2 = s2.next;
+    if (!this._disposed && this._animate && (this._renderPending = true, this._renderId = window.requestAnimationFrame(this._renderHandler)), this.DEBUG && t2 > 2) {
+      const e3 = window.performance.now() - t2;
+      this.benchmark.minElapsed = Math.min(this.benchmark.minElapsed, e3), this.benchmark.maxElapsed = Math.max(this.benchmark.maxElapsed, e3), this._aFps !== 1 / 0 && (this.benchmark.minFps = Math.min(this.benchmark.minFps, this._aFps), this.benchmark.maxFps = Math.max(this.benchmark.maxFps, this._aFps));
     }
   }
-  /**
-   * sprites have no HTML elements, the actual HTML listeners are
-   * added onto the canvas, the Canvas will delegate events onto
-   * the "children" of the canvas' Display List
-   */
   addListeners() {
-    this._eventHandler || (this._eventHandler = new P());
-    const t = this._eventHandler, e = this.handleInteraction.bind(this), i = this._element;
-    "ontouchstart" in window && ["start", "move", "end", "cancel"].forEach((s) => {
-      t.add(i, `touch${s}`, e);
-    }), ["down", "move"].forEach((s) => {
-      t.add(i, `mouse${s}`, e);
-    }), t.add(window, "mouseup", e), this._viewport && t.add(i, "wheel", e), this._stretchToFit && t.add(window, "resize", () => {
+    this._eventHandler || (this._eventHandler = new t());
+    const e2 = this._eventHandler, i2 = this.handleInteraction.bind(this), s2 = this._element;
+    "ontouchstart" in window && ["start", "move", "end", "cancel"].forEach((t2) => {
+      e2.add(s2, `touch${t2}`, i2);
+    }), ["down", "move"].forEach((t2) => {
+      e2.add(s2, `mouse${t2}`, i2);
+    }), e2.add(window, "mouseup", i2), this._viewport && e2.add(s2, "wheel", i2), this._stretchToFit && e2.add(window, "resize", () => {
       this.stretchToFit(this._stretchToFit);
     });
   }
   removeListeners() {
-    var t;
-    (t = this._eventHandler) == null || t.dispose(), this._eventHandler = void 0;
+    var _a;
+    (_a = this._eventHandler) == null ? void 0 : _a.dispose(), this._eventHandler = void 0;
   }
-  /**
-   * return the bounding box of the canvas Element in the DOM
-   */
   getCoordinate() {
-    return this._coords === void 0 && (this._coords = this._element.getBoundingClientRect()), this._coords;
+    return void 0 === this._coords && (this._coords = this._element.getBoundingClientRect()), this._coords;
   }
   updateCanvasSize() {
-    const t = this._HDPIscaleRatio;
-    let e, i;
-    if (this._enqueuedSize && ({ width: e, height: i } = this._enqueuedSize, this._enqueuedSize = void 0, this._width = e, this._height = i), this._viewport) {
-      const s = this._width, n = this._height;
-      e = S(this._viewport.width, s), i = S(this._viewport.height, n);
+    const t2 = this._HDPIscaleRatio;
+    let e2, i2;
+    if (this._enqueuedSize && ({ width: e2, height: i2 } = this._enqueuedSize, this._enqueuedSize = void 0, this._width = e2, this._height = i2), this._viewport) {
+      const t3 = this._width, s2 = this._height;
+      e2 = v(this._viewport.width, t3), i2 = v(this._viewport.height, s2);
     }
-    if (e && i) {
-      const s = this.getElement();
-      this._renderer.setDimensions(e * t, i * t), s.style.width = `${e}px`, s.style.height = `${i}px`;
+    if (e2 && i2) {
+      const s2 = this.getElement();
+      this._renderer.setDimensions(e2 * t2, i2 * t2), s2.style.width = `${e2}px`, s2.style.height = `${i2}px`;
     }
-    this._renderer.scale(t, t), this.setSmoothing(this._smoothing), this._coords = void 0;
+    this._renderer.scale(t2, t2), this.setSmoothing(this._smoothing), this._coords = void 0;
   }
 }
-const st = (h, t) => {
-  const { left: e, top: i } = h;
-  return e + h.width >= t.left && e <= t.right && i + h.height >= t.top && i <= t.bottom;
-}, nt = (h, t) => {
-  let { left: e, top: i, width: s, height: n } = h;
-  const {
-    left: a,
-    top: r,
-    width: d,
-    height: o
-  } = t;
-  return e > a ? s = Math.min(s, d - (e - a)) : s = Math.min(d, s - (a - e)), i > r ? n = Math.min(n, o - (i - r)) : n = Math.min(o, n - (r - i)), {
-    src: {
-      // NOTE by default all Sprites draw their content from top left coordinate
-      // we only correct for this if the visible area starts within the viewport
-      left: e > a ? 0 : a - e,
-      top: i > r ? 0 : r - i,
-      width: s,
-      height: n
-    },
-    dest: {
-      left: e > a ? e - a : 0,
-      top: i > r ? i - r : 0,
-      width: s,
-      height: n
-    }
-  };
-}, { min: b, max: w } = Math, m = 0.5;
-class at {
-  // coordinates of the event at the moment drag was started
-  constructor({
-    width: t,
-    height: e,
-    resourceId: i,
-    x: s = 0,
-    y: n = 0,
-    collidable: a = !1,
-    interactive: r = !1,
-    mask: d = !1,
-    sheet: o = [],
-    sheetTileWidth: c = 0,
-    sheetTileHeight: l = 0
-  } = { width: 64, height: 64 }) {
-    if (this.hover = !1, this.isDragging = !1, this._children = [], this._disposed = !1, this._mask = !1, this._interactive = !1, this._draggable = !1, this._keepInBounds = !1, this._pressed = !1, t <= 0 || e <= 0)
+const { min: y, max: R } = Math, C = 0.5;
+class G {
+  constructor({ width: t2, height: e2, resourceId: i2, x: s2 = 0, y: h2 = 0, collidable: n2 = false, interactive: r2 = false, mask: a2 = false, sheet: o2 = [], sheetTileWidth: d2 = 0, sheetTileHeight: l2 = 0 } = { width: 64, height: 64 }) {
+    if (this.hover = false, this.isDragging = false, this._children = [], this._disposed = false, this._mask = false, this._interactive = false, this._draggable = false, this._keepInBounds = false, this._pressed = false, t2 <= 0 || e2 <= 0)
       throw new Error("cannot construct a zSprite without valid dimensions");
-    if (this.collidable = a, this._mask = d, this._bounds = { left: 0, top: 0, width: t, height: e }, this.setX(s), this.setY(n), this.setInteractive(r), i && this.setResource(i), Array.isArray(o) && o.length > 0) {
-      if (!i)
+    if (this.collidable = n2, this._mask = a2, this._bounds = { left: 0, top: 0, width: t2, height: e2 }, this.setX(s2), this.setY(h2), this.setInteractive(r2), i2 && this.setResource(i2), Array.isArray(o2) && o2.length > 0) {
+      if (!i2)
         throw new Error("cannot use a spritesheet without a valid resource id");
-      this.setSheet(o, c, l);
+      this.setSheet(o2, d2, l2);
     }
   }
-  /* public methods */
-  /**
-   * whether the Sprite is draggable
-   */
   getDraggable() {
     return this._draggable;
   }
-  /**
-   * toggle the draggable mode of this Sprite
-   *
-   * @param {boolean} draggable whether we want to activate / deactivate the dragging mode
-   * @param {Boolean=} keepInBounds optional, whether we should keep dragging within bounds
-   *                   this will default to the bounds of the canvas, or can be a custom
-   *                   restraint (see "setConstraint")
-   */
-  setDraggable(t, e = !1) {
-    this._draggable = t, this._keepInBounds = this._constraint ? !0 : e, t && !this._interactive && this.setInteractive(!0);
+  setDraggable(t2, e2 = false) {
+    this._draggable = t2, this._keepInBounds = !!this._constraint || e2, t2 && !this._interactive && this.setInteractive(true);
   }
   getX() {
     return this._bounds.left;
   }
-  setX(t) {
-    const e = t - this._bounds.left;
-    this._bounds.left = this._constraint ? t + this._constraint.left : t;
-    let i = this._children[0];
-    for (; i; )
-      i.isDragging || i.setX(i._bounds.left + e), i = i.next;
+  setX(t2) {
+    const e2 = t2 - this._bounds.left;
+    this._bounds.left = this._constraint ? t2 + this._constraint.left : t2;
+    let i2 = this._children[0];
+    for (; i2; )
+      i2.isDragging || i2.setX(i2._bounds.left + e2), i2 = i2.next;
   }
   getY() {
     return this._bounds.top;
   }
-  setY(t) {
-    const e = t - this._bounds.top;
-    this._bounds.top = this._constraint ? t + this._constraint.top : t;
-    let i = this._children[0];
-    for (; i; )
-      i.isDragging || i.setY(i._bounds.top + e), i = i.next;
+  setY(t2) {
+    const e2 = t2 - this._bounds.top;
+    this._bounds.top = this._constraint ? t2 + this._constraint.top : t2;
+    let i2 = this._children[0];
+    for (; i2; )
+      i2.isDragging || i2.setY(i2._bounds.top + e2), i2 = i2.next;
   }
   getWidth() {
     return this._bounds.width;
   }
-  setWidth(t) {
-    const e = this._bounds.width || 0;
-    e !== t && (this._bounds.width = t, e !== 0 && (this._bounds.left -= t * m - e * m), this.invalidate());
+  setWidth(t2) {
+    const e2 = this._bounds.width || 0;
+    e2 !== t2 && (this._bounds.width = t2, 0 !== e2 && (this._bounds.left -= t2 * C - e2 * C), this.invalidate());
   }
   getHeight() {
     return this._bounds.height;
   }
-  setHeight(t) {
-    const e = this._bounds.height || 0;
-    e !== t && (this._bounds.height = t, e !== 0 && (this._bounds.top -= t * m - e * m), this.invalidate());
+  setHeight(t2) {
+    const e2 = this._bounds.height || 0;
+    e2 !== t2 && (this._bounds.height = t2, 0 !== e2 && (this._bounds.top -= t2 * C - e2 * C), this.invalidate());
   }
-  /**
-   * update the position of this Sprite, where setX and setY operate directly on the
-   * Sprites coordinates, this method validates the requested coordinates against the
-   * defined constraints of this Sprite to ensure it remains within the constraints
-   *
-   * @param {number} left desired x-coordinate
-   * @param {number} top desired y-coordinate
-   * @param {number=} width optionally desired width, defaults to current size
-   * @param {number=} height optionally desired width, defaults to current size
-   */
-  setBounds(t, e, i, s) {
+  setBounds(t2, e2, i2, s2) {
     if (this._constraint)
-      t -= this._constraint.left, e -= this._constraint.top;
+      t2 -= this._constraint.left, e2 -= this._constraint.top;
     else if (!this.canvas)
       throw new Error("cannot update position of a Sprite that has no constraint or is not added to a canvas");
-    let n = !1;
-    typeof i == "number" && (n = this._bounds.width !== i, this._bounds.width = i), typeof s == "number" && (n = n || this._bounds.height !== s, this._bounds.height = s);
-    const a = this._bounds.width, r = this._bounds.height, d = this._constraint ? this._constraint.width : this.canvas.getWidth(), o = this._constraint ? this._constraint.height : this.canvas.getHeight();
+    let h2 = false;
+    "number" == typeof i2 && (h2 = this._bounds.width !== i2, this._bounds.width = i2), "number" == typeof s2 && (h2 = h2 || this._bounds.height !== s2, this._bounds.height = s2);
+    const n2 = this._bounds.width, r2 = this._bounds.height, a2 = this._constraint ? this._constraint.width : this.canvas.getWidth(), o2 = this._constraint ? this._constraint.height : this.canvas.getHeight();
     if (this._keepInBounds) {
-      const c = b(0, -(a - d)), l = b(0, -(r - o)), u = d - a, p = o - r;
-      t = b(u, w(t, c)), e = b(p, w(e, l));
+      const i3 = y(0, -(n2 - a2)), s3 = y(0, -(r2 - o2)), h3 = o2 - r2;
+      t2 = y(a2 - n2, R(t2, i3)), e2 = y(h3, R(e2, s3));
     } else
-      t > d && (t = t + a * m), e > o && (e = e + r * m);
-    this.setX(t), this.setY(e), n && this.invalidate();
+      t2 > a2 && (t2 += n2 * C), e2 > o2 && (e2 += r2 * C);
+    this.setX(t2), this.setY(e2), h2 && this.invalidate();
   }
   getBounds() {
     return this._bounds;
   }
-  /**
-   * whether this Sprite is interactive (should responds to user
-   * interactions such as mouse hover, mouse clicks / touches, etc.)
-   */
   getInteractive() {
     return this._interactive;
   }
-  /**
-   * toggle whether this Sprite can receive user interaction events, when
-   * false this Sprite is omitted from "handleInteraction"-queries
-   * executed when the user interacts with the parent StageCanvas element
-   */
-  setInteractive(t) {
-    this._interactive = t;
+  setInteractive(t2) {
+    this._interactive = t2;
   }
-  /**
-   * invoked on each render cycle before the draw-method is invoked, you can override this in your subclass
-   * for custom logic / animation such as updating the state of this Object (like position, size, etc.)
-   *
-   * (!) this method will NOT fire if "onUpdate" was provided to the canvas, onUpdate can be used to
-   * centralize all update logic (e.g. for game loops)
-   *
-   * @public
-   * @param {DOMHighResTimeStamp} now the current timestamp relative
-   *                              to the document time origin. Can be used
-   *                              to perform strict timed operations.
-   * @param {number} framesSinceLastUpdate the amount of frames that have elapsed
-   *                 since the last update. This should usually equal 1 but can
-   *                 be higher / lower at canvas frame rates other than the device framerate.
-   *                 This value can be used to calculate appropriate values for timed operations
-   *                 (e.g. animation speed) to compensate for dropped frames
-   */
-  update(t, e) {
-    let i = this._children[0];
-    for (; i; )
-      i.update(t, e), i = i.next;
-    this._animation && this.updateAnimation(e);
+  update(t2, e2) {
+    let i2 = this._children[0];
+    for (; i2; )
+      i2.update(t2, e2), i2 = i2.next;
+    this._animation && this.updateAnimation(e2);
   }
-  /**
-   * invoked by the canvas whenever it renders a new frame / updates the on-screen contents
-   * this is where the Sprite is responsible for rendering its contents onto the screen
-   * By default, it will render it's Bitmap image/spritesheet at its described coordinates and dimensions,
-   * but you can override this method for your own custom rendering logic (e.g. drawing custom shapes)
-   *
-   * @param {IRenderer} renderer to draw on
-   * @param {Viewport=} viewport optional viewport defining the currently visible canvas area
-   */
-  draw(t, e) {
+  draw(t2, e2) {
     if (!this.canvas)
       return;
-    const i = this._bounds;
-    let s = !!this._resourceId;
-    s && e && (s = st(i, e));
-    let n = this._mask;
-    if (n && t.save(), this._mask && t.setBlendMode("destination-in"), s) {
-      const r = this._animation;
-      let { left: d, top: o, width: c, height: l } = i;
-      if (r) {
-        const u = r.tileWidth ? r.tileWidth : m + c << 0, p = r.tileHeight ? r.tileHeight : m + l << 0;
-        e && (d -= e.left, o -= e.top), t.drawImageCropped(
-          this._resourceId,
-          r.col * u,
-          // tile x offset
-          r.type.row * p,
-          // tile y offset
-          u,
-          p,
-          d,
-          o,
-          c,
-          l
-        );
-      } else if (e) {
-        const { src: u, dest: p } = nt(i, e);
-        t.drawImageCropped(
-          this._resourceId,
-          u.left,
-          u.top,
-          u.width,
-          u.height,
-          p.left,
-          p.top,
-          p.width,
-          p.height
-        );
+    const i2 = this._bounds;
+    let s2 = !!this._resourceId;
+    s2 && e2 && (s2 = ((t3, e3) => {
+      const { left: i3, top: s3 } = t3;
+      return i3 + t3.width >= e3.left && i3 <= e3.right && s3 + t3.height >= e3.top && s3 <= e3.bottom;
+    })(i2, e2));
+    let h2 = this._mask;
+    if (h2 && t2.save(), this._mask && t2.setBlendMode("destination-in"), s2) {
+      const s3 = this._animation;
+      let { left: h3, top: n3, width: r2, height: a2 } = i2;
+      if (s3) {
+        const i3 = s3.tileWidth ? s3.tileWidth : C + r2 << 0, o2 = s3.tileHeight ? s3.tileHeight : C + a2 << 0;
+        e2 && (h3 -= e2.left, n3 -= e2.top), t2.drawImageCropped(this._resourceId, s3.col * i3, s3.type.row * o2, i3, o2, h3, n3, r2, a2);
+      } else if (e2) {
+        const { src: s4, dest: h4 } = ((t3, e3) => {
+          let { left: i3, top: s5, width: h5, height: n4 } = t3;
+          const { left: r3, top: a3, width: o2, height: d2 } = e3;
+          return h5 = i3 > r3 ? Math.min(h5, o2 - (i3 - r3)) : Math.min(o2, h5 - (r3 - i3)), n4 = s5 > a3 ? Math.min(n4, d2 - (s5 - a3)) : Math.min(d2, n4 - (a3 - s5)), { src: { left: i3 > r3 ? 0 : r3 - i3, top: s5 > a3 ? 0 : a3 - s5, width: h5, height: n4 }, dest: { left: i3 > r3 ? i3 - r3 : 0, top: s5 > a3 ? s5 - a3 : 0, width: h5, height: n4 } };
+        })(i2, e2);
+        t2.drawImageCropped(this._resourceId, s4.left, s4.top, s4.width, s4.height, h4.left, h4.top, h4.width, h4.height);
       } else
-        t.drawImage(this._resourceId, d, o, c, l);
+        t2.drawImage(this._resourceId, h3, n3, r2, a2);
     }
-    let a = this._children[0];
-    for (; a; )
-      a.draw(t, e), a = a.next;
-    this._mask && t.setBlendMode("source-over"), this.canvas.DEBUG && t.drawRect(this.getX(), this.getY(), this.getWidth(), this.getHeight(), "#FF0000", "stroke"), n && t.restore();
+    let n2 = this._children[0];
+    for (; n2; )
+      n2.draw(t2, e2), n2 = n2.next;
+    this._mask && t2.setBlendMode("source-over"), this.canvas.DEBUG && t2.drawRect(this.getX(), this.getY(), this.getWidth(), this.getHeight(), "#FF0000", "stroke"), h2 && t2.restore();
   }
-  /**
-   * evaluates whether given coordinate is within the Sprite bounds
-   */
-  insideBounds(t, e) {
-    const { left: i, top: s, width: n, height: a } = this._bounds;
-    return t >= i && t <= i + n && e >= s && e <= s + a;
+  insideBounds(t2, e2) {
+    const { left: i2, top: s2, width: h2, height: n2 } = this._bounds;
+    return t2 >= i2 && t2 <= i2 + h2 && e2 >= s2 && e2 <= s2 + n2;
   }
-  /**
-   * queries the bounding box of another sprite to check whether it overlaps the bounding box of this sprite, this
-   * can be used as a fast method to detect collisions, though note it is less accurate than checking at the pixel
-   * level as it will match the entire bounding box, and omit checking for (for instance) transparent areas!
-   *
-   * @param {Sprite} sprite the sprite to check against
-   * @return {boolean} whether a collision has been detected
-   */
-  collidesWith(t) {
-    if (t === this)
-      return !1;
-    const e = this._bounds, i = t.getBounds();
-    return !(e.top + e.height < i.top || e.top > i.top + i.height || e.left + e.width < i.left || e.left > i.left + i.width);
+  collidesWith(t2) {
+    if (t2 === this)
+      return false;
+    const e2 = this._bounds, i2 = t2.getBounds();
+    return !(e2.top + e2.height < i2.top || e2.top > i2.top + i2.height || e2.left + e2.width < i2.left || e2.left > i2.left + i2.width);
   }
-  /**
-   * get the intersection area where given aSprite collides with this sprite
-   * returns undefined if no intersection occurs
-   */
-  getIntersection(t) {
-    if (this.collidesWith(t)) {
-      const e = this._bounds, i = t.getBounds(), s = w(e.left, i.left), n = w(e.top, i.top), a = b(e.left + e.width, i.width + i.height) - s, r = b(e.top + e.height, i.top + i.height) - n;
-      return { left: s, top: n, width: a, height: r };
+  getIntersection(t2) {
+    if (this.collidesWith(t2)) {
+      const e2 = this._bounds, i2 = t2.getBounds(), s2 = R(e2.left, i2.left), h2 = R(e2.top, i2.top);
+      return { left: s2, top: h2, width: y(e2.left + e2.width, i2.width + i2.height) - s2, height: y(e2.top + e2.height, i2.top + i2.height) - h2 };
     }
   }
-  /**
-   * queries the bounding box of another sprite to check whether its edges collide
-   * with the edges of this sprite, this can be used as a fast method to detect whether
-   * movement should be impaired on either side of this sprite (for instance wall collision detection)
-   *
-   * NOTE : ONLY query against results of canvas' "getChildrenUnderPoint"-method as for brevity (and speeds)
-   * sake, we only check the desired plane, and not against the other axis.
-   *
-   * @public
-   * @param {Sprite} sprite the sprite to check against
-   * @param {number} edge the edge to check 0 = left, 1 = above, 2 = right, 3 = below this is relative
-   *                 to the edge of THIS sprite
-   *
-   * @return {boolean} whether collision with the given edge has been detected
-   */
-  collidesWithEdge(t, e) {
-    if (t === this)
-      return !1;
-    if (isNaN(e) || e < 0 || e > 3)
+  collidesWithEdge(t2, e2) {
+    if (t2 === this)
+      return false;
+    if (isNaN(e2) || e2 < 0 || e2 > 3)
       throw new Error("invalid argument for edge");
-    switch (e) {
+    switch (e2) {
       case 0:
-        return this.getX() <= t.getX() + t.getWidth();
+        return this.getX() <= t2.getX() + t2.getWidth();
       case 1:
-        return this.getY() <= t.getY() + t.getHeight();
+        return this.getY() <= t2.getY() + t2.getHeight();
       case 2:
-        return this.getX() + this.getWidth() <= t.getX();
+        return this.getX() + this.getWidth() <= t2.getX();
       case 3:
-        return this.getY() + this.getHeight() >= t.getY();
+        return this.getY() + this.getHeight() >= t2.getY();
     }
-    return !1;
+    return false;
   }
-  /**
-   * update / replace the Image contents of this Sprite, can be used
-   * to swap spritesheets (for instance)
-   *
-   * @param {string} resourceId
-   * @param {number=} width optional new width to use for this Sprites bounds
-   * @param {number=} height optional new width to use for this Sprites bounds
-   */
-  setResource(t, e, i) {
-    this._resourceId = t;
-    const s = typeof e == "number", n = typeof i == "number";
-    if (s && this.setWidth(e), n && this.setHeight(i), this._keepInBounds && this.canvas && (s || n)) {
-      const a = -(this._bounds.width - this.canvas.getWidth()), r = -(this._bounds.height - this.canvas.getHeight());
-      this._bounds.left > 0 ? this._bounds.left = 0 : this._bounds.left < a && (this._bounds.left = a), this._bounds.top > 0 ? this._bounds.top = 0 : this._bounds.top < r && (this._bounds.top = r);
+  setResource(t2, e2, i2) {
+    this._resourceId = t2;
+    const s2 = "number" == typeof e2, h2 = "number" == typeof i2;
+    if (s2 && this.setWidth(e2), h2 && this.setHeight(i2), this._keepInBounds && this.canvas && (s2 || h2)) {
+      const t3 = -(this._bounds.width - this.canvas.getWidth()), e3 = -(this._bounds.height - this.canvas.getHeight());
+      this._bounds.left > 0 ? this._bounds.left = 0 : this._bounds.left < t3 && (this._bounds.left = t3), this._bounds.top > 0 ? this._bounds.top = 0 : this._bounds.top < e3 && (this._bounds.top = e3);
     }
   }
   getResourceId() {
     return this._resourceId;
   }
-  /**
-   * Define the sprite sheet for this Sprite to use tile based animation
-   * from its Bitmap, use in conjunction with setResource()
-   *
-   * @param {SpriteSheet[]} sheet
-   * @param {number=} width optional width to use for a single tile, defaults to Sprite bounds width
-   * @param {number=} height optional height to use for a single tile, defaults to Sprite bounds height
-   */
-  setSheet(t, e, i) {
-    if (this._sheet = t, !t) {
-      this._animation = void 0;
-      return;
-    }
-    this._animation = {
-      type: null,
-      col: 0,
-      // which horizontal tile in the sprite sheet is current
-      maxCol: 0,
-      // the maximum horizontal index that is allowed before the animation should loop
-      fpt: 0,
-      // "frames per tile" what is the max number of count before we switch tile
-      counter: 0,
-      // the frame counter that is increased on each frame render
-      tileWidth: this.getWidth(),
-      tileHeight: this.getHeight()
-    }, typeof e == "number" && (this._animation.tileWidth = e), typeof i == "number" && (this._animation.tileHeight = i), this.switchAnimation(0);
+  setSheet(t2, e2, i2) {
+    this._sheet = t2, t2 ? (this._animation = { type: null, col: 0, maxCol: 0, fpt: 0, counter: 0, tileWidth: this.getWidth(), tileHeight: this.getHeight() }, "number" == typeof e2 && (this._animation.tileWidth = e2), "number" == typeof i2 && (this._animation.tileHeight = i2), this.switchAnimation(0)) : this._animation = void 0;
   }
-  /**
-   * switch the current animation that should be playing from this Sprites tile sheet
-   *
-   * @param {number} sheetIndex index of the animation as defined in the _tileSheet Array
-   */
-  switchAnimation(t) {
-    const e = this._animation, i = this._sheet[t];
-    e.type = i, e.fpt = i.fpt, e.maxCol = i.col + (i.amount - 1), e.col = i.col, e.counter = 0, e.onComplete = i.onComplete;
+  switchAnimation(t2) {
+    const e2 = this._animation, i2 = this._sheet[t2];
+    e2.type = i2, e2.fpt = i2.fpt, e2.maxCol = i2.col + (i2.amount - 1), e2.col = i2.col, e2.counter = 0, e2.onComplete = i2.onComplete;
   }
-  /**
-   * set a reference to the parent sprite containing this one
-   */
-  setParent(t) {
-    this._parent = t;
+  setParent(t2) {
+    this._parent = t2;
   }
   getParent() {
     return this._parent;
   }
-  /**
-   * set a reference to the canvas that is rendering this sprite
-   */
-  setCanvas(t) {
-    this.canvas = t;
-    for (const e of this._children)
-      e.setCanvas(t);
+  setCanvas(t2) {
+    this.canvas = t2;
+    for (const e2 of this._children)
+      e2.setCanvas(t2);
   }
-  /**
-   * a Sprite can be constrained in its movement (when dragging) to ensure it remains
-   * within desired boundaries
-   *
-   * a parent constraint specifies the boundaries of this Sprites "container"
-   * which can be used when dragging this sprite within boundaries. this constraint
-   * will by default be equal to the canvas' dimensions (when "setCanvas" is invoked)
-   * but this method can be invoked to override it to a custom Rectangle
-   */
-  setConstraint(t, e, i, s) {
-    return this._constraint = { left: t, top: e, width: i, height: s }, this._bounds.left = w(t, this._bounds.left), this._bounds.top = w(e, this._bounds.top), this._keepInBounds = !0, this.getConstraint();
+  setConstraint(t2, e2, i2, s2) {
+    return this._constraint = { left: t2, top: e2, width: i2, height: s2 }, this._bounds.left = R(t2, this._bounds.left), this._bounds.top = R(e2, this._bounds.top), this._keepInBounds = true, this.getConstraint();
   }
   getConstraint() {
     return this._constraint;
   }
-  /**
-   * append another Sprite to the display list of this sprite
-   *
-   * @param {Sprite} child to append
-   * @return {Sprite} this object - for chaining purposes
-   */
-  addChild(t) {
-    if (this.contains(t))
+  addChild(t2) {
+    if (this.contains(t2))
       return this;
-    const e = this._children.length;
-    return e > 0 && (t.last = this._children[e - 1], t.last.next = t, t.next = void 0), t.setCanvas(this.canvas), t.setParent(this), this._children.push(t), this.invalidate(), this;
+    const e2 = this._children.length;
+    return e2 > 0 && (t2.last = this._children[e2 - 1], t2.last.next = t2, t2.next = void 0), t2.setCanvas(this.canvas), t2.setParent(this), this._children.push(t2), this.invalidate(), this;
   }
-  /**
-   * remove a child Sprite from this sprites display list
-   *
-   * @param {Sprite} child the child to remove
-   * @return {Sprite} the removed child
-   */
-  removeChild(t) {
-    t.setParent(void 0), t.setCanvas(void 0);
-    const e = this._children.indexOf(t);
-    e !== -1 && this._children.splice(e, 1);
-    const i = t.last, s = t.next;
-    return i && (i.next = s), s && (s.last = i), t.last = t.next = void 0, this.invalidate(), t;
+  removeChild(t2) {
+    t2.setParent(void 0), t2.setCanvas(void 0);
+    const e2 = this._children.indexOf(t2);
+    -1 !== e2 && this._children.splice(e2, 1);
+    const i2 = t2.last, s2 = t2.next;
+    return i2 && (i2.next = s2), s2 && (s2.last = i2), t2.last = t2.next = void 0, this.invalidate(), t2;
   }
-  /**
-   * get a child of this Sprite by its index in the Display List
-   *
-   * @param {number} index of the object in the Display List
-   * @return {Sprite} the Sprite present at the given index
-   */
-  getChildAt(t) {
-    return this._children[t];
+  getChildAt(t2) {
+    return this._children[t2];
   }
-  /**
-   * remove a child from this object's Display List at the given index
-   *
-   * @param {number} index of the object to remove
-   * @return {Sprite} the Sprite removed at the given index
-   */
-  removeChildAt(t) {
-    return this.removeChild(this.getChildAt(t));
+  removeChildAt(t2) {
+    return this.removeChild(this.getChildAt(t2));
   }
-  /**
-   * @return {number} the amount of children in this object's Display List
-   */
   numChildren() {
     return this._children.length;
   }
   getChildren() {
     return this._children;
   }
-  /**
-   * check whether a given display object is present in this object's display list
-   */
-  contains(t) {
-    return t._parent === this;
+  contains(t2) {
+    return t2._parent === this;
   }
-  /**
-   * clean up all resources allocated to this Sprite
-   */
   dispose() {
     if (this._disposed)
       return;
-    this._disposed = !0, this._parent && this._parent.removeChild(this);
-    let t = this._children.length;
-    for (; t--; ) {
-      const e = this._children[t];
-      e.dispose(), e.next = void 0, e.last = void 0;
+    this._disposed = true, this._parent && this._parent.removeChild(this);
+    let t2 = this._children.length;
+    for (; t2--; ) {
+      const e2 = this._children[t2];
+      e2.dispose(), e2.next = void 0, e2.last = void 0;
     }
     this._children = [];
   }
-  /* event handlers */
-  /**
-   * invoked when the user clicks / touches this sprite, NOTE : this
-   * is a "down"-handler and indicates the sprite has just been touched
-   *
-   * @param {number} x position of the touch / cursor
-   * @param {number} y position of the touch / cursor
-   * @param {Event} event the original event that triggered this action
-   */
-  // @ts-expect-error TS6133 unused parameters. They are here to provide a clear API for overrides in subclasses
-  handlePress(t, e, i) {
+  handlePress(t2, e2, i2) {
   }
-  /**
-   * invoked when the user releases touch of this (previously pressed) Sprite
-   *
-   * @param {number} x position of the touch / cursor
-   * @param {number} y position of the touch / cursor
-   * @param {Event} event the original event that triggered this action
-   */
-  // @ts-expect-error TS6133 unused parameters. They are here to provide a clear API for overrides in subclasses
-  handleRelease(t, e, i) {
+  handleRelease(t2, e2, i2) {
   }
-  /**
-   * invoked when user has clicked / tapped this Sprite, this indicates
-   * the user has pressed and released within 250 ms
-   */
   handleClick() {
   }
-  /**
-   * move handler, invoked by the "handleInteraction"-method
-   * to delegate drag logic
-   */
-  // @ts-expect-error TS6133 unused parameters. They are here to provide a clear API for overrides in subclasses
-  handleMove(t, e, i) {
-    const s = this._dragStartOffset.x + (t - this._dragStartEventCoordinates.x), n = this._dragStartOffset.y + (e - this._dragStartEventCoordinates.y);
-    this.setBounds(s, n, this._bounds.width, this._bounds.height);
+  handleMove(t2, e2, i2) {
+    const s2 = this._dragStartOffset.x + (t2 - this._dragStartEventCoordinates.x), h2 = this._dragStartOffset.y + (e2 - this._dragStartEventCoordinates.y);
+    this.setBounds(s2, h2, this._bounds.width, this._bounds.height);
   }
-  /**
-   * invoked when the user interacts with the canvas, this method evaluates
-   * the event data and checks whether it applies to this sprite and
-   * when it does, applicable delegate handlers will be invoked on this Object
-   * (see "handlePress", "handleRelease", "handleClick", "handleMove")
-   *
-   * do NOT override this method, override the individual "protected" handlers instead
-   *
-   * @param {number} x the events X offset, passed for quick evaluation of position updates
-   * @param {number} y the events Y offset, passed for quick evaluation of position updates
-   * @param {Event} event the original event that triggered this action
-   * @return {boolean} whether this Sprite is handling the event
-   */
-  handleInteraction(t, e, i) {
-    let s = !1, n;
-    const a = this._children.length;
-    if (a > 0)
-      for (n = this._children[a - 1]; n; ) {
-        if (s = n.handleInteraction(t, e, i), s)
-          return !0;
-        n = n.last;
+  handleInteraction(t2, e2, i2) {
+    let s2, h2 = false;
+    const n2 = this._children.length;
+    if (n2 > 0)
+      for (s2 = this._children[n2 - 1]; s2; ) {
+        if (h2 = s2.handleInteraction(t2, e2, i2), h2)
+          return true;
+        s2 = s2.last;
       }
     if (!this._interactive)
-      return !1;
-    const { type: r } = i;
-    if (this._pressed && (r === "touchend" || r === "mouseup"))
-      return this._pressed = !1, this.isDragging && (this.isDragging = !1), Date.now() - this._pressTime < 250 && this.handleClick(), this.handleRelease(t, e, i), !0;
-    if (this.insideBounds(t, e)) {
-      if (this.hover = !0, r === "touchstart" || r === "mousedown")
-        return this._pressTime = Date.now(), this._pressed = !0, this._draggable && (this.isDragging = !0, this._dragStartOffset = {
-          x: this._bounds.left,
-          y: this._bounds.top
-        }, this._dragStartEventCoordinates = { x: t, y: e }), this.handlePress(t, e, i), r === "touchstart" && (i.stopPropagation(), i.preventDefault()), !0;
+      return false;
+    const { type: r2 } = i2;
+    if (this._pressed && ("touchend" === r2 || "mouseup" === r2))
+      return this._pressed = false, this.isDragging && (this.isDragging = false), Date.now() - this._pressTime < 250 && this.handleClick(), this.handleRelease(t2, e2, i2), true;
+    if (this.insideBounds(t2, e2)) {
+      if (this.hover = true, "touchstart" === r2 || "mousedown" === r2)
+        return this._pressTime = Date.now(), this._pressed = true, this._draggable && (this.isDragging = true, this._dragStartOffset = { x: this._bounds.left, y: this._bounds.top }, this._dragStartEventCoordinates = { x: t2, y: e2 }), this.handlePress(t2, e2, i2), "touchstart" === r2 && (i2.stopPropagation(), i2.preventDefault()), true;
     } else
-      this.hover = !1;
-    return this.isDragging ? (this.handleMove(t, e, i), !0) : !1;
+      this.hover = false;
+    return !!this.isDragging && (this.handleMove(t2, e2, i2), true);
   }
-  /**
-   * Whenever a change has occurred, this Sprite can request an
-   * invalidation of the Canvas to ensure the on screen representation
-   * matches the latest state.
-   */
   invalidate() {
     this.canvas && this.canvas.invalidate();
   }
-  /* protected methods */
-  /**
-   * invoked by the update()-method prior to rendering
-   * this will step between the frames in the tilesheet
-   *
-   * @param {number=} framesSinceLastRender
-   */
-  updateAnimation(t = 1) {
-    const e = this._animation;
-    e.counter += t, e.counter >= e.fpt && (++e.col, e.counter = e.counter % e.fpt), e.col > e.maxCol && (e.col = e.type.col, typeof e.onComplete == "function" && e.onComplete(this));
+  updateAnimation(t2 = 1) {
+    const e2 = this._animation;
+    e2.counter += t2, e2.counter >= e2.fpt && (++e2.col, e2.counter = e2.counter % e2.fpt), e2.col > e2.maxCol && (e2.col = e2.type.col, "function" == typeof e2.onComplete && e2.onComplete(this));
   }
 }
 export {
-  ht as Canvas,
-  at as Sprite,
-  st as isInsideViewport
+  X as Canvas,
+  r as Loader,
+  G as Sprite
 };

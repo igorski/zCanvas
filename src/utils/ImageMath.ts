@@ -20,15 +20,12 @@
  * IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
+import type { Rectangle, Viewport, TransformedDrawBounds } from "../definitions/types";
 
 /**
  * Determines whether a Sprites bounding box is visible within the current viewport.
- *
- * @param {Rectangle} spriteBounds
- * @param {Viewport} viewport
- * @return {boolean}
  */
-export const isInsideViewport = ( spriteBounds, viewport ) => {
+export const isInsideViewport = ( spriteBounds: Rectangle, viewport: Viewport ): boolean => {
     const { left, top } = spriteBounds;
     return ( left + spriteBounds.width )  >= viewport.left && left <= viewport.right &&
            ( top  + spriteBounds.height ) >= viewport.top  && top  <= viewport.bottom;
@@ -44,12 +41,8 @@ export const isInsideViewport = ( spriteBounds, viewport ) => {
  *
  * NOTE: the returned destination coordinates are relative to the canvas, not the viewport !
  * As such this can directly be used with CanvasRenderingContext2D.drawImage()
- *
- * @param {Rectangle} spriteBounds
- * @param {Viewport} viewport
- * @return {TransformedDrawBounds}
  */
-export const calculateDrawRectangle = ( spriteBounds, viewport ) => {
+export const calculateDrawRectangle = ( spriteBounds: Rectangle, viewport: Viewport ): TransformedDrawBounds => {
     let { left, top, width, height } = spriteBounds;
     const {
         left: viewportX,

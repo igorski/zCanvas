@@ -24,7 +24,7 @@ import Loader from "./Loader";
 import type Canvas from "./Canvas";
 import type { Point, Rectangle, SpriteSheet, Viewport } from "./definitions/types";
 import { type IRenderer } from "./rendering/IRenderer";
-import { isInsideViewport, calculateDrawRectangle } from "./utils/image-math";
+import { isInsideViewport, calculateDrawRectangle } from "./utils/ImageMath";
 
 const { min, max } = Math;
 const HALF = 0.5;
