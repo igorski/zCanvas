@@ -70,6 +70,8 @@ onmessage = ( e: MessageEvent ): void => {
         case "drawRect":
         case "drawImage":
         case "drawImageCropped":
+        case "createPattern":
+        case "drawPattern":
             // @ts-expect-error TS2556: A spread argument must either have a tuple type or be passed to a rest parameter.
             renderer && renderer[ ( e.data.cmd as keyof IRenderer )]( ...e.data.args );
             break;

@@ -21,6 +21,7 @@
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 import type { Point, Rectangle, Size } from "./definitions/types";
+import type RenderAPI from "./rendering/RenderAPI";
 import { createCanvas, imageToCanvas } from "./utils/ImageUtil";
 import type Sprite from "./Sprite";
 
@@ -35,7 +36,7 @@ const tempCanvas = createCanvas( 1, 1, true ).cvs;
 export default class Collision {
     private _cacheMap: Map<string, { data: Uint8ClampedArray, size: Size }> = new Map();
 
-    constructor() {}
+    constructor( private _renderer: RenderAPI ) {};
 
     dispose(): void {
         this._cacheMap.clear();
@@ -142,7 +143,11 @@ export default class Collision {
      * Add given Bitmap into the collision cache for faster collision handling
      * at the expense of using more memory
      */
-    cache( resourceId: string, bitmap: ImageBitmap ): void {
+    async cache( resourceId: string ): Promise<boolean> {
+        const bitmap = await this._renderer.getResource( resourceId );
+        if ( !bitmap ) {
+            return false;
+        }
         const { width, height } = bitmap;
 
         imageToCanvas( tempCanvas, bitmap, width, height );
@@ -154,6 +159,8 @@ export default class Collision {
             }
         );
         tempCanvas.width = tempCanvas.height = 1; // free allocated memory
+
+        return true;
     }
     
     /**
@@ -183,7 +190,6 @@ export default class Collision {
      * @param {number[]} pixels Array to write pixels into
      */
     getPixelArray( sprite: Sprite, rect: Rectangle, pixels: number[] ): void {
-
         const resourceId = sprite.getResourceId();
 
         if ( !this.hasCache( resourceId ) ) {

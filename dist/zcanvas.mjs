@@ -121,16 +121,17 @@ class o {
   remove(t2) {
     if (!this.has(t2))
       return false;
-    return this.get(t2).close(), this._map.delete(t2);
+    const e2 = this.get(t2);
+    return "function" == typeof e2.close && e2.close(), this._map.delete(t2);
   }
 }
 const d = 0.5;
 class l {
   constructor(t2) {
-    this._canvas = t2, this._context = t2.getContext("2d"), this._cache = new o();
+    this._canvas = t2, this._context = t2.getContext("2d"), this._cache = new o(), this._patternCache = new o();
   }
   dispose() {
-    this._cache.dispose(), this._cache = void 0, this._canvas = void 0;
+    this._cache.dispose(), this._patternCache.dispose(), this._canvas = void 0;
   }
   cacheResource(t2, e2) {
     this._cache.set(t2, e2);
@@ -198,8 +199,17 @@ class l {
     }
     this._context.drawImage(this._cache.get(t2), d + e2 << 0, d + i2 << 0, d + s2 << 0, d + h2 << 0, d + n2 << 0, d + a2 << 0, d + r2 << 0, d + o2 << 0), c2 && this.restore();
   }
+  createPattern(t2, e2) {
+    this._cache.has(t2) && this._patternCache.set(t2, this._context.createPattern(this._cache.get(t2), e2));
+  }
+  drawPattern(t2, e2, i2, s2, h2) {
+    if (!this._patternCache.has(t2))
+      return;
+    const n2 = this._patternCache.get(t2);
+    this._context.fillStyle = n2, this._context.fillRect(e2, i2, s2, h2);
+  }
 }
-const c = "IWZ1bmN0aW9uKCl7InVzZSBzdHJpY3QiO2NsYXNzIGV7Y29uc3RydWN0b3IoKXt0aGlzLl9tYXA9bmV3IE1hcH1kaXNwb3NlKCl7Y29uc3QgZT1bLi4udGhpcy5fbWFwXS5tYXAoKChbZV0pPT5lKSk7Zm9yKDtlLmxlbmd0aD4wOyl0aGlzLnJlbW92ZShlLnNoaWZ0KCkpO3RoaXMuX21hcD12b2lkIDB9Z2V0KGUpe3JldHVybiB0aGlzLl9tYXAuZ2V0KGUpfXNldChlLHQpe2lmKHRoaXMuaGFzKGUpKXtpZih0aGlzLmdldChlKT09PXQpcmV0dXJuO3RoaXMucmVtb3ZlKGUpfXRoaXMuX21hcC5zZXQoZSx0KX1oYXMoZSl7cmV0dXJuIHRoaXMuX21hcC5oYXMoZSl9cmVtb3ZlKGUpe3JldHVybiEhdGhpcy5oYXMoZSkmJih0aGlzLmdldChlKS5jbG9zZSgpLHRoaXMuX21hcC5kZWxldGUoZSkpfX1jb25zdCB0PS41O2NsYXNzIHN7Y29uc3RydWN0b3IodCl7dGhpcy5fY2FudmFzPXQsdGhpcy5fY29udGV4dD10LmdldENvbnRleHQoIjJkIiksdGhpcy5fY2FjaGU9bmV3IGV9ZGlzcG9zZSgpe3RoaXMuX2NhY2hlLmRpc3Bvc2UoKSx0aGlzLl9jYWNoZT12b2lkIDAsdGhpcy5fY2FudmFzPXZvaWQgMH1jYWNoZVJlc291cmNlKGUsdCl7dGhpcy5fY2FjaGUuc2V0KGUsdCl9Z2V0UmVzb3VyY2UoZSl7cmV0dXJuIHRoaXMuX2NhY2hlLmdldChlKX1kaXNwb3NlUmVzb3VyY2UoZSl7dGhpcy5fY2FjaGUucmVtb3ZlKGUpfXNldERpbWVuc2lvbnMoZSx0KXt0aGlzLl9jYW52YXMud2lkdGg9ZSx0aGlzLl9jYW52YXMuaGVpZ2h0PXR9c2V0U21vb3RoaW5nKGUpe2NvbnN0IHQ9dGhpcy5fY29udGV4dDtbImltYWdlU21vb3RoaW5nRW5hYmxlZCIsIm1vekltYWdlU21vb3RoaW5nRW5hYmxlZCIsIm9JbWFnZVNtb290aGluZ0VuYWJsZWQiLCJ3ZWJraXRJbWFnZVNtb290aGluZ0VuYWJsZWQiXS5mb3JFYWNoKChzPT57dm9pZCAwIT09dFtzXSYmKHRbc109ZSl9KSl9c2F2ZSgpe3RoaXMuX2NvbnRleHQuc2F2ZSgpfXJlc3RvcmUoKXt0aGlzLl9jb250ZXh0LnJlc3RvcmUoKX1zY2FsZShlLHQ9ZSl7dGhpcy5fY29udGV4dC5zY2FsZShlLHQpfXNldEJsZW5kTW9kZShlKXt0aGlzLl9jb250ZXh0Lmdsb2JhbENvbXBvc2l0ZU9wZXJhdGlvbj1lfXNldEFscGhhKGUpe3RoaXMuX2NvbnRleHQuZ2xvYmFsQWxwaGE9ZX1jbGVhclJlY3QoZSx0LHMsYSl7dGhpcy5fY29udGV4dC5jbGVhclJlY3QoZSx0LHMsYSl9ZHJhd1JlY3QoZSxzLGEsaSxvLGM9ImZpbGwiKXtpZigiZmlsbCI9PT1jKXRoaXMuX2NvbnRleHQuZmlsbFN0eWxlPW8sdGhpcy5fY29udGV4dC5maWxsUmVjdChlLHMsYSxpKTtlbHNlIGlmKCJzdHJva2UiPT09Yyl7Y29uc3QgYz0xO3RoaXMuX2NvbnRleHQubGluZVdpZHRoPWMsdGhpcy5fY29udGV4dC5zdHJva2VTdHlsZT1vLHRoaXMuX2NvbnRleHQuc3Ryb2tlUmVjdCh0KyhlLWMpLHQrKHMtYyksYSxpKX19ZHJhd0NpcmNsZShlLHQscyxhLGkpe3RoaXMuX2NvbnRleHQuYmVnaW5QYXRoKCksdGhpcy5fY29udGV4dC5hcmMoZStzLHQrcyxzLDAsMipNYXRoLlBJLCExKSx0aGlzLl9jb250ZXh0LmZpbGxTdHlsZT1hLHRoaXMuX2NvbnRleHQuZmlsbCgpLGkmJih0aGlzLl9jb250ZXh0LmxpbmVXaWR0aD01LHRoaXMuX2NvbnRleHQuc3Ryb2tlU3R5bGU9aSx0aGlzLl9jb250ZXh0LnN0cm9rZSgpKSx0aGlzLl9jb250ZXh0LmNsb3NlUGF0aCgpfWRyYXdJbWFnZShlLHQscyxhLGkpe3RoaXMuX2NhY2hlLmhhcyhlKSYmKHZvaWQgMCE9PWE/dGhpcy5fY29udGV4dC5kcmF3SW1hZ2UodGhpcy5fY2FjaGUuZ2V0KGUpLHQscyxhLGkpOnRoaXMuX2NvbnRleHQuZHJhd0ltYWdlKHRoaXMuX2NhY2hlLmdldChlKSx0LHMpKX1kcmF3SW1hZ2VDcm9wcGVkKGUscyxhLGksbyxjLGgsbixyLGwpe2lmKCF0aGlzLl9jYWNoZS5oYXMoZSkpcmV0dXJuO2lmKG51bGw9PWw/dm9pZCAwOmwuc2FmZU1vZGUpe2lmKG48PTB8fHI8PTApcmV0dXJuO2NvbnN0IHQ9dGhpcy5fY2FjaGUuZ2V0KGUpLGM9KG49TWF0aC5taW4odGhpcy5fY29udGV4dC5jYW52YXMud2lkdGgsbikpL2ksaD0ocj1NYXRoLm1pbih0aGlzLl9jb250ZXh0LmNhbnZhcy5oZWlnaHQscikpL287cytpPnQud2lkdGgmJihuLT1jKihzK2ktdC53aWR0aCksaS09cytpLXQud2lkdGgpLGErbz50LmhlaWdodCYmKHItPWgqKGErby10LmhlaWdodCksby09YStvLXQuaGVpZ2h0KX1sZXQgZD0hMTtpZihsKXtjb25zdCBlPXZvaWQgMCE9PWwuc2NhbGUsdD12b2lkIDAhPT1sLmFscGhhLHM9dm9pZCAwIT09bC5ibGVuZDtkPWV8fHR8fHMsZCYmdGhpcy5zYXZlKCksZSYmdGhpcy5zY2FsZShsLnNjYWxlKSxzJiZ0aGlzLnNldEJsZW5kTW9kZShsLmJsZW5kKSx0JiZ0aGlzLnNldEFscGhhKGwuYWxwaGEpfXRoaXMuX2NvbnRleHQuZHJhd0ltYWdlKHRoaXMuX2NhY2hlLmdldChlKSx0K3M8PDAsdCthPDwwLHQraTw8MCx0K288PDAsdCtjPDwwLHQraDw8MCx0K248PDAsdCtyPDwwKSxkJiZ0aGlzLnJlc3RvcmUoKX19bGV0IGEsaTtvbm1lc3NhZ2U9ZT0+e3N3aXRjaChlLmRhdGEuY21kKXtkZWZhdWx0OmJyZWFrO2Nhc2UiaW5pdCI6aT1lLmRhdGEuY2FudmFzLGE9bmV3IHMoaSksY29uc29sZS5pbmZvKCItLS0gaW5pdGlhbGl6ZWQgV29ya2VyIixpLGEpO2JyZWFrO2Nhc2UibG9hZFJlc291cmNlIjohYXN5bmMgZnVuY3Rpb24oZSx0KXt0cnl7bGV0IHM7aWYodCBpbnN0YW5jZW9mIEZpbGUpe2NvbnN0IGU9YXdhaXQgYXN5bmMgZnVuY3Rpb24oZSl7Y29uc3QgdD1uZXcgRmlsZVJlYWRlcjtyZXR1cm4gbmV3IFByb21pc2UoKChzLGEpPT57dC5vbmxvYWQ9dD0+e3ZhciBpO2lmKCEobnVsbD09KGk9bnVsbD09dD92b2lkIDA6dC50YXJnZXQpP3ZvaWQgMDppLnJlc3VsdCkpcmV0dXJuIGEoKTtzKG5ldyBCbG9iKFt0LnRhcmdldC5yZXN1bHRdLHt0eXBlOmUudHlwZX0pKX0sdC5vbmVycm9yPWU9PmEoZSksdC5yZWFkQXNBcnJheUJ1ZmZlcihlKX0pKX0odCk7cz1hd2FpdCBjcmVhdGVJbWFnZUJpdG1hcChlKX1lbHNlIGlmKHQgaW5zdGFuY2VvZiBCbG9iKXM9YXdhaXQgY3JlYXRlSW1hZ2VCaXRtYXAodCk7ZWxzZSBpZigic3RyaW5nIj09dHlwZW9mIHQpe2NvbnN0IGU9YXdhaXQgZmV0Y2godCksYT1hd2FpdCBlLmJsb2IoKTtzPWF3YWl0IGNyZWF0ZUltYWdlQml0bWFwKGEpfWVsc2UgdCBpbnN0YW5jZW9mIEltYWdlQml0bWFwJiYocz10KTtudWxsPT1hfHxhLmNhY2hlUmVzb3VyY2UoZSxzKSxwb3N0TWVzc2FnZSh7Y21kOiJvbmxvYWQiLGlkOmUsc2l6ZTp7d2lkdGg6cy53aWR0aCxoZWlnaHQ6cy5oZWlnaHR9fSl9Y2F0Y2gocyl7cG9zdE1lc3NhZ2Uoe2NtZDoib25lcnJvciIsaWQ6ZSxlcnJvcjoobnVsbD09cz92b2lkIDA6cy5tZXNzYWdlKT8/c30pfX0oZS5kYXRhLmlkLGUuZGF0YS5zb3VyY2UpO2JyZWFrO2Nhc2UiZ2V0UmVzb3VyY2UiOmNvbnN0IHQ9bnVsbD09YT92b2lkIDA6YS5nZXRSZXNvdXJjZShlLmRhdGEuaWQpO3Bvc3RNZXNzYWdlKHtjbWQ6Im9ucmVzb3VyY2UiLGlkOmUuZGF0YS5pZCxiaXRtYXA6dH0pO2JyZWFrO2Nhc2UiZGlzcG9zZVJlc291cmNlIjpudWxsPT1hfHxhLmRpc3Bvc2VSZXNvdXJjZSguLi5lLmRhdGEuYXJncyk7YnJlYWs7Y2FzZSJkaXNwb3NlIjpudWxsPT1hfHxhLmRpc3Bvc2UoKSxpPXZvaWQgMCxhPXZvaWQgMDticmVhaztjYXNlInNldFNtb290aGluZyI6Y2FzZSJzZXREaW1lbnNpb25zIjpjYXNlInNhdmUiOmNhc2UicmVzdG9yZSI6Y2FzZSJzY2FsZSI6Y2FzZSJzZXRCbGVuZE1vZGUiOmNhc2Uic2V0QWxwaGEiOmNhc2UiY2xlYXJSZWN0IjpjYXNlImRyYXdSZWN0IjpjYXNlImRyYXdJbWFnZSI6Y2FzZSJkcmF3SW1hZ2VDcm9wcGVkIjphJiZhW2UuZGF0YS5jbWRdKC4uLmUuZGF0YS5hcmdzKX19fSgpOwo=", u = "undefined" != typeof window && window.Blob && new Blob([atob(c)], { type: "text/javascript;charset=utf-8" });
+const c = "IWZ1bmN0aW9uKCl7InVzZSBzdHJpY3QiO2NsYXNzIGV7Y29uc3RydWN0b3IoKXt0aGlzLl9tYXA9bmV3IE1hcH1kaXNwb3NlKCl7Y29uc3QgZT1bLi4udGhpcy5fbWFwXS5tYXAoKChbZV0pPT5lKSk7Zm9yKDtlLmxlbmd0aD4wOyl0aGlzLnJlbW92ZShlLnNoaWZ0KCkpO3RoaXMuX21hcD12b2lkIDB9Z2V0KGUpe3JldHVybiB0aGlzLl9tYXAuZ2V0KGUpfXNldChlLHQpe2lmKHRoaXMuaGFzKGUpKXtpZih0aGlzLmdldChlKT09PXQpcmV0dXJuO3RoaXMucmVtb3ZlKGUpfXRoaXMuX21hcC5zZXQoZSx0KX1oYXMoZSl7cmV0dXJuIHRoaXMuX21hcC5oYXMoZSl9cmVtb3ZlKGUpe2lmKCF0aGlzLmhhcyhlKSlyZXR1cm4hMTtjb25zdCB0PXRoaXMuZ2V0KGUpO3JldHVybiJmdW5jdGlvbiI9PXR5cGVvZiB0LmNsb3NlJiZ0LmNsb3NlKCksdGhpcy5fbWFwLmRlbGV0ZShlKX19Y29uc3QgdD0uNTtjbGFzcyBze2NvbnN0cnVjdG9yKHQpe3RoaXMuX2NhbnZhcz10LHRoaXMuX2NvbnRleHQ9dC5nZXRDb250ZXh0KCIyZCIpLHRoaXMuX2NhY2hlPW5ldyBlLHRoaXMuX3BhdHRlcm5DYWNoZT1uZXcgZX1kaXNwb3NlKCl7dGhpcy5fY2FjaGUuZGlzcG9zZSgpLHRoaXMuX3BhdHRlcm5DYWNoZS5kaXNwb3NlKCksdGhpcy5fY2FudmFzPXZvaWQgMH1jYWNoZVJlc291cmNlKGUsdCl7dGhpcy5fY2FjaGUuc2V0KGUsdCl9Z2V0UmVzb3VyY2UoZSl7cmV0dXJuIHRoaXMuX2NhY2hlLmdldChlKX1kaXNwb3NlUmVzb3VyY2UoZSl7dGhpcy5fY2FjaGUucmVtb3ZlKGUpfXNldERpbWVuc2lvbnMoZSx0KXt0aGlzLl9jYW52YXMud2lkdGg9ZSx0aGlzLl9jYW52YXMuaGVpZ2h0PXR9c2V0U21vb3RoaW5nKGUpe2NvbnN0IHQ9dGhpcy5fY29udGV4dDtbImltYWdlU21vb3RoaW5nRW5hYmxlZCIsIm1vekltYWdlU21vb3RoaW5nRW5hYmxlZCIsIm9JbWFnZVNtb290aGluZ0VuYWJsZWQiLCJ3ZWJraXRJbWFnZVNtb290aGluZ0VuYWJsZWQiXS5mb3JFYWNoKChzPT57dm9pZCAwIT09dFtzXSYmKHRbc109ZSl9KSl9c2F2ZSgpe3RoaXMuX2NvbnRleHQuc2F2ZSgpfXJlc3RvcmUoKXt0aGlzLl9jb250ZXh0LnJlc3RvcmUoKX1zY2FsZShlLHQ9ZSl7dGhpcy5fY29udGV4dC5zY2FsZShlLHQpfXNldEJsZW5kTW9kZShlKXt0aGlzLl9jb250ZXh0Lmdsb2JhbENvbXBvc2l0ZU9wZXJhdGlvbj1lfXNldEFscGhhKGUpe3RoaXMuX2NvbnRleHQuZ2xvYmFsQWxwaGE9ZX1jbGVhclJlY3QoZSx0LHMsYSl7dGhpcy5fY29udGV4dC5jbGVhclJlY3QoZSx0LHMsYSl9ZHJhd1JlY3QoZSxzLGEsaSxjLG89ImZpbGwiKXtpZigiZmlsbCI9PT1vKXRoaXMuX2NvbnRleHQuZmlsbFN0eWxlPWMsdGhpcy5fY29udGV4dC5maWxsUmVjdChlLHMsYSxpKTtlbHNlIGlmKCJzdHJva2UiPT09byl7Y29uc3Qgbz0xO3RoaXMuX2NvbnRleHQubGluZVdpZHRoPW8sdGhpcy5fY29udGV4dC5zdHJva2VTdHlsZT1jLHRoaXMuX2NvbnRleHQuc3Ryb2tlUmVjdCh0KyhlLW8pLHQrKHMtbyksYSxpKX19ZHJhd0NpcmNsZShlLHQscyxhLGkpe3RoaXMuX2NvbnRleHQuYmVnaW5QYXRoKCksdGhpcy5fY29udGV4dC5hcmMoZStzLHQrcyxzLDAsMipNYXRoLlBJLCExKSx0aGlzLl9jb250ZXh0LmZpbGxTdHlsZT1hLHRoaXMuX2NvbnRleHQuZmlsbCgpLGkmJih0aGlzLl9jb250ZXh0LmxpbmVXaWR0aD01LHRoaXMuX2NvbnRleHQuc3Ryb2tlU3R5bGU9aSx0aGlzLl9jb250ZXh0LnN0cm9rZSgpKSx0aGlzLl9jb250ZXh0LmNsb3NlUGF0aCgpfWRyYXdJbWFnZShlLHQscyxhLGkpe3RoaXMuX2NhY2hlLmhhcyhlKSYmKHZvaWQgMCE9PWE/dGhpcy5fY29udGV4dC5kcmF3SW1hZ2UodGhpcy5fY2FjaGUuZ2V0KGUpLHQscyxhLGkpOnRoaXMuX2NvbnRleHQuZHJhd0ltYWdlKHRoaXMuX2NhY2hlLmdldChlKSx0LHMpKX1kcmF3SW1hZ2VDcm9wcGVkKGUscyxhLGksYyxvLGgsbixyLGwpe2lmKCF0aGlzLl9jYWNoZS5oYXMoZSkpcmV0dXJuO2lmKG51bGw9PWw/dm9pZCAwOmwuc2FmZU1vZGUpe2lmKG48PTB8fHI8PTApcmV0dXJuO2NvbnN0IHQ9dGhpcy5fY2FjaGUuZ2V0KGUpLG89KG49TWF0aC5taW4odGhpcy5fY29udGV4dC5jYW52YXMud2lkdGgsbikpL2ksaD0ocj1NYXRoLm1pbih0aGlzLl9jb250ZXh0LmNhbnZhcy5oZWlnaHQscikpL2M7cytpPnQud2lkdGgmJihuLT1vKihzK2ktdC53aWR0aCksaS09cytpLXQud2lkdGgpLGErYz50LmhlaWdodCYmKHItPWgqKGErYy10LmhlaWdodCksYy09YStjLXQuaGVpZ2h0KX1sZXQgZD0hMTtpZihsKXtjb25zdCBlPXZvaWQgMCE9PWwuc2NhbGUsdD12b2lkIDAhPT1sLmFscGhhLHM9dm9pZCAwIT09bC5ibGVuZDtkPWV8fHR8fHMsZCYmdGhpcy5zYXZlKCksZSYmdGhpcy5zY2FsZShsLnNjYWxlKSxzJiZ0aGlzLnNldEJsZW5kTW9kZShsLmJsZW5kKSx0JiZ0aGlzLnNldEFscGhhKGwuYWxwaGEpfXRoaXMuX2NvbnRleHQuZHJhd0ltYWdlKHRoaXMuX2NhY2hlLmdldChlKSx0K3M8PDAsdCthPDwwLHQraTw8MCx0K2M8PDAsdCtvPDwwLHQraDw8MCx0K248PDAsdCtyPDwwKSxkJiZ0aGlzLnJlc3RvcmUoKX1jcmVhdGVQYXR0ZXJuKGUsdCl7dGhpcy5fY2FjaGUuaGFzKGUpJiZ0aGlzLl9wYXR0ZXJuQ2FjaGUuc2V0KGUsdGhpcy5fY29udGV4dC5jcmVhdGVQYXR0ZXJuKHRoaXMuX2NhY2hlLmdldChlKSx0KSl9ZHJhd1BhdHRlcm4oZSx0LHMsYSxpKXtpZighdGhpcy5fcGF0dGVybkNhY2hlLmhhcyhlKSlyZXR1cm47Y29uc3QgYz10aGlzLl9wYXR0ZXJuQ2FjaGUuZ2V0KGUpO3RoaXMuX2NvbnRleHQuZmlsbFN0eWxlPWMsdGhpcy5fY29udGV4dC5maWxsUmVjdCh0LHMsYSxpKX19bGV0IGEsaTtvbm1lc3NhZ2U9ZT0+e3N3aXRjaChlLmRhdGEuY21kKXtkZWZhdWx0OmJyZWFrO2Nhc2UiaW5pdCI6aT1lLmRhdGEuY2FudmFzLGE9bmV3IHMoaSksY29uc29sZS5pbmZvKCItLS0gaW5pdGlhbGl6ZWQgV29ya2VyIixpLGEpO2JyZWFrO2Nhc2UibG9hZFJlc291cmNlIjohYXN5bmMgZnVuY3Rpb24oZSx0KXt0cnl7bGV0IHM7aWYodCBpbnN0YW5jZW9mIEZpbGUpe2NvbnN0IGU9YXdhaXQgYXN5bmMgZnVuY3Rpb24oZSl7Y29uc3QgdD1uZXcgRmlsZVJlYWRlcjtyZXR1cm4gbmV3IFByb21pc2UoKChzLGEpPT57dC5vbmxvYWQ9dD0+e3ZhciBpO2lmKCEobnVsbD09KGk9bnVsbD09dD92b2lkIDA6dC50YXJnZXQpP3ZvaWQgMDppLnJlc3VsdCkpcmV0dXJuIGEoKTtzKG5ldyBCbG9iKFt0LnRhcmdldC5yZXN1bHRdLHt0eXBlOmUudHlwZX0pKX0sdC5vbmVycm9yPWU9PmEoZSksdC5yZWFkQXNBcnJheUJ1ZmZlcihlKX0pKX0odCk7cz1hd2FpdCBjcmVhdGVJbWFnZUJpdG1hcChlKX1lbHNlIGlmKHQgaW5zdGFuY2VvZiBCbG9iKXM9YXdhaXQgY3JlYXRlSW1hZ2VCaXRtYXAodCk7ZWxzZSBpZigic3RyaW5nIj09dHlwZW9mIHQpe2NvbnN0IGU9YXdhaXQgZmV0Y2godCksYT1hd2FpdCBlLmJsb2IoKTtzPWF3YWl0IGNyZWF0ZUltYWdlQml0bWFwKGEpfWVsc2UgdCBpbnN0YW5jZW9mIEltYWdlQml0bWFwJiYocz10KTtudWxsPT1hfHxhLmNhY2hlUmVzb3VyY2UoZSxzKSxwb3N0TWVzc2FnZSh7Y21kOiJvbmxvYWQiLGlkOmUsc2l6ZTp7d2lkdGg6cy53aWR0aCxoZWlnaHQ6cy5oZWlnaHR9fSl9Y2F0Y2gocyl7cG9zdE1lc3NhZ2Uoe2NtZDoib25lcnJvciIsaWQ6ZSxlcnJvcjoobnVsbD09cz92b2lkIDA6cy5tZXNzYWdlKT8/c30pfX0oZS5kYXRhLmlkLGUuZGF0YS5zb3VyY2UpO2JyZWFrO2Nhc2UiZ2V0UmVzb3VyY2UiOmNvbnN0IHQ9bnVsbD09YT92b2lkIDA6YS5nZXRSZXNvdXJjZShlLmRhdGEuaWQpO3Bvc3RNZXNzYWdlKHtjbWQ6Im9ucmVzb3VyY2UiLGlkOmUuZGF0YS5pZCxiaXRtYXA6dH0pO2JyZWFrO2Nhc2UiZGlzcG9zZVJlc291cmNlIjpudWxsPT1hfHxhLmRpc3Bvc2VSZXNvdXJjZSguLi5lLmRhdGEuYXJncyk7YnJlYWs7Y2FzZSJkaXNwb3NlIjpudWxsPT1hfHxhLmRpc3Bvc2UoKSxpPXZvaWQgMCxhPXZvaWQgMDticmVhaztjYXNlInNldFNtb290aGluZyI6Y2FzZSJzZXREaW1lbnNpb25zIjpjYXNlInNhdmUiOmNhc2UicmVzdG9yZSI6Y2FzZSJzY2FsZSI6Y2FzZSJzZXRCbGVuZE1vZGUiOmNhc2Uic2V0QWxwaGEiOmNhc2UiY2xlYXJSZWN0IjpjYXNlImRyYXdSZWN0IjpjYXNlImRyYXdJbWFnZSI6Y2FzZSJkcmF3SW1hZ2VDcm9wcGVkIjpjYXNlImNyZWF0ZVBhdHRlcm4iOmNhc2UiZHJhd1BhdHRlcm4iOmEmJmFbZS5kYXRhLmNtZF0oLi4uZS5kYXRhLmFyZ3MpfX19KCk7Cg==", u = "undefined" != typeof window && window.Blob && new Blob([atob(c)], { type: "text/javascript;charset=utf-8" });
 function p() {
   let t2;
   try {
@@ -322,6 +332,9 @@ class _ {
   setBlendMode(t2) {
     this.getBackend("setBlendMode", t2);
   }
+  setAlpha(t2) {
+    this.getBackend("setAlpha", t2);
+  }
   clearRect(t2, e2, i2, s2) {
     this.getBackend("clearRect", t2, e2, i2, s2);
   }
@@ -337,11 +350,17 @@ class _ {
   drawImageCropped(t2, e2, i2, s2, h2, n2, a2, r2, o2, d2) {
     this.getBackend("drawImageCropped", t2, e2, i2, s2, h2, n2, a2, r2, o2, d2);
   }
+  createPattern(t2, e2) {
+    this.getBackend("createPattern", t2, e2);
+  }
+  drawPattern(t2, e2, i2, s2, h2) {
+    this.getBackend("drawPattern", t2, e2, i2, s2, h2);
+  }
 }
 const m = (t2) => t2 > 0 ? t2 + 0.5 << 0 : 0 | t2, g = [], b = [], f = i(1, 1, true).cvs;
 class w {
-  constructor() {
-    this._cacheMap = /* @__PURE__ */ new Map();
+  constructor(t2) {
+    this._renderer = t2, this._cacheMap = /* @__PURE__ */ new Map();
   }
   dispose() {
     this._cacheMap.clear(), this._cacheMap = void 0;
@@ -375,11 +394,14 @@ class w {
     }
     return false;
   }
-  cache(t2, e2) {
+  async cache(t2) {
+    const e2 = await this._renderer.getResource(t2);
+    if (!e2)
+      return false;
     const { width: i2, height: s2 } = e2;
-    !function(t3, e3, i3, s3) {
+    return function(t3, e3, i3, s3) {
       n(t3, e3, i3, s3);
-    }(f, e2, i2, s2), this._cacheMap.set(t2, { data: f.getContext("2d").getImageData(0, 0, i2, s2).data, size: { width: i2, height: s2 } }), f.width = f.height = 1;
+    }(f, e2, i2, s2), this._cacheMap.set(t2, { data: f.getContext("2d").getImageData(0, 0, i2, s2).data, size: { width: i2, height: s2 } }), f.width = f.height = 1, true;
   }
   clearCache(t2) {
     return !!this.hasCache(t2) && (this._cacheMap.delete(t2), true);
@@ -405,11 +427,11 @@ class w {
   }
 }
 const { min: v, max: Z, round: X } = Math;
-class W {
+class R {
   constructor({ width: t2 = 300, height: e2 = 300, fps: i2 = 60, scale: s2 = 1, backgroundColor: h2 = null, animate: n2 = false, smoothing: a2 = true, stretchToFit: r2 = false, viewport: o2 = null, preventEventBubbling: d2 = false, parentElement: l2 = null, debug: c2 = false, viewportHandler: u2, onUpdate: p2 } = {}) {
     if (this.DEBUG = false, this.benchmark = { minElapsed: 1 / 0, maxElapsed: -1 / 0, minFps: 1 / 0, maxFps: -1 / 0 }, this._smoothing = false, this._stretchToFit = false, this._HDPIscaleRatio = 1, this._preventDefaults = false, this._lastRender = 0, this._renderId = 0, this._renderPending = false, this._disposed = false, this._scale = { x: 1, y: 1 }, this._activeTouches = [], this._children = [], this._animate = false, t2 <= 0 || e2 <= 0)
       throw new Error("cannot construct a zCanvas without valid dimensions");
-    this.DEBUG = c2, this._element = document.createElement("canvas"), this._renderer = new _(this._element, true), this.collision = new w(), this._updateHandler = p2, this._renderHandler = this.render.bind(this), this._viewportHandler = u2, this.setFrameRate(i2), this.setAnimatable(n2), h2 && this.setBackgroundColor(h2), this._HDPIscaleRatio = window.devicePixelRatio || 1, this.setDimensions(t2, e2, true, true), o2 && this.setViewport(o2.width, o2.height), 1 !== s2 && this.scale(s2, s2), r2 && this.stretchToFit(true), l2 instanceof HTMLElement && this.insertInPage(l2), this.setSmoothing(a2), this.preventEventBubbling(d2), this.addListeners(), this._animate && this.render();
+    this.DEBUG = c2, this._element = document.createElement("canvas"), this._renderer = new _(this._element, true), this.collision = new w(this._renderer), this._updateHandler = p2, this._renderHandler = this.render.bind(this), this._viewportHandler = u2, this.setFrameRate(i2), this.setAnimatable(n2), h2 && this.setBackgroundColor(h2), this._HDPIscaleRatio = window.devicePixelRatio || 1, this.setDimensions(t2, e2, true, true), o2 && this.setViewport(o2.width, o2.height), 1 !== s2 && this.scale(s2, s2), r2 && this.stretchToFit(true), l2 instanceof HTMLElement && this.insertInPage(l2), this.setSmoothing(a2), this.preventEventBubbling(d2), this.addListeners(), this._animate && this.render();
   }
   loadResource(t2, e2) {
     return this._renderer.loadResource(t2, e2);
@@ -419,6 +441,9 @@ class W {
   }
   disposeResource(t2) {
     return this._renderer.disposeResource(t2);
+  }
+  getRenderer() {
+    return this._renderer;
   }
   insertInPage(t2) {
     if (this._element.parentNode)
@@ -623,8 +648,8 @@ class W {
     this._renderer.scale(t2, t2), this.setSmoothing(this._smoothing), this._coords = void 0;
   }
 }
-const { min: G, max: C } = Math, R = 0.5;
-class Y {
+const { min: G, max: C } = Math, Y = 0.5;
+class W {
   constructor({ width: t2, height: e2, resourceId: i2, x: s2 = 0, y: h2 = 0, collidable: n2 = false, interactive: a2 = false, mask: r2 = false, sheet: o2 = [], sheetTileWidth: d2 = 0, sheetTileHeight: l2 = 0 } = { width: 64, height: 64 }) {
     if (this.hover = false, this.isDragging = false, this._children = [], this._disposed = false, this._mask = false, this._interactive = false, this._draggable = false, this._keepInBounds = false, this._pressed = false, t2 <= 0 || e2 <= 0)
       throw new Error("cannot construct a Sprite without valid dimensions");
@@ -665,14 +690,14 @@ class Y {
   }
   setWidth(t2) {
     const e2 = this._bounds.width || 0;
-    e2 !== t2 && (this._bounds.width = t2, 0 !== e2 && (this._bounds.left -= t2 * R - e2 * R), this.invalidate());
+    e2 !== t2 && (this._bounds.width = t2, 0 !== e2 && (this._bounds.left -= t2 * Y - e2 * Y), this.invalidate());
   }
   getHeight() {
     return this._bounds.height;
   }
   setHeight(t2) {
     const e2 = this._bounds.height || 0;
-    e2 !== t2 && (this._bounds.height = t2, 0 !== e2 && (this._bounds.top -= t2 * R - e2 * R), this.invalidate());
+    e2 !== t2 && (this._bounds.height = t2, 0 !== e2 && (this._bounds.top -= t2 * Y - e2 * Y), this.invalidate());
   }
   setBounds(t2, e2, i2, s2) {
     if (this._constraint)
@@ -686,7 +711,7 @@ class Y {
       const i3 = G(0, -(n2 - r2)), s3 = G(0, -(a2 - o2)), h3 = o2 - a2;
       t2 = G(r2 - n2, C(t2, i3)), e2 = G(h3, C(e2, s3));
     } else
-      t2 > r2 && (t2 += n2 * R), e2 > o2 && (e2 += a2 * R);
+      t2 > r2 && (t2 += n2 * Y), e2 > o2 && (e2 += a2 * Y);
     this.setX(t2), this.setY(e2), h2 && this.invalidate();
   }
   getBounds() {
@@ -718,7 +743,7 @@ class Y {
       const s3 = this._animation;
       let { left: h3, top: n3, width: a2, height: r2 } = i2;
       if (s3) {
-        const i3 = s3.tileWidth ? s3.tileWidth : R + a2 << 0, o2 = s3.tileHeight ? s3.tileHeight : R + r2 << 0;
+        const i3 = s3.tileWidth ? s3.tileWidth : Y + a2 << 0, o2 = s3.tileHeight ? s3.tileHeight : Y + r2 << 0;
         e2 && (h3 -= e2.left, n3 -= e2.top), t2.drawImageCropped(this._resourceId, s3.col * i3, s3.type.row * o2, i3, o2, h3, n3, a2, r2);
       } else if (e2) {
         const { src: s4, dest: h4 } = ((t3, e3) => {
@@ -882,7 +907,7 @@ class Y {
   }
 }
 export {
-  W as Canvas,
+  R as Canvas,
   a as Loader,
-  Y as Sprite
+  W as Sprite
 };

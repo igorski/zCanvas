@@ -226,6 +226,10 @@ export default class RenderAPI implements IRenderer {
         this.getBackend( "setBlendMode", type );
     }
 
+    setAlpha( value: number ): void {
+        this.getBackend( "setAlpha", value );
+    }
+
     clearRect( x: number, y: number, width: number, height: number ): void {
         this.getBackend( "clearRect", x, y, width, height );
     }
@@ -258,5 +262,13 @@ export default class RenderAPI implements IRenderer {
             resourceId, sourceX, sourceY, sourceWidth, sourceHeight,
             destinationX, destinationY, destinationWidth, destinationHeight, drawContext
         );
+    }
+
+    createPattern( resourceId: string, repetition: "repeat" | "repeat-x" | "repeat-y" | "no-repeat" ): void {
+        this.getBackend( "createPattern", resourceId, repetition );
+    }
+
+    drawPattern( patternResourceId: string, x: number, y: number, width: number, height: number ): void {
+        this.getBackend( "drawPattern", patternResourceId, x, y, width, height );
     }
 }

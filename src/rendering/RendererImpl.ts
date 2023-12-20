@@ -28,18 +28,20 @@ const HALF = 0.5;
 export default class RendererImpl implements IRenderer {
     _canvas: HTMLCanvasElement | OffscreenCanvas;
     _context: CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D;
-    _cache: Cache;
+    _cache: Cache<ImageBitmap>;
+    _patternCache: Cache<CanvasPattern>;
 
     constructor( canvas: HTMLCanvasElement | OffscreenCanvas ) {
         this._canvas  = canvas;
         this._context = canvas.getContext( "2d" );
 
-        this._cache = new Cache();
+        this._cache        = new Cache();
+        this._patternCache = new Cache();
     }
 
     dispose(): void {
         this._cache.dispose();
-        this._cache  = undefined;
+        this._patternCache.dispose();
         this._canvas = undefined;
     }
 
@@ -223,5 +225,25 @@ export default class RendererImpl implements IRenderer {
         if ( saveState ) {
             this.restore();
         }
+    }
+
+    createPattern( resourceId: string, repetition: "repeat" | "repeat-x" | "repeat-y" | "no-repeat" ): void {
+        if ( !this._cache.has( resourceId )) {
+            return;
+        }
+        this._patternCache.set(
+            resourceId,
+            this._context.createPattern( this._cache.get( resourceId ), repetition )
+        );
+    }
+
+    drawPattern( patternResourceId: string, x: number, y: number, width: number, height: number ): void {
+        if ( !this._patternCache.has( patternResourceId )) {
+            return;
+        }
+        const pattern = this._patternCache.get( patternResourceId );
+        
+        this._context.fillStyle = pattern;
+        this._context.fillRect( x, y, width, height );
     }
 }

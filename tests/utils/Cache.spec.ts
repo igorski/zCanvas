@@ -3,7 +3,7 @@ import Cache from "../../src/utils/Cache";
 import { createMockImageBitmap } from "../__mocks";
  
 describe( "Cache", () => {
-    let cache: Cache;
+    let cache: Cache<ImageBitmap>;
 
     beforeEach(() => {
         cache = new Cache();

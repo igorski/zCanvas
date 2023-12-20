@@ -20,8 +20,8 @@
  * IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-export default class Cache {
-    private _map: Map<string, ImageBitmap>;
+export default class Cache<T> {
+    private _map: Map<string, T>;
 
     constructor() {
         this._map = new Map();
@@ -35,11 +35,11 @@ export default class Cache {
         this._map = undefined;
     }
 
-    get( key: string ): ImageBitmap | undefined {
+    get( key: string ): T | undefined {
         return this._map.get( key );
     }
 
-    set( key: string, bitmap: ImageBitmap ): void {
+    set( key: string, bitmap: T ): void {
         if ( this.has( key )) {
             const existingBitmap = this.get( key );
             if ( existingBitmap === bitmap ) {
@@ -59,8 +59,9 @@ export default class Cache {
             return false;
         }
         const bitmap = this.get( key );
-        bitmap.close();
-
+        if ( typeof bitmap.close === "function" ) {
+            ( bitmap as ImageBitmap ).close();
+        }
         return this._map.delete( key );
     }
 }

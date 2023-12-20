@@ -293,13 +293,15 @@
                 cvs.addChild( wallSprite );
 
                 // cache the player and level bitmaps to speed up pixel based collision detection
-                const [ levelBitmap, playerBitmap ] = await Promise.all([
+                await Promise.all([
                     cvs.getResource( "level" ),
                     cvs.getResource( "spritesheet" ),
                 ]);
 
-                cvs.collision.cache( "level",       levelBitmap );
-                cvs.collision.cache( "spritesheet", playerBitmap );
+                await Promise.all([
+                    cvs.collision.cache( "level" ),
+                    cvs.collision.cache( "spritesheet" ),
+                ]);
 
                 // STEP 5 : ADDING KEYBOARD AND TOUCH INTERACTION
                 // ----------------------------------------------

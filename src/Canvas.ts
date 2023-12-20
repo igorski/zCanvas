@@ -25,6 +25,7 @@ import RenderAPI from "./rendering/RenderAPI";
 import EventHandler from "./utils/EventHandler";
 import Collision from "./Collision";
 import type Sprite from "./Sprite";
+import { IRenderer } from "./rendering/IRenderer";
 
 const { min, max, round } = Math;
 
@@ -132,7 +133,7 @@ export default class Canvas {
 
         this._element  = document.createElement( "canvas" );
         this._renderer = new RenderAPI( this._element, true );
-        this.collision = new Collision();
+        this.collision = new Collision( this._renderer );
 
         this._updateHandler = onUpdate;
         this._renderHandler = this.render.bind( this );
@@ -184,6 +185,10 @@ export default class Canvas {
 
     disposeResource( id: string ): void {
         return this._renderer.disposeResource( id );
+    }
+
+    getRenderer(): IRenderer {
+        return this._renderer;
     }
 
     /**

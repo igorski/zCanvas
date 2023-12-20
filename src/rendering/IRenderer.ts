@@ -28,12 +28,13 @@
 export interface IRenderer {
     save(): void
     restore(): void
+
     scale( xScale: number, yScale?: number ): void
     setBlendMode( type: GlobalCompositeOperation ): void
     setAlpha( value: number ): void
 
     clearRect( x: number, y: number, width: number, height: number ): void;
-    drawRect( x: number, y: number, width: number, height: number, color: string | CanvasGradient | CanvasPattern, fillType?: "fill" | "stroke" ): void
+    drawRect( x: number, y: number, width: number, height: number, color: string, fillType?: "fill" | "stroke" ): void
     drawCircle( x: number, y: number, radius: number, fillColor: string, strokeColor?: string ): void
     drawImage(
         resourceId: string,
@@ -54,6 +55,9 @@ export interface IRenderer {
         destinationHeight: number,
         drawContext?: DrawContext,
     ): void
+
+    createPattern( resourceId: string, repetition: "repeat" | "repeat-x" | "repeat-y" | "no-repeat" ): void
+    drawPattern( patternResourceId: string, x: number, y: number, width: number, height: number ): void
 };
 
 // when these are set, save() and restore() will be applied as appropriate
