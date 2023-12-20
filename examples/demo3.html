@@ -32,6 +32,8 @@
 
         require( [ "zcanvas.umd" ], zCanvas => {
 
+            const { Canvas, Sprite } = zCanvas;
+
             // STEP 1 : SETUP
             // --------------------------------------
 
@@ -53,7 +55,7 @@
             // keep it within the device / browser bounds
             const cvsWidth  = w < 800 ? w * .93 : 800;
             const cvsHeight = h < 500 ? h : 500;
-            const cvs       = new zCanvas.canvas({
+            const cvs       = new Canvas({
                 width: cvsWidth,
                 height: cvsHeight,
                 animate: true,
@@ -77,7 +79,7 @@
 
             const bgWidth  = 800;
             const bgHeight = 1067;
-            const bgSprite = new zCanvas.sprite({ width: bgWidth, height: bgHeight, resourceId: "background" });
+            const bgSprite = new Sprite({ width: bgWidth, height: bgHeight, resourceId: "background" });
            
             cvs.addChild( bgSprite );   // add the background to the canvas so it is visible
 
@@ -88,7 +90,7 @@
 
             const starSize = cvsWidth * .3; // make the star slightly smaller than the canvas
 
-            const spriteMask = new zCanvas.sprite({
+            const spriteMask = new Sprite({
                 x: cvsCenterX - starSize / 2,
                 y: cvsCenterY - starSize / 2,
                 width: starSize,
@@ -139,7 +141,7 @@
             // custom sprite extension we use to draw a circle that highlights
             // when it is hovered by the mouse cursor
 
-            class CircleSprite extends zCanvas.sprite {
+            class CircleSprite extends Sprite {
                 constructor( x, y, radius, color ) {
                     super({
                         x, y, width: radius * 2, height: radius * 2
@@ -149,7 +151,7 @@
                     this.setDraggable( true );
                 }
 
-                /* overridden zCanvas.sprite methods */
+                /* overridden Srite methods */
 
                 draw( renderer ) {
                     renderer.drawCircle(
@@ -174,7 +176,7 @@
             // ----------------------------
 
             const rectSize  = bgHeight / 15;
-            const rectangle = new zCanvas.sprite({
+            const rectangle = new Sprite({
                 x: cvsWidth * .75,
                 y: cvsHeight * .5,
                 width: rectSize,

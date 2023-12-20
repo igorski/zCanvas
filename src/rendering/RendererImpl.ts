@@ -129,15 +129,20 @@ export default class RendererImpl implements IRenderer {
         this._context.closePath();
     }
 
-    drawImage( resourceId: string, x: number, y: number, width?: number, height?: number ): void {
+    drawImage( resourceId: string, x: number, y: number, width?: number, height?: number, drawContext?: DrawContext ): void {
         if ( !this._cache.has( resourceId )) {
             return;
         }
+        const savedState = drawContext !== undefined ? this.applyDrawContext( drawContext, x, y, width, height ) : false;
+
         if ( width === undefined ) {
             this._context.drawImage( this._cache.get( resourceId ), x, y );
-            return;
+        } else {
+            this._context.drawImage( this._cache.get( resourceId ), x, y, width, height );
         }
-        this._context.drawImage( this._cache.get( resourceId ), x, y, width, height );
+        if ( savedState ) {
+            this.restore();
+        }
     }
 
     drawImageCropped( resourceId: string,
@@ -180,32 +185,7 @@ export default class RendererImpl implements IRenderer {
             }
         }
 
-        let saveState = false;
-        // TODO clean up
-        if ( drawContext ) {
-            const hasScale = drawContext.scale !== undefined;
-            const hasAlpha = drawContext.alpha !== undefined;
-            const hasBlend = drawContext.blend !== undefined;
-
-            // TODO rotation
-
-            saveState = hasScale || hasAlpha || hasBlend;
-            if ( saveState ) {
-                this.save();
-            }
-
-            if ( hasScale ) {
-                this.scale( drawContext.scale );
-            }
-
-            if ( hasBlend ) {
-                this.setBlendMode( drawContext.blend );
-            }
-
-            if ( hasAlpha ) {
-                this.setAlpha( drawContext.alpha );
-            }
-        }
+        const savedState = drawContext !== undefined ? this.applyDrawContext( drawContext, destinationX, destinationY, destinationWidth, destinationHeight ) : false;
 
         // By rounding the values we omit subpixel content which provdes a performance boost
         // Safari also greatly benefits from round numbers as subpixel content is sometimes ommitted from rendering!
@@ -222,7 +202,7 @@ export default class RendererImpl implements IRenderer {
             ( HALF + destinationHeight ) << 0
         );
 
-        if ( saveState ) {
+        if ( savedState ) {
             this.restore();
         }
     }
@@ -245,5 +225,53 @@ export default class RendererImpl implements IRenderer {
         
         this._context.fillStyle = pattern;
         this._context.fillRect( x, y, width, height );
+    }
+
+    /* internal methods */
+
+    private applyDrawContext( drawContext: DrawContext, x: number, y: number, width: number, height: number ): boolean {
+        // TODO clean up
+        const hasScale    = drawContext.scale !== undefined;
+        const hasRotation = drawContext.rotation !== undefined;
+        const hasAlpha    = drawContext.alpha !== undefined;
+        const hasBlend    = drawContext.blendMode !== undefined;
+
+        // TODO rotation
+
+        let saveState = hasScale || hasRotation || hasAlpha || hasBlend;
+
+        if ( saveState ) {
+            this.save(); // TODO maybe not for scaled rotations (just reset the transform?)
+        }
+
+        if ( hasScale && !hasRotation ) {
+            this.scale( drawContext.scale );
+        }
+
+        if ( hasRotation ) {
+            const scale = drawContext.scale ?? 1;
+
+            const centerX = x + width  * HALF;
+            const centerY = y + height * HALF;
+
+            const cos = Math.cos( drawContext.rotation ) * scale;
+            const sin = Math.sin( drawContext.rotation ) * scale;
+
+            // Apply the combined transformation matrix using setTransform
+            this._context.setTransform( cos, sin, -sin, cos,
+                centerX - centerX * cos + centerY * sin,
+                centerY - centerX * sin - centerY * cos
+            );
+        }
+
+        if ( hasBlend ) {
+            this.setBlendMode( drawContext.blendMode );
+        }
+
+        if ( hasAlpha ) {
+            this.setAlpha( drawContext.alpha );
+        }
+
+        return saveState;
     }
 }

@@ -41,7 +41,8 @@ export interface IRenderer {
         x: number,
         y: number,
         width?: number,
-        height?: number
+        height?: number,
+        drawContext?: DrawContext,
     ): void
     drawImageCropped(
         resourceId: string,
@@ -67,6 +68,6 @@ export type DrawContext = {
     scale?: number;
     rotation?: number;
     alpha?: number;
-    blend?: GlobalCompositeOperation;
+    blendMode?: GlobalCompositeOperation;
     safeMode?: boolean;
 };

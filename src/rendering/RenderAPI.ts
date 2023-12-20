@@ -242,8 +242,8 @@ export default class RenderAPI implements IRenderer {
         this.getBackend( "drawCircle", x, y, radius, fillColor, strokeColor );
     }
 
-    drawImage( resourceId: string, x: number, y: number, width: number, height: number ): void {
-        this.getBackend( "drawImage", resourceId, x, y, width, height );
+    drawImage( resourceId: string, x: number, y: number, width: number, height: number, drawContext?: DrawContext, ): void {
+        this.getBackend( "drawImage", resourceId, x, y, width, height, drawContext );
     }
 
     drawImageCropped(

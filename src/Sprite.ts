@@ -20,10 +20,9 @@
  * IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-import Loader from "./Loader";
 import type Canvas from "./Canvas";
 import type { Point, Rectangle, SpriteSheet, Viewport } from "./definitions/types";
-import { type IRenderer } from "./rendering/IRenderer";
+import type { IRenderer, DrawContext } from "./rendering/IRenderer";
 import { isInsideViewport, calculateDrawRectangle } from "./utils/ImageMath";
 
 const { min, max } = Math;
@@ -34,6 +33,7 @@ interface SpriteProps {
     height: number,
     x?: number,
     y?: number,
+    rotation?: number,
     resourceId?: string,
     collidable?: boolean,
     interactive?: boolean,
@@ -64,6 +64,7 @@ export default class Sprite {
     public next: Sprite | undefined;
 
     protected _bounds: Rectangle; // bounding box relative to the Canvas
+    protected _rotation: number;
     protected _children: Sprite[]  = [];
     protected _parent: Sprite | Canvas | undefined;
     protected _disposed = false;
@@ -83,7 +84,7 @@ export default class Sprite {
         tileHeight: number;
         onComplete?: ( sprite: Sprite ) => void;
     } | undefined;
-
+    protected _drawContext: DrawContext | undefined;
     protected _resourceId: string; // resourceId registered in renderer Cache
 
     protected _pressTime: number;
@@ -97,6 +98,7 @@ export default class Sprite {
         resourceId,
         x = 0,
         y = 0,
+        rotation = 0,
         collidable = false,
         interactive = false,
         mask = false,
@@ -112,13 +114,14 @@ export default class Sprite {
 
         this.collidable = collidable;
 
-        this._mask = mask;
+        this._mask   = mask;
         this._bounds = { left: 0, top: 0, width, height };
 
         /* initialization */
 
         this.setX( x );
         this.setY( y );
+        this.setRotation( rotation );
         this.setInteractive( interactive );
 
         if ( resourceId ) {
@@ -319,7 +322,17 @@ export default class Sprite {
 
     getBounds(): Rectangle {
         return this._bounds;
-    };
+    }
+
+    getRotation(): number {
+        return this._rotation * 180 / Math.PI;
+    }
+
+    setRotation( angleInDegrees: number ): void {
+        // TODO cache the PI calculations
+        this._rotation = ( angleInDegrees % 360 ) * Math.PI / 180;
+        this.invalidateDrawContext();
+    }
 
     /**
      * whether this Sprite is interactive (should responds to user
@@ -399,19 +412,6 @@ export default class Sprite {
             render = isInsideViewport( bounds, viewport );
         }
 
-        // TODO: can this just go into the DrawContext ? (or maybe not to prevent garbage collector hit, or make a pool!)
-        let saveState = this._mask; // save() and restore() come with a performance hit, omit when possible
-
-        if ( saveState ) {
-            renderer.save();
-        }
-
-        // Sprite acts as a mask for underlying Sprites ?
-
-        if ( this._mask ) {
-            renderer.setBlendMode( "destination-in" );
-        }
-
         if ( render ) {
 
             const aniProps = this._animation;
@@ -428,10 +428,12 @@ export default class Sprite {
                     const { src, dest } = calculateDrawRectangle( bounds, viewport );
                     renderer.drawImageCropped(
                         this._resourceId,
-                        src.left, src.top, src.width, src.height, dest.left, dest.top, dest.width, dest.height
+                        src.left, src.top, src.width, src.height,
+                        dest.left, dest.top, dest.width, dest.height,
+                        this._drawContext,
                     );
                 } else {
-                    renderer.drawImage( this._resourceId, left, top, width, height );
+                    renderer.drawImage( this._resourceId, left, top, width, height, this._drawContext );
                 }
             }
             else {
@@ -451,7 +453,8 @@ export default class Sprite {
                     aniProps.col      * tileWidth,  // tile x offset
                     aniProps.type.row * tileHeight, // tile y offset
                     tileWidth, tileHeight,
-                    left, top, width, height
+                    left, top, width, height,
+                    this._drawContext,
                 );
             }
         }
@@ -464,20 +467,10 @@ export default class Sprite {
             theSprite = theSprite.next;
         }
 
-        // restore canvas drawing operation so subsequent sprites draw as overlay
-
-        if ( this._mask ) {
-            renderer.setBlendMode( "source-over" ); // @todo doesn't restore fix this??
-        }
-
         // draw an outline when in debug mode
 
         if ( this.canvas.DEBUG ) {
             renderer.drawRect( this.getX(), this.getY(), this.getWidth(), this.getHeight(), "#FF0000", "stroke" );
-        }
-
-        if ( saveState ) {
-            renderer.restore();
         }
     }
 
@@ -1019,6 +1012,14 @@ export default class Sprite {
     }
 
     /* protected methods */
+
+    protected invalidateDrawContext(): void {
+        if ( this._rotation !== 0 || this._mask ) {
+            this._drawContext = this._drawContext ?? {}; // pool Object instance
+            this._drawContext.rotation  = this._rotation;
+            this._drawContext.blendMode = this._mask ? "destination-in" : undefined;
+        }
+    }
 
     /**
      * invoked by the update()-method prior to rendering

@@ -59,7 +59,7 @@ export default class Cache<T> {
             return false;
         }
         const bitmap = this.get( key );
-        if ( typeof bitmap.close === "function" ) {
+        if ( typeof ( bitmap as ImageBitmap ).close === "function" ) {
             ( bitmap as ImageBitmap ).close();
         }
         return this._map.delete( key );
