@@ -132,7 +132,7 @@ export default class Canvas {
         this.DEBUG = debug;
 
         this._element  = document.createElement( "canvas" );
-        this._renderer = new RenderAPI( this._element, true );
+        this._renderer = new RenderAPI( this._element, true, debug );
         this.collision = new Collision( this._renderer );
 
         this._updateHandler = onUpdate;
@@ -380,6 +380,7 @@ export default class Canvas {
         this._renderer.setSmoothing( enabled );
         // 2. update Canvas Element in DOM
         if ( enabled ) {
+            // @ts-expect-error TS7015: Element implicitly has an 'any' type because index expression is not of type 'number'.
             this._element.style[ "image-rendering" ] = "";
         } else {
             [ "-moz-crisp-edges", "-webkit-crisp-edges", "pixelated", "crisp-edges" ]

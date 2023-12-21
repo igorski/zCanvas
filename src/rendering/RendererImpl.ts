@@ -31,7 +31,7 @@ export default class RendererImpl implements IRenderer {
     _cache: Cache<ImageBitmap>;
     _patternCache: Cache<CanvasPattern>;
 
-    constructor( canvas: HTMLCanvasElement | OffscreenCanvas ) {
+    constructor( canvas: HTMLCanvasElement | OffscreenCanvas, private _debug = false ) {
         this._canvas  = canvas;
         this._context = canvas.getContext( "2d" );
 
@@ -116,7 +116,9 @@ export default class RendererImpl implements IRenderer {
     }
 
     drawCircle( x: number, y: number, radius: number, fillColor: string, strokeColor?: string ): void {
-        this._context.beginPath();
+        if ( strokeColor ) {
+            this._context.beginPath();
+        }
         this._context.arc( x + radius, y + radius, radius, 0, 2 * Math.PI, false );
         this._context.fillStyle = fillColor;
         this._context.fill();
@@ -124,9 +126,9 @@ export default class RendererImpl implements IRenderer {
         if ( strokeColor ) {
             this._context.lineWidth = 5;
             this._context.strokeStyle = strokeColor;
+            this._context.closePath();
             this._context.stroke();
         }
-        this._context.closePath();
     }
 
     drawImage( resourceId: string, x: number, y: number, width?: number, height?: number, drawContext?: DrawContext ): void {
@@ -139,6 +141,9 @@ export default class RendererImpl implements IRenderer {
             this._context.drawImage( this._cache.get( resourceId ), x, y );
         } else {
             this._context.drawImage( this._cache.get( resourceId ), x, y, width, height );
+        }
+        if ( this._debug ) {
+            this.drawRect( x, y, width, height, "#FF0000", "stroke" );
         }
         if ( savedState ) {
             this.restore();
@@ -201,6 +206,10 @@ export default class RendererImpl implements IRenderer {
             ( HALF + destinationWidth )  << 0,
             ( HALF + destinationHeight ) << 0
         );
+
+        if ( this._debug ) {
+            this.drawRect( destinationX, destinationY, destinationWidth, destinationHeight, "#FF0000", "stroke" );
+        }
 
         if ( savedState ) {
             this.restore();

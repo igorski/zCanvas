@@ -397,18 +397,15 @@ export default class Sprite {
      */
     draw( renderer: IRenderer, viewport?: Viewport ): void {
 
-        // extend in subclass if you're drawing a custom object instead of a graphical Image asset
+        // extend in subclass if you're drawing a custom object instead of a image resource
         // don't forget to draw the child display list when overriding this method!
-
-        if ( !this.canvas ) {
-            return;
-        }
 
         const bounds = this._bounds;
 
-        let render = !!this._resourceId; // only render when a resource has been provided
+        // only render when the Sprite has a valid resource
+        // when a viewport is provided, only render when content is within visual bounds
+        let render = !!this._resourceId;
         if ( render && viewport ) {
-            // ...and content is within visual bounds if a viewport was defined
             render = isInsideViewport( bounds, viewport );
         }
 
@@ -461,16 +458,10 @@ export default class Sprite {
 
         // draw this Sprites children onto the canvas
 
-        let theSprite = this._children[ 0 ];
-        while ( theSprite ) {
-            theSprite.draw( renderer, viewport );
-            theSprite = theSprite.next;
-        }
-
-        // draw an outline when in debug mode
-
-        if ( this.canvas.DEBUG ) {
-            renderer.drawRect( this.getX(), this.getY(), this.getWidth(), this.getHeight(), "#FF0000", "stroke" );
+        let childSprite = this._children[ 0 ];
+        while ( childSprite ) {
+            childSprite.draw( renderer, viewport );
+            childSprite = childSprite.next;
         }
     }
 

@@ -40,7 +40,7 @@ export default class RenderAPI implements IRenderer {
     private _useWorker = false;
     private _callbacks: Map<string, { resolve: ( data?: any ) => void, reject: ( error: Error ) => void }>;
 
-    constructor( canvas: HTMLCanvasElement, useOffscreen = false ) {
+    constructor( canvas: HTMLCanvasElement, useOffscreen = false, debug = false ) {
         this._element = canvas;
 
         if ( useOffscreen && typeof this._element[ "transferControlToOffscreen" ] === "function" ) {
@@ -52,11 +52,12 @@ export default class RenderAPI implements IRenderer {
 
             this._worker.postMessage({
                 cmd: "init",
-                canvas: offscreenCanvas
+                canvas: offscreenCanvas,
+                debug,
             }, [ offscreenCanvas ]);
             this._worker.onmessage = this.handleMessage.bind( this );
         } else {
-            this._renderer = new RendererImpl( this._element );
+            this._renderer = new RendererImpl( this._element, debug );
         }
     }
 
