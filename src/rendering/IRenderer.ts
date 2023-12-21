@@ -35,7 +35,7 @@ export interface IRenderer {
 
     clearRect( x: number, y: number, width: number, height: number ): void;
     drawRect( x: number, y: number, width: number, height: number, color: string, fillType?: "fill" | "stroke" ): void
-    drawCircle( x: number, y: number, radius: number, fillColor: string, strokeColor?: string ): void
+    drawCircle( x: number, y: number, radius: number, fillColor = "transparent", strokeColor?: string ): void
     drawImage(
         resourceId: string,
         x: number,

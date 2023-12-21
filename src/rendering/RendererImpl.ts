@@ -28,19 +28,21 @@ const HALF = 0.5;
 export default class RendererImpl implements IRenderer {
     _canvas: HTMLCanvasElement | OffscreenCanvas;
     _context: CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D;
-    _cache: Cache<ImageBitmap>;
+    _bitmapCache: Cache<ImageBitmap>;
     _patternCache: Cache<CanvasPattern>;
 
     constructor( canvas: HTMLCanvasElement | OffscreenCanvas, private _debug = false ) {
         this._canvas  = canvas;
         this._context = canvas.getContext( "2d" );
 
-        this._cache        = new Cache();
+        this._bitmapCache  = new Cache( undefined, ( bitmap: ImageBitmap ) => {
+            bitmap.close();
+        });
         this._patternCache = new Cache();
     }
 
     dispose(): void {
-        this._cache.dispose();
+        this._bitmapCache.dispose();
         this._patternCache.dispose();
         this._canvas = undefined;
     }
@@ -48,15 +50,15 @@ export default class RendererImpl implements IRenderer {
     /* public methods */
 
     cacheResource( id: string, bitmap: ImageBitmap ): void {
-        this._cache.set( id, bitmap );
+        this._bitmapCache.set( id, bitmap );
     }
 
     getResource( id: string ): ImageBitmap | undefined {
-        return this._cache.get( id );
+        return this._bitmapCache.get( id );
     }
 
     disposeResource( id: string ): void {
-        this._cache.remove( id );
+        this._bitmapCache.remove( id );
     }
 
     setDimensions( width: number, height: number ): void {
@@ -115,13 +117,14 @@ export default class RendererImpl implements IRenderer {
         }
     }
 
-    drawCircle( x: number, y: number, radius: number, fillColor: string, strokeColor?: string ): void {
-        if ( strokeColor ) {
-            this._context.beginPath();
-        }
+    drawCircle( x: number, y: number, radius: number, fillColor = "transparent", strokeColor?: string ): void {
+        this._context.beginPath();
         this._context.arc( x + radius, y + radius, radius, 0, 2 * Math.PI, false );
-        this._context.fillStyle = fillColor;
-        this._context.fill();
+
+        if ( fillColor !== "transparent" ) {
+            this._context.fillStyle = fillColor;
+            this._context.fill();
+        }
 
         if ( strokeColor ) {
             this._context.lineWidth = 5;
@@ -132,15 +135,15 @@ export default class RendererImpl implements IRenderer {
     }
 
     drawImage( resourceId: string, x: number, y: number, width?: number, height?: number, drawContext?: DrawContext ): void {
-        if ( !this._cache.has( resourceId )) {
+        if ( !this._bitmapCache.has( resourceId )) {
             return;
         }
         const savedState = drawContext !== undefined ? this.applyDrawContext( drawContext, x, y, width, height ) : false;
 
         if ( width === undefined ) {
-            this._context.drawImage( this._cache.get( resourceId ), x, y );
+            this._context.drawImage( this._bitmapCache.get( resourceId ), x, y );
         } else {
-            this._context.drawImage( this._cache.get( resourceId ), x, y, width, height );
+            this._context.drawImage( this._bitmapCache.get( resourceId ), x, y, width, height );
         }
         if ( this._debug ) {
             this.drawRect( x, y, width, height, "#FF0000", "stroke" );
@@ -155,7 +158,7 @@ export default class RendererImpl implements IRenderer {
         destinationX: number, destinationY: number, destinationWidth: number, destinationHeight: number,
         drawContext?: DrawContext,
     ): void {
-        if ( !this._cache.has( resourceId )) {
+        if ( !this._bitmapCache.has( resourceId )) {
             return;
         }
 
@@ -169,7 +172,7 @@ export default class RendererImpl implements IRenderer {
                 return;
             }
 
-            const source = this._cache.get( resourceId );
+            const source = this._bitmapCache.get( resourceId );
 
             // clipping rectangle doesn't have to exceed <canvas> dimensions
             destinationWidth  = Math.min( this._context.canvas.width,  destinationWidth );
@@ -196,7 +199,7 @@ export default class RendererImpl implements IRenderer {
         // Safari also greatly benefits from round numbers as subpixel content is sometimes ommitted from rendering!
 
         this._context.drawImage(
-            this._cache.get( resourceId ),
+            this._bitmapCache.get( resourceId ),
             ( HALF + sourceX )           << 0,
             ( HALF + sourceY )           << 0,
             ( HALF + sourceWidth )       << 0,
@@ -217,12 +220,12 @@ export default class RendererImpl implements IRenderer {
     }
 
     createPattern( resourceId: string, repetition: "repeat" | "repeat-x" | "repeat-y" | "no-repeat" ): void {
-        if ( !this._cache.has( resourceId )) {
+        if ( !this._bitmapCache.has( resourceId )) {
             return;
         }
         this._patternCache.set(
             resourceId,
-            this._context.createPattern( this._cache.get( resourceId ), repetition )
+            this._context.createPattern( this._bitmapCache.get( resourceId ), repetition )
         );
     }
 
