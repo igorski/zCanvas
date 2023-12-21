@@ -167,10 +167,6 @@ export default class Canvas {
         this.setSmoothing( smoothing );
         this.preventEventBubbling( preventEventBubbling );
         this.addListeners();
-
-        if ( this._animate ) {
-            this.render();  // start render loop
-        }
     }
 
     /* public methods */
@@ -474,14 +470,12 @@ export default class Canvas {
     }
 
     setAnimatable( value: boolean ): void {
-        const oldValue = this._animate;
-
-        this._animate = value;
         this._lastRaf = window.performance?.now() || Date.now();
 
         if ( value && !this._renderPending ) {
-            this._renderHandler( this._lastRaf );
+            this.invalidate();
         }
+        this._animate = value;
     }
 
     isAnimatable(): boolean {
@@ -781,6 +775,8 @@ export default class Canvas {
             theSprite.draw( this._renderer, this._viewport );
             theSprite = theSprite.next;
         }
+
+        this._renderer.onCommandsReady();
 
         // keep render loop going while Canvas is animatable
 

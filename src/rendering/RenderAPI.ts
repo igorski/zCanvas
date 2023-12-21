@@ -28,6 +28,9 @@ import RendererImpl from "./RendererImpl";
 import type { IRenderer, DrawContext } from "./IRenderer";
 // @ts-expect-error cannot handle Vite parameters for inlining as Blob
 import CanvasWorker from "../workers/canvas.worker?worker&inline";
+import Cache from "../utils/Cache";
+
+type DrawCommand = ( string | number | DrawContext )[];
 
 /**
  * All draw commands are executed on the RenderAPI which can delegate
@@ -36,8 +39,15 @@ import CanvasWorker from "../workers/canvas.worker?worker&inline";
 export default class RenderAPI implements IRenderer {
     private _element: HTMLCanvasElement;
     private _renderer: RendererImpl;
+
+    // when using Workers, we use a post messaging interface which requires a callback system
+    // additionally, we send draw commands in batches to minimise overhead of structured cloning
+    // command lists and command items are pooled in a Cache to prevent garbage collector hit
+
     private _worker: Worker;
     private _useWorker = false;
+    private _pool: Cache<DrawCommand>;
+    private _commands: DrawCommand[];
     private _callbacks: Map<string, { resolve: ( data?: any ) => void, reject: ( error: Error ) => void }>;
 
     constructor( canvas: HTMLCanvasElement, useOffscreen = false, debug = false ) {
@@ -46,6 +56,11 @@ export default class RenderAPI implements IRenderer {
         if ( useOffscreen && typeof this._element[ "transferControlToOffscreen" ] === "function" ) {
             this._useWorker = true;
             this._callbacks = new Map();
+            this._pool = new Cache(() => ([]), ( cmd: DrawCommand ) => {
+                cmd.length = 0;
+            });
+            this._pool.fill( 1000 ); // allocate memory to hold at least this amount of commands
+            this._commands = [];
             
             const offscreenCanvas = canvas.transferControlToOffscreen();
             this._worker = new CanvasWorker();
@@ -128,6 +143,18 @@ export default class RenderAPI implements IRenderer {
         this.getBackend( "disposeResource", id );
     }
 
+    onCommandsReady(): void {
+        if ( !this._useWorker ) {
+            return; // commands have been executed synchronously in non-Worker version
+        }
+        this._worker.postMessage({
+            cmd: "render",
+            commands: this._commands,
+        });
+        this._commands.length = 0; // commands have been sent to Worker using structured cloning
+        this._pool.reset(); // reset Pool for next render cycle
+    }
+
     dispose(): void {
         this.getBackend( "dispose" );
 
@@ -136,18 +163,6 @@ export default class RenderAPI implements IRenderer {
             this._worker = undefined; 
             this._callbacks?.clear();
         }, 50 );
-    }
-
-    protected getBackend( cmd: string, ...args: any[] ): void {
-        if ( this._useWorker ) {
-            this._worker.postMessage({
-                cmd,
-                args: [ ...args ],
-            });
-            return
-        }
-        // @ts-expect-error TS2556: A spread argument must either have a tuple type or be passed to a rest parameter.
-        this._renderer[ cmd as keyof IRenderer ]( ...args );
     }
 
     protected handleMessage( message: MessageEvent ): void {
@@ -197,54 +212,59 @@ export default class RenderAPI implements IRenderer {
         }
     }
 
-    /* rendering API */
-
-    // @TODO when using offscreenCanvas post messages (will be difficult with getters though...)
-    // @TODO can we maybe just Proxy this upfront to prevent duplicate calls ??
-    // @TODO can we just return a direct reference to the Renderer class when we're not using the offscreen canvas ???
+    /* IRenderer interface - setup API */
 
     setDimensions( width: number, height: number ) {
         this.getBackend( "setDimensions", width, height );
+    }
+
+    createPattern( resourceId: string, repetition: "repeat" | "repeat-x" | "repeat-y" | "no-repeat" ): void {
+        this.getBackend( "createPattern", resourceId, repetition );
     }
 
     setSmoothing( enabled: boolean ): void {
         this.getBackend( "setSmoothing", enabled );
     }
 
+    /* IRenderer interface - draw API */
+
+    // @TODO can we maybe just Proxy this upfront to prevent duplicate calls ??
+    // @TODO can we just return a direct reference to the Renderer class when we're not using the offscreen canvas ???
+
     save(): void {
-        this.getBackend( "save" );
+        this.onDraw( "save" );
     }
 
     restore(): void {
-        this.getBackend( "restore" );
+        this.onDraw( "restore" );
     }
 
     scale( xScale: number, yScale?: number ): void {
-        this.getBackend( "scale", xScale, yScale );
+        this.onDraw( "scale", xScale, yScale );
     }
 
     setBlendMode( type: GlobalCompositeOperation ): void {
-        this.getBackend( "setBlendMode", type );
+        this.onDraw( "setBlendMode", type );
     }
 
     setAlpha( value: number ): void {
-        this.getBackend( "setAlpha", value );
+        this.onDraw( "setAlpha", value );
     }
 
     clearRect( x: number, y: number, width: number, height: number ): void {
-        this.getBackend( "clearRect", x, y, width, height );
+        this.onDraw( "clearRect", x, y, width, height );
     }
 
     drawRect( x: number, y: number, width: number, height: number, color: string, fillType?: "fill" | "stroke" ): void {
-        this.getBackend( "drawRect", x, y, width, height, color, fillType );
+        this.onDraw( "drawRect", x, y, width, height, color, fillType );
     }
 
-    drawCircle( x: number, y: number, radius: number, fillColor: string, strokeColor?: string ): void {
-        this.getBackend( "drawCircle", x, y, radius, fillColor, strokeColor );
+    drawCircle( x: number, y: number, radius: number, fillColor = "transparent", strokeColor?: string ): void {
+        this.onDraw( "drawCircle", x, y, radius, fillColor, strokeColor );
     }
 
     drawImage( resourceId: string, x: number, y: number, width: number, height: number, drawContext?: DrawContext, ): void {
-        this.getBackend( "drawImage", resourceId, x, y, width, height, drawContext );
+        this.onDraw( "drawImage", resourceId, x, y, width, height, drawContext );
     }
 
     drawImageCropped(
@@ -259,17 +279,39 @@ export default class RenderAPI implements IRenderer {
         destinationHeight: number,
         drawContext?: DrawContext,
     ): void {
-        this.getBackend( "drawImageCropped",
+        this.onDraw( "drawImageCropped",
             resourceId, sourceX, sourceY, sourceWidth, sourceHeight,
             destinationX, destinationY, destinationWidth, destinationHeight, drawContext
         );
     }
 
-    createPattern( resourceId: string, repetition: "repeat" | "repeat-x" | "repeat-y" | "no-repeat" ): void {
-        this.getBackend( "createPattern", resourceId, repetition );
+    drawPattern( patternResourceId: string, x: number, y: number, width: number, height: number ): void {
+        this.onDraw( "drawPattern", patternResourceId, x, y, width, height );
     }
 
-    drawPattern( patternResourceId: string, x: number, y: number, width: number, height: number ): void {
-        this.getBackend( "drawPattern", patternResourceId, x, y, width, height );
+    /* Proxies for interacting with the renderer using the appropriate backend */
+
+    protected onDraw( cmd: string, ...args: any[] ): void {
+        // Worker receives all its commands in a single batch
+        if ( this._useWorker ) {
+            const command = this._pool.next();
+            command.length = 0;
+            command.push( cmd, ...args );
+            this._commands.push( command );
+            return;
+        }
+        // @ts-expect-error TS2556: A spread argument must either have a tuple type or be passed to a rest parameter.
+        this._renderer[ cmd as keyof IRenderer ]( ...args );
+    }
+
+    protected getBackend( cmd: string, ...args: any[] ): void {
+        if ( this._useWorker ) {
+            return this._worker.postMessage({
+                cmd,
+                args: [ ...args ],
+            });
+        }
+        // @ts-expect-error TS2556: A spread argument must either have a tuple type or be passed to a rest parameter.
+        this._renderer[ cmd as keyof IRenderer ]( ...args );
     }
 }

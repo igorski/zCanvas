@@ -23,8 +23,17 @@
 export default class Cache<T> {
     private _map: Map<string, T>;
 
-    constructor() {
+    // optional factory function in case entities can be lazily created inside this class
+
+    private _createFn  : () => T | undefined;
+    private _destroyFn : ( entity: T ) => void | undefined;
+    private _index = 0;
+
+    constructor( createFn?: () => T, destroyFn?: ( entity: T ) => void ) {
         this._map = new Map();
+
+        this._createFn  = createFn;
+        this._destroyFn = destroyFn;
     }
 
     dispose(): void {
@@ -39,15 +48,15 @@ export default class Cache<T> {
         return this._map.get( key );
     }
 
-    set( key: string, bitmap: T ): void {
+    set( key: string, entity: T ): void {
         if ( this.has( key )) {
-            const existingBitmap = this.get( key );
-            if ( existingBitmap === bitmap ) {
+            const existingEntity = this.get( key );
+            if ( existingEntity === entity ) {
                 return;
             }
             this.remove( key );
         }
-        this._map.set( key, bitmap );
+        this._map.set( key, entity );
     }
 
     has( key: string ): boolean {
@@ -58,10 +67,38 @@ export default class Cache<T> {
         if ( !this.has( key )) {
             return false;
         }
-        const bitmap = this.get( key );
-        if ( typeof ( bitmap as ImageBitmap ).close === "function" ) {
-            ( bitmap as ImageBitmap ).close();
-        }
+        const entity = this.get( key );
+        this._destroyFn?.( entity );
+        
         return this._map.delete( key );
+    }
+
+    // the following can be used when the Cache acts as a Pool
+    // allowing you to retrieve the next available entity (or lazily create one)
+
+    next(): T | undefined {
+        let entity: T;
+        const key = this._index.toString();
+
+        if ( this.has( key )) {
+            entity = this.get( key );
+        } else if ( this._createFn ) {
+            entity = this._createFn();
+            this.set( key, entity );
+        }
+        ++this._index;
+        return entity;
+    }
+
+    fill( amount: number ): void {
+        const curIndex = this._index;
+        for ( let i = 0; i < amount; ++i ) {
+            this.next();
+        }
+        this._index = curIndex;
+    }
+
+    reset(): void {
+        this._index = 0;
     }
 }

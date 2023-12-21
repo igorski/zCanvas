@@ -58,23 +58,25 @@ onmessage = ( e: MessageEvent ): void => {
             renderer = undefined;
             break;
 
-        // IRenderer API
-        case "setSmoothing":
+        // IRenderer draw commands (batched)
+        case "render":
+            if ( !renderer || !Array.isArray( e.data.commands )) {
+                return;
+            }
+            for ( const command of e.data.commands ) {
+                const cmd = command.shift();
+                // @ts-expect-error TS2556: A spread argument must either have a tuple type or be passed to a rest parameter.
+                renderer[ ( cmd as keyof IRenderer )]( ...command );
+            }
+            postMessage({ cmd: "onrender" });
+            break;
+
+        // IRenderer setup commands (directly executed)
         case "setDimensions":
-        case "save":
-        case "restore":
-        case "scale":
-        case "setBlendMode":
-        case "setAlpha":
-        case "clearRect":
-        case "drawCircle":
-        case "drawRect":
-        case "drawImage":
-        case "drawImageCropped":
+        case "setSmoothing":
         case "createPattern":
-        case "drawPattern":
             // @ts-expect-error TS2556: A spread argument must either have a tuple type or be passed to a rest parameter.
-            renderer && renderer[ ( e.data.cmd as keyof IRenderer )]( ...e.data.args );
+            renderer[ ( e.data.cmd as keyof IRenderer )]( ...e.data.args );
             break;
     }
 };
