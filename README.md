@@ -57,7 +57,7 @@ _(for those craving a more hands-on approach, you can also view the source conte
 
 You can view some basic features in the down-and-dirty demos here.
 
-Note these demos were written in good old ES6 without the use of any libraries (other than RequireJS to load a transpiled zCanvas).
+Note these demos were written in vanilla JavaScript without the use of any libraries (other than RequireJS to load a transpiled version of zCanvas).
 
 ### Game demos
 
@@ -98,7 +98,7 @@ After which you can subsequently use a tool like Webpack to bundle your applicat
 
 ### RequireJS
 
-Use `zcanvas.umd.js` inside the `dist`-folder for a prebuilt, minimized RequireJS library transpiled to ES5.
+Use `zcanvas.umd.js` inside the `dist`-folder for a prebuilt, minimized RequireJS library transpiled to JS.
 
 ```
 require( [ "zcanvas.amd" ], ( zCanvas ) {
@@ -134,7 +134,7 @@ can also be built directly for the browser using a simple NPM task:
 npm run build
 ```
 
-After which a folder _dist/_ is created which contains the prebuilt AMD/RequireJS library as well as a script that can be included directly in a document. The source code is transpiled from ES6 to ES5 for maximum compatibility.
+After which a folder _dist/_ is created which contains the prebuilt AMD/RequireJS library as well as a script that can be included directly in a document.
 
 ## Unit testing
 

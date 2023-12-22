@@ -22,7 +22,8 @@
  */
 import type { SizedImage, Size } from "./definitions/types";
 import EventHandler from "./utils/EventHandler";
-import { imageToBitmap } from "./utils/ImageUtil";
+import { imageToBitmap, blobToImage } from "./utils/ImageUtil";
+import { readFile } from "./utils/FileUtil";
 
 /**
  * loader provides an interface that allows the loading of Images
@@ -38,19 +39,31 @@ const Loader = {
      *
      * if an Error has occurred the second argument will be the Error
      *
-     * @param {string}    source either base64 encoded bitmap data or (web)path
-     *                    to an image file
-     * @param {HTMLImageElement=} optImage optional HTMLImageElement to load the aSource
-     *                    into, in case we'd like to re-use an existing Element
-     *                    (will not work in Firefox repeatedly as load handlers
-     *                    will only fire once)
+     * @param {string | Blob | File} source when string, can be base64 or URL to file / blob URL
      * @return {Promise<SizedImage>}
      */
-    loadImage( source: string, optImage?: HTMLImageElement ): Promise<SizedImage> {
-        return new Promise(( resolve, reject ) => {
-            const out       = optImage || new window.Image();
-            const isDataURL = isDataSource( source );
+    loadImage( source: string | Blob | File ): Promise<SizedImage> {
+        return new Promise( async ( resolve, reject ) => {
+            // first check whether source is binary data
+            let blob: Blob;
+            if ( source instanceof File ) {
+                blob = await readFile( source as File );
+            } else if ( source instanceof Blob ) {
+                blob = source as Blob;
+            }
 
+            if ( blob !== undefined ) {
+                try {
+                    const image = await blobToImage( blob );
+                    Loader.onReady( image ).then(() => resolve( wrapOutput( image )));
+                } catch ( e: any ) {
+                    reject( e );
+                }
+                return;
+            }
+            // source is String
+            const isDataURL = isDataSource( source as string );
+            const out = new window.Image();
             const handler = new EventHandler();
 
             const errorHandler = (): void => {
@@ -69,20 +82,19 @@ const Loader = {
                 // of the remainder of this function body! we only supply it for
                 // src attributes that AREN'T local data strings
 
-                applyOrigin( source, out );
+                applyOrigin( source as string, out );
 
                 handler.add( out, "load",  loadHandler );
                 handler.add( out, "error", errorHandler );
             }
 
             // load the image
-            out.src = source;
+            out.src = source as string;
 
             // invoke callback immediately for data strings when no load is required
-            // TODO: stub
 
             if ( isDataURL ) {
-                Loader.onReady( out ).then(() => resolve( wrapOutput( out ))).catch( reject );
+                loadHandler();
             }
         });
     },

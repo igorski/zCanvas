@@ -4,25 +4,32 @@
     <meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable = no" name="viewport">
     <meta charset="utf-8" />
     <title>zCanvas image manipulation example</title>
+    <!-- load demo assets -->
     <link rel="stylesheet" href="./assets/styles.css">
     <script type="text/javascript" src="./assets/images.js"></script>
+    <script type="text/javascript" src="./assets/utils.js"></script>
     <!-- include RequireJS to resolve dependencies -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.1.14/require.min.js" type="text/javascript"></script>
 </head>
 <body>
-    <div id="container">
-        <h1>zCanvas demo #5: Sprite Bitmap manipulation</h1>
-        <fieldset>
-            <label for="file">Select local image file</label>
-            <input type="file" id="file"
-                   accept="image/png,image/gif,image/jpeg"
-            />
-            <label for="scale">Zoom factor</label>
-            <input type="range" id="scale" min="1" max="4" value="1" step=".1" />
-            <button type="button" id="save">Save output</button>
-        </fieldset>
-        <div id="demo"><!-- x --></div>
-        <p>
+    <div class="demo-container">
+        <div class="demo-header">
+            <h1>zCanvas : Sprite Bitmap manipulation</h1>
+        </div>
+        <div class="demo-canvas-container"><!-- x --></div>
+        <div class="demo-controls">
+            <div>
+                <label for="file">Select local image file</label>
+                <input type="file" id="file"
+                    accept="image/png,image/gif,image/jpeg"
+                />
+                <label for="scale">Zoom factor</label>
+                <input type="range" id="scale" min="1" max="4" value="1" step=".1" />
+                <button type="button" id="save">Save output</button>
+            </div>
+            <!-- <button type="button" id="fullscreen">Fullscreen</button> -->
+        </div>
+        <p class="demo-description">
             Demo features : a simple utility that can load images which can be
             panned and zoomed inside the browser, where the visual result can be saved to disk.
         </p>
@@ -36,38 +43,33 @@
             urlArgs : "bust=" + Date.now()
         });
 
-        require( [ "zcanvas.umd" ], function( zCanvas ) {
+        require( [ "zcanvas.umd" ], zCanvas => {
+
+            const { Canvas, Sprite } = zCanvas;
 
             // STEP 1 : SETUP
             // --------------------------------------
 
-            const container = document.getElementById( "demo" );
+            const demoContainer   = document.querySelector( ".demo-container" );
+            const canvasContainer = document.querySelector( ".demo-canvas-container" );
 
-            // get window dimensions
+            const CANVAS_WIDTH  = 800;
+            const CANVAS_HEIGHT = 320;
 
-            let w, h;
-            if ( window.outerHeight ) {
-                w = window.outerWidth;
-                h = window.outerHeight;
-            } else {
-                w = document.documentElement.clientWidth;
-                h = document.documentElement.clientHeight;
-            }
-
-            // create a new canvas that renders at 60 fps
-            // keep it within the device / browser bounds
-            const cvsWidth  = ( w < 400 ) ? w * .93 : 400;
-            const cvsHeight = ( h < 300 ) ? h : 300;
-
-            const cvs = new zCanvas.canvas({
-                width: cvsWidth,
-                height: cvsHeight,
+            const cvs = new Canvas({
+                width: CANVAS_WIDTH,
+                height: CANVAS_HEIGHT,
                 preventEventBubbling: true,
-                parentElement: container,
+                parentElement: canvasContainer,
+                onResize: ( width, height ) => {
+                    // resize demo container to accomodate the canvas size
+                    demoContainer.style.width = `${width}px`;
+                }
             });
+            addCanvasDemoControls( demoContainer, cvs );
 
             // create the sprite that will represent the loaded image
-            class CroppableImage extends zCanvas.sprite {
+            class CroppableImage extends Sprite {
                 constructor( opts ) {
                     super( opts );
                 }
@@ -119,23 +121,26 @@
                     orgImageWidth  = imgSize.width;
                     orgImageHeight = imgSize.height;
 
+                    const canvasWidth  = cvs.getWidth();
+                    const canvasHeight = cvs.getHeight();
+
                     // image dimensions at the default (=lowest) zoom level should match canvas dimensions
 
                     const isLandscape = orgImageWidth >= orgImageHeight;
                     if ( isLandscape ) {
-                        minImageWidth  = cvs.getWidth();
-                        minImageHeight = cvs.getWidth() * ( orgImageHeight / orgImageWidth );
+                        minImageWidth  = canvasWidth;
+                        minImageHeight = canvasWidth * ( orgImageHeight / orgImageWidth );
                     } else {
-                        minImageWidth  = cvs.getHeight() * ( orgImageWidth / orgImageHeight );
-                        minImageHeight = cvs.getHeight();
+                        minImageWidth  = canvasHeight * ( orgImageWidth / orgImageHeight );
+                        minImageHeight = canvasHeight;
                     }
 
                     // ensure the image is occupying the full canvas without empty space on the non-dominant side
                     let ratio = 1;
-                    if ( minImageWidth < cvs.getWidth() ) {
-                        ratio = cvs.getWidth() / minImageWidth;
-                    } else if ( minImageHeight < cvs.getHeight() ) {
-                        ratio = cvs.getHeight() / minImageHeight;
+                    if ( minImageWidth < canvasWidth ) {
+                        ratio = canvasWidth / minImageWidth;
+                    } else if ( minImageHeight < canvasHeight ) {
+                        ratio = canvasHeight / minImageHeight;
                     }
                     minImageWidth  *= ratio;
                     minImageHeight *= ratio;

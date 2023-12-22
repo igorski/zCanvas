@@ -4,16 +4,27 @@
     <meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable = no" name="viewport">
     <meta charset="utf-8" />
     <title>zCanvas animated spritesheet example</title>
+    <!-- load demo assets -->
     <link rel="stylesheet" href="./assets/styles.css">
     <script type="text/javascript" src="./assets/images.js"></script>
+    <script type="text/javascript" src="./assets/utils.js"></script>
     <!-- include RequireJS to resolve dependencies -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.1.14/require.min.js" type="text/javascript"></script>
 </head>
 <body>
-    <div id="container">
-        <h1>zCanvas demo #1: Spritesheets and collisions</h1>
-        <div id="demo"><!-- x --></div>
-        <p>
+    <div class="demo-container">
+        <div class="demo-header">
+            <h1>zCanvas : spritesheets and collisions</h1>
+        </div>
+        <div class="demo-canvas-container"><!-- x --></div>
+        <div class="demo-controls">
+            <div>
+                <label for="fps">Framerate (15 to 60 fps)</label>
+                <input type="range" id="fps" min="15" max="60" value="60" step="1" />
+            </div>
+            <button type="button" id="fullscreen">Fullscreen</button>
+        </div>
+        <p class="demo-description">
             Demo features : a keyboard / touchscreen-controllable spritesheet character that uses the pixel-accurate (and slightly heavier) collision
             detection-variant (see API docs) to resolve collisions with the environment. The simulation speed is locked to the configured canvas framerate.
             Use arrow keys and spacebar to jump.
@@ -35,24 +46,11 @@
             // STEP 1 : SETUP
             // --------------------------------------
 
-            const container = document.getElementById( "demo" );
-
-            // get window dimensions
-
-            let w, h;
-            if ( window.outerHeight ) {
-                w = window.outerWidth;
-                h = window.outerHeight;
-            } else {
-                w = document.documentElement.clientWidth;
-                h = document.documentElement.clientHeight;
-            }
-
-            // create a new canvas that renders at 60 fps
-            // keep it within the device / browser bounds
-            const cvsWidth  = ( w < 800 ) ? w * .93 : 800;
-            const cvsHeight = ( h < 350 ) ? h : 350;
-            container.style.width = cvsWidth + "px";
+            const demoContainer   = document.querySelector( ".demo-container" );
+            const canvasContainer = document.querySelector( ".demo-canvas-container" );
+            
+            const cvsWidth  = 800;
+            const cvsHeight = 350;
 
             const cvs = new Canvas({
                 width: cvsWidth,
@@ -61,10 +59,14 @@
                 smoothing: false, // pixel art ahoy
                 fps: 60,
                 preventEventBubbling: true,
-                parentElement: container,
+                parentElement: canvasContainer,
+                onResize: ( width, height ) => {
+                    // resize demo container to accomodate the canvas size
+                    demoContainer.style.width = `${width}px`;
+                }
             });
-            window.cvs = cvs;
-
+            addCanvasDemoControls( demoContainer, cvs );
+window.cvs = cvs;
             // STEP 2: REGISTER ASSETS
             // -----------------------
 
@@ -109,6 +111,7 @@
                         this.xSpeed          = 0;     // horizontal speed (i.e. walking)
                         this.MAX_X_SPEED     = 5;     // maximum horizontal speed in pixels per frame
                         this.SPEED_INCREMENT = 0.125; // the value with which we will increment the speed until it reaches MAX
+                        this.FRICTION        = 0.25;
                         this.GRAVITY         = 7;     // the vertical "pull" exerted on the Hero
                         this.ySpeed          = 0;     // vertical speed (i.e. jumping/falling)
                         this._jumpCount      = 0;     // internal : countdown for determining max jump height reached
@@ -117,10 +120,9 @@
                     /* public methods */
 
                     jump() {
-
-                        if ( this.jumping )
+                        if ( this.jumping ) {
                             return;
-
+                        }
                         this.ySpeed     = 5;
                         this._jumpCount = 10;
                         this.jumping    = true;
@@ -130,7 +132,6 @@
                     // makes the hero run left (0) or right (1) at incremental speed
 
                     run( direction ) {
-
                         this.direction = direction;
                         this.running   = true;
                         // switch spritesheet animation now we're starting to run
@@ -142,7 +143,6 @@
                     // stops the hero (will slowly move to a halt)
 
                     stop() {
-
                         this.running = false;
                         // switch spritesheet animation now we're stopping the running
                         this.switchAnimation( this.direction === 0  ? 0 : 1 );
@@ -161,16 +161,18 @@
 
                         if ( this.running ) {
                             if ( this.direction === 0 ) { // moving left
-                                if ( hero.xSpeed > -hero.MAX_X_SPEED )
-                                    hero.xSpeed -= this.SPEED_INCREMENT;
+                                if ( hero.xSpeed > -hero.MAX_X_SPEED ) {
+                                    hero.xSpeed -= ( this.SPEED_INCREMENT * framesSinceLastUpdate );
+                                }
                             }
                             else if ( this.direction === 1 ) { // moving right
-                                if ( hero.xSpeed < hero.MAX_X_SPEED )
-                                    hero.xSpeed += this.SPEED_INCREMENT;
+                                if ( hero.xSpeed < hero.MAX_X_SPEED ) {
+                                    hero.xSpeed += ( this.SPEED_INCREMENT * framesSinceLastUpdate );
+                                }
                             }
                         }
 
-                        const thisWidth = this.getWidth();
+                        const thisWidth  = this.getWidth();
                         const thisHeight = this.getHeight();
                         const prevX = this.getX();
                         const prevY = this.getY();
@@ -195,10 +197,11 @@
 
                         // are we moving vertically ? (e.g. falling or jumping)
 
-                        if ( !this.falling && this.jumping )
-                            targetY -= this.ySpeed;
-                        else
-                            targetY += this.GRAVITY;
+                        if ( !this.falling && this.jumping ) {
+                            targetY -= ( this.ySpeed * framesSinceLastUpdate );
+                        } else {
+                            targetY += ( this.GRAVITY * framesSinceLastUpdate );
+                        }
 
                         // constrain Hero within the vertical bounds of the canvas
                         if ( targetY > this.canvas.getHeight() + thisHeight ) {
@@ -241,9 +244,9 @@
 
                         if ( !this.running ) {
                             if ( this.xSpeed < 0 ) {
-                                this.xSpeed += .25;
+                                this.xSpeed += ( this.FRICTION * framesSinceLastUpdate );
                             } else if ( this.xSpeed > 0 ) {
-                                this.xSpeed -= .25;
+                                this.xSpeed -= ( this.FRICTION * framesSinceLastUpdate );
                             }
                         }
 
@@ -308,28 +311,13 @@
 
                 // we add on-screen controls buttons for touch screens
 
-                const leftBtn = document.createElement( "div" );
-                leftBtn.id  = "left-btn";
-
-                const rightBtn = document.createElement( "div" );
-                rightBtn.id  = "right-btn";
-
-                const jumpBtn = document.createElement( "div" );
-                jumpBtn.id  = "action-btn";
-
-                container.appendChild( leftBtn );
-                container.appendChild( rightBtn );
-                container.appendChild( jumpBtn );
-
-                const cancelHandler = () => hero.stop();
-
-                leftBtn.addEventListener ( "touchstart",  e => hero.run( 0 ));
-                rightBtn.addEventListener( "touchstart",  e => hero.run( 1 ));
-                jumpBtn.addEventListener ( "touchstart",  e => hero.jump());
-                leftBtn.addEventListener ( "touchcancel", cancelHandler );
-                rightBtn.addEventListener( "touchcancel", cancelHandler );
-                leftBtn.addEventListener ( "touchend",    cancelHandler );
-                rightBtn.addEventListener( "touchend",    cancelHandler );
+                createJoypad(
+                    canvasContainer,
+                    e => hero.run( 0 ), // left button
+                    e => hero.run( 1 ), // right button
+                    e => hero.jump(),   // action button
+                    e => hero.stop(),   // release handler
+                );
 
                 // keyboard control for desktop devices
 
@@ -344,18 +332,21 @@
 
                         // move hero to the right
                         case 39:
-                            if ( !hero.running )
+                            if ( !hero.running ) {
                                 hero.run( 1 );
+                            }
                             break;
 
                         // move hero to the left
                         case 37:
-                            if ( !hero.running )
+                            if ( !hero.running ) {
                                 hero.run( 0 );
+                            }
                             break;
                     }
-                    if ( blockedCodes.indexOf( e.keyCode ) > -1 )
+                    if ( blockedCodes.includes( e.keyCode )) {
                         e.preventDefault(); // prevents document panning (if Canvas doesn't fit entirely)
+                    }
                 });
 
                 // add a listener for key up (release) so we can tell the hero to stop running

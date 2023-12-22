@@ -24,6 +24,7 @@ import type { IRenderer, DrawContext } from "./IRenderer";
 import Cache from "../utils/Cache";
 
 const HALF = 0.5;
+let ctx: CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D;
 
 export default class RendererImpl implements IRenderer {
     _canvas: HTMLCanvasElement | OffscreenCanvas;
@@ -89,6 +90,18 @@ export default class RendererImpl implements IRenderer {
         this._context.restore();
     }
 
+    translate( x: number, y: number ): void {
+        this._context.translate( x, y );
+    }
+
+    rotate( angleInRadians: number ): void {
+        this._context.rotate( angleInRadians );
+    }
+
+    transform( a: number, b: number, c: number, d: number, e: number, f: number ): void {
+        this._context.transform( a, b, c, d, e, f );
+    }
+
     scale( xScale: number, yScale = xScale ): void {
         this._context.scale( xScale, yScale );
     }
@@ -106,31 +119,49 @@ export default class RendererImpl implements IRenderer {
     }
 
     drawRect( x: number, y: number, width: number, height: number, color: string, fillType = "fill" ): void {
+        ctx = this._context;
+
         if ( fillType === "fill" ) {
-            this._context.fillStyle = color;
-            this._context.fillRect( x, y, width, height );
-        } else if ( fillType === "stroke" ) {
+            ctx.fillStyle = color;
+            ctx.fillRect( x, y, width, height );
+        } else {
             const lineWidth = 1;
-            this._context.lineWidth   = lineWidth;
-            this._context.strokeStyle = color;
-            this._context.strokeRect( HALF + ( x - lineWidth ), HALF + ( y - lineWidth ), width, height );
+            ctx.lineWidth   = lineWidth;
+            ctx.strokeStyle = color;
+            ctx.strokeRect( HALF + ( x - lineWidth ), HALF + ( y - lineWidth ), width, height );
+        }
+    }
+
+    drawRoundRect( x: number, y: number, width: number, height: number, radius: number, color: string, fillType?: "fill" | "stroke" ): void {
+        ctx = this._context;
+
+        if ( fillType === "fill" ) {
+            ctx.fillStyle = color;
+            ctx.fillRect( x, y, width, height );
+        } else {
+            ctx.strokeStyle = color;
+            ctx.beginPath();
+            ctx.roundRect( x, y, width, height, radius );
+            ctx.stroke();
         }
     }
 
     drawCircle( x: number, y: number, radius: number, fillColor = "transparent", strokeColor?: string ): void {
-        this._context.beginPath();
-        this._context.arc( x + radius, y + radius, radius, 0, 2 * Math.PI, false );
+        ctx = this._context;
+
+        ctx.beginPath();
+        ctx.arc( x + radius, y + radius, radius, 0, 2 * Math.PI, false );
 
         if ( fillColor !== "transparent" ) {
-            this._context.fillStyle = fillColor;
-            this._context.fill();
+            ctx.fillStyle = fillColor;
+            ctx.fill();
         }
 
         if ( strokeColor ) {
-            this._context.lineWidth = 5;
-            this._context.strokeStyle = strokeColor;
-            this._context.closePath();
-            this._context.stroke();
+            ctx.lineWidth = 5;
+            ctx.strokeStyle = strokeColor;
+            ctx.closePath();
+            ctx.stroke();
         }
     }
 
@@ -138,7 +169,7 @@ export default class RendererImpl implements IRenderer {
         if ( !this._bitmapCache.has( resourceId )) {
             return;
         }
-        const savedState = drawContext !== undefined ? this.applyDrawContext( drawContext, x, y, width, height ) : false;
+        const savedState = drawContext ? this.applyDrawContext( drawContext, x, y, width, height ) : false;
 
         if ( width === undefined ) {
             this._context.drawImage( this._bitmapCache.get( resourceId ), x, y );
@@ -193,7 +224,7 @@ export default class RendererImpl implements IRenderer {
             }
         }
 
-        const savedState = drawContext !== undefined ? this.applyDrawContext( drawContext, destinationX, destinationY, destinationWidth, destinationHeight ) : false;
+        const savedState = drawContext ? this.applyDrawContext( drawContext, destinationX, destinationY, destinationWidth, destinationHeight ) : false;
 
         // By rounding the values we omit subpixel content which provdes a performance boost
         // Safari also greatly benefits from round numbers as subpixel content is sometimes ommitted from rendering!
@@ -243,8 +274,8 @@ export default class RendererImpl implements IRenderer {
 
     private applyDrawContext( drawContext: DrawContext, x: number, y: number, width: number, height: number ): boolean {
         // TODO clean up
-        const hasScale    = drawContext.scale !== undefined;
-        const hasRotation = drawContext.rotation !== undefined;
+        const hasScale    = drawContext.scale !== undefined && drawContext.scale !== 1;
+        const hasRotation = drawContext.rotation !== 0;
         const hasAlpha    = drawContext.alpha !== undefined;
         const hasBlend    = drawContext.blendMode !== undefined;
 
@@ -263,8 +294,8 @@ export default class RendererImpl implements IRenderer {
         if ( hasRotation ) {
             const scale = drawContext.scale ?? 1;
 
-            const centerX = x + width  * HALF;
-            const centerY = y + height * HALF;
+            const centerX = drawContext.pivot?.x ?? x + width  * HALF;
+            const centerY = drawContext.pivot?.y ?? y + height * HALF;
 
             const cos = Math.cos( drawContext.rotation ) * scale;
             const sin = Math.sin( drawContext.rotation ) * scale;
@@ -283,7 +314,6 @@ export default class RendererImpl implements IRenderer {
         if ( hasAlpha ) {
             this.setAlpha( drawContext.alpha );
         }
-
         return saveState;
     }
 }

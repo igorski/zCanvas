@@ -53,8 +53,10 @@ interface CanvasProps {
     viewport?: Size;
     viewportHandler?: ({}: { type: "panned", value: Viewport }) => void;
     preventEventBubbling?: boolean;
+    optimize?: "auto" | "worker" | "none";
     parentElement?: HTMLElement;
     onUpdate?: ( now: DOMHighResTimeStamp, framesSinceLastRender: number ) => void;
+    onResize?: ( width: number, height: number ) => void;
     debug?: boolean;
 }
 
@@ -83,6 +85,7 @@ export default class Canvas {
 
     protected _renderHandler: ( now: DOMHighResTimeStamp ) => void;
     protected _updateHandler?: ( now: DOMHighResTimeStamp, framesSinceLastRender: number ) => void;
+    protected _resizeHandler?: ( width: number, height: number ) => void;
     protected _viewportHandler?: ({}: { type: "panned", value: Viewport }) => void;
     protected _eventHandler: EventHandler;
     protected _preventDefaults = false;
@@ -122,8 +125,10 @@ export default class Canvas {
         preventEventBubbling = false,
         parentElement = null,
         debug = false,
+        optimize = "auto",
         viewportHandler,
         onUpdate,
+        onResize,
     }: CanvasProps = {}) {
         if ( width <= 0 || height <= 0 ) {
             throw new Error( "cannot construct a zCanvas without valid dimensions" );
@@ -131,13 +136,21 @@ export default class Canvas {
 
         this.DEBUG = debug;
 
+        const { userAgent } = navigator;
+        const isSafari = userAgent.includes( "Safari" ) && !userAgent.includes( "Chrome" );
+        // it's safari
+        console.log('Are we running Safari:' +isSafari);
+        
+        const useWorker = [ "auto", "worker" ].includes( optimize ) && !isSafari;
+console.info('use worker?:' + useWorker + ' for value:' + optimize);
         this._element  = document.createElement( "canvas" );
-        this._renderer = new RenderAPI( this._element, true, debug );
+        this._renderer = new RenderAPI( this._element, useWorker, debug );
         this.collision = new Collision( this._renderer );
 
-        this._updateHandler = onUpdate;
-        this._renderHandler = this.render.bind( this );
+        this._updateHandler   = onUpdate;
+        this._renderHandler   = this.render.bind( this );
         this._viewportHandler = viewportHandler;
+        this._resizeHandler   = onResize;
 
         this.setFrameRate( fps );
         this.setAnimatable( animate );
@@ -158,15 +171,16 @@ export default class Canvas {
         if ( scale !== 1 ) {
             this.scale( scale, scale );
         }
-        if ( stretchToFit ) {
-            this.stretchToFit( true );
-        }
-        if ( parentElement instanceof HTMLElement ) {
-            this.insertInPage( parentElement );
-        }
+        this._stretchToFit = stretchToFit;
+
         this.setSmoothing( smoothing );
         this.preventEventBubbling( preventEventBubbling );
         this.addListeners();
+
+        if ( parentElement instanceof HTMLElement ) {
+            this.insertInPage( parentElement );
+        }
+        requestAnimationFrame( () => this.handleResize() ); // calculates appropriate scale
     }
 
     /* public methods */
@@ -436,7 +450,7 @@ export default class Canvas {
     setViewport( width: number, height: number ): void {
         this._viewport = { width, height, left: 0, top: 0, right: width, bottom: height };
         this.panViewport( 0, 0 );
-        this.updateCanvasSize();
+        this.invalidate();
     }
 
     /**
@@ -504,41 +518,68 @@ export default class Canvas {
 
         this.invalidate();
     }
-
-    /**
-     * Stretches the Canvas to fit inside the available window size, keeping the
-     * dominant sides of the preferred dimensions in relation to the window dimensions.
-     * This method will disregard scaling factors.
-     *
-     * @param {boolean=} value whether to stretch the canvas to fit the window size
-     */
-    stretchToFit( value: boolean ): void {
+    
+    stretchToFit( value: boolean ) {
         this._stretchToFit = value;
+        this.handleResize();
+    }
 
+    handleResize(): void {
+        // const { clientWidth, clientHeight } = document.documentElement;
         const { innerWidth, innerHeight } = window;
 
-        let targetWidth  = this._preferredWidth;
-        let targetHeight = this._preferredHeight;
+        const idealWidth  = this._preferredWidth;
+        const idealHeight = this._preferredHeight;
+
+        let targetWidth  = innerWidth;
+        let targetHeight = innerHeight;
         let xScale       = 1;
         let yScale       = 1;
 
-        if ( innerHeight > innerWidth ) {
-            // available height is larger than the width
-            targetHeight = !!value ? innerHeight / innerWidth * targetWidth : targetHeight;
-            xScale = innerWidth  / targetWidth;
-            yScale = innerHeight / targetHeight;
-        }
-        else {
-            // available width is larger than the height
-            targetWidth = !!value ? innerWidth / innerHeight * targetHeight : targetWidth;
-            xScale = innerWidth  / targetWidth;
-            yScale = innerHeight / targetHeight;
-        }
-        this.setDimensions( round( targetWidth ), round( targetHeight ), false, true );
+        const stretchToFit = this._stretchToFit || innerWidth < idealWidth || innerHeight < idealHeight;
 
-        // we override the scale adjustment performed by updateCanvasSize as
-        // we lock the scale to the ratio of the desired to actual screen dimensions
+        if ( stretchToFit ) {
+            if ( idealWidth > idealHeight ) {
+                // source has landscape orientation
+                const ratio  = idealWidth / idealHeight;
+                targetHeight = targetWidth * ratio;
+            } else if ( idealWidth < idealHeight ) {
+                // source has portrait orientation
+                const ratio  = idealHeight / idealWidth;
+                targetHeight = targetHeight * ratio;
+            }
+            // other orientations would be square, which we disregard to use available screen ratio
+                
+            targetWidth  = round( Math.min( innerWidth, targetWidth ));
+            targetHeight = round( Math.min( innerHeight, targetHeight ));
+            
+            xScale = innerWidth  / targetWidth;
+            yScale = innerHeight / targetHeight;
+
+            this.setDimensions( targetWidth, targetHeight, false, true );
+        } else {                
+            const ratio  = idealHeight / idealWidth;
+            targetWidth  = Math.min( idealWidth, innerWidth );
+            targetHeight = Math.min( innerHeight, Math.round( targetWidth * ratio ));
+        
+            this.setDimensions( idealWidth, idealHeight, false );
+        
+            // take into account that certain resolutions are lower than the ideal width, scale canvas to fit width
+            xScale = yScale = innerWidth < idealWidth ? innerWidth / idealWidth : 1;
+        
+            // the viewport however is local to the client window size
+            const viewportWidth  = targetWidth  / xScale;
+            const viewportHeight = targetHeight / yScale;
+            
+            this.setViewport( viewportWidth, viewportHeight );
+        }
+
+        // we override the scale adjustment performed by updateCanvasSize above as
+        // we lock the scaleed to the ratio of the desired to actual screen dimensions
+
         this.scale( xScale, yScale );
+
+        this._resizeHandler?.( targetWidth, targetHeight );
     }
 
     /**
@@ -825,12 +866,7 @@ export default class Canvas {
         if ( this._viewport ) {
             theHandler.add( element, "wheel", theListener );
         }
-
-        if ( this._stretchToFit ) {
-            theHandler.add( window, "resize", () => {
-                this.stretchToFit( this._stretchToFit );
-            });
-        }
+        theHandler.add( window, "resize", this.handleResize.bind( this ));
     }
 
     protected removeListeners(): void {

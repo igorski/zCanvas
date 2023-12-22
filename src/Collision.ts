@@ -229,7 +229,7 @@ export default class Collision {
                 const p = ( y * mapWidth + x ) * 4;
                 //pixels[ ++i ] = ( data[ p + 3 ] << 24 ) | ( data[ p ] << 16 ) | ( data[ p + 1 ] << 8 ) | data[ p + 2 ];
                 // just take the alpha value (0 - 255) instead of creating a 24-bit number
-                 pixels[ ++i ] = data[ p + 3 ];
+                pixels[ ++i ] = data[ p + 3 ];
             }
         }
     }

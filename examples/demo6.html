@@ -36,16 +36,18 @@
             urlArgs : "bust=" + Date.now()
         });
 
-        require( [ "zcanvas.amd" ], function( zCanvas ) {
+        require( [ "zcanvas.umd" ], zCanvas => {
+
+            const { Canvas, Sprite } = zCanvas;
 
             // STEP 1 : SETUP
             // --------------------------------------
 
-            var container = document.getElementById( "demo" );
+            const container = document.getElementById( "demo" );
 
             // get window dimensions
 
-            var w, h;
+            let w, h;
             if ( window.outerHeight ) {
                 w = window.outerWidth;
                 h = window.outerHeight;
@@ -57,13 +59,13 @@
 
             // create a new canvas that renders at 60 fps
             // keep its viewport within the device / browser bounds
-            var viewportWidth  = ( w < 400 ) ? w * .93 : 400;
-            var viewportHeight = ( h < 300 ) ? h : 300;
-            var bgWidth = 800, bgHeight = 1067; // is size of IMAGE_BACKGROUND assets
-            var cvsWidth  = bgWidth;
-            var cvsHeight = bgHeight;
+            const viewportWidth  = ( w < 400 ) ? w * .93 : 400;
+            const viewportHeight = ( h < 300 ) ? h : 300;
+            const bgWidth = 800, bgHeight = 1067; // is size of IMAGE_BACKGROUND assets
+            const cvsWidth  = bgWidth;
+            const cvsHeight = bgHeight;
 
-            var cvs = new zCanvas.canvas({
+            const cvs = new Canvas({
                 width: cvsWidth,
                 height: cvsHeight,
                 preventEventBubbling: true,
@@ -74,100 +76,102 @@
                 handler: handleCanvasEvent
             });
 
-            var CircleSprite = function( x, y, aRadius, aColor ) {
-                var opts = {
-                    x: x - aRadius * 2,
-                    y: y - aRadius * 1.5,
-                    width: aRadius * 2,
-                    height: aRadius * 2
-                };
-                CircleSprite.super( this, "constructor", opts );
+            // register assets
+            
+            Promise.all([
+                cvs.loadResource( "background",  IMAGE_BACKGROUND ),
+                cvs.loadResource( "spritesheet", IMAGE_SPRITE_SHEET ),
+            ]).then(() => {
+                class CircleSprite extends Sprite {
+                    constructor( x, y, radius, color ) {
+                        super({
+                            x: x - radius * 2,
+                            y: y - radius * 1.5,
+                            width: radius * 2,
+                            height: radius * 2
+                        });
 
-                /* instance properties */
+                        /* instance properties */
 
-                this.radius = aRadius;
-                this.color  = aColor;
-                this.setDraggable( true );
-
-                /* overridden zCanvas.sprite methods */
-
-                this.draw = function( ctx, viewport ) {
-                    var x = this.getX() - viewport.left;
-                    var y = this.getY() - viewport.top;
-
-                    ctx.beginPath();
-                    ctx.arc( x + this.radius, y + this.radius, this.radius, 0, 2 * Math.PI, false );
-                    ctx.fillStyle = this.hover ? "#FFFFFF" : this.color; // when hovering the circle is white
-                    ctx.fill();
-
-                    // when hovering, we add an outline to the circle
-                    if ( this.hover ) {
-                        ctx.lineWidth = 5;
-                        ctx.strokeStyle = "#FF9900";
-                        ctx.stroke();
+                        this.radius = radius;
+                        this.color  = color;
+                        this.setDraggable( true );
                     }
-                    ctx.closePath();
-                };
-            };
-            zCanvas.sprite.extend( CircleSprite ); // CircleSprite extends sprite
 
-            // first sprite will act as a background
-            // (see included "assets.js"-file for the IMAGE_BACKGROUND data)
+                    /* overridden zCanvas.sprite methods */
 
-            cvs.addChild( new zCanvas.sprite({
-                width: bgWidth,
-                height: bgHeight,
-                bitmap: IMAGE_BACKGROUND
-            }));
+                    draw( renderer, viewport ) {
+                        const x = this.getX() - viewport.left;
+                        const y = this.getY() - viewport.top;
 
-            // fill area with Sprites
+                        renderer.drawCircle(
+                            x, y, this.radius,
+                            // when hovering the circle is white
+                            this.hover ? "#FFFFFF" : this.color,
+                            // when hovering, we add an outline to the circle
+                            this.hover ? "#FF9900" : undefined
+                        );
+                    }
+                }
 
-            for ( var i = 0; i < 50; ++i ) {
-                cvs.addChild( new CircleSprite( cvsWidth * Math.random(), cvsHeight * Math.random(), 10 + ( Math.random() * 25 ), "#FF0099" ));
-            }
+                // first sprite will act as a background
+                // (see included "assets.js"-file for the IMAGE_BACKGROUND data)
 
-            // add a single Sprite using a tilesheet animation
-            // (see included "assets.js"-file for the IMAGE_SPRITE_SHEET data)
+                cvs.addChild( new Sprite({
+                    width: bgWidth,
+                    height: bgHeight,
+                    resourceId: "background",
+                }));
 
-            var hero = new zCanvas.sprite({
-                x: viewportWidth  / 2 - 38 / 2,
-                y: viewportHeight / 2 - 35 / 2,
-                width: 38,
-                height: 35,
-                bitmap: IMAGE_SPRITE_SHEET,
-                sheet: [
-                    { row: 1, col: 0, fpt: 5, amount: 3 },  // standing still, facing right
-                ]
+                // fill area with Sprites
+
+                for ( let i = 0; i < 50; ++i ) {
+                    cvs.addChild( new CircleSprite( cvsWidth * Math.random(), cvsHeight * Math.random(), 10 + ( Math.random() * 25 ), "#FF0099" ));
+                }
+
+                // add a single Sprite using a tilesheet animation
+                // (see included "assets.js"-file for the IMAGE_SPRITE_SHEET data)
+
+                const hero = new Sprite({
+                    x: viewportWidth  / 2 - 38 / 2,
+                    y: viewportHeight / 2 - 35 / 2,
+                    width: 38,
+                    height: 35,
+                    resourceId: "spritesheet",
+                    sheet: [
+                        { row: 1, col: 0, fpt: 5, amount: 3 },  // standing still, facing right
+                    ]
+                });
+                cvs.addChild( hero );
             });
-            cvs.addChild( hero );
 
             // STEP 2 : CONFIGURE VIEWPORT SCROLLBARS
             // --------------------------------------
 
-            var horScroll = document.querySelector( "#horizontalScroll" );
-            var verScroll = document.querySelector( "#verticalScroll" );
-            var horHandle = horScroll.querySelector( ".handle" );
-            var verHandle = verScroll.querySelector( ".handle" );
+            const horScroll = document.querySelector( "#horizontalScroll" );
+            const verScroll = document.querySelector( "#verticalScroll" );
+            const horHandle = horScroll.querySelector( ".handle" );
+            const verHandle = verScroll.querySelector( ".handle" );
 
-            var trackWidth   = horScroll.offsetWidth;
-            var trackHeight  = verScroll.offsetHeight;
-            var scrollWidth  = cvsWidth  - viewportWidth;
-            var scrollHeight = cvsHeight - viewportHeight;
-            var scrollLeft   = 0;
-            var scrollTop    = 0;
+            const trackWidth   = horScroll.offsetWidth;
+            const trackHeight  = verScroll.offsetHeight;
+            const scrollWidth  = cvsWidth  - viewportWidth;
+            const scrollHeight = cvsHeight - viewportHeight;
+            let scrollLeft   = 0;
+            let scrollTop    = 0;
 
-            var horHandleSize = ( viewportWidth  / cvsWidth )  * trackWidth;
-            var verHandleSize = ( viewportHeight / cvsHeight ) * trackHeight;
+            const horHandleSize = ( viewportWidth  / cvsWidth )  * trackWidth;
+            const verHandleSize = ( viewportHeight / cvsHeight ) * trackHeight;
 
-            horHandle.style.width  = horHandleSize + "px";
-            verHandle.style.height = verHandleSize + "px";
+            horHandle.style.width  = `${horHandleSize}px`;
+            verHandle.style.height = `${verHandleSize}px`;
 
             // STEP 3 : ATTACH HANDLERS TO VIEWPORT SCROLLBARS
             // -----------------------------------------------
 
-            var downEvents = [ "mousedown", "touchstart" ];
-            var moveEvents = [ "mousemove", "touchmove", "wheel" ];
-            var upEvents   = [ "mouseup", "touchend", "touchcancel" ];
+            const downEvents = [ "mousedown", "touchstart" ];
+            const moveEvents = [ "mousemove", "touchmove", "wheel" ];
+            const upEvents   = [ "mouseup", "touchend", "touchcancel" ];
 
             downEvents.forEach( type => {
                 horScroll.addEventListener( type, handleScrollEvent );
@@ -180,15 +184,15 @@
                 window.addEventListener( type, handleScrollEvent, { passive: false });
             });
 
-            var hasHorizontalScroll = false;
-            var hasVerticalScroll   = false;
+            let hasHorizontalScroll = false;
+            let hasVerticalScroll   = false;
             // these ratios describe the % of total in 0 - 1 range
-            var viewportXratio = 0;
-            var viewportYratio = 0;
+            let viewportXratio = 0;
+            let viewportYratio = 0;
 
             function handleScrollEvent( e ) {
-                var isHorizontalScrollTrack = e.target === horScroll;
-                var isVerticalScrollTrack   = e.target === verScroll;
+                const isHorizontalScrollTrack = e.target === horScroll;
+                const isVerticalScrollTrack   = e.target === verScroll;
                 // pointer down == scroll start
                 if ( downEvents.includes( e.type )) {
                     if ( isHorizontalScrollTrack ) {
@@ -209,10 +213,10 @@
                 }
                 // pointer move == move scroll bar
                 if ( moveEvents.includes( e.type )) {
-                    var pointerX = e.offsetX;
-                    var pointerY = e.offsetY;
+                    const pointerX = e.offsetX;
+                    const pointerY = e.offsetY;
                     // touch event handling
-                    var touches = e.touches || e.changedTouches;
+                    const touches = e.touches || e.changedTouches;
                     if ( touches && touches.length ) {
                         pointerX = touches[ 0 ].pageX;
                         pointerY = touches[ 0 ].pageY;

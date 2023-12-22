@@ -29,16 +29,18 @@
             urlArgs : "bust=" + Date.now()
         });
 
-        require( [ "zcanvas.amd" ], function( zCanvas ) {
+        require( [ "zcanvas.umd" ], zCanvas => {
+
+            const { Canvas, Sprite } = zCanvas;
 
             // STEP 1 : SETUP
             // --------------------------------------
 
-            var container = document.getElementById( "demo" );
+            const container = document.getElementById( "demo" );
 
             // get window dimensions
 
-            var w, h;
+            let w, h;
             if ( window.outerHeight ) {
                 w = window.outerWidth;
                 h = window.outerHeight;
@@ -50,9 +52,9 @@
 
             // create a new canvas that renders at 60 fps
             // keep it within the device / browser bounds
-            var cvsWidth  = ( w < 800 ) ? w * .93 : 800;
-            var cvsHeight = ( h < 500 ) ? h : 500;
-            var cvs       = new zCanvas.canvas({
+            const cvsWidth  = ( w < 800 ) ? w * .93 : 800;
+            const cvsHeight = ( h < 500 ) ? h : 500;
+            const cvs = new Canvas({
                 width: cvsWidth,
                 height: cvsHeight,
                 animate: true,
@@ -61,8 +63,15 @@
                 parentElement: container
             });
 
-            var cvsCenterX = cvs.getWidth() / 2;
-            var cvsCenterY = cvs.getHeight() / 2;
+            // register assets
+
+            Promise.all([
+                cvs.loadResource( "background", IMAGE_BACKGROUND ),
+                cvs.loadResource( "star", IMAGE_STAR ),
+            ]);
+
+            const cvsCenterX = cvs.getWidth()  / 2;
+            const cvsCenterY = cvs.getHeight() / 2;
 
             // STEP 2 : ADDING THE SPRITES
             // ---------------------------
@@ -70,8 +79,10 @@
             // first sprite will act as a background
             // (see included "assets.js"-file for the assetBackground-image data)
 
-            var bgWidth  = 800, bgHeight = 1067;
-            var bgSprite = new zCanvas.sprite({ width: bgWidth, height: bgHeight, bitmap: IMAGE_BACKGROUND });
+            const bgWidth  = 800;
+            const bgHeight = 1067;
+            const bgSprite = new Sprite({ width: bgWidth, height: bgHeight, resourceId: "background" });
+            
             cvs.addChild( bgSprite );   // add the background to the canvas so it is visible
 
             // RESIZING MASK SPRITE
@@ -79,20 +90,20 @@
             // a sprite that will act as a mask for underlying content
             // (see included "images.js"-file for the assetStar-image data)
 
-            var starSize = cvsWidth * .3; // make the star slightly smaller than the canvas
-            var spriteMask = new zCanvas.sprite({
+            const starSize = cvsWidth * .3; // make the star slightly smaller than the canvas
+            const spriteMask = new Sprite({
                 x: cvsCenterX - starSize / 2,
                 y: cvsCenterY - starSize / 2,
                 width: starSize,
                 height: starSize,
-                bitmap: IMAGE_STAR,
+                resourceId: "star",
                 mask: true
             });
 
-            var starBounds = spriteMask.getBounds();    // the stars properties we will be tweening
-            var stl = new TimelineMax({ repeat: 999 }); // timeline for the star
+            const starBounds = spriteMask.getBounds();    // the stars properties we will be tweening
+            const stl = new TimelineMax({ repeat: 999 }); // timeline for the star
 
-            var doubleSize = starSize * 2;
+            const doubleSize = starSize * 2;
 
             stl.to(
                 starBounds, 2, {
@@ -112,51 +123,45 @@
             // aPositionRadius defines the radius of the circle all circles will be aligned to
             // aSizeRadius defines the radius of the circles bounds
 
-            var CircleSprite = function( x, y, aPositionRadius, aSizeRadius, aColor ) {
+            class CircleSprite extends Sprite {
+                constructor( x, y, aPositionRadius, aSizeRadius, aColor ) {
+                    super({
+                        x: x - aPositionRadius * 2,
+                        y: y - aPositionRadius * 1.5,
+                        width: aPositionRadius * 2,
+                        height: aPositionRadius * 2
+                    });
 
-                var opts = {
-                    x: x - aPositionRadius * 2,
-                    y: y - aPositionRadius * 1.5,
-                    width: aPositionRadius * 2,
-                    height: aPositionRadius * 2
-                };
+                    /* instance properties */
 
-                CircleSprite.super( this, "constructor", opts );
+                    this.radius = aSizeRadius;
+                    this.color = aColor;
 
-                /* instance properties */
-
-                this._bounds.radius = aSizeRadius; // add radius to bounds Object for rendering
-                this.color = aColor;
-                this.setDraggable( true );
+                    this.setDraggable( true );
+                }
 
                 /* overridden zCanvas.sprite methods */
 
                 // here we override the getters and setters to accommodate for the radius of the circle as
                 // the circles center point is the x- and y-coordinate to provide from-center-snapping
 
-                this.getX = function() { return CircleSprite.super( this, "getX" ) + this._bounds.width; };
-                this.getY = function() { return CircleSprite.super( this, "getY" ) + this._bounds.height; };
-                this.draw = function( ctx ) {
+                getX() {
+                    return super.getX() + this.getWidth();
+                }
 
-                    var b = this.getBounds();
+                getY() {
+                    return super.getY() + this.getHeight();
+                }
 
-                    ctx.beginPath();
-                    ctx.arc( b.left + b.width / 2, b.top + b.height / 2, b.radius, 0, 2 * Math.PI, false );
-                    ctx.fillStyle = this.hover ? '#FFFFFF' : this.color; // when hovering the circle is white
-                    ctx.fill();
-
-                    // when hovering, we add an outline to the circle
-                    if ( this.hover ) {
-                        ctx.lineWidth = 5;
-                        ctx.strokeStyle = "#FF9900";
-                        ctx.stroke();
-                    }
-                    ctx.closePath();
-
-                    CircleSprite.super( this, "draw", ctx ); // will invoke the drawing of nested child elements
-                };
+                draw( renderer ) {
+                    renderer.drawCircle(
+                        this.getX(), this.getY(), this.radius,
+                        this.hover ? "#FFFFFF" : this.color, // when hovering the circle is white
+                        this.hover ? "#FF9900" : undefined, // when hovering we add an outline to the circle
+                    );
+                    super.draw( renderer ); // will invoke the drawing of nested child elements
+                }
             };
-            zCanvas.sprite.extend( CircleSprite ); // CircleSprite extends sprite
 
             // helper function to calculate x, y coordinate of each CircleSprite
 
@@ -166,20 +171,20 @@
                     y: cvsCenterY + radius * Math.sin( angle * Math.PI / 180 )
                 }
             }
-            var positionRadius = 100; // radius of the circles position
-            var radius = 7;           // radius of the circles size
+            const positionRadius = 100; // radius of the circles position
+            const radius = 7;           // radius of the circles size
 
             // generate the circle sprites
 
-            for ( var i = 0, total = 50; i < total; ++i ) {
+            for ( let i = 0, total = 50; i < total; ++i ) {
 
                 /// calc x and y position with radius of center +
-                var angle = i * ( 360 / total );
-                var targetPosition = calcPosition( positionRadius, angle );
-                var scaledPosition = calcPosition( positionRadius * 2, angle );
+                const angle = i * ( 360 / total );
+                const targetPosition = calcPosition( positionRadius, angle );
+                const scaledPosition = calcPosition( positionRadius * 2, angle );
 
                 // note we construct all circles from the center of the canvas
-                var cs = new CircleSprite( cvsCenterX, cvsCenterY, 7, radius, "#FF00AE" );
+                const cs = new CircleSprite( cvsCenterX, cvsCenterY, 7, radius, "#FF00AE" );
 
                 // each circle sprite has its own timeline where it moves form the canvas
                 // center to its unique position, and back to the center again, each sprite
@@ -192,12 +197,10 @@
                     to( cs.getBounds(), 2, {
                         left: scaledPosition.x,
                         top:  scaledPosition.y,
-                        radius: radius / 2,
                         ease: Elastic.easeIn,
                         delay: ( i * .1 )
                     }).to(
                         cs.getBounds(), 2, {
-                            radius: radius,
                             left: cvsCenterX,
                             top: cvsCenterY,
                             ease: Elastic.easeOut

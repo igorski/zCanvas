@@ -97,6 +97,25 @@ export async function imageToBitmap( image: HTMLImageElement | HTMLCanvasElement
     return bitmap;
 }
 
+export function blobToImage( blob: Blob ): Promise<HTMLImageElement> {
+    const url = URL.createObjectURL( blob );
+    const revoke  = (): void => {
+        URL.revokeObjectURL( url );
+    };
+    return new Promise(( resolve, reject ) => {
+        const image = new Image();
+        image.onload = () => {
+            revoke();
+            resolve( image );
+        };
+        image.onerror = error => {
+            revoke();
+            reject( error );
+        }
+        image.src = url;
+    });
+}
+
 /* internal methods */
 
 /**
@@ -119,24 +138,11 @@ function drawImageOnCanvas( canvas: HTMLCanvasElement, image: HTMLImageElement |
 /**
  * Draws the content of a Blob onto a Canvas Element
  */
-function blobToCanvas( blob: Blob ): Promise<HTMLCanvasElement> {
-    const url = URL.createObjectURL( blob );
-    const revoke  = (): void => {
-        URL.revokeObjectURL( url );
-    };
-    
-    return new Promise(( resolve, reject ) => {
-        const image = new Image();
-        image.onload = () => {
-            const { cvs, ctx } = createCanvas( image.width, image.height );
-            ctx.drawImage( image, 0, 0 );
-            revoke();
-            resolve( cvs );
-        };
-        image.onerror = error => {
-            revoke();
-            reject( error );
-        }
-        image.src = url;
-    });
+async function blobToCanvas( blob: Blob ): Promise<HTMLCanvasElement> {
+    const image = await blobToImage( blob );
+
+    const { cvs, ctx } = createCanvas( image.width, image.height );
+    ctx.drawImage( image, 0, 0 );
+
+    return cvs;
 }

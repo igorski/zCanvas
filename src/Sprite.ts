@@ -26,6 +26,8 @@ import type { IRenderer, DrawContext } from "./rendering/IRenderer";
 import { isInsideViewport, calculateDrawRectangle } from "./utils/ImageMath";
 
 const { min, max } = Math;
+const ONE_EIGHTY_OVER_PI = 180 / Math.PI;
+const PI_OVER_ONE_EIGHTY = Math.PI / 180;
 const HALF = 0.5;
 
 interface SpriteProps {
@@ -65,6 +67,8 @@ export default class Sprite {
 
     protected _bounds: Rectangle; // bounding box relative to the Canvas
     protected _rotation: number;
+    protected _pivot: Point | undefined; // optional pivot point for rotation (defaults to center)
+    protected _scale: number;
     protected _children: Sprite[]  = [];
     protected _parent: Sprite | Canvas | undefined;
     protected _disposed = false;
@@ -323,14 +327,19 @@ export default class Sprite {
     getBounds(): Rectangle {
         return this._bounds;
     }
-
+    
     getRotation(): number {
-        return this._rotation * 180 / Math.PI;
+        return this._rotation * ONE_EIGHTY_OVER_PI;
     }
 
-    setRotation( angleInDegrees: number ): void {
-        // TODO cache the PI calculations
-        this._rotation = ( angleInDegrees % 360 ) * Math.PI / 180;
+    setRotation( angleInDegrees: number, optPivot?: Point ): void {
+        this._rotation = ( angleInDegrees % 360 ) * PI_OVER_ONE_EIGHTY;
+        this._pivot = optPivot;
+        this.invalidateDrawContext();
+    }
+
+    setScale( value: number ): void {
+        this._scale = value;
         this.invalidateDrawContext();
     }
 
@@ -1005,10 +1014,14 @@ export default class Sprite {
     /* protected methods */
 
     protected invalidateDrawContext(): void {
-        if ( this._rotation !== 0 || this._mask ) {
+        if ( this._rotation !== 0 || this._mask || this._scale !== 1 ) {
             this._drawContext = this._drawContext ?? {}; // pool Object instance
-            this._drawContext.rotation  = this._rotation;
-            this._drawContext.blendMode = this._mask ? "destination-in" : undefined;
+            const ctx = this._drawContext;
+            
+            ctx.rotation  = this._rotation;
+            ctx.pivot     = this._pivot;
+            ctx.blendMode = this._mask ? "destination-in" : undefined;
+            ctx.scale     = this._scale;
         }
     }
 

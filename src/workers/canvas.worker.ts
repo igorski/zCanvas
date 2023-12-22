@@ -60,7 +60,7 @@ onmessage = ( e: MessageEvent ): void => {
 
         // IRenderer draw commands (batched)
         case "render":
-            if ( !renderer || !Array.isArray( e.data.commands )) {
+            if ( !renderer || !e.data.commands ) {
                 return;
             }
             for ( const command of e.data.commands ) {

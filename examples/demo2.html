@@ -4,21 +4,28 @@
     <meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable = no" name="viewport">
     <meta charset="utf-8" />
     <title>zCanvas animated spritesheet example</title>
+    <!-- load demo assets -->
     <link rel="stylesheet" href="./assets/styles.css">
+    <script type="text/javascript" src="./assets/images.js"></script>
+    <script type="text/javascript" src="./assets/utils.js"></script>
     <script type="text/javascript" src="./assets/demo2_images.js"></script>
-    <!-- requestAnimationFrame and Promise polyfills for IE9 -->
-    <script src="http://www.edisonsecretlab.com/cdn/global/js/lib/rAF.js" type="text/javascript"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/promise-polyfill/8.1.3/polyfill.min.js" type="text/javascript"></script>
     <!-- include RequireJS to resolve dependencies -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.1.14/require.min.js" type="text/javascript"></script>
 </head>
 <body>
-    <div id="container">
-        <h1>zCanvas demo #2: Shoot 'em up with fast collision detection</h1>
-        <div id="demo"><!-- x --></div>
-        <label for="fps">Framerate (15 to 60 fps)</label>
-        <input type="range" id="fps" min="15" max="60" value="60" step="1" />
-        <p>
+    <div class="demo-container">
+        <div class="demo-header">
+            <h1>zCanvas : Shoot 'em up with fast collision detection</h1>
+        </div>
+        <div class="demo-canvas-container"><!-- x --></div>
+        <div class="demo-controls">
+            <div>
+                <label for="fps">Framerate (15 to 60 fps)</label>
+                <input type="range" id="fps" min="15" max="60" value="60" step="1" />
+            </div>
+            <button type="button" id="fullscreen">Fullscreen</button>
+        </div>
+        <p class="demo-description">
             Demo features : multiple layers of parallax scrolling, endless waves of enemies, spritesheet explosions
             and tons of bullets using the high performing collision detection routine (which is less precise but adequate
             in this context). Furthermore, framerate is adjustable at runtime while game speed is maintained.
@@ -46,21 +53,8 @@
             // STEP 1 : SETUP
             // --------------
 
-            const container = document.getElementById( "demo" );
-
-            // get window dimensions
-
-            let w, h;
-            if ( window.outerHeight ) {
-                w = window.outerWidth;
-                h = window.outerHeight;
-            } else {
-                w = document.body.clientWidth;
-                h = document.body.clientHeight;
-            }
-            const cvsWidth  = ( w < 400 ) ? w * .93 : 400;
-            const cvsHeight = ( h < 400 ) ? h : 400;
-            container.style.width = `${cvsWidth}px`;
+            const demoContainer   = document.querySelector( ".demo-container" );
+            const canvasContainer = document.querySelector( ".demo-canvas-container" );
 
             // 1.2 simulation variables
 
@@ -68,8 +62,9 @@
             // this is scaled against the actual framerate in sprite.update() methods
             // to maintain a consistent movement at different frame rates
 
-            const IDEAL_FPS = 60; // see #fps range slider
-            const MAX_SPEED = 8; // maximum amount of pixels player can move per frame (e.g. "speed")
+            const WORLD_WIDTH     = 400;
+            const WORLD_HEIGHT    = 400;
+            const MAX_SPEED       = 8; // maximum amount of pixels player can move per frame (e.g. "speed")
             const SPEED_INCREMENT = MAX_SPEED / IDEAL_FPS; // max speed increment per frame
 
             // STEP 2 : DEFINING CUSTOM SPRITE CLASSES
@@ -98,8 +93,8 @@
 
                 update( timestamp, framesSinceLastUpdate ) {
                     // on each update the Actors update their position according to their speed
-                    this._bounds.left += ( this.xSpeed * framesSinceLastUpdate );
-                    this._bounds.top  += ( this.ySpeed * framesSinceLastUpdate );
+                    this.setX( this.getX() + ( this.xSpeed * framesSinceLastUpdate ));
+                    this.setY( this.getY() + ( this.ySpeed * framesSinceLastUpdate ));
                 }
             };
 
@@ -118,7 +113,8 @@
 
                 draw( renderer ) {
                     // override draw()-method from Sprite-prototype to draw custom graphics
-                    renderer.drawRect( this._bounds.left, this._bounds.top, this._bounds.width, this._bounds.height, "#FF0000" );
+                    const { left, top, width, height } = this.getBounds();
+                    renderer.drawRect( left, top, width, height, "#FF0000" );
                 }
             };
 
@@ -206,10 +202,48 @@
                             if ( this.ySpeed < this.maxSpeed ) this.ySpeed += SPEED_INCREMENT;
                             break;
                     }
-                    this._bounds.left += ( this.xSpeed * framesSinceLastUpdate );
-                    this._bounds.top  += ( this.ySpeed * framesSinceLastUpdate );
 
+                    // update position, but stay inside Canvas bounds
+
+                    this.setX( this.getX() + ( this.xSpeed * framesSinceLastUpdate ));
+                    this.setY( this.getY() + ( this.ySpeed * framesSinceLastUpdate ));
+                    
                     this.updateAnimation( framesSinceLastUpdate ); // update spritesheet animation
+                }
+            };
+
+            class Player extends Ship {
+                update( timestamp, framesSinceLastUpdate ) {
+                    super.update( timestamp, framesSinceLastUpdate );
+
+                    // the player will be kept inside the visible Canvas bounds
+                    const halfWidth  = this.getWidth()  / 2;
+                    const halfHeight = this.getHeight() / 2;
+
+                    this.setX( Math.max( -halfWidth,  Math.min( cvs.getWidth()  - halfWidth,  this.getX() )));
+                    this.setY( Math.max( -halfHeight, Math.min( cvs.getHeight() - halfHeight, this.getY() )));
+                }
+            };
+
+            // create some scenic clouds
+            class CloudRenderer extends Sprite {
+                constructor() {
+                    super({
+                        x: Math.random() * WORLD_WIDTH,
+                        y: -100,
+                        width: 300,
+                        height: 508,
+                        resourceId: "cloud",
+                    })
+                }
+
+                update( timestamp, framesSinceLastUpdate ) {
+                    // cloud moves slowly out of the screen and then resets its position to the top
+                    this.setY( this.getY() + framesSinceLastUpdate );
+                    if ( this.getY() > cvs.getHeight() ) {
+                        this.setY( -this.getHeight() );
+                        this.setX( Math.random() * cvs.getWidth() );
+                    }
                 }
             };
 
@@ -248,60 +282,45 @@
                 return actor;
             }
 
-            // STEP 4 : INITIALIZING THE GAME ENVIRONMENT
-            // ------------------------------------------
+            let gameStarted = false;
 
-            const player = new Ship( cvsWidth / 2, cvsHeight - 100, 5 );
-            const actors = []; // all actors currently in the game (this excludes the player!)
-
-            // create some scenery clouds
-            class CloudRenderer extends Sprite {
-                constructor() {
-                    super({
-                        x: Math.random() * cvsWidth,
-                        y: -100,
-                        width: 300,
-                        height: 508,
-                        resourceId: "cloud",
-                    })
-                }
-
-                update( timestamp, framesSinceLastUpdate ) {
-                    // cloud moves slowly out of the screen and then resets its position to the top
-                    this._bounds.top += framesSinceLastUpdate;
-                    if ( this._bounds.top > cvsHeight ) {
-                        this._bounds.top = -this._bounds.height;
-                        this._bounds.left = Math.random() * cvsWidth;
-                    }
-                }
-            }
-            const cloud = new CloudRenderer();
-
-            // STEP 5 : INITIALIZING THE CANVAS
+            // STEP 4 : INITIALIZING THE CANVAS
             // --------------------------------
-
+   
             // create a new canvas that renders at IDEAL_FPS fps
             // for each update prior to rendering we invoke a custom handler
 
             const cvs = new Canvas({
-                width: cvsWidth,
-                height: cvsHeight,
+                width: WORLD_WIDTH,
+                height: WORLD_HEIGHT,
                 animate: true,
                 smoothing: false, // pixel art ahoy
                 fps: IDEAL_FPS,
                 backgroundColor: "#000099",
                 preventEventBubbling: true,
-                parentElement: container,
-                onUpdate: handleGameLoop // see below
+                parentElement: canvasContainer,
+                onUpdate: handleGameLoop, // see below
+                onResize: ( width, height ) => {
+                    // resize demo container to accomodate the canvas size
+                    demoContainer.style.width = `${width}px`;
+                }
             });
+            addCanvasDemoControls( demoContainer, cvs );
 
-            // 5.1 register assets
+            // 4.1 register assets
             
             await Promise.all([
                 cvs.loadResource( "spritesheet", IMAGE_SHIP_SHEET ),
                 cvs.loadResource( "cloud", IMAGE_CLOUD )
             ]);
 
+            // STEP 4 : INITIALIZING THE GAME ENVIRONMENT
+            // ------------------------------------------
+
+            const player = new Player( cvs.getWidth() / 2, cvs.getHeight() - 100, 5 );
+            const cloud  = new CloudRenderer();
+            const actors = []; // all actors currently in the game (this excludes the player!)
+ 
             // add game actors to the display list
 
             cvs.addChild( player );
@@ -310,21 +329,22 @@
             }
             cvs.addChild( cloud );
 
-            // add frame rate control
-
-            document.getElementById( "fps" ).oninput = function( event ) {
-                cvs.setFrameRate( parseFloat( event.target.value ));
-            }
+            gameStarted = true;
 
             // STEP 6 : CREATING A CUSTOM UPDATE HANDLER FOR UPDATING THE GAME ENVIRONMENT
             // ---------------------------------------------------------------------------
 
             function handleGameLoop( timestamp, framesSinceLastUpdate ) {
-
+                if ( !gameStarted ) {
+                    return;
+                }
                 player.update( timestamp, framesSinceLastUpdate );
                 cloud.update( timestamp, framesSinceLastUpdate );
 
                 let i = actors.length;
+
+                const cvsWidth  = cvs.getWidth();
+                const cvsHeight = cvs.getHeight();
                 
                 while ( i-- ) {
                     const actor = actors[ i ];
@@ -352,14 +372,20 @@
 
                     const others = cvs.collision.getChildrenUnderPoint( actors, actorX, actorY, actorWidth, actorHeight );
                     if ( others.length > 0 ) {
-                        let j, l, other;
-                        for ( j = 0, l = others.length; j <l; ++j ) {
-                            other = others[ j ];
+                        for ( let j = 0, l = others.length; j <l; ++j ) {
+                            const other = others[ j ];
                             if ( actor.collidesWith( other )) {
                                 other.hit( actor );
                                 actor.hit( other );
                             }
                         }
+                    }
+
+                    // ...and with the Player
+
+                    if ( actor.collidesWith( player )) {
+                        player.hit( actor );
+                        actor.hit( player );
                     }
                 }
             }
@@ -367,8 +393,8 @@
             function createEnemyFromPool() {
                 const enemy = enemyPool.shift();
                 actors.push( enemy ); // add enemy to Actors list
-                enemy.setX( Math.random() * cvsWidth );
-                enemy.setY(( Math.random() * -cvsHeight ) - 300 );
+                enemy.setX( Math.random() * cvs.getWidth() );
+                enemy.setY(( Math.random() * -cvs.getHeight() ) - 300 );
                 enemy.setVerticalThrust( 2 );
                 enemy.switchAnimation( 1 ); // switch to Enemy tile
                 enemy.maxSpeed = MAX_SPEED / 2;
@@ -420,7 +446,7 @@
                             targetPos = calcPosition(
                                 actorBounds.left + actorBounds.width,
                                 actorBounds.top + actorBounds.height,
-                                cvsWidth, angle
+                                cvs.getWidth(), angle
                             );
                             // bullets move from their original to target position (out of screen) over the course of a single second
                             bullet.xSpeed = ( targetPos.x - startPos.x ) / cvs.getFrameRate();
@@ -447,16 +473,15 @@
                 // return Actor to the pool so it can be reused
                 if ( actor instanceof Bullet ) {
                     bulletPool.push( actor );
-                }
-                else if ( actor !== player ) {
-                    enemyPool.push( actor ); // Actor isn't a Bullet nor the player, so it's an enemy
-                    setTimeout( createEnemyFromPool, 1000 ); // reintroduce enemy after a short period
-                } else {
+                } else if ( actor instanceof Player ) {
                     alert( "PLAYER DIED!" );
                     // "game over" reset player state
                     player.energy = 25;
                     player.switchAnimation( 0 );
                     cvs.addChild( player );
+                } else if ( actor !== player ) {
+                    enemyPool.push( actor ); // Actor isn't a Bullet nor the player, so it's an enemy
+                    setTimeout( createEnemyFromPool, 1000 ); // reintroduce enemy after a short period
                 }
             }
 
@@ -468,26 +493,15 @@
 
             // we add on-screen controls buttons for touch screens
 
-            const leftBtn = document.createElement( "div" );
-            leftBtn.id  = "left-btn";
+            // we add on-screen controls buttons for touch screens
 
-            const rightBtn = document.createElement( "div" );
-            rightBtn.id  = "right-btn";
-
-            const shootBtn = document.createElement( "div" );
-            shootBtn.id  = "action-btn";
-
-            container.appendChild( leftBtn );
-            container.appendChild( rightBtn );
-            container.appendChild( shootBtn );
-
-            leftBtn.addEventListener ( "touchstart",  handleLeft );
-            rightBtn.addEventListener( "touchstart",  handleRight );
-            leftBtn.addEventListener ( "touchcancel", horizontalEnd );
-            leftBtn.addEventListener ( "touchend",    horizontalEnd );
-            rightBtn.addEventListener( "touchcancel", horizontalEnd );
-            rightBtn.addEventListener( "touchend",    horizontalEnd );
-            shootBtn.addEventListener( "touchstart",  handleFire);
+            createJoypad(
+                canvasContainer,
+                handleLeft,    // left button
+                handleRight,   // right button
+                handleFire,    // action button
+                horizontalEnd, // release handler
+            );
 
             // keyboard control for desktop devices
 

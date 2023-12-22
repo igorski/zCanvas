@@ -121,7 +121,7 @@ export default class RenderAPI implements IRenderer {
                 }
                 return;
             }
-            reject( "Unsupported resource type" );
+            reject( "Unsupported resource type: " + typeof source );
         });
     }
 
@@ -239,6 +239,18 @@ export default class RenderAPI implements IRenderer {
         this.onDraw( "restore" );
     }
 
+    translate( x: number, y: number ): void {
+        this.onDraw( "translate", x, y );
+    }
+
+    rotate( angleInRadians: number ): void {
+        this.onDraw( "rotate", angleInRadians );
+    }
+
+    transform( a: number, b: number, c: number, d: number, e: number, f: number ): void {
+        this.onDraw( "transform", a, b, c, d, e, f );
+    }
+
     scale( xScale: number, yScale?: number ): void {
         this.onDraw( "scale", xScale, yScale );
     }
@@ -257,6 +269,10 @@ export default class RenderAPI implements IRenderer {
 
     drawRect( x: number, y: number, width: number, height: number, color: string, fillType?: "fill" | "stroke" ): void {
         this.onDraw( "drawRect", x, y, width, height, color, fillType );
+    }
+
+    drawRoundRect( x: number, y: number, width: number, height: number, radius: number, color: string, fillType?: "fill" | "stroke" ): void {
+        this.onDraw( "drawRoundRect", x, y, width, height, radius, color, fillType );
     }
 
     drawCircle( x: number, y: number, radius: number, fillColor = "transparent", strokeColor?: string ): void {

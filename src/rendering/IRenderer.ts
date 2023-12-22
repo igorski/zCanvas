@@ -20,14 +20,24 @@
  * IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
+import type { Point } from "../definitions/types";
 
 /**
  * Below interface exposes a unified API to perform drawing
  * actions on a CanvasRenderingContext2D instance.
  */
 export interface IRenderer {
+    // these are supplied for maximum compatibility, however for a performance gain
+    // it is recommended to use DrawContext objects supplied to the draw-commands instead
+    // as they are optimized to use less state changing instruction on the Canvas
+
     save(): void
     restore(): void
+    translate( x: number, y: number ): void
+    rotate( angleInRadians: number ): void;
+    transform( a: number, b: number, c: number, d: number, e: number, f: number ): void;
+
+    // E.O. compatibility section
 
     scale( xScale: number, yScale?: number ): void
     setBlendMode( type: GlobalCompositeOperation ): void
@@ -35,7 +45,8 @@ export interface IRenderer {
 
     clearRect( x: number, y: number, width: number, height: number ): void;
     drawRect( x: number, y: number, width: number, height: number, color: string, fillType?: "fill" | "stroke" ): void
-    drawCircle( x: number, y: number, radius: number, fillColor = "transparent", strokeColor?: string ): void
+    drawRoundRect( x: number, y: number, width: number, height: number, radius: number, color: string, fillType?: "fill" | "stroke" ): void
+    drawCircle( x: number, y: number, radius: number, fillColor?: string, strokeColor?: string ): void
     drawImage(
         resourceId: string,
         x: number,
@@ -67,6 +78,7 @@ export interface IRenderer {
 export type DrawContext = {
     scale?: number;
     rotation?: number;
+    pivot?: Point;
     alpha?: number;
     blendMode?: GlobalCompositeOperation;
     safeMode?: boolean;
