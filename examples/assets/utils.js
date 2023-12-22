@@ -8,6 +8,7 @@ const IDEAL_FPS = 60; // see #fps range slider
  * @param {Canvas} zCanvas instance
  */
 function addCanvasDemoControls( container, zCanvas ) {
+    
     // add frame rate control
 
     const fpsControl = container.querySelector( "#fps" );
@@ -21,13 +22,8 @@ function addCanvasDemoControls( container, zCanvas ) {
 
     const fullscreenControl = container.querySelector( "#fullscreen" );
     if ( fullscreenControl ) {
-        [ "webkitfullscreenchange", "mozfullscreenchange", "fullscreenchange", "MSFullscreenChange" ]
-            .forEach( event => document.addEventListener( event, () => {
-                handleFullscreenChange( container, zCanvas )
-            }, false ));
-
         fullscreenControl.onclick = () => {
-            toggleFullscreen( zCanvas );
+            zCanvas.setFullScreen( true );
         };
     }
 }
@@ -93,25 +89,4 @@ function createJoypad( container, leftHandler, rightHandler, actionHandler, rele
     rightBtn.addEventListener( "touchcancel", releaseHandler );
     leftBtn.addEventListener ( "touchend", releaseHandler );
     rightBtn.addEventListener( "touchend", releaseHandler );
-}
-
-/* internal methods */
-
-function toggleFullscreen( zCanvas ) {
-    const element = zCanvas.getElement();
-    let requestMethod;
-    
-    if ( element.fullscreenElement || element.webkitFullscreenElement ) {
-        requestMethod = element.exitFullscreen || element.webkitExitFullscreen || element.mozCancelFullScreen || element.msExitFullscreen;
-    } else {
-        requestMethod = element.requestFullScreen || element.webkitRequestFullScreen || element.mozRequestFullScreen || element.msRequestFullscreen;
-    }
-  
-    if ( requestMethod ) {
-        requestMethod.call( element );
-    }
-}
-
-function handleFullscreenChange( container, zCanvas ) {
-    isFullscreen = ( document.webkitIsFullScreen || document.mozFullScreen || document.msFullscreenElement === true );
 }

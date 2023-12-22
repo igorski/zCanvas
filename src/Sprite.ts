@@ -900,7 +900,7 @@ export default class Sprite {
      * @param {Event} event the original event that triggered this action
      * @return {boolean} whether this Sprite is handling the event
      */
-    handleInteraction( x: number, y: number, event: Event ): boolean {
+    handleInteraction( x: number, y: number, event: MouseEvent | TouchEvent ): boolean {
         // first traverse the children of this sprite
         let foundInteractionInChild = false, theChild;
 

@@ -21,11 +21,12 @@
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 import type { Size, Point, Viewport, ImageSource } from "./definitions/types";
+import { IRenderer } from "./rendering/IRenderer";
 import RenderAPI from "./rendering/RenderAPI";
 import EventHandler from "./utils/EventHandler";
+import { toggleFullScreen } from "./utils/Fullscreen";
 import Collision from "./Collision";
 import type Sprite from "./Sprite";
-import { IRenderer } from "./rendering/IRenderer";
 
 const { min, max, round } = Math;
 
@@ -112,6 +113,9 @@ export default class Canvas {
     protected _renderInterval: number;
     protected _bgColor: string | undefined;
 
+    protected _hasFsHandler = false;
+    protected _isFullScreen = false;
+
     constructor({
         width = 300,
         height = 300,
@@ -137,12 +141,11 @@ export default class Canvas {
         this.DEBUG = debug;
 
         const { userAgent } = navigator;
+        // TODO: maybe only do Worker for Chrome only?
         const isSafari = userAgent.includes( "Safari" ) && !userAgent.includes( "Chrome" );
-        // it's safari
-        console.log('Are we running Safari:' +isSafari);
         
         const useWorker = [ "auto", "worker" ].includes( optimize ) && !isSafari;
-console.info('use worker?:' + useWorker + ' for value:' + optimize);
+
         this._element  = document.createElement( "canvas" );
         this._renderer = new RenderAPI( this._element, useWorker, debug );
         this.collision = new Collision( this._renderer );
@@ -519,9 +522,29 @@ console.info('use worker?:' + useWorker + ' for value:' + optimize);
         this.invalidate();
     }
     
-    stretchToFit( value: boolean ) {
+    stretchToFit( value: boolean ): void {
         this._stretchToFit = value;
         this.handleResize();
+    }
+
+    setFullScreen( value: boolean ): void {
+        if ( !this._hasFsHandler ) {
+            this._hasFsHandler = true;
+            const d = document;
+
+            const handleFullScreenChange = (): void => {
+                // @ts-expect-error TS2551 vendor prefixes
+                this._isFullScreen = ( d.webkitIsFullScreen || d.mozFullScreen || d.msFullscreenElement === true );
+            };
+
+            [ "webkitfullscreenchange", "mozfullscreenchange", "fullscreenchange", "MSFullscreenChange" ]
+                .forEach( event => {
+                    this._eventHandler.add( d, event, handleFullScreenChange );
+                });
+        }
+        if ( value !== this._isFullScreen ) {
+            toggleFullScreen( this._element );
+        }
     }
 
     handleResize(): void {
@@ -550,8 +573,8 @@ console.info('use worker?:' + useWorker + ' for value:' + optimize);
             }
             // other orientations would be square, which we disregard to use available screen ratio
                 
-            targetWidth  = round( Math.min( innerWidth, targetWidth ));
-            targetHeight = round( Math.min( innerHeight, targetHeight ));
+            targetWidth  = round( min( innerWidth, targetWidth ));
+            targetHeight = round( min( innerHeight, targetHeight ));
             
             xScale = innerWidth  / targetWidth;
             yScale = innerHeight / targetHeight;
@@ -559,8 +582,8 @@ console.info('use worker?:' + useWorker + ' for value:' + optimize);
             this.setDimensions( targetWidth, targetHeight, false, true );
         } else {                
             const ratio  = idealHeight / idealWidth;
-            targetWidth  = Math.min( idealWidth, innerWidth );
-            targetHeight = Math.min( innerHeight, Math.round( targetWidth * ratio ));
+            targetWidth  = min( idealWidth, innerWidth );
+            targetHeight = min( innerHeight, round( targetWidth * ratio ));
         
             this.setDimensions( idealWidth, idealHeight, false );
         
@@ -578,8 +601,6 @@ console.info('use worker?:' + useWorker + ' for value:' + optimize);
         // we lock the scaleed to the ratio of the desired to actual screen dimensions
 
         this.scale( xScale, yScale );
-
-        this._resizeHandler?.( targetWidth, targetHeight );
     }
 
     /**
@@ -627,7 +648,7 @@ console.info('use worker?:' + useWorker + ' for value:' + optimize);
 
     /* event handlers */
 
-    protected handleInteraction( event: Event ): void {
+    protected handleInteraction( event: MouseEvent | TouchEvent | WheelEvent ): void {
         const numChildren = this._children.length;
         const viewport    = this._viewport;
         let theChild;
@@ -829,12 +850,12 @@ console.info('use worker?:' + useWorker + ' for value:' + optimize);
         if ( this.DEBUG && now > 2 ) {
             const elapsed = window.performance.now() - now;
 
-            this.benchmark.minElapsed = Math.min( this.benchmark.minElapsed, elapsed );
-            this.benchmark.maxElapsed = Math.max( this.benchmark.maxElapsed, elapsed );
+            this.benchmark.minElapsed = min( this.benchmark.minElapsed, elapsed );
+            this.benchmark.maxElapsed = max( this.benchmark.maxElapsed, elapsed );
 
             if ( this._aFps !== Infinity ) {
-                this.benchmark.minFps = Math.min( this.benchmark.minFps, this._aFps );
-                this.benchmark.maxFps = Math.max( this.benchmark.maxFps, this._aFps );
+                this.benchmark.minFps = min( this.benchmark.minFps, this._aFps );
+                this.benchmark.maxFps = max( this.benchmark.maxFps, this._aFps );
             }
         }
     }
@@ -915,6 +936,8 @@ console.info('use worker?:' + useWorker + ' for value:' + optimize);
     
             element.style.width  = `${width}px`;
             element.style.height = `${height}px`;
+
+            this._resizeHandler?.( width, height );
         }
         this._renderer.scale( scaleFactor, scaleFactor );
     
