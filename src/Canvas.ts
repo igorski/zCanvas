@@ -528,6 +528,9 @@ export default class Canvas {
     }
 
     setFullScreen( value: boolean, stretchToFit = false ): void {
+        if ( !stretchToFit ) {
+            stretchToFit = this._stretchToFit; // take configured value in case it was defined
+        }
         if ( !this._hasFsHandler ) {
             this._hasFsHandler = true;
             const d = document;
@@ -557,36 +560,40 @@ export default class Canvas {
         const idealWidth  = this._preferredWidth;
         const idealHeight = this._preferredHeight;
 
-        let targetWidth  = innerWidth;
-        let targetHeight = innerHeight;
-        let xScale       = 1;
-        let yScale       = 1;
+        let xScale = 1;
+        let yScale = 1;
 
         const stretchToFit = this._stretchToFit || innerWidth < idealWidth || innerHeight < idealHeight;
 
         if ( stretchToFit ) {
-            if ( idealWidth > idealHeight ) {
-                // source has landscape orientation
-                const ratio  = idealWidth / idealHeight;
-                targetHeight = targetWidth * ratio;
-            } else if ( idealWidth < idealHeight ) {
-                // source has portrait orientation
-                const ratio  = idealHeight / idealWidth;
-                targetHeight = targetHeight * ratio;
-            }
-            // other orientations would be square, which we disregard to use available screen ratio
-                
-            targetWidth  = round( min( innerWidth, targetWidth ));
-            targetHeight = round( min( innerHeight, targetHeight ));
+
+            // when stretching, the non-dominant side of the preferred rectangle will scale to reflect the
+            // ratio of the available screen space, while the dominant side remains at its current size
             
+            const idealAspectRatio  = idealWidth / idealHeight;
+            const screenAspectRatio = innerWidth / innerHeight;
+
+            let targetWidth: number;
+            let targetHeight: number;
+
+            if ( idealAspectRatio > screenAspectRatio ) {
+                // the ideal is landscape oriented
+                targetWidth = idealWidth;
+                targetHeight = idealWidth / screenAspectRatio;
+            } else {
+                // the ideal is portrait or square oriented
+                targetHeight = idealHeight;
+                targetWidth = idealHeight * screenAspectRatio;
+            }
+
             xScale = innerWidth  / targetWidth;
             yScale = innerHeight / targetHeight;
 
             this.setDimensions( targetWidth, targetHeight, false, true );
         } else {                
-            const ratio  = idealHeight / idealWidth;
-            targetWidth  = min( idealWidth, innerWidth );
-            targetHeight = min( innerHeight, round( targetWidth * ratio ));
+            const ratio        = idealHeight / idealWidth;
+            const targetWidth  = min( idealWidth, innerWidth );
+            const targetHeight = min( innerHeight, round( targetWidth * ratio ));
         
             this.setDimensions( idealWidth, idealHeight, false );
         

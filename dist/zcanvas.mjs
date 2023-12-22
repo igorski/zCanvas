@@ -627,7 +627,7 @@ class W {
     this._stretchToFit = t2, this.handleResize();
   }
   setFullScreen(t2, e2 = false) {
-    if (!this._hasFsHandler) {
+    if (e2 || (e2 = this._stretchToFit), !this._hasFsHandler) {
       this._hasFsHandler = true;
       const t3 = document, s2 = () => {
         this._isFullScreen = t3.webkitIsFullScreen || t3.mozFullScreen || true === t3.msFullscreenElement, e2 && (this._stretchToFit = this._isFullScreen);
@@ -643,22 +643,19 @@ class W {
   }
   handleResize() {
     const { innerWidth: t2, innerHeight: e2 } = window, s2 = this._preferredWidth, i2 = this._preferredHeight;
-    let h2 = t2, n2 = e2, a2 = 1, r2 = 1;
+    let h2 = 1, n2 = 1;
     if (this._stretchToFit || t2 < s2 || e2 < i2) {
-      if (s2 > i2) {
-        n2 = h2 * (s2 / i2);
-      } else if (s2 < i2) {
-        n2 *= i2 / s2;
-      }
-      h2 = R(G(t2, h2)), n2 = R(G(e2, n2)), a2 = t2 / h2, r2 = e2 / n2, this.setDimensions(h2, n2, false, true);
+      const a2 = t2 / e2;
+      let r2, o2;
+      s2 / i2 > a2 ? (r2 = s2, o2 = s2 / a2) : (o2 = i2, r2 = i2 * a2), h2 = t2 / r2, n2 = e2 / o2, this.setDimensions(r2, o2, false, true);
     } else {
-      const o2 = i2 / s2;
-      if (h2 = G(s2, t2), n2 = G(e2, R(h2 * o2)), this.setDimensions(s2, i2, false), a2 = r2 = t2 < s2 ? t2 / s2 : 1, this._viewport) {
-        const t3 = h2 / a2, e3 = n2 / r2;
+      const a2 = i2 / s2, r2 = G(s2, t2), o2 = G(e2, R(r2 * a2));
+      if (this.setDimensions(s2, i2, false), h2 = n2 = t2 < s2 ? t2 / s2 : 1, this._viewport) {
+        const t3 = r2 / h2, e3 = o2 / n2;
         this.setViewport(t3, e3);
       }
     }
-    this.scale(a2, r2);
+    this.scale(h2, n2);
   }
   getCoordinate() {
     return void 0 === this._coords && (this._coords = this._element.getBoundingClientRect()), this._coords;

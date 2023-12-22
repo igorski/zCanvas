@@ -301,8 +301,7 @@
                 parentElement: canvasContainer,
                 onUpdate: handleGameLoop, // see below
                 onResize: ( width, height ) => {
-                    // resize demo container to accomodate the canvas size
-                    console.info(width + ' x ' + height)
+                    // resize demo container to accommodate the canvas size
                     demoContainer.style.width = `${width}px`;
                 }
             });
