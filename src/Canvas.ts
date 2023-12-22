@@ -527,7 +527,7 @@ export default class Canvas {
         this.handleResize();
     }
 
-    setFullScreen( value: boolean ): void {
+    setFullScreen( value: boolean, stretchToFit = false ): void {
         if ( !this._hasFsHandler ) {
             this._hasFsHandler = true;
             const d = document;
@@ -535,6 +535,9 @@ export default class Canvas {
             const handleFullScreenChange = (): void => {
                 // @ts-expect-error TS2551 vendor prefixes
                 this._isFullScreen = ( d.webkitIsFullScreen || d.mozFullScreen || d.msFullscreenElement === true );
+                if ( stretchToFit ) {
+                    this._stretchToFit = this._isFullScreen;
+                }
             };
 
             [ "webkitfullscreenchange", "mozfullscreenchange", "fullscreenchange", "MSFullscreenChange" ]
@@ -591,10 +594,12 @@ export default class Canvas {
             xScale = yScale = innerWidth < idealWidth ? innerWidth / idealWidth : 1;
         
             // the viewport however is local to the client window size
-            const viewportWidth  = targetWidth  / xScale;
-            const viewportHeight = targetHeight / yScale;
-            
-            this.setViewport( viewportWidth, viewportHeight );
+            if ( this._viewport ) {
+                const viewportWidth  = targetWidth  / xScale;
+                const viewportHeight = targetHeight / yScale;
+                
+                this.setViewport( viewportWidth, viewportHeight );
+            }
         }
 
         // we override the scale adjustment performed by updateCanvasSize above as

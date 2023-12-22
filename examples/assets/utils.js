@@ -23,7 +23,7 @@ function addCanvasDemoControls( container, zCanvas ) {
     const fullscreenControl = container.querySelector( "#fullscreen" );
     if ( fullscreenControl ) {
         fullscreenControl.onclick = () => {
-            zCanvas.setFullScreen( true );
+            zCanvas.setFullScreen( true, true );
         };
     }
 }

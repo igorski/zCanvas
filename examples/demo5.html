@@ -86,6 +86,7 @@
 
                     this.setWidth ( width );
                     this.setHeight( height );
+                    
                     this.setX( Math.min( 0, Math.max( maxX, x )));
                     this.setY( Math.min( 0, Math.max( maxY, y )));
                 }
@@ -116,7 +117,7 @@
                 // load file image data into memory
   
                 const file = files[ 0 ];
-                cvs.disposeResource( "loadedFile" ); // unload any previously registered resources
+                cvs.disposeResource( "loadedFile" ); // unload any previously registered resource under the same name
                 cvs.loadResource( "loadedFile", file ).then( imgSize => {
                     orgImageWidth  = imgSize.width;
                     orgImageHeight = imgSize.height;

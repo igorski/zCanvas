@@ -570,41 +570,18 @@ export default class Sprite {
      * @param {number=} height optional new width to use for this Sprites bounds
      */
     setResource( resourceId: string | null, width?: number, height?: number ): void {
-        // @todo can we validate this exists ? QQQ
         this._resourceId = resourceId;
 
-        // update dimensions, when given
+        // update dimensions, when provided
 
-        const hasWidth  = ( typeof width  === "number" );
-        const hasHeight = ( typeof height === "number" );
-
-        if ( hasWidth ) {
+        if ( typeof width  === "number" ) {
             this.setWidth( width );
         }
 
-        if ( hasHeight ) {
+        if ( typeof height === "number" ) {
             this.setHeight( height );
         }
-
-        // make sure the image is still within bounds
-
-        if ( this._keepInBounds && this.canvas && ( hasWidth || hasHeight )) {
-
-            const minX = -( this._bounds.width  - this.canvas.getWidth() );
-            const minY = -( this._bounds.height - this.canvas.getHeight() );
-
-            if ( this._bounds.left > 0 ) {
-                this._bounds.left = 0;
-            } else if ( this._bounds.left < minX ) {
-                this._bounds.left = minX;
-            }
-
-            if ( this._bounds.top > 0 ) {
-                this._bounds.top = 0;
-            } else if ( this._bounds.top < minY ) {
-                this._bounds.top = minY;
-            }
-        }
+        this.invalidate();
     }
 
     getResourceId(): string | undefined {

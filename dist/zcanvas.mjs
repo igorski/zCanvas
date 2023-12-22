@@ -285,7 +285,7 @@ function g() {
     t2 && (window.URL || window.webkitURL).revokeObjectURL(t2);
   }
 }
-class b {
+class w {
   constructor(t2, e2 = false, s2 = false) {
     if (this._useWorker = false, this._element = t2, e2 && "function" == typeof this._element.transferControlToOffscreen) {
       this._useWorker = true, this._callbacks = /* @__PURE__ */ new Map(), this._pool = new l(() => [], (t3) => {
@@ -335,8 +335,8 @@ class b {
   }
   dispose() {
     this.getBackend("dispose"), setTimeout(() => {
-      var _a, _b2;
-      (_a = this._worker) == null ? void 0 : _a.terminate(), this._worker = void 0, (_b2 = this._callbacks) == null ? void 0 : _b2.clear();
+      var _a, _b;
+      (_a = this._worker) == null ? void 0 : _a.terminate(), this._worker = void 0, (_b = this._callbacks) == null ? void 0 : _b.clear();
     }, 50);
   }
   handleMessage(t2) {
@@ -436,7 +436,7 @@ class b {
     this._renderer[t2](...e2);
   }
 }
-const w = (t2) => t2 > 0 ? t2 + 0.5 << 0 : 0 | t2, f = [], v = [], Z = s(1, 1, true).cvs;
+const b = (t2) => t2 > 0 ? t2 + 0.5 << 0 : 0 | t2, f = [], v = [], Z = s(1, 1, true).cvs;
 class C {
   constructor(t2) {
     this._renderer = t2, this._cacheMap = /* @__PURE__ */ new Map();
@@ -492,10 +492,10 @@ class C {
     const i2 = t2.getResourceId();
     if (!this.hasCache(i2))
       throw new Error(`Cannot get cached entry for resource "${i2}". Cache it first.`);
-    const h2 = t2.getBounds(), n2 = w(e2.left - h2.left), a2 = w(e2.top - h2.top), r2 = w(e2.width), o2 = w(e2.height), { data: d2, size: l2 } = this._cacheMap.get(i2);
+    const h2 = t2.getBounds(), n2 = b(e2.left - h2.left), a2 = b(e2.top - h2.top), r2 = b(e2.width), o2 = b(e2.height), { data: d2, size: l2 } = this._cacheMap.get(i2);
     if (0 === r2 || 0 === o2)
       return void (s2.length = 0);
-    s2.length = w(r2 * o2);
+    s2.length = b(r2 * o2);
     const c2 = l2.width, u2 = a2 + o2, p2 = n2 + r2;
     let m2 = -1;
     for (let t3 = a2; t3 < u2; ++t3)
@@ -511,8 +511,8 @@ class W {
     if (this.DEBUG = false, this.benchmark = { minElapsed: 1 / 0, maxElapsed: -1 / 0, minFps: 1 / 0, maxFps: -1 / 0 }, this._smoothing = false, this._stretchToFit = false, this._HDPIscaleRatio = 1, this._preventDefaults = false, this._lastRender = 0, this._renderId = 0, this._renderPending = false, this._disposed = false, this._scale = { x: 1, y: 1 }, this._activeTouches = [], this._children = [], this._animate = false, this._hasFsHandler = false, this._isFullScreen = false, t2 <= 0 || e2 <= 0)
       throw new Error("cannot construct a zCanvas without valid dimensions");
     this.DEBUG = c2;
-    const { userAgent: g2 } = navigator, w2 = g2.includes("Safari") && !g2.includes("Chrome"), f2 = ["auto", "worker"].includes(u2) && !w2;
-    this._element = document.createElement("canvas"), this._renderer = new b(this._element, f2, c2), this.collision = new C(this._renderer), this._updateHandler = m2, this._renderHandler = this.render.bind(this), this._viewportHandler = p2, this._resizeHandler = _2, this.setFrameRate(s2), this.setAnimatable(n2), h2 && this.setBackgroundColor(h2), this._HDPIscaleRatio = window.devicePixelRatio || 1, this.setDimensions(t2, e2, true, true), o2 && this.setViewport(o2.width, o2.height), 1 !== i2 && this.scale(i2, i2), this._stretchToFit = r2, this.setSmoothing(a2), this.preventEventBubbling(d2), this.addListeners(), l2 instanceof HTMLElement && this.insertInPage(l2), requestAnimationFrame(() => this.handleResize());
+    const { userAgent: g2 } = navigator, b2 = g2.includes("Safari") && !g2.includes("Chrome"), f2 = ["auto", "worker"].includes(u2) && !b2;
+    this._element = document.createElement("canvas"), this._renderer = new w(this._element, f2, c2), this.collision = new C(this._renderer), this._updateHandler = m2, this._renderHandler = this.render.bind(this), this._viewportHandler = p2, this._resizeHandler = _2, this.setFrameRate(s2), this.setAnimatable(n2), h2 && this.setBackgroundColor(h2), this._HDPIscaleRatio = window.devicePixelRatio || 1, this.setDimensions(t2, e2, true, true), o2 && this.setViewport(o2.width, o2.height), 1 !== i2 && this.scale(i2, i2), this._stretchToFit = r2, this.setSmoothing(a2), this.preventEventBubbling(d2), this.addListeners(), l2 instanceof HTMLElement && this.insertInPage(l2), requestAnimationFrame(() => this.handleResize());
   }
   loadResource(t2, e2) {
     return this._renderer.loadResource(t2, e2);
@@ -626,19 +626,19 @@ class W {
   stretchToFit(t2) {
     this._stretchToFit = t2, this.handleResize();
   }
-  setFullScreen(t2) {
+  setFullScreen(t2, e2 = false) {
     if (!this._hasFsHandler) {
       this._hasFsHandler = true;
-      const t3 = document, e2 = () => {
-        this._isFullScreen = t3.webkitIsFullScreen || t3.mozFullScreen || true === t3.msFullscreenElement;
+      const t3 = document, s2 = () => {
+        this._isFullScreen = t3.webkitIsFullScreen || t3.mozFullScreen || true === t3.msFullscreenElement, e2 && (this._stretchToFit = this._isFullScreen);
       };
-      ["webkitfullscreenchange", "mozfullscreenchange", "fullscreenchange", "MSFullscreenChange"].forEach((s2) => {
-        this._eventHandler.add(t3, s2, e2);
+      ["webkitfullscreenchange", "mozfullscreenchange", "fullscreenchange", "MSFullscreenChange"].forEach((e3) => {
+        this._eventHandler.add(t3, e3, s2);
       });
     }
     t2 !== this._isFullScreen && function(t3) {
-      let e2;
-      e2 = t3.fullscreenElement || t3.webkitFullscreenElement ? t3.exitFullscreen || t3.webkitExitFullscreen || t3.mozCancelFullScreen || t3.msExitFullscreen : t3.requestFullScreen || t3.webkitRequestFullScreen || t3.mozRequestFullScreen || t3.msRequestFullscreen, e2 && e2.call(t3);
+      let e3;
+      e3 = t3.fullscreenElement || t3.webkitFullscreenElement ? t3.exitFullscreen || t3.webkitExitFullscreen || t3.mozCancelFullScreen || t3.msExitFullscreen : t3.requestFullScreen || t3.webkitRequestFullScreen || t3.mozRequestFullScreen || t3.msRequestFullscreen, e3 && e3.call(t3);
     }(this._element);
   }
   handleResize() {
@@ -653,9 +653,10 @@ class W {
       h2 = R(G(t2, h2)), n2 = R(G(e2, n2)), a2 = t2 / h2, r2 = e2 / n2, this.setDimensions(h2, n2, false, true);
     } else {
       const o2 = i2 / s2;
-      h2 = G(s2, t2), n2 = G(e2, R(h2 * o2)), this.setDimensions(s2, i2, false), a2 = r2 = t2 < s2 ? t2 / s2 : 1;
-      const d2 = h2 / a2, l2 = n2 / r2;
-      this.setViewport(d2, l2);
+      if (h2 = G(s2, t2), n2 = G(e2, R(h2 * o2)), this.setDimensions(s2, i2, false), a2 = r2 = t2 < s2 ? t2 / s2 : 1, this._viewport) {
+        const t3 = h2 / a2, e3 = n2 / r2;
+        this.setViewport(t3, e3);
+      }
     }
     this.scale(a2, r2);
   }
@@ -906,12 +907,7 @@ class M {
     return false;
   }
   setResource(t2, e2, s2) {
-    this._resourceId = t2;
-    const i2 = "number" == typeof e2, h2 = "number" == typeof s2;
-    if (i2 && this.setWidth(e2), h2 && this.setHeight(s2), this._keepInBounds && this.canvas && (i2 || h2)) {
-      const t3 = -(this._bounds.width - this.canvas.getWidth()), e3 = -(this._bounds.height - this.canvas.getHeight());
-      this._bounds.left > 0 ? this._bounds.left = 0 : this._bounds.left < t3 && (this._bounds.left = t3), this._bounds.top > 0 ? this._bounds.top = 0 : this._bounds.top < e3 && (this._bounds.top = e3);
-    }
+    this._resourceId = t2, "number" == typeof e2 && this.setWidth(e2), "number" == typeof s2 && this.setHeight(s2), this.invalidate();
   }
   getResourceId() {
     return this._resourceId;
