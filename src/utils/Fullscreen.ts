@@ -20,6 +20,10 @@
  * IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
+import type { Point } from "../definitions/types";
+
+const p = { x: 0, y: 0 };
+
 export function toggleFullScreen( element: HTMLElement ): void {
     let requestMethod;
    
@@ -37,3 +41,29 @@ export function toggleFullScreen( element: HTMLElement ): void {
     }
 }
 
+/**
+ * When entering fullscreen mode, the mouse pointer is not representative of its on-screen position.
+ * This method will transform mouse pointers in fullscreen view to relative coordinates in the Canvas
+ * 
+ * NOTE this will only work when stretchToFit is set to true as the Canvas needs to be aligned to
+ * the top left (0, 0) coordinate (we cannot retrieve its actuall offset when in fullscreen!)
+ */
+export function transformPointer( event: MouseEvent, element: HTMLCanvasElement, rect: DOMRect, canvasWidth: number, canvasHeight: number ): Point {
+    /* in zCanvas, Element is/should always be the Canvas
+    const element = event.target as HTMLElement;
+    const rect = element.getBoundingClientRect();
+    */
+    const ratio  = window.innerHeight / canvasHeight;
+    const offset = ( window.innerWidth - ( canvasWidth * ratio )) * 0.5;
+    
+    p.x = map( event.clientX - rect.left - offset, 0, canvasWidth * ratio, 0, element.width );
+    p.y = map( event.clientY - rect.top, 0, canvasHeight * ratio, 0, element.height );
+
+    return p;
+}
+
+/* internal methods */
+
+function map( v: number, n1: number, n2: number, m1: number, m2: number ): number {
+    return ( v - n1 ) / ( n2 - n1 ) * ( m2 - m1 ) + m1;
+}

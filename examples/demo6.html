@@ -30,7 +30,6 @@
                 <label for="fps">Framerate (15 to 60 fps)</label>
                 <input type="range" id="fps" min="15" max="60" value="60" step="1" />
             </div>
-            <button type="button" id="fullscreen">Fullscreen</button>
         </div>
         <p class="demo-description">
             Demo features : a large zCanvas filled with a large background image, constrained in 
@@ -58,27 +57,49 @@
             const demoContainer   = document.querySelector( ".demo-container" );
             const canvasContainer = document.querySelector( ".demo-canvas-container" );
 
-            // create a new canvas that renders at 60 fps
-            // keep its viewport within the device / browser bounds
-            const viewportWidth  = 400;
-            const viewportHeight = 300;
-            const bgWidth        = 800;
-            const bgHeight       = 1067; // is size of IMAGE_BACKGROUND assets
-            const cvsWidth       = bgWidth;
-            const cvsHeight      = bgHeight;
+            const idealVpWidth  = 640;
+            const idealVpHeight = 320;
+            const bgWidth       = 800;
+            const bgHeight      = 1067; // is size of IMAGE_BACKGROUND assets
+            const cvsWidth      = bgWidth;
+            const cvsHeight     = bgHeight;
 
-            const cvs = new Canvas({
+            let cvs;
+            cvs = new Canvas({
                 width: cvsWidth,
                 height: cvsHeight,
                 preventEventBubbling: true,
                 parentElement: canvasContainer,
                 backgroundColor: "#00ff00",
                 animate: true,
-                viewport: { width: viewportWidth, height: viewportHeight },
+                viewport: { width: idealVpWidth, height: idealVpHeight },
                 viewportHandler: handleCanvasEvent,
                 onResize: ( width, height ) => {
                     // resize demo container to accommodate the canvas size
                     demoContainer.style.width = `${width}px`;
+
+                    if ( !cvs ) {
+                        return; // still in construction phase
+                    }
+                    const { innerWidth, innerHeight } = window;
+                    const currentViewport = cvs.getViewport();
+
+                    // in case the available window size is smaller than the viewport size
+                    // we downscale the viewport
+
+                    if ( innerWidth < currentViewport.width || innerHeight < currentViewport.height ) {
+                        cvs.setViewport(
+                            Math.min( currentViewport.width, innerWidth ),
+                            Math.min( currentViewport.height, innerHeight )
+                        );
+                    } else if ( innerWidth > idealVpWidth || innerHeight > idealVpHeight ) {
+                        // else we scale it to the ideal size
+                        if ( currentViewport.width !== idealVpWidth || currentViewport.height !== idealVpHeight ) {
+                            cvs.setViewport( idealVpWidth, idealVpHeight );
+                            cvs.handleResize();
+                        }
+                    }
+                    cacheScrollHandleSizes();
                 }
             });
             addCanvasDemoControls( demoContainer, cvs );
@@ -140,8 +161,8 @@
                 // (see included "assets.js"-file for the IMAGE_SPRITE_SHEET data)
 
                 const hero = new Sprite({
-                    x: viewportWidth  / 2 - 38 / 2,
-                    y: viewportHeight / 2 - 35 / 2,
+                    x: idealVpWidth  / 2 - 38 / 2,
+                    y: idealVpHeight / 2 - 35 / 2,
                     width: 38,
                     height: 35,
                     resourceId: "spritesheet",
@@ -160,18 +181,24 @@
             const horHandle = horScroll.querySelector( ".handle" );
             const verHandle = verScroll.querySelector( ".handle" );
 
-            const trackWidth   = viewportWidth;
-            const trackHeight  = viewportHeight;
-            const scrollWidth  = cvsWidth  - viewportWidth;
-            const scrollHeight = cvsHeight - viewportHeight;
-            let scrollLeft   = 0;
-            let scrollTop    = 0;
+            const trackWidth   = idealVpWidth;
+            const trackHeight  = idealVpHeight;
+            const scrollWidth  = cvsWidth  - idealVpWidth;
+            const scrollHeight = cvsHeight - idealVpHeight;
+            
+            let horHandleSize = 0;
+            let verHandleSize = 0;
+            let scrollLeft    = 0;
+            let scrollTop     = 0;
 
-            const horHandleSize = ( viewportWidth  / cvs.getWidth() )  * trackWidth;
-            const verHandleSize = ( viewportHeight / cvs.getHeight() ) * trackHeight;
+            function cacheScrollHandleSizes() {
+                horHandleSize = ( cvs.getViewport().width  / cvs.getWidth() )  * trackWidth;
+                verHandleSize = ( cvs.getViewport().height / cvs.getHeight() ) * trackHeight;
 
-            horHandle.style.width  = `${horHandleSize}px`;
-            verHandle.style.height = `${verHandleSize}px`;
+                horHandle.style.width  = `${horHandleSize}px`;
+                verHandle.style.height = `${verHandleSize}px`;
+            }
+            cacheScrollHandleSizes();
 
             // STEP 3 : ATTACH HANDLERS TO VIEWPORT SCROLLBARS
             // -----------------------------------------------
@@ -238,8 +265,8 @@
                         positionVerticalHandle();
                     }
                     cvs.panViewport(
-                        Math.round( viewportXratio * ( cvs.getWidth()  - viewportWidth )),
-                        Math.round( viewportYratio * ( cvs.getHeight() - viewportHeight ))
+                        Math.round( viewportXratio * ( cvs.getWidth()  - idealVpWidth )),
+                        Math.round( viewportYratio * ( cvs.getHeight() - idealVpHeight ))
                     );
                 }
             }
@@ -248,8 +275,8 @@
                 // panning can also be adjusted internally by zCanvas (for instance wheel/trackpad event)
                 // by listening to these events we can keep the scroll handle offsets in sync
                 if ( e.type === "panned" ) {
-                    viewportXratio = e.value.left / ( cvsWidth  - viewportWidth );
-                    viewportYratio = e.value.top  / ( cvsHeight - viewportHeight );
+                    viewportXratio = e.value.left / ( cvsWidth  - idealVpWidth );
+                    viewportYratio = e.value.top  / ( cvsHeight - idealVpHeight );
                     positionHorizontalHandle();
                     positionVerticalHandle();
                 }

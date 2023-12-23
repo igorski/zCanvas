@@ -24,12 +24,12 @@ import type { Size, Point, Viewport, ImageSource } from "./definitions/types";
 import { IRenderer } from "./rendering/IRenderer";
 import RenderAPI from "./rendering/RenderAPI";
 import EventHandler from "./utils/EventHandler";
-import { toggleFullScreen } from "./utils/Fullscreen";
+import { toggleFullScreen, transformPointer } from "./utils/Fullscreen";
 import { lockedScale } from "./utils/ImageMath";
 import Collision from "./Collision";
 import type Sprite from "./Sprite";
 
-const { min, max, round } = Math;
+const { min, max } = Math;
 
 /**
  * In most instances the expected framerate is 60 fps which we consider IDEAL_FPS
@@ -173,7 +173,7 @@ export default class Canvas {
         }
 
         if ( scale !== 1 ) {
-            this.scale( scale, scale );
+            this.scale( scale );
         }
         this._stretchToFit = stretchToFit;
 
@@ -554,50 +554,6 @@ export default class Canvas {
         }
     }
 
-    handleResize(): void {
-        // const { clientWidth, clientHeight } = document.documentElement;
-        const { innerWidth, innerHeight } = window;
-
-        let idealWidth  = this._preferredWidth;
-        let idealHeight = this._preferredHeight;
-
-        let scale = 1;
-
-        const stretchToFit = !this._viewport && ( this._stretchToFit || innerWidth < idealWidth || innerHeight < idealHeight );
-
-        if ( stretchToFit ) {
-
-            // when stretching, the non-dominant side of the preferred rectangle will scale to reflect the
-            // ratio of the available screen space, while the dominant side remains at its current size
-
-            const { width, height } = lockedScale( idealWidth, idealHeight, innerWidth, innerHeight );
-
-            scale = innerWidth / width;
-            
-            this.setDimensions( width, height, false, true );
-        } else {                
-            const ratio        = idealHeight / idealWidth;
-            const targetWidth  = min( idealWidth, innerWidth );
-            //const targetHeight = min( innerHeight, round( targetWidth * ratio ));
-        
-            this.setDimensions( idealWidth, idealHeight, false );
-        
-            // the viewport however is local to the client window size
-            /*
-            if ( this._viewport ) {
-                const viewportWidth  = targetWidth  / scale;
-                const viewportHeight = targetHeight / scale;
-                
-                this.setViewport( viewportWidth, viewportHeight );
-            }*/
-        }
-
-        // we override the scale adjustment performed by updateCanvasSize above as
-        // we lock the scaleed to the ratio of the desired to actual screen dimensions
-
-        this.scale( scale );
-    }
-
     /**
      * return the bounding box of the canvas Element in the DOM
      */
@@ -712,6 +668,11 @@ export default class Canvas {
                 case "mousemove":
                 case "mouseup":
                     let { offsetX, offsetY } = ( event as MouseEvent );
+                    if ( this._isFullScreen ) {
+                        const transformed = transformPointer( event as MouseEvent, this._element, this.getCoordinate(), this._width, this._height );
+                        offsetX = transformed.x;
+                        offsetY = transformed.y;
+                    }
                     if ( viewport ) {
                         offsetX += viewport.left;
                         offsetY += viewport.top;
@@ -803,8 +764,6 @@ export default class Canvas {
         const width  = this._width;
         const height = this._height;
 
-        let cmds = []; // TODO pool
-
         // clear previous canvas contents either by flooding it
         // with the optional background colour, or by clearing all pixel content
 
@@ -877,7 +836,7 @@ export default class Canvas {
         [ "down", "move" ].forEach( mouseType => {
             theHandler.add( element, `mouse${mouseType}`, theListener );
         });
-        theHandler.add( window, "mouseup", theListener ); // note different element in listener
+        theHandler.add( window, "mouseup", theListener ); // note: different element in listener
 
         if ( this._viewport ) {
             theHandler.add( element, "wheel", theListener );
@@ -890,7 +849,51 @@ export default class Canvas {
         this._eventHandler = undefined;
     }
 
-    private updateCanvasSize(): void {
+    protected handleResize(): void {
+        // const { clientWidth, clientHeight } = document.documentElement;
+        const { innerWidth, innerHeight } = window;
+
+        let idealWidth  = this._preferredWidth;
+        let idealHeight = this._preferredHeight;
+
+        let scale = 1;
+
+        const stretchToFit = !this._viewport && ( this._stretchToFit || innerWidth < idealWidth || innerHeight < idealHeight );
+
+        if ( stretchToFit ) {
+
+            // when stretching, the non-dominant side of the preferred rectangle will scale to reflect the
+            // ratio of the available screen space, while the dominant side remains at its current size
+
+            const { width, height } = lockedScale( idealWidth, idealHeight, innerWidth, innerHeight );
+
+            scale = innerWidth / width;
+            
+            this.setDimensions( width, height, false, true );
+        } else {                
+            const ratio        = idealHeight / idealWidth;
+            const targetWidth  = min( idealWidth, innerWidth );
+            //const targetHeight = min( innerHeight, round( targetWidth * ratio ));
+        
+            this.setDimensions( idealWidth, idealHeight, false );
+        
+            // the viewport however is local to the client window size
+            /*
+            if ( this._viewport ) {
+                const viewportWidth  = targetWidth  / scale;
+                const viewportHeight = targetHeight / scale;
+                
+                this.setViewport( viewportWidth, viewportHeight );
+            }*/
+        }
+
+        // we override the scale adjustment performed by updateCanvasSize above as
+        // we lock the scaleed to the ratio of the desired to actual screen dimensions
+
+        this.scale( scale );
+    }
+
+    protected updateCanvasSize(): void {
         const scaleFactor = this._HDPIscaleRatio;
 
         let width: number;
