@@ -21,6 +21,7 @@
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 import type Canvas from "./Canvas";
+import DisplayObject from "./DisplayObject";
 import type { Point, Rectangle, SpriteSheet, Viewport } from "./definitions/types";
 import type { IRenderer, DrawContext } from "./rendering/IRenderer";
 import { isInsideViewport, calculateDrawRectangle } from "./utils/ImageMath";
@@ -56,7 +57,7 @@ interface SpriteProps {
  * inheriting classes that have custom draw logic, should also override the public "draw"-method which is used
  * for drawing the Sprite's visual representation onto the canvas. This method is invoked on each draw cycle.
  */
-export default class Sprite {
+export default class Sprite extends DisplayObject<Sprite> {
 
     public collidable: boolean; // whether this sprite can collide with others
     public hover = false; // whether user is currently hovering the sprite
@@ -69,9 +70,6 @@ export default class Sprite {
     protected _rotation: number;
     protected _pivot: Point | undefined; // optional pivot point for rotation (defaults to center)
     protected _scale: number;
-    protected _children: Sprite[]  = [];
-    protected _parent: Sprite | Canvas | undefined;
-    protected _disposed = false;
     protected _mask = false; // whether Sprite masks underlying Canvas content
     protected _interactive = false;
     protected _draggable = false;
@@ -110,6 +108,8 @@ export default class Sprite {
         sheetTileWidth = 0,
         sheetTileHeight = 0
     }: SpriteProps = { width: 64, height: 64 } ) {
+        super();
+
         /* assertions */
 
         if ( width <= 0 || height <= 0 ) {
@@ -642,11 +642,11 @@ export default class Sprite {
     /**
      * set a reference to the parent sprite containing this one
      */
-    setParent( parent: Sprite | Canvas | undefined ): void {
+    setParent( parent: DisplayObject<Canvas | Sprite> | undefined ): void {
         this._parent = parent;
     }
 
-    getParent(): Sprite | Canvas | undefined {
+    getParent(): DisplayObject<Canvas | Sprite> | undefined {
         return this._parent;
     }
 
@@ -684,109 +684,9 @@ export default class Sprite {
         return this._constraint;
     }
 
-    /**
-     * append another Sprite to the display list of this sprite
-     *
-     * @param {Sprite} child to append
-     * @return {Sprite} this object - for chaining purposes
-     */
-    addChild( child: Sprite ): Sprite {
-        if ( this.contains( child )) {
-            return this;
-        }
-        // create a linked list
-        const numChildren = this._children.length;
-
-        if ( numChildren > 0 ) {
-            child.last      = this._children[ numChildren - 1 ];
-            child.last.next = child;
-            child.next      = undefined;
-        }
+    override addChild( child: Sprite ): DisplayObject<Sprite> {
         child.setCanvas( this.canvas );
-        child.setParent( this );
-
-        this._children.push( child );
-
-        // request a render now the state of the canvas has changed
-
-        this.invalidate();
-
-        return this;
-    }
-
-    /**
-     * remove a child Sprite from this sprites display list
-     *
-     * @param {Sprite} child the child to remove
-     * @return {Sprite} the removed child
-     */
-    removeChild( child: Sprite ): Sprite {
-        child.setParent( undefined );
-        child.setCanvas( undefined );
-
-        //aChild.dispose(); // no, we might like to re-use the child at a later stage!
-
-        const childIndex = this._children.indexOf( child );
-        if ( childIndex !== -1 ) {
-            this._children.splice( childIndex, 1 );
-        }
-
-        // update linked list
-
-        const prevChild = child.last;
-        const nextChild = child.next;
-
-        if ( prevChild ) {
-            prevChild.next = nextChild;
-        }
-        if ( nextChild ) {
-            nextChild.last = prevChild;
-        }
-        child.last = child.next = undefined;
-
-        // request a render now the state of the canvas has changed
-
-        this.invalidate();
-
-        return child;
-    }
-
-    /**
-     * get a child of this Sprite by its index in the Display List
-     *
-     * @param {number} index of the object in the Display List
-     * @return {Sprite} the Sprite present at the given index
-     */
-    getChildAt( index: number ): Sprite | undefined {
-        return this._children[ index ];
-    }
-
-    /**
-     * remove a child from this object's Display List at the given index
-     *
-     * @param {number} index of the object to remove
-     * @return {Sprite} the Sprite removed at the given index
-     */
-    removeChildAt( index: number ): Sprite | undefined {
-        return this.removeChild( this.getChildAt( index ));
-    }
-
-    /**
-     * @return {number} the amount of children in this object's Display List
-     */
-    numChildren(): number {
-        return this._children.length;
-    }
-
-    getChildren(): Sprite[] {
-        return this._children;
-    }
-
-    /**
-     * check whether a given display object is present in this object's display list
-     */
-    contains( child: Sprite ): boolean {
-        return child._parent === this;
+        return super.addChild( child );
     }
 
     /**
@@ -796,25 +696,7 @@ export default class Sprite {
         if ( this._disposed ) {
             return;
         }
-        this._disposed = true;
-
-        // in case this Sprite was still on the canvas, remove it
-
-        if ( this._parent ) {
-            this._parent.removeChild( this );
-        }
-
-        // dispose the children
-        let i = this._children.length;
-
-        while ( i-- ) {
-            const theChild = this._children[ i ];
-            theChild.dispose();
-            // break references
-            theChild.next = undefined;
-            theChild.last = undefined;
-        }
-        this._children = [];
+        super.dispose();
     }
 
     /* event handlers */
@@ -976,12 +858,7 @@ export default class Sprite {
         return false;
     }
 
-    /**
-     * Whenever a change has occurred, this Sprite can request an
-     * invalidation of the Canvas to ensure the on screen representation
-     * matches the latest state.
-     */
-    invalidate() {
+    override invalidate() {
         if ( !this.canvas ) { 
             return;
         }

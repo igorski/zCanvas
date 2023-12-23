@@ -27,6 +27,7 @@ import EventHandler from "./utils/EventHandler";
 import { toggleFullScreen, transformPointer } from "./utils/Fullscreen";
 import { lockedScale } from "./utils/ImageMath";
 import Collision from "./Collision";
+import DisplayObject from "./DisplayObject";
 import type Sprite from "./Sprite";
 
 const { min, max } = Math;
@@ -67,7 +68,7 @@ interface CanvasProps {
  * self-contained Objects that can add/remove themselves from the DisplayList, rather
  * than having a single function aggregating all drawing instructions
  */
-export default class Canvas {
+export default class Canvas extends DisplayObject<Canvas> {
     public DEBUG = false;
     public benchmark = {
         minElapsed: Infinity,
@@ -99,7 +100,6 @@ export default class Canvas {
     protected _disposed = false;
     protected _scale: Point = { x: 1, y: 1 };
     protected _activeTouches: Sprite[] = [];
-    protected _children: Sprite[] = [];
     protected _coords: DOMRect | undefined;
     protected _width: number;
     protected _height: number;
@@ -135,6 +135,8 @@ export default class Canvas {
         onUpdate,
         onResize,
     }: CanvasProps = {}) {
+        super();
+
         if ( width <= 0 || height <= 0 ) {
             throw new Error( "cannot construct a zCanvas without valid dimensions" );
         }
@@ -236,101 +238,9 @@ export default class Canvas {
         this._preventDefaults = value;
     }
 
-    /**
-     * @param {Sprite} child
-     * @return {Canvas} this Canvas - for chaining purposes
-     */
-    addChild( child: Sprite ): Canvas {
-        if ( this.contains( child )) {
-            return this;
-        }
-        // create a linked list
-        const numChildren = this._children.length;
-
-        if ( numChildren > 0 ) {
-            child.last      = this._children[ numChildren - 1 ];
-            child.last.next = child;
-        }
-        child.next = undefined;
+    override addChild( child: Sprite ): DisplayObject<Canvas> {
         child.setCanvas( this );
-        child.setParent( this );
-
-        this._children.push( child );
-        this.invalidate();
-
-        return this;
-    }
-
-    /**
-     * @param {Sprite} child the child to remove from this Canvas
-     * @return {Sprite} the removed child - for chaining purposes
-     */
-    removeChild( child: Sprite ): Sprite {
-        child.setParent( undefined );
-        child.setCanvas( undefined );
-
-        //aChild.dispose(); // no, we might like to re-use the child at a later stage!
-
-        const childIndex = this._children.indexOf( child );
-        if ( childIndex !== -1 ) {
-            this._children.splice( childIndex, 1 );
-        }
-
-        // update linked list
-
-        const prevChild = child.last;
-        const nextChild = child.next;
-
-        if ( prevChild ) {
-            prevChild.next = nextChild;
-        }
-        if ( nextChild ) {
-            nextChild.last = prevChild;
-        }
-        child.last = child.next = undefined;
-
-        // request a render now the state of the canvas has changed
-
-        this.invalidate();
-
-        return child;
-    }
-
-    /**
-     * retrieve a child of this Canvas by its index in the Display List
-     * @param {number} index of the object in the Display List
-     * @return {Sprite} the referenced object
-     */
-    getChildAt( index: number ): Sprite | undefined {
-        return this._children[ index ];
-    }
-
-    /**
-     * remove a child from this Canvas' Display List at the given index
-     *
-     * @param {number} index of the object to remove
-     * @return {Sprite} the removed sprite
-     */
-    removeChildAt( index: number ): Sprite | undefined {
-        return this.removeChild( this.getChildAt( index ));
-    }
-
-    /**
-     * @return {number} the amount of children in this Canvas' Display List
-     */
-    numChildren(): number {
-        return this._children.length;
-    }
-
-    getChildren(): Sprite[] {
-        return this._children;
-    }
-
-    /**
-     * check whether a given display object is present in this object's display list
-     */
-    contains( child: Sprite ): boolean {
-        return child.canvas === this;
+        return super.addChild( child );
     }
 
     /**
@@ -343,7 +253,7 @@ export default class Canvas {
      * repeatedly between render cycles without actually triggering
      * multiple render executions (a single one will suffice)
      */
-    invalidate(): void {
+    override invalidate(): void {
         if ( !this._animate && !this._renderPending ) {
             this._renderPending = true;
             this._renderId = window.requestAnimationFrame( this._renderHandler );
@@ -576,12 +486,7 @@ export default class Canvas {
 
         // dispose all sprites on Display List
 
-        let i = this.numChildren();
-
-        while ( i-- ) {
-            this._children[ i ].dispose();
-        }
-        this._children = [];
+        super.dispose();
 
         if ( this._element.parentNode ) {
             this._element.parentNode.removeChild( this._element );
