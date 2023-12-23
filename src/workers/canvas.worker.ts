@@ -35,7 +35,6 @@ onmessage = ( e: MessageEvent ): void => {
         case "init":
             canvas = e.data.canvas;
             renderer = new RendererImpl( canvas!, e.data.debug );
-            console.info ( "--- initialized Worker",canvas,renderer);
             break;
 
         case "loadResource":

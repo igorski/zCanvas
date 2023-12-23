@@ -362,9 +362,15 @@ export default class Canvas extends DisplayObject<Canvas> {
      * performance on large Canvas instances by only rendering the visible area.
      */
     setViewport( width: number, height: number ): void {
-        this._viewport = { width, height, left: 0, top: 0, right: width, bottom: height };
-        this.panViewport( 0, 0 );
-        this.invalidate();
+        if ( !this._viewport ) {
+            this._viewport = { width, height, left: 0, top: 0, right: width, bottom: height };
+        }
+        const vp = this._viewport;
+
+        vp.width  = width;
+        vp.height = height;
+
+        this.panViewport( Math.min( vp.left, width ), Math.min( vp.top, height ));
     }
 
     /**
