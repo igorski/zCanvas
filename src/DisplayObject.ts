@@ -131,6 +131,15 @@ export default class DisplayObject<T> {
         return child.getParent() === this;
     }
 
+    /**
+     * Whenever a change has occurred, this DisplayObject can request an
+     * invalidation of the Canvas to ensure the on screen representation
+     * matches the latest state.
+     */
+    invalidate(): void {
+        // override in subclass
+    }
+
     dispose(): void {
         this._disposed = true;
 
@@ -151,14 +160,5 @@ export default class DisplayObject<T> {
             theChild.last = undefined;
         }
         this._children = [];
-    }
-
-    /**
-     * Whenever a change has occurred, this DisplayObject can request an
-     * invalidation of the Canvas to ensure the on screen representation
-     * matches the latest state.
-     */
-    protected invalidate(): void {
-        // override in subclass
     }
 }

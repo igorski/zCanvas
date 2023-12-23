@@ -87,153 +87,23 @@ describe( "Canvas", () => {
         expect( canvas.getElement().parentNode ).toEqual( element );
     });
 
-    it( "should be able to add/remove children from its display list", () => {
+    it( "should add a reference to itself when adding a Sprite to its display list", () => {
         const canvas = new Canvas({ width, height });
         const child  = new Sprite({ width, height });
-
-        expect( canvas.contains( child )).toBe( false );
+        
         canvas.addChild( child );
-        expect( canvas.contains( child )).toBe( true );
-        expect( child.canvas ).toEqual( canvas ); // expected the child to reference to given canvas
 
-        const removed = canvas.removeChild( child );
-
-        expect( canvas.contains( child )).toBe( false );
-        expect( removed ).toEqual( child ); // expected removed sprite to equal the requested sprite" );
+        expect( child.canvas ).toEqual( canvas ); // expected the child to reference the given canvas
     });
 
-    it( "should be able to add/remove children from specific indices in its display list", () => {
+    it( "should remove a reference to itself when removing a Sprite from its display list", () => {
         const canvas = new Canvas({ width, height });
-        const child1 = new Sprite({ width, height });
-        const child2 = new Sprite({ width, height });
-        const child3 = new Sprite({ width, height });
+        const child  = new Sprite({ width, height });
+      
+        canvas.addChild( child );
+        canvas.removeChild( child );
 
-        expect( canvas.numChildren() ).toEqual( 0 );
-
-        canvas.addChild( child1 );
-        expect( canvas.numChildren() ).toEqual( 1 );
-
-        canvas.addChild( child2 );
-        expect( canvas.numChildren() ).toEqual( 2 );
-
-        expect( canvas.getChildAt( 0 )).toEqual( child1 );
-        expect( canvas.getChildAt( 1 )).toEqual( child2 );
-
-        canvas.addChild( child3 );
-        expect( canvas.numChildren() ).toEqual ( 3 );
-
-        // test removals
-
-        let removed = canvas.removeChildAt( 2 );
-
-        expect( canvas.numChildren() ).toEqual ( 2 );
-        expect( removed ).toEqual( child3 );
-
-        removed = canvas.removeChildAt( 0 );
-
-        expect( canvas.contains( child1 )).toBe( false );
-        expect( canvas.numChildren() ).toEqual ( 1 );
-        expect( removed ).toEqual( child1 );
-
-        removed = canvas.removeChildAt( 0 );
-
-        expect( canvas.contains( child2 )).toBe( false );
-        expect( canvas.numChildren() ).toEqual ( 0 );
-        expect( removed ).toEqual( child2 );
-    });
-
-    it("should not append the same child twice", () => {
-        const canvas = new Canvas({ width: 10, height: 10 });
-        const sprite = new Sprite({ width: 10, height: 10 });
-
-        expect( canvas.numChildren() ).toEqual( 0 );
-
-        canvas.addChild( sprite );
-        expect( canvas.numChildren() ).toEqual( 1 );
-
-        canvas.addChild( sprite );
-        expect( canvas.numChildren() ).toEqual( 1 );
-    });
-
-    it( "should be able to maintain the linked list of its children", () => {
-        const canvas  = new Canvas({ width, height });
-        const sprite1 = new Sprite({ width, height });
-        const sprite2 = new Sprite({ width, height });
-        const sprite3 = new Sprite({ width, height });
-
-        // add first child
-
-        canvas.addChild( sprite1 );
-
-        expect( sprite1.last ).toBeUndefined();
-        expect( sprite1.next ).toBeUndefined();
-
-        // add second child
-
-        canvas.addChild( sprite2 );
-
-        expect( sprite1.last ).toBeUndefined();
-        expect( sprite1.next ).toEqual( sprite2 );
-        expect( sprite2.last ).toEqual( sprite1 );
-        expect( sprite2.next ).toBeUndefined();
-
-        // add third child
-
-        canvas.addChild( sprite3 );
-
-        expect( sprite1.last ).toBeUndefined();
-        expect( sprite1.next ).toEqual( sprite2 );
-        expect( sprite2.last ).toEqual( sprite1 );
-        expect( sprite2.next ).toEqual( sprite3 );
-        expect( sprite3.last ).toEqual( sprite2 );
-        expect( sprite3.next ).toBeUndefined();
-    });
-
-    it( "should be able to update the linked list of its children", () => {
-        const canvas  = new Canvas({ width, height });
-        const sprite1 = new Sprite({ width, height });
-        const sprite2 = new Sprite({ width, height });
-        const sprite3 = new Sprite({ width, height });
-
-        // add children
-
-        canvas.addChild( sprite1 );
-        canvas.addChild( sprite2 );
-        canvas.addChild( sprite3 );
-
-        // assert list is updated when middle child is removed
-
-        canvas.removeChild( sprite2 );
-
-        expect( sprite2.last ).toBeUndefined();
-        expect( sprite2.next ).toBeUndefined();
-        expect( sprite1.next ).toEqual( sprite3 );
-        expect( sprite3.last ).toEqual( sprite1 );
-
-        // remove last child
-
-        canvas.removeChild( sprite3 );
-
-        expect( sprite3.last ).toBeUndefined();
-        expect( sprite3.next ).toBeUndefined();
-        expect( sprite1.next ).toBeUndefined();
-    });
-
-    it( "should be able to return all lowest level children in its display list", () => {
-        const canvas  = new Canvas({ width, height });
-        const sprite1 = new Sprite({ width, height });
-        const sprite2 = new Sprite({ width, height });
-
-        expect( canvas.getChildren() instanceof Array ).toBe( true );
-        expect( canvas.getChildren() ).toHaveLength( 0 );
-
-        canvas.addChild( sprite1 );
-        expect( canvas.getChildren() ).toHaveLength( 1 );
-        expect( canvas.getChildren().indexOf( sprite1 ) ).toEqual( 0 );
-
-        canvas.addChild( sprite2 );
-        expect( canvas.getChildren() ).toHaveLength( 2 );
-        expect( canvas.getChildren().indexOf( sprite2 ) ).toEqual( 1 );
+        expect( child.canvas ).toBeUndefined();
     });
 
     it( "should be able to get and set a custom frame rate", () => {

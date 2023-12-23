@@ -25,7 +25,7 @@ import { IRenderer } from "./rendering/IRenderer";
 import RenderAPI from "./rendering/RenderAPI";
 import EventHandler from "./utils/EventHandler";
 import { toggleFullScreen, transformPointer } from "./utils/Fullscreen";
-import { lockedScale } from "./utils/ImageMath";
+import { constrainAspectRatio } from "./utils/ImageMath";
 import Collision from "./Collision";
 import DisplayObject from "./DisplayObject";
 import type Sprite from "./Sprite";
@@ -770,7 +770,7 @@ export default class Canvas extends DisplayObject<Canvas> {
             // when stretching, the non-dominant side of the preferred rectangle will scale to reflect the
             // ratio of the available screen space, while the dominant side remains at its current size
 
-            const { width, height } = lockedScale( idealWidth, idealHeight, innerWidth, innerHeight );
+            const { width, height } = constrainAspectRatio( idealWidth, idealHeight, innerWidth, innerHeight );
 
             scale = innerWidth / width;
             

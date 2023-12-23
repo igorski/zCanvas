@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { isInsideViewport, calculateDrawRectangle } from "../../src/utils/ImageMath";
+import { isInsideViewport, calculateDrawRectangle, constrainAspectRatio } from "../../src/utils/ImageMath";
 
 describe( "Image math utilities", () => {
     const viewport = {
@@ -359,6 +359,113 @@ describe( "Image math utilities", () => {
                     width: 100, // == (spriteBounds.left + spriteBounds.width) - viewport.width)
                     height: 250
                 });
+            });
+        });
+    });
+
+    describe( "when scaling a bounding box to reflect a constrained aspect ratio", () => {
+        describe( "and the ideal bounding box is in a landscape orientation", () => {
+            const idealWidth  = 400;
+            const idealHeight = 300;
+
+            it( "should keep the input size equal when the available size is of the same ratio", () => {
+                const availableWidth  = idealWidth * 2;
+                const availableHeight = idealHeight * 2;
+
+                const { width, height } = constrainAspectRatio( idealWidth, idealHeight, availableWidth, availableHeight );
+
+                expect( width ).toEqual( idealWidth );
+                expect( height ).toEqual( idealHeight );
+            });
+
+            it( "should keep the dominant side equal and scale the other, when the available size is of the same orientation, but different ratio", () => {
+                const availableWidth  = 700;
+                const availableHeight = 600;
+
+                const { width, height } = constrainAspectRatio( idealWidth, idealHeight, availableWidth, availableHeight );
+
+                expect( width ).toEqual( idealWidth );
+                expect( Math.round( height )).toEqual( 343 );
+            });
+
+            it( "should keep the dominant side equal and scale the other, when the available size is of a different orientation", () => {
+                const availableWidth  = 500;
+                const availableHeight = 700;
+
+                const { width, height } = constrainAspectRatio( idealWidth, idealHeight, availableWidth, availableHeight );
+
+                expect( width ).toEqual( idealWidth );
+                expect( Math.round( height )).toEqual( 560 );
+            });
+        });
+
+        describe( "and the ideal bounding box is in a portrait orientation", () => {
+            const idealWidth  = 300;
+            const idealHeight = 400;
+
+            it( "should keep the input size equal when the available size is of the same ratio", () => {
+                const availableWidth  = idealWidth * 2;
+                const availableHeight = idealHeight * 2;
+
+                const { width, height } = constrainAspectRatio( idealWidth, idealHeight, availableWidth, availableHeight );
+
+                expect( width ).toEqual( idealWidth );
+                expect( height ).toEqual( idealHeight );
+            });
+
+            it( "should keep the dominant side equal and scale the other, when the available size is of the same orientation, but different ratio", () => {
+                const availableWidth  = 600;
+                const availableHeight = 700;
+
+                const { width, height } = constrainAspectRatio( idealWidth, idealHeight, availableWidth, availableHeight );
+
+                expect( Math.round( width )).toEqual( 343 );
+                expect( height ).toEqual( idealHeight );
+            });
+
+            it( "should keep the dominant side equal and scale the other, when the available size is of a different orientation", () => {
+                const availableWidth  = 700;
+                const availableHeight = 600;
+
+                const { width, height } = constrainAspectRatio( idealWidth, idealHeight, availableWidth, availableHeight );
+
+                expect( Math.round( width )).toEqual( 467 );
+                expect( height ).toEqual( idealHeight );
+            });
+        });
+
+        describe( "and the ideal bounding box is in a square orientation", () => {
+            const idealWidth  = 300;
+            const idealHeight = 300;
+
+            it( "should keep the input size equal when the available size is of the same ratio", () => {
+                const availableWidth  = idealWidth * 2;
+                const availableHeight = idealHeight * 2;
+
+                const { width, height } = constrainAspectRatio( idealWidth, idealHeight, availableWidth, availableHeight );
+
+                expect( width ).toEqual( idealWidth );
+                expect( height ).toEqual( idealHeight );
+            });
+
+            it( "should scale the vertical side when the available size is in a portrait orientation", () => {
+                const availableWidth  = 600;
+                const availableHeight = 700;
+
+                const { width, height } = constrainAspectRatio( idealWidth, idealHeight, availableWidth, availableHeight );
+
+                expect( width ).toEqual( idealWidth );
+                expect( Math.round( height )).toEqual( 350 );
+            });
+
+            it( "should scale the horizontal side when the available size is in a landscape orientation", () => {
+                const availableWidth  = 700;
+                const availableHeight = 600;
+
+                const { width, height } = constrainAspectRatio( idealWidth, idealHeight, availableWidth, availableHeight );
+
+                expect( Math.round( width )).toEqual( 350 );
+                expect( height ).toEqual( idealHeight );
             });
         });
     });

@@ -91,9 +91,9 @@ export function calculateDrawRectangle( spriteBounds: Rectangle, viewport: Viewp
 
 /**
  * when stretching, the non-dominant side of the preferred rectangle will scale to reflect the
- * ratio of the available space, while the dominant side remains at its current size
+ * ratio of the available space, while the dominant side remains at its current size.
  */
-export function lockedScale( idealWidth: number, idealHeight: number, availableWidth: number, availableHeight: number ): Size {
+export function constrainAspectRatio( idealWidth: number, idealHeight: number, availableWidth: number, availableHeight: number ): Size {
     const idealAspectRatio  = idealWidth / idealHeight;
     const screenAspectRatio = availableWidth / availableHeight;
 
