@@ -4,10 +4,11 @@ import Sprite from "../src/Sprite";
 import type { IRenderer } from "../src/rendering/IRenderer";
 import { createMockRenderer } from "./__mocks";
 
-let mockMathFn;
+const mockMathFn = vi.fn();
 vi.mock('../src/utils/ImageMath', () => ({
     isInsideViewport       : ( ...args ) => mockMathFn?.( "isInsideViewport", ...args ),
-    calculateDrawRectangle : ( ...args ) => mockMathFn?.( "calculateDrawRectangle", ...args )
+    calculateDrawRectangle : ( ...args ) => mockMathFn?.( "calculateDrawRectangle", ...args ),
+    isInsideArea           : ( ...args ) => mockMathFn?.( "isInsideArea", ...args ),
 }));
 
 describe( "Sprite", () => {
@@ -501,6 +502,38 @@ describe( "Sprite", () => {
         });
     });
 
+    describe( "when determining its visibility", () => {
+        it( "should check against the provided Viewport", () => {
+            const canvas = new Canvas({ viewport: { width, height }});
+            const sprite = new Sprite({ width, height });
+
+            mockMathFn.mockImplementation( fn => {
+                if ( fn === "isInsideArea" ) {
+                    return true;
+                }
+            });
+            canvas.addChild( sprite );
+            
+            expect( sprite.isVisible( canvas.getViewport() )).toBe( true );
+            expect( mockMathFn ).toHaveBeenCalledWith( "isInsideArea", sprite.getBounds(), canvas.getViewport() );
+        });
+
+        it( "should fall back to checking the Canvas' bounding box when no Viewport was provided", () => {
+            const canvas = new Canvas();
+            const sprite = new Sprite({ width, height });
+
+            mockMathFn.mockImplementation( fn => {
+                if ( fn === "isInsideArea" ) {
+                    return true;
+                }
+            });
+            canvas.addChild( sprite );
+
+            expect( sprite.isVisible()).toBe( true );
+            expect( mockMathFn ).toHaveBeenCalledWith( "isInsideArea", sprite.getBounds(), canvas.bbox );
+        });
+    });
+
     describe( "when handling events", () => {
         let mockEvent, sprite;
         beforeEach(() => {
@@ -673,8 +706,10 @@ describe( "Sprite", () => {
             expect( mockRenderer.drawImage ).not.toHaveBeenCalled();
         });
 
-        it( "should draw a when it has a resource", () => {
+        it( "should draw when it has a resource", () => {
             sprite.draw( mockRenderer );
+            vi.spyOn( sprite, "isVisible" ).mockImplementation(() => true );
+
             expect( mockRenderer.drawImage ).toHaveBeenCalledWith(
                 resourceId,
                 expect.any( Number ), expect.any( Number ), expect.any( Number ), expect.any( Number )
@@ -682,24 +717,17 @@ describe( "Sprite", () => {
         });
 
         describe( "and a viewport is passed", () => {
-            it( "should perform a boundary check and not draw when the Sprite is outside of viewport bounds", () => {
-                mockMathFn = vi.fn( fn => {
-                    if ( fn === "isInsideViewport" ) {
-                        return false;
-                    }
-                });
-                
+            it( "should perform a boundary check and not draw when the Sprite is outside of visible bounds", () => {
+                const visibleSpy = vi.spyOn( sprite, "isVisible" ).mockImplementation(() => false );
+
                 sprite.draw( mockRenderer, viewport );
 
-                expect( mockMathFn ).toHaveBeenCalledWith( "isInsideViewport", sprite.getBounds(), viewport );
+                expect( visibleSpy ).toHaveBeenCalledWith( viewport );
                 expect( mockRenderer.drawImage ).not.toHaveBeenCalled();
             });
 
-            it( "should perform a boundary check and draw when the Sprite is inside of viewport bounds", () => {
-                mockMathFn = vi.fn( fn => {
-                    if ( fn === "isInsideViewport" ) {
-                        return true;
-                    }
+            it( "should perform a boundary check and draw when the Sprite is inside visible bounds", () => {
+                mockMathFn.mockImplementation( fn => {
                     if ( fn === "calculateDrawRectangle" ) {
                         return {
                             src: { left: 1, top: 2, width: 3, height: 4 },
@@ -708,14 +736,18 @@ describe( "Sprite", () => {
                     }
                 });
 
+                const visibleSpy = vi.spyOn( sprite, "isVisible" ).mockImplementation(() => true );
+
                 sprite.draw( mockRenderer, viewport );
 
-                expect( mockMathFn ).toHaveBeenCalledWith( "isInsideViewport", sprite.getBounds(), viewport );
+                expect( visibleSpy ).toHaveBeenCalledWith( viewport );
                 expect( mockMathFn ).toHaveBeenCalledWith( "calculateDrawRectangle", sprite.getBounds(), viewport );
                 expect( mockRenderer.drawImageCropped ).toHaveBeenCalledWith(
                     sprite.getResourceId(),
                     expect.any( Number ), expect.any( Number ), expect.any( Number ), expect.any( Number ),
-                    expect.any( Number ), expect.any( Number ), expect.any( Number ), expect.any( Number )
+                    expect.any( Number ), expect.any( Number ), expect.any( Number ), expect.any( Number ),
+                    // @ts-expect-error snooping on protected property
+                    sprite._drawContext,
                 );
             });
         });

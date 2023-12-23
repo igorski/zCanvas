@@ -46,7 +46,10 @@ export function toggleFullScreen( element: HTMLElement ): void {
  * This method will transform mouse pointers in fullscreen view to relative coordinates in the Canvas
  * 
  * NOTE this will only work when stretchToFit is set to true as the Canvas needs to be aligned to
- * the top left (0, 0) coordinate (we cannot retrieve its actuall offset when in fullscreen!)
+ * the top left (0, 0) coordinate (we cannot retrieve its actual offset when in fullscreen!)
+ * 
+ * Based on work by Matthias Southwick
+ * https://stackoverflow.com/questions/62049700/how-can-i-get-the-mouse-position-on-an-html5-canvas-when-canvas-is-fullscreen
  */
 export function transformPointer( event: MouseEvent, element: HTMLCanvasElement, rect: DOMRect, canvasWidth: number, canvasHeight: number ): Point {
     /* in zCanvas, Element is/should always be the Canvas

@@ -111,7 +111,10 @@
 
                 /* public methods */
 
-                draw( renderer ) {
+                draw( renderer, viewport ) {
+                    if ( !this.isVisible( viewport )) {
+                        return;
+                    }
                     // override draw()-method from Sprite-prototype to draw custom graphics
                     const { left, top, width, height } = this.getBounds();
                     renderer.drawRect( left, top, width, height, "#FF0000" );

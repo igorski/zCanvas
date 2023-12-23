@@ -1,7 +1,9 @@
 import { describe, it, beforeEach, afterEach, expect, vi } from "vitest";
 import Canvas from "../src/Canvas";
+import Collision from "../src/Collision";
 import Sprite from "../src/Sprite";
-import RendererImpl from "../src/rendering/RendererImpl";
+import RenderAPI from "../src/rendering/RenderAPI";
+import { createMockImageBitmap, mockRequestAnimationFrame } from "./__mocks";
 
 describe( "Canvas", () => {
 
@@ -10,64 +12,137 @@ describe( "Canvas", () => {
     let width: number;
     let height: number;
     let fps: number;
-    let animate: boolean;
-    let smoothing: boolean;
 
     // executed before each individual test
 
     beforeEach(() => {
         // generate random values
-        width     = Math.round( Math.random() * 100 ) + 400;
-        height    = Math.round( Math.random() * 100 ) + 300;
-        fps       = Math.round( Math.random() * 50 )  + 10;
-        animate   = ( Math.random() > .5 );
-        smoothing = ( Math.random() > .5 );
+        width  = Math.round( Math.random() * 100 ) + 400;
+        height = Math.round( Math.random() * 100 ) + 300;
+        fps    = Math.round( Math.random() * 50 )  + 10;
+   
+        vi.useFakeTimers();
     });
 
     afterEach(() => {
+        vi.useRealTimers();
         vi.restoreAllMocks();
     });
 
     /* actual unit tests */
 
-    it( "should construct with a single data Object", () => {
-        const canvas = new Canvas({ width, height, animate, fps });
+    describe( "when constructing a new instance", () => {
+        it( "should not construct with no or invalid dimensions specified", () => {
+            expect(() => {
+                new Canvas({ width: 0, height: 0 });
+            }).toThrow( /cannot construct a zCanvas without valid dimensions/ );
 
-        expect( canvas.getWidth() ).toEqual( width );
-        expect( canvas.getHeight() ).toEqual( height );
-        expect( canvas.isAnimatable() ).toEqual( animate );
-        expect( canvas.getFrameRate() ).toEqual( fps );
-    });
-
-    it( "should not construct with zero or negative dimensions specified", () => {
-        expect(() => {
-            new Canvas({ width: 0, height: 0 });
-        }).toThrow( /cannot construct a zCanvas without valid dimensions/ );
-
-        expect(() => {
-            new Canvas({ width: -100, height: -100 });
-        }).toThrow( /cannot construct a zCanvas without valid dimensions/ );
-    });
-
-    it( "should by default construct with 300 x 300 dimensions", () => {
-        const canvas = new Canvas();
-
-        expect( canvas.getWidth() ).toEqual( 300 );
-        expect( canvas.getHeight() ).toEqual( 300 );
-    });
-
-    it( "should return the construction arguments unchanged", () => {
-        const canvas = new Canvas({
-            width, height, fps, smoothing, animate,
+            expect(() => {
+                new Canvas({ width: -100, height: -100 });
+            }).toThrow( /cannot construct a zCanvas without valid dimensions/ );
         });
-        expect( canvas.getWidth() ).toEqual( width );
-        expect( canvas.getHeight() ).toEqual( height );
-        expect( canvas.getFrameRate() ).toEqual( fps );
-        expect( canvas.getSmoothing() ).toEqual( smoothing );
-        expect( canvas.isAnimatable() ).toEqual( animate );
+
+        it( "should by default construct with 300 x 300 dimensions", () => {
+            const canvas = new Canvas();
+
+            expect( canvas.getWidth() ).toEqual( 300 );
+            expect( canvas.getHeight() ).toEqual( 300 );
+        });
+
+        it( "should return the provided construction arguments unchanged", () => {
+            const canvas = new Canvas({
+                width, height, fps, smoothing: false, animate: true,
+            });
+            expect( canvas.getWidth() ).toEqual( width );
+            expect( canvas.getHeight() ).toEqual( height );
+            expect( canvas.getFrameRate() ).toEqual( fps );
+            expect( canvas.getSmoothing() ).toEqual( false );
+            expect( canvas.isAnimatable() ).toEqual( true );
+        });
+
+        it( "should by default not have a Viewport", () => {
+            const canvas = new Canvas();
+
+            expect( canvas.getViewport()).toBeUndefined();
+        });
+
+        it( "should create a Viewport when provided", () => {
+            const canvas = new Canvas({ viewport: { width: 200, height: 150 }});
+
+            expect( canvas.getViewport()).toEqual({
+                left: 0, top: 0, right: 200, bottom: 150, width: 200, height: 150
+            });
+        });
+
+        it( "should automatically resize to its surroundings on construction", async () => {
+            return new Promise( resolve => {
+                new Canvas({ onResize: resolve });
+            });
+        });
+
+        it( "should insert itself into DOM when a parent element is specified during construction", () => {
+            const element = global.document.createElement( "div" );
+            const canvas  = new Canvas({ parentElement: element });
+
+            expect( canvas.getElement().parentNode ).toEqual( element );
+        });
+
+        it( "should create an instance of the RenderAPI upon construction", () => {
+            const canvas = new Canvas();
+
+            expect( canvas.getRenderer()).toBeInstanceOf( RenderAPI );
+        });
+
+        it( "should create an instance of the Collision API upon construction", () => {
+            const canvas = new Canvas();
+
+            expect( canvas.collision ).toBeInstanceOf( Collision );
+        });
     });
 
-    it( "should be able to insert itself into DOM", () => {
+    describe( "when acting as a mediator for the resource Cache", () => {
+        it( "should forward loading a resource to the renderer", () => {
+            vi.spyOn( RenderAPI.prototype, "loadResource" ).mockImplementation(() => Promise.resolve({ width: 100, height: 50 }) );
+
+            const canvas = new Canvas();
+
+            // @ts-expect-error snooping on a protected property
+            const spy = vi.spyOn( canvas._renderer, "loadResource" );
+            
+            const bitmap = createMockImageBitmap();
+            canvas.loadResource( "foo", bitmap );
+
+            expect( spy ).toHaveBeenCalledWith( "foo", bitmap );
+        });
+
+        it( "should forward getting a resource to the renderer", () => {
+            vi.spyOn( RenderAPI.prototype, "getResource" ).mockImplementation(() => Promise.resolve(createMockImageBitmap()) );
+
+            const canvas = new Canvas();
+
+            // @ts-expect-error snooping on a protected property
+            const spy = vi.spyOn( canvas._renderer, "getResource" );
+            
+            canvas.getResource( "foo" );
+
+            expect( spy ).toHaveBeenCalledWith( "foo" );
+        });
+
+        it( "should forward disposing a resource to the renderer", () => {
+            vi.spyOn( RenderAPI.prototype, "disposeResource" ).mockImplementation(() => Promise.resolve() );
+
+            const canvas = new Canvas();
+
+            // @ts-expect-error snooping on a protected property
+            const spy = vi.spyOn( canvas._renderer, "disposeResource" );
+            
+            canvas.disposeResource( "foo" );
+
+            expect( spy ).toHaveBeenCalledWith( "foo" );
+        });
+    });
+
+    it( "should be able to insert itself into the DOM at runtime", () => {
         const canvas  = new Canvas();
         const element = global.document.createElement( "div" );
 
@@ -80,13 +155,6 @@ describe( "Canvas", () => {
         expect( canvas.getElement().parentNode ).toEqual( element );
     });
 
-    it( "should insert itself into DOM when a parent element is specified during construction", () => {
-        const element = global.document.createElement( "div" );
-        const canvas  = new Canvas({ parentElement: element });
-
-        expect( canvas.getElement().parentNode ).toEqual( element );
-    });
-
     it( "should add a reference to itself when adding a Sprite to its display list", () => {
         const canvas = new Canvas({ width, height });
         const child  = new Sprite({ width, height });
@@ -95,34 +163,58 @@ describe( "Canvas", () => {
 
         expect( child.canvas ).toEqual( canvas ); // expected the child to reference the given canvas
     });
-
-    it( "should remove a reference to itself when removing a Sprite from its display list", () => {
-        const canvas = new Canvas({ width, height });
-        const child  = new Sprite({ width, height });
-      
-        canvas.addChild( child );
-        canvas.removeChild( child );
-
-        expect( child.canvas ).toBeUndefined();
-    });
-
+    
     it( "should be able to get and set a custom frame rate", () => {
         const canvas = new Canvas({ width, height });
         canvas.setFrameRate( 30 );
         expect( canvas.getFrameRate() ).toEqual( 30 );
     });
 
+    it( "should be able to activate image smoothing on the Canvas' context", () => {
+        const smoothingSpy = vi.spyOn( RenderAPI.prototype, "setSmoothing" );
+        const canvas = new Canvas({ width, height, smoothing: true });
+        
+        expect( smoothingSpy ).toHaveBeenCalledWith( true );
+
+        canvas.setSmoothing( false );
+
+        expect( smoothingSpy ).toHaveBeenCalledWith( false );
+    });
+
+    it( "should be able to render crisp pixel art when image smoothing is disabled", () => {
+        const canvas = new Canvas({ width, height, smoothing: true });
+
+        expect( canvas.getElement().style[ "image-rendering" ]).toEqual( "" );
+
+        canvas.setSmoothing( false );
+        
+        expect( canvas.getElement().style[ "image-rendering" ]).toEqual( "crisp-edges" );
+    });
+
     describe( "when updating its dimensions", () => {
         it( "should be able to update its dimensions synchronously", () => {
             const canvas = new Canvas({ width, height });
 
-            const newWidth  = width + 1;
+            const newWidth  = width  + 1;
             const newHeight = height + 1;
 
             canvas.setDimensions( newWidth, newHeight, false, true );
 
             expect( canvas.getWidth() ).toEqual( newWidth );
             expect( canvas.getHeight() ).toEqual( newHeight );
+        });
+
+        it( "should update its bounding box accordingly", () => {
+            const canvas = new Canvas({ width, height });
+
+            const newWidth  = width  + 1;
+            const newHeight = height + 1;
+
+            expect( canvas.bbox ).toEqual({ left: 0, top: 0, right: width, bottom: height });
+            
+            canvas.setDimensions( newWidth, newHeight, false, true );
+
+            expect( canvas.bbox ).toEqual({ left: 0, top: 0, right: newWidth, bottom: newHeight });
         });
 
         it( "should cache its dimensions upon request", () => {
@@ -155,35 +247,48 @@ describe( "Canvas", () => {
             expect( canvas._coords ).toBeUndefined();
         });
 
-        it( "should be able to update its dimensions asynchronously on next render", (): Promise<void> => {
+        it( "should be able to update its dimensions asynchronously on next render", (): void => {
+            mockRequestAnimationFrame();
+
             const canvas = new Canvas({ width, height });
 
             const oldWidth = width, oldHeight = height;
 
-            const newWidth  = width + 1;
+            const newWidth  = width  + 1;
             const newHeight = height + 1;
 
-            return new Promise( resolve => {
-                canvas.setDimensions( newWidth, newHeight );
+            canvas.setDimensions( newWidth, newHeight );
 
-                // actual values should not have been updated yet
-    
-                expect( canvas._width ).toEqual( oldWidth );
-                expect( canvas._height ).toEqual( oldHeight );
-    
-                // we do expect the getters to return the enqueued dimensions
-    
-                expect( canvas.getWidth() ).toEqual( newWidth );
-                expect( canvas.getHeight() ).toEqual( newHeight );
-    
-                window.requestAnimationFrame(() => {
-                    expect( canvas.getWidth() ).toEqual( newWidth );
-                    expect( canvas._width ).toEqual( newWidth );
-                    expect( canvas.getHeight() ).toEqual( newHeight );
-                    expect( canvas._height ).toEqual( newHeight );
-    
-                    resolve();
-                });
+            // actual values should not have been updated yet
+
+            // @ts-expect-error protected property
+            expect( canvas._width ).toEqual( oldWidth );
+            // @ts-expect-error protected property
+            expect( canvas._height ).toEqual( oldHeight );
+
+            vi.runAllTimers(); // advance RAF
+
+            // we do expect the getters to return the enqueued dimensions
+
+            expect( canvas.getWidth() ).toEqual( newWidth );
+            expect( canvas.getHeight() ).toEqual( newHeight );
+
+            expect( canvas.getWidth() ).toEqual( newWidth );
+            // @ts-expect-error protected property
+            expect( canvas._width ).toEqual( newWidth );
+            expect( canvas.getHeight() ).toEqual( newHeight );
+            // @ts-expect-error protected property
+            expect( canvas._height ).toEqual( newHeight );
+        });
+
+        it( "should call the optionally provided resize handler once resizing has completed", () => {
+            return new Promise( resolve => {
+                const canvas = new Canvas({ width, height, onResize: resolve });
+
+                const newWidth  = width + 1;
+                const newHeight = height + 1;
+
+                canvas.setDimensions( newWidth, newHeight );
             });
         });
     });
@@ -254,279 +359,6 @@ describe( "Canvas", () => {
             const canvas = new Canvas({ width, height, viewportHandler, viewport: { width: 100, height: 50 } });
             canvas.panViewport( width, height, true );
             expect( viewportHandler ).toHaveBeenCalled();
-        });
-    });
-
-    it( "should be able to activate image smoothing on the Canvas' context", () => {
-        const smoothingSpy = vi.spyOn( RendererImpl.prototype, "setSmoothing" );
-        const canvas = new Canvas({ width, height, smoothing: true });
-        
-        expect( smoothingSpy ).toHaveBeenCalledWith( true );
-
-        canvas.setSmoothing( false );
-
-        expect( smoothingSpy ).toHaveBeenCalledWith( false );
-    });
-
-    it( "should be able to render crisp pixel art when image smoothing is disabled", () => {
-        const canvas = new Canvas({ width, height, smoothing: false });
-
-        expect( canvas.getElement().style[ "image-rendering" ]).toEqual( "crisp-edges" );
-
-        canvas.setSmoothing( true );
-        
-        expect( canvas.getElement().style[ "image-rendering" ]).toEqual( "" );
-    });
-
-    describe( "when dealing with the animatable state", () => {
-        it( "should know whether its animatable", () => {
-            let canvas = new Canvas({ width, height, animate: false });
-            expect( canvas.isAnimatable() ).toBe( false );
-
-            canvas = new Canvas({ width, height, animate: true });
-            expect( canvas.isAnimatable() ).toBe( true );
-        });
-
-        it( "should be able to toggle its animatable state", () => {
-            const canvas = new Canvas({ width, height, animate: false });
-
-            canvas.setAnimatable( true );
-            expect( canvas.isAnimatable() ).toBe( true );
-
-            canvas.setAnimatable( false );
-            expect( canvas.isAnimatable() ).toBe( false );
-        });
-
-        it( "should continuously render on each animation frame when animatable", (): Promise<void> => {
-            const canvas = new Canvas({ width, height, animate: false });
-
-            // hijack bound render handlers
-
-            const hijackedHandler = canvas._renderHandler;
-            let renders = 0;
-
-            return new Promise( resolve => {
-                canvas._renderHandler = () => {
-                    if ( ++renders === 5 ) {
-                        resolve();
-                    } else {
-                        hijackedHandler();
-                    }
-                };
-                canvas.setAnimatable( true );
-            });
-        });
-
-        it( "should only render on invalidation when not animatable", (): Promise<void> => {
-            // construct as animatable
-            const canvas = new Canvas({ width, height, animate: true });
-
-            // now disable animation
-            canvas.setAnimatable( false );
-
-            // hijack bound render handlers
-
-            // @ts-expect-error protected method
-            const hijackedHandler = canvas._renderHandler;
-            let renders = 0;
-
-            return new Promise( resolve => {
-                // @ts-expect-error protected method
-                canvas._renderHandler = (...args) => {
-                    ++renders;
-                    hijackedHandler(...args);
-                };
-
-                window.requestAnimationFrame(( now: number ) => {
-                    // expected render count not to have incremented after disabling of animatable state
-                    expect( renders ).toEqual( 0 );
-
-                    // @ts-expect-error protected method
-                    canvas._renderHandler = ( now ) => resolve(); // hijack render to end test
-                    canvas.invalidate(); // call invalidate to render and end this test
-                });
-            });
-        });
-    });
-
-    it( "should invoke a render upon invalidation request", (): Promise<void> => {
-        // @ts-expect-error protected method
-        const orgRender = Canvas.prototype.render;
-
-        return new Promise( resolve => {
-            // hijack render method
-
-            // @ts-expect-error protected method
-            Canvas.prototype.render = () => {
-                // @ts-expect-error protected method
-                Canvas.prototype.render = orgRender; // restore hijacked method
-                resolve();
-            };
-            const canvas = new Canvas({
-                width: width,
-                height: height,
-                animate: false
-            });
-            canvas.invalidate();
-        });
-    });
-
-    describe( "when rendering", () => {
-        it( "should keep track of the actual framerate", () => {
-            const canvas = new Canvas({ width, height, animate: false });
-
-            canvas.render( 0 );
-            canvas.render( 1000 / 120 ); // second render at 1/120th of a second further
-
-            expect( Math.round( canvas.getActualFrameRate() )).toBe( 120 );
-
-            canvas.render( 1000 / 120 + 1000 / 60 ); // third render at 1/60th of a second further
-
-            expect( Math.round( canvas.getActualFrameRate() )).toBe( 60 );
-        });
-
-        it( "should invoke the update()-method of its children upon render", (): Promise<void> => {
-            const canvas = new Canvas({ width, height, animate: false });
-            const sprite = new Sprite({ width: 10, height: 10 });
-            canvas.addChild( sprite );
-
-            return new Promise( resolve => {
-                sprite.update = ( timestamp, framesSinceLastUpdate ) => {
-                    expect( typeof timestamp ).toBe( "number" );
-                    expect( typeof framesSinceLastUpdate ).toBe( "number" );
-                    resolve();
-                };
-                canvas.invalidate();
-            });
-        });
-
-        it( "should not invoke the update()-method of its children if a custom external " +
-            "update handler was configured", (): Promise<void> => {
-
-            return new Promise(( resolve, reject ) => {
-                const customHandler = ( timestamp, framesSinceLastUpdate ) => {
-                    expect( typeof timestamp ).toBe( "number" );
-                    expect( typeof framesSinceLastUpdate ).toBe( "number" );
-                    resolve();
-                };
-                const canvas = new Canvas({ width, height, animate: false, onUpdate: customHandler });
-                const sprite = new Sprite({ width: 10, height: 10 });
-                canvas.addChild( sprite );
-
-                sprite.update = () => {
-                    reject( new Error( "sprite update should not have been called" ));
-                };
-                canvas.invalidate();
-            });
-        });
-
-        it( "should defer actual rendering and calculate elapsed frames between render callbacks when a lower frame rate is specified", (): Promise<void> => {
-            const canvas = new Canvas({ fps: 10 });
-
-            const now = window.performance.now();
-            canvas._renderHandler = vi.fn(); // stub the RAF handler
-            canvas.setAnimatable( true );
-            canvas._lastRender = now;
-
-            return new Promise(( resolve, reject ) => {
-
-                // if update handler is triggered we know rendering is executing
-
-                canvas._updateHandler = () => {
-                    reject( new Error( "render update handler should not have been called" ));
-                };
-
-                // at 10 fps, we expect 100 ms frame durations (1000ms / 10fps)
-                // as such the following invocations (at 1000ms / 60fps intervals)
-                // will all have delta below 100 ms and should not trigger a render
-
-                const incr = 1000 / 60;
-                for ( let i = 1; i < 6; ++i ) {
-                    canvas.render( now + ( i * incr ));
-                }
-
-                canvas._updateHandler = ( timestamp, framesSinceLastRender ) => {
-                    expect( timestamp ).toEqual( now + 100 );
-                    expect( Math.round( framesSinceLastRender )).toEqual( 6 ); // there were six render() invocations
-
-                    resolve();
-                };
-
-                // the next (6th) render invocation is at a 100 ms delta relative
-                // to last render, this should trigger the update handler
-
-                // @ts-expect-error protected property
-                canvas.render( now + 100 );
-            });
-        });
-
-        it( "should defer actual rendering and calculate elapsed frames between render callbacks when running on a high refresh rate environment", (): Promise<void> => {
-            const canvas = new Canvas({ fps: 60 }); // 60 fps being the norm
-
-            const now = window.performance.now();
-            canvas._renderHandler = vi.fn(); // stub the RAF handler
-            canvas.setAnimatable( true );
-            canvas._lastRender = now;
-
-            return new Promise(( resolve, reject ) => {
-                // if update handler is triggered we know rendering is executing
-                // @ts-expect-error protected property
-                canvas._updateHandler = () => {
-                    reject( new Error( "render update handler should not have been called" ))
-                };
-
-                // at 60 fps, we expect 16.66 ms frame durations (1000ms / 60fps)
-                // we will however run the callbacks at 8.33 ms (1000ms / 120fps)
-                // to emulate an Apple M1 120 Hz refresh rate
-
-                const incr = 1000 / 120;
-
-                // @ts-expect-error protected property
-                canvas.render( now + incr );
-
-                canvas._updateHandler = ( timestamp, framesSinceLastRender ) => {
-                    expect( timestamp ).toEqual( now + ( 1000 / 60 ));
-                    // the deferred rendering should have capped the rendering to 60
-                    // (thus we are progressing exactly one frame per render iteration
-                    // we can disregard the skipped render)
-                    expect( framesSinceLastRender ).toEqual( 1 );
-
-                    resolve();
-                };
-
-                // the next (2nd) render invocation is at a 16.66 ms delta relative
-                // to last render, this should trigger the update handler
-
-                // @ts-expect-error protected property
-                canvas.render( now + ( incr * 2 ));
-            });
-        });
-
-        it( "should calculate the correct elapsed frames multiplier when the actual frame rate is lower than the configured frame rate", (): Promise<void> => {
-            const canvas = new Canvas({ fps: 120 });
-
-            const now = window.performance.now();
-            canvas._renderHandler = vi.fn(); // stub the RAF handler
-            canvas.setAnimatable( true );
-            canvas._lastRender = now;
-
-            return new Promise(( resolve, reject ) =>  {
-                canvas._updateHandler = ( timestamp, framesSinceLastRender ) => {
-                    expect( timestamp ).toEqual( now + ( 1000 / 60 ));
-                    // as the environment manages less fps than the configured value, we
-                    // should progress the update() by more frames
-                    expect( Math.round( framesSinceLastRender )).toEqual( 2 );
-    
-                    resolve();
-                };
-    
-                // at 120 fps, we expect 8.33 ms frame durations (1000ms / 120fps)
-                // we will however run the callback at 16.66 ms (1000ms / 60fps)
-                // to emulate a device that can't match the configured rate
-    
-                // @ts-expect-error protected property
-                canvas.render( now + ( 1000 / 60 ));
-            });
         });
     });
 
@@ -647,6 +479,267 @@ describe( "Canvas", () => {
             expect( canvas.getWidth() ).toEqual( width );
             expect( canvas.getHeight() ).toEqual( height );
             expect( canvas.getElement().style.transform ).toEqual( `scale(${scale}, ${scale})` );
+        });
+    });
+
+    describe( "when handling the render cycle", () => {
+        let now: DOMHighResTimeStamp;
+
+        beforeEach(() => { 
+            now = window.performance.now();
+            mockRequestAnimationFrame( now );
+        });
+
+        it( "should invoke a render upon invalidation request", (): Promise<void> => {
+            return new Promise( resolve => {
+                // hijack render method
+                // @ts-expect-error snooping on a protected method
+                const orgRender = vi.spyOn( Canvas.prototype, "render" ).mockImplementationOnce( resolve );
+
+                const canvas = new Canvas({ animate: false });
+                
+                canvas.invalidate();
+                
+                vi.runAllTimers(); // advance RAF
+            });
+        });
+
+        it( "should invoke the optionally provided updateHandler upon render", (): Promise<void> => {
+            return new Promise( resolve => {
+                const canvas = new Canvas({ animate: false , onUpdate: () => resolve() });
+                
+                canvas.invalidate();
+                
+                vi.runAllTimers(); // advance RAF
+            });
+        });
+
+        it( "should keep track of the actual framerate", () => {
+            const canvas = new Canvas({ animate: false });
+
+            // @ts-expect-error snooping on a protected method
+            canvas.render( 0 );
+            // @ts-expect-error snooping on a protected method
+            canvas.render( 1000 / 120 ); // second render at 1/120th of a second further
+
+            expect( Math.round( canvas.getActualFrameRate() )).toBe( 120 );
+
+            // @ts-expect-error snooping on a protected method
+            canvas.render( 1000 / 120 + 1000 / 60 ); // third render at 1/60th of a second further
+
+            expect( Math.round( canvas.getActualFrameRate() )).toBe( 60 );
+        });
+
+        it( "should invoke the update()-method of its children upon render", (): Promise<void> => {
+            const canvas = new Canvas({ animate: false });
+            const sprite = new Sprite({ width: 10, height: 10 });
+            canvas.addChild( sprite );
+
+            return new Promise( resolve => {
+                sprite.update = ( timestamp, framesSinceLastUpdate ) => {
+                    expect( typeof timestamp ).toBe( "number" );
+                    expect( typeof framesSinceLastUpdate ).toBe( "number" );
+                    resolve();
+                };
+                canvas.invalidate();
+
+                vi.runAllTimers(); // advance RAF
+            });
+        });
+
+        it( "should not invoke the update()-method of its children if a custom external " +
+            "update handler was configured", (): Promise<void> => {
+
+            return new Promise(( resolve, reject ) => {
+                const customHandler = ( timestamp, framesSinceLastUpdate ) => {
+                    expect( typeof timestamp ).toBe( "number" );
+                    expect( typeof framesSinceLastUpdate ).toBe( "number" );
+                    resolve();
+                };
+                const canvas = new Canvas({ width, height, animate: false, onUpdate: customHandler });
+                const sprite = new Sprite({ width: 10, height: 10 });
+                canvas.addChild( sprite );
+
+                sprite.update = () => {
+                    reject( new Error( "sprite update should not have been called" ));
+                };
+                canvas.invalidate();
+
+                vi.runAllTimers(); // advance RAF
+            });
+        });
+
+        it( "should defer actual rendering and calculate elapsed frames between render callbacks when a lower frame rate is specified", (): Promise<void> => {
+            return new Promise(( resolve, reject ) => {
+                let mayRender = false;
+
+                const canvas = new Canvas({ fps: 10, onUpdate: ( timestamp, framesSinceLastRender ) => {
+                    // if update handler is triggered we know rendering is executed when it shouldn't
+                    if ( !mayRender ) {
+                        reject( new Error( "render update handler should not have been called" ));
+                    }
+
+                    expect( timestamp ).toEqual( now + 100 );
+                    expect( Math.round( framesSinceLastRender )).toEqual( 6 ); // there were six render() invocations
+
+                    resolve();
+                }});
+                // @ts-expect-error snooping on a protected property
+                canvas._renderHandler = vi.fn(); // stub the RAF handler
+                canvas.setAnimatable( true );
+    
+                // @ts-expect-error snooping on a protected property
+                canvas._lastRender = now;
+
+                // at 10 fps, we expect 100 ms frame durations (1000ms / 10fps)
+                // as such the following invocations (at 1000ms / 60fps intervals)
+                // will all have delta below 100 ms and should not trigger a render
+
+                const incr = 1000 / 60;
+                for ( let i = 1; i < 6; ++i ) {
+                    // @ts-expect-error snooping on a protected property
+                    canvas.render( now + ( i * incr ));
+                }
+
+                // the next (6th) render invocation is at a 100 ms delta relative
+                // to last render, this should trigger the update handler
+
+                mayRender = true;
+
+                // @ts-expect-error protected property
+                canvas.render( now + 100 );
+            });
+        });
+
+        it( "should defer actual rendering and calculate elapsed frames between render callbacks when running in a high refresh rate environment", (): Promise<void> => {
+            return new Promise(( resolve, reject ) => {
+                let mayRender = false;
+                
+                // 60 fps being the norma
+                const canvas = new Canvas({ fps: 60, onUpdate: ( timestamp, framesSinceLastRender ) => {
+                    // if update handler is triggered we know rendering is executed when it shouldn't
+                    if ( !mayRender ) {
+                        reject( new Error( "render update handler should not have been called" ));
+                    }
+                    expect( timestamp ).toEqual( now + ( 1000 / 60 ));
+                    // the deferred rendering should have capped the rendering to 60
+                    // (thus we are progressing exactly one frame per render iteration
+                    // we can disregard the skipped render)
+                    expect( framesSinceLastRender ).toEqual( 1 );
+
+                    resolve();
+                }});
+
+                canvas.setAnimatable( true );
+                // @ts-expect-error snooping on a protected property
+                canvas._lastRender = now;
+
+                // at 60 fps, we expect 16.66 ms frame durations (1000ms / 60fps)
+                // we will however run the callbacks at 8.33 ms (1000ms / 120fps)
+                // to emulate an Apple M1 120 Hz refresh rate
+
+                const incr = 1000 / 120;
+
+                // @ts-expect-error snooping on protected property
+                canvas.render( now + incr );
+
+                // the next (2nd) render invocation is at a 16.66 ms delta relative
+                // to last render, this should trigger the update handler
+         
+                mayRender = true;
+
+                // @ts-expect-error protected property
+                canvas.render( now + ( incr * 2 ));
+            });
+        });
+
+        it( "should calculate the correct elapsed frames multiplier when the actual frame rate is lower than the configured frame rate", (): Promise<void> => {
+            return new Promise(( resolve, reject ) =>  {
+                const canvas = new Canvas({ fps: 120, onUpdate: ( timestamp, framesSinceLastRender ) => {
+                    expect( timestamp ).toEqual( now + ( 1000 / 60 ));
+                    // as the environment manages less fps than the configured value, we
+                    // should progress the update() by more frames
+                    expect( Math.round( framesSinceLastRender )).toEqual( 2 );
+    
+                    resolve();
+                }});
+
+                canvas.setAnimatable( true );
+                // @ts-expect-error snooping on protected property
+                canvas._lastRender = now;
+
+                // at 120 fps, we expect 8.33 ms frame durations (1000ms / 120fps)
+                // we will however run the callback at 16.66 ms (1000ms / 60fps)
+                // to emulate a device that can't match the configured rate
+    
+                // @ts-expect-error snooping on protected property
+                canvas.render( now + ( 1000 / 60 ));
+            });
+        });
+
+        describe( "and dealing with the animatable state", () => {
+            it( "should know whether its animatable", () => {
+                let canvas = new Canvas({ width, height, animate: false });
+                expect( canvas.isAnimatable() ).toBe( false );
+
+                canvas = new Canvas({ width, height, animate: true });
+                expect( canvas.isAnimatable() ).toBe( true );
+            });
+
+            it( "should be able to toggle its animatable state", () => {
+                const canvas = new Canvas({ width, height, animate: false });
+
+                canvas.setAnimatable( true );
+                expect( canvas.isAnimatable() ).toBe( true );
+
+                canvas.setAnimatable( false );
+                expect( canvas.isAnimatable() ).toBe( false );
+            });
+
+            it( "should continuously render on each animation frame when animatable", (): Promise<void> => {
+                let renders = 0;
+
+                return new Promise( resolve => {
+                    const onUpdate = vi.fn(() => {
+                        if ( ++renders === 5 ) {
+                            resolve();
+                        }
+                        vi.runAllTimers(); // advance RAF
+                    });
+                    const canvas = new Canvas({ animate: false, onUpdate });
+                    canvas.setAnimatable( true );
+
+                    vi.runAllTimers(); // advance RAF
+                });
+            });
+
+            it( "should only render on invalidation when not animatable", (): Promise<void> => {
+                let renders = 0;
+
+                return new Promise( async resolve => {
+                    const onUpdate = vi.fn(() => {
+                        ++renders;
+                    });
+                    // construct as animatable
+                    const canvas = new Canvas({ animate: true, onUpdate });
+                    
+                    // and disable animation
+                    canvas.setAnimatable( false );
+                    vi.runAllTimers(); // advance RAF, completes animation queued in constructor
+
+                    renders = 0;
+
+                    vi.runAllTimers(); // advance RAF
+
+                    // expected render count not to have incremented as Canvas no longer animates
+                    expect( renders ).toEqual( 0 );
+
+                    onUpdate.mockImplementationOnce( resolve ); // hijack next render to end test
+                    canvas.invalidate(); // call invalidate to render
+
+                    vi.runAllTimers(); // advance RAF
+                });
+            });
         });
     });
 
@@ -795,14 +888,41 @@ describe( "Canvas", () => {
     });
 
     describe( "when disposing the Canvas instance", () => {
+        it( "should remove all listeners", () => {
+            const canvas = new Canvas();
+
+            // @ts-expect-error snooping on a protected property
+            const removeSpy = vi.spyOn( canvas, "removeListeners" );
+
+            canvas.dispose();
+
+            expect( removeSpy ).toHaveBeenCalled();
+        });
+
         it( "should remove itself from the DOM", () => {
             const element = global.document.createElement( "div" );
-            const canvas  = new Canvas({ width, height });
+            const canvas  = new Canvas();
 
             canvas.insertInPage( element );
             expect( canvas.getElement().parentNode ).toEqual( element );
+
             canvas.dispose();
             expect( canvas.getElement().parentNode ).toBeNull();
+        });
+
+        it( "should dispose the renderer after a last animation frame so it can finish up", () => {
+            mockRequestAnimationFrame();
+
+            const canvas = new Canvas();
+            const renderDisposeSpy = vi.spyOn( canvas.getRenderer() as RenderAPI, "dispose" );
+
+            canvas.dispose();
+
+            expect( renderDisposeSpy ).not.toHaveBeenCalled();
+
+            vi.runAllTimers(); // advance RAF
+
+            expect( renderDisposeSpy ).toHaveBeenCalled();
         });
     });
 });

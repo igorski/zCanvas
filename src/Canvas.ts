@@ -20,7 +20,7 @@
  * IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-import type { Size, Point, Viewport, ImageSource } from "./definitions/types";
+import type { Size, Point, BoundingBox, Viewport, ImageSource } from "./definitions/types";
 import { IRenderer } from "./rendering/IRenderer";
 import RenderAPI from "./rendering/RenderAPI";
 import EventHandler from "./utils/EventHandler";
@@ -76,8 +76,8 @@ export default class Canvas extends DisplayObject<Canvas> {
         minFps: Infinity,
         maxFps: -Infinity,
     };
-
     public collision: Collision;
+    public bbox: BoundingBox = { left: 0, top: 0, right: 0, bottom: 0 }; // relative to Sprites, not DOM!
 
     protected _element: HTMLCanvasElement;
     protected _renderer: RenderAPI;
@@ -121,7 +121,6 @@ export default class Canvas extends DisplayObject<Canvas> {
         width = 300,
         height = 300,
         fps = IDEAL_FPS,
-        scale = 1,
         backgroundColor = null,
         animate = false,
         smoothing = true,
@@ -172,10 +171,6 @@ export default class Canvas extends DisplayObject<Canvas> {
         this.setDimensions( width, height, true, true );
         if ( viewport ) {
             this.setViewport( viewport.width, viewport.height );
-        }
-
-        if ( scale !== 1 ) {
-            this.scale( scale );
         }
         this._stretchToFit = stretchToFit;
 
@@ -627,14 +622,13 @@ export default class Canvas extends DisplayObject<Canvas> {
      */
     protected render( now: DOMHighResTimeStamp = 0 ): void {
         this._renderPending = false;
-
         const delta = now - this._lastRender;
 
         // for animatable canvas instances, ensure we cap the framerate
         // by deferring the render in case the actual framerate is above the
         // configured framerate of the canvas (this for instance prevents
         // 120 Hz Apple M1 rendering things too fast when you were expecting 60 fps)
-
+       
         if ( this._animate && ( delta / this._renderInterval ) < 0.999 ) {
             this._renderId = window.requestAnimationFrame( this._renderHandler );
             this._lastRaf = now;
@@ -815,6 +809,9 @@ export default class Canvas extends DisplayObject<Canvas> {
             this._enqueuedSize = undefined;
             this._width  = width;
             this._height = height;
+
+            this.bbox.right  = width;
+            this.bbox.bottom = height;
         }
     
         if ( this._viewport ) {

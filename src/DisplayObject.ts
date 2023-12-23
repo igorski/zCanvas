@@ -55,6 +55,7 @@ export default class DisplayObject<T> {
         child.setParent( this );
 
         this._children.push( child );
+        
         this.invalidate();
 
         return this;
@@ -86,8 +87,6 @@ export default class DisplayObject<T> {
             nextChild.last = prevChild;
         }
         child.last = child.next = undefined;
-
-        // request a render now the state of the canvas has changed
 
         this.invalidate();
 
@@ -137,7 +136,7 @@ export default class DisplayObject<T> {
      * matches the latest state.
      */
     invalidate(): void {
-        // override in subclass
+        // implement in subclass
     }
 
     dispose(): void {

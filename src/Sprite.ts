@@ -24,7 +24,7 @@ import type Canvas from "./Canvas";
 import DisplayObject from "./DisplayObject";
 import type { Point, Rectangle, SpriteSheet, Viewport } from "./definitions/types";
 import type { IRenderer, DrawContext } from "./rendering/IRenderer";
-import { isInsideViewport, calculateDrawRectangle } from "./utils/ImageMath";
+import { isInsideArea, calculateDrawRectangle } from "./utils/ImageMath";
 
 const { min, max } = Math;
 const ONE_EIGHTY_OVER_PI = 180 / Math.PI;
@@ -396,6 +396,14 @@ export default class Sprite extends DisplayObject<Sprite> {
     }
 
     /**
+     * Verifies whether this Sprite is currently visible
+     * within the current Viewport / screen offset
+     */
+    isVisible( viewport?: Viewport ): boolean {
+        return isInsideArea( this._bounds, viewport ? viewport : this.canvas.bbox );
+    }
+
+    /**
      * invoked by the canvas whenever it renders a new frame / updates the on-screen contents
      * this is where the Sprite is responsible for rendering its contents onto the screen
      * By default, it will render it's Bitmap image/spritesheet at its described coordinates and dimensions,
@@ -411,12 +419,9 @@ export default class Sprite extends DisplayObject<Sprite> {
 
         const bounds = this._bounds;
 
-        // only render when the Sprite has a valid resource
-        // when a viewport is provided, only render when content is within visual bounds
-        let render = !!this._resourceId;
-        if ( render && viewport ) {
-            render = isInsideViewport( bounds, viewport );
-        }
+        // only render when the Sprite has a valid resource and is within visual bounds
+  
+        const render = !!this._resourceId && this.isVisible( viewport );
 
         if ( render ) {
 
