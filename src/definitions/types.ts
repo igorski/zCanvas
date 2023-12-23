@@ -40,20 +40,20 @@ export type Rectangle = {
     height: number;
 };
 
+export type BoundingBox = {
+    left: number;
+    top: number;
+    right: number;
+    bottom: number;
+};
+
+export type Viewport = BoundingBox & Size;
+
 export type ImageSource = HTMLImageElement | HTMLCanvasElement | File | Blob | ImageData | ImageBitmap | string;
 
 export type SizedImage = {
     size: Size;
     image: HTMLImageElement;
-};
-
-export type Viewport = {
-    left: number;
-    right: number;
-    top: number;
-    bottom: number;
-    width: number;
-    height: number;
 };
 
 export type SpriteSheet = {
@@ -62,9 +62,4 @@ export type SpriteSheet = {
     amount: number;
     fpt: number;
     onComplete?: ( sprite: Sprite ) => void;
-};
-
-export type TransformedDrawBounds = {
-    src: Rectangle;
-    dest: Rectangle;
 };

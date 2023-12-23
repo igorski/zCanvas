@@ -33,7 +33,7 @@ update at the same speed, regardless of the rendering (frames per second) capabi
 ## Works practically everywhere
 
 zCanvas has been written to work within a ES module structure, but comes prebuilt and transpiled to work
-in either a module, CommonJS or browser environment (23K before GZip). zCanvas has been tested and verified to work on all half-decent, half-recent browsers.
+in either a module, CommonJS or browser environment. zCanvas has been tested and verified to work on all half-decent, half-recent browsers.
 
 Should you however wish to support one of the ancient browsers listed below, zCanvas up to version 5.1.10
 can cater to these equally:

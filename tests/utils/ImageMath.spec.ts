@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { isInsideViewport, calculateDrawRectangle, constrainAspectRatio } from "../../src/utils/ImageMath";
+import { isInsideArea, calculateDrawRectangle, constrainAspectRatio } from "../../src/utils/ImageMath";
 
 describe( "Image math utilities", () => {
     const viewport = {
@@ -20,7 +20,7 @@ describe( "Image math utilities", () => {
                 width: 1,
                 height: 1
             };
-            expect( isInsideViewport( spriteBounds, viewport )).toBe( false );
+            expect( isInsideArea( spriteBounds, viewport )).toBe( false );
         });
 
         it( "should know when a sprite positioned at the edges, is visible inside the viewport", () => {
@@ -31,7 +31,7 @@ describe( "Image math utilities", () => {
                 width: 1,
                 height: 1
             };
-            expect( isInsideViewport( spriteBounds, viewport )).toBe( true );
+            expect( isInsideArea( spriteBounds, viewport )).toBe( true );
         });
 
         it( "should know when a sprite centered inside the viewport is visible", () => {
@@ -41,7 +41,7 @@ describe( "Image math utilities", () => {
                 width: 20,
                 height: 20
             };
-            expect( isInsideViewport( spriteBounds, viewport )).toBe( true );
+            expect( isInsideArea( spriteBounds, viewport )).toBe( true );
         });
 
         it( "should know when a sprite positioned at the top is visible inside the viewport", () => {
@@ -51,7 +51,7 @@ describe( "Image math utilities", () => {
                 width: 100,
                 height: 1
             };
-            expect( isInsideViewport( spriteBounds, viewport )).toBe( true );
+            expect( isInsideArea( spriteBounds, viewport )).toBe( true );
         });
 
         it( "should know when a sprite positioned at the bottom is visible inside the viewport", () => {
@@ -61,7 +61,7 @@ describe( "Image math utilities", () => {
                 width: 100,
                 height: 1
             };
-            expect( isInsideViewport( spriteBounds, viewport )).toBe( true );
+            expect( isInsideArea( spriteBounds, viewport )).toBe( true );
         });
 
         it( "should know when a sprite positioned at the left is visible inside the viewport", () => {
@@ -71,7 +71,7 @@ describe( "Image math utilities", () => {
                 width: 10,
                 height: 1
             };
-            expect( isInsideViewport( spriteBounds, viewport )).toBe( true );
+            expect( isInsideArea( spriteBounds, viewport )).toBe( true );
         });
 
         it( "should know when a sprite positioned at the right is visible inside the viewport", () => {
@@ -81,7 +81,7 @@ describe( "Image math utilities", () => {
                 width: 1,
                 height: 1
             };
-            expect( isInsideViewport( spriteBounds, viewport )).toBe( true );
+            expect( isInsideArea( spriteBounds, viewport )).toBe( true );
         });
     });
 

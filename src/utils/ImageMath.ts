@@ -20,7 +20,7 @@
  * IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-import type { Rectangle, Size, Viewport, TransformedDrawBounds } from "../definitions/types";
+import type { Rectangle, Size, BoundingBox, Viewport } from "../definitions/types";
 
 let left: number;
 let top: number;
@@ -28,12 +28,12 @@ let width: number;
 let height: number;
 
 /**
- * Determines whether a Sprites bounding box is visible within the current viewport.
+ * Determines whether provided Rectangle is visible within provided BoundingBox
  */
-export function isInsideViewport( spriteBounds: Rectangle, viewport: Viewport ): boolean {
-    ({ left, top } = spriteBounds );
-    return ( left + spriteBounds.width )  >= viewport.left && left <= viewport.right &&
-           ( top  + spriteBounds.height ) >= viewport.top  && top  <= viewport.bottom;
+export function isInsideArea( rect: Rectangle, area: BoundingBox ): boolean {
+    ({ left, top } = rect );
+    return ( left + rect.width )  >= area.left && left <= area.right &&
+           ( top  + rect.height ) >= area.top  && top  <= area.bottom;
 }
 
 /**
@@ -47,7 +47,7 @@ export function isInsideViewport( spriteBounds: Rectangle, viewport: Viewport ):
  * NOTE: the returned destination coordinates are relative to the canvas, not the viewport !
  * As such this can directly be used with IRenderer.drawImage()
  */
-export function calculateDrawRectangle( spriteBounds: Rectangle, viewport: Viewport ): TransformedDrawBounds {
+export function calculateDrawRectangle( spriteBounds: Rectangle, viewport: Viewport ): { src: Rectangle, dest: Rectangle } {
     ({ left, top, width, height } = spriteBounds );
     const {
         left: viewportX,
