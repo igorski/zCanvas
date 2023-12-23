@@ -161,9 +161,9 @@ function applyOrigin( imageURL: string, image: HTMLImageElement ): void {
 /**
  * checks whether the contents of an Image are either a base64 encoded string or a Blob
  */
-function isDataSource( image: HTMLImageElement | string ): boolean {
+function isDataSource( src: string ): boolean {
 
-    const source = ( typeof image === "string" ? image : image.src ).substring( 0, 5 );
+    const source = src.substring( 0, 5 );
 
     // base64 string contains data-attribute, the MIME type and then the content, e.g. :
     // e.g. "data:image/png;base64," for a typical PNG, Blob string contains no MIME, e.g.:

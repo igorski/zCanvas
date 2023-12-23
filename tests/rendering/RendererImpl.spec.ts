@@ -1,4 +1,5 @@
 import { describe, it, expect, beforeEach } from "vitest";
+import "vitest-canvas-mock";
 import RendererImpl from "../../src/rendering/RendererImpl";
 import Canvas from "../../src/Canvas";
 
