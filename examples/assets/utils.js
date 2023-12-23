@@ -32,12 +32,16 @@ function addCanvasDemoControls( container, zCanvas ) {
  * Creates a simple joypad to control actors with in the demo content
  * 
  * @param {HTMLElement} container 
- * @param {( e: ) => void} leftHandler action to execute when left button is held down
- * @param {( e: ) => void}} rightHandler action to execute when right button is held down
- * @param {( e: ) => void}} actionHandler action to execute when action button is tapped
- * @param {( e: ) => void}} releaseHandler action to execute when left and right buttons are released
+ * @param {() => void} leftDownHandler action to execute when left button is held down
+ * @param {() => void} leftUpHandler action to execute when left button is released
+ * @param {() => void} rightDownHandler action to execute when right button is held down
+ * @param {() => void} rightUpHandler action to execute when right button is released
+ * @param {() => void} actionDownHandler action to execute when action button is held down
+ * @param {() => void} actionUpHandler action to execute when action button is released
  */
-function createJoypad( container, leftHandler, rightHandler, actionHandler, releaseHandler ) {
+function createJoypad( container,
+    leftDownHandler, leftUpHandler, rightDownHandler, rightUpHandler, actionDownHandler, actionUpHandler )
+{
     const leftBtn = document.createElement( "button" );
     leftBtn.id  = "left-btn";
 
@@ -57,36 +61,41 @@ function createJoypad( container, leftHandler, rightHandler, actionHandler, rele
 
     // mouse events
 
-    function listenToMouseUp() {
+    function listenToMouseUp( callback ) {
         // we need to listen to mouseup events fired on the window otherwise we
         // might get stuck when the mouse button is release after the cursor has moved outside of the button
         const handler = () => {
             window.removeEventListener( "mouseup", handler );
-            releaseHandler();
+            callback();
         };
         window.addEventListener( "mouseup", handler ); 
     }
 
     leftBtn.addEventListener( "mousedown", () => {
-        listenToMouseUp();
-        leftHandler();
+        listenToMouseUp( leftUpHandler );
+        leftDownHandler();
     });
     rightBtn.addEventListener( "mousedown", () => {
-        listenToMouseUp()
-        rightHandler();
+        listenToMouseUp( rightUpHandler )
+        rightDownHandler();
     });
     actionButton.addEventListener( "mousedown", () => {
-        listenToMouseUp();
-        actionHandler();
+        listenToMouseUp( actionUpHandler );
+        actionDownHandler();
     });
 
     // touch events
 
-    leftBtn.addEventListener( "touchstart", leftHandler );
-    rightBtn.addEventListener( "touchstart", rightHandler );
-    actionButton.addEventListener( "touchstart", actionHandler );
-    leftBtn.addEventListener( "touchcancel", releaseHandler );
-    rightBtn.addEventListener( "touchcancel", releaseHandler );
-    leftBtn.addEventListener ( "touchend", releaseHandler );
-    rightBtn.addEventListener( "touchend", releaseHandler );
+    leftBtn.addEventListener( "touchstart", leftDownHandler );
+    rightBtn.addEventListener( "touchstart", rightDownHandler );
+    actionButton.addEventListener( "touchstart", actionDownHandler );
+
+    leftBtn.addEventListener( "touchcancel", leftUpHandler );
+    leftBtn.addEventListener( "touchend", leftUpHandler );
+  
+    rightBtn.addEventListener( "touchcancel", rightUpHandler );
+    rightBtn.addEventListener( "touchend", rightUpHandler );
+  
+    actionButton.addEventListener( "touchcancel", actionUpHandler );
+    actionButton.addEventListener( "touchend", actionUpHandler );
 }

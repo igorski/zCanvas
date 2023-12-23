@@ -134,11 +134,6 @@
                     this.energy = ( typeof energy === "number" ) ? energy : 1; // the energy (power bar) this actor has
                 }
 
-                /* public methods */
-
-                fire() {
-                    createBulletForActor( this );
-                }
 
                 hit( actor ) {
                     if ( actor instanceof Bullet ) {
@@ -212,9 +207,31 @@
                 }
             };
 
+            const FIRE_INTERVAL = 200; // in milliseconds
             class Player extends Ship {
+                isFiring = false;
+                lastFire = 0;
+
+                setFiringState( isFiring ) {
+                    this.isFiring = isFiring;
+                }
+
+                reset() {
+                    this.energy   = 25;
+                    this.isFiring = false;
+                    this.lastFire = 0;
+                    
+                    this.switchAnimation( 0 );
+                }
+
                 update( timestamp, framesSinceLastUpdate ) {
                     super.update( timestamp, framesSinceLastUpdate );
+
+                    if ( this.isFiring && ( timestamp - this.lastFire ) > FIRE_INTERVAL ) {
+                        createBulletForActor( this );
+                        
+                        this.lastFire = timestamp;
+                    }
 
                     // the player will be kept inside the visible Canvas bounds
                     const halfWidth  = this.getWidth()  / 2;
@@ -474,10 +491,9 @@
                 if ( actor instanceof Bullet ) {
                     bulletPool.push( actor );
                 } else if ( actor instanceof Player ) {
+                    // show "game over" and reset player state
                     alert( "PLAYER DIED!" );
-                    // "game over" reset player state
-                    player.energy = 25;
-                    player.switchAnimation( 0 );
+                    player.reset();
                     cvs.addChild( player );
                 } else if ( actor !== player ) {
                     enemyPool.push( actor ); // Actor isn't a Bullet nor the player, so it's an enemy
@@ -493,14 +509,14 @@
 
             // we add on-screen controls buttons for touch screens
 
-            // we add on-screen controls buttons for touch screens
-
             createJoypad(
                 canvasContainer,
-                handleLeft,    // left button
-                handleRight,   // right button
-                handleFire,    // action button
-                horizontalEnd, // release handler
+                // left button down and release handler
+                handleLeft, horizontalEnd,
+                // right button down and release handler
+                handleRight, horizontalEnd,
+                // action button down and release handler
+                () => player.setFiringState( true ), () => player.setFiringState( false )
             );
 
             // keyboard control for desktop devices
@@ -510,7 +526,7 @@
             window.addEventListener( "keydown", e => {
                 switch ( e.keyCode ) {
                     case 32: // spacebar
-                        handleFire();
+                        player.setFiringState( true );
                         break;
 
                     case 38: // up
@@ -542,6 +558,9 @@
 
             window.addEventListener( "keyup", e => {
                 switch ( e.keyCode ) {
+                    case 32:
+                        player.setFiringState( false );
+                        break;
                     case 38:
                     case 40:
                         verticalEnd();
@@ -553,10 +572,6 @@
 
                 }
             });
-            const fireHandler = player.fire.bind( player ); // wait until RAF as bullet calculations can be expensive!
-            function handleFire() {
-                window.requestAnimationFrame( fireHandler );
-            }
 
             function handleLeft() {
                 if ( !playerXmovement ) {

@@ -313,10 +313,12 @@
 
                 createJoypad(
                     canvasContainer,
-                    e => hero.run( 0 ), // left button
-                    e => hero.run( 1 ), // right button
-                    e => hero.jump(),   // action button
-                    e => hero.stop(),   // release handler
+                    // left button down and release handler
+                    () => hero.run( 0 ), () => hero.stop(),
+                    // right button down and release handler
+                    () => hero.run( 1 ), () => hero.stop(),
+                    // action button down and release handler
+                    () => hero.jump(), () => {}
                 );
 
                 // keyboard control for desktop devices
