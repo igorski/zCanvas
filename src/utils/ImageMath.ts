@@ -20,7 +20,7 @@
  * IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-import type { Rectangle, Viewport, TransformedDrawBounds } from "../definitions/types";
+import type { Rectangle, Size, Viewport, TransformedDrawBounds } from "../definitions/types";
 
 let left: number;
 let top: number;
@@ -30,11 +30,11 @@ let height: number;
 /**
  * Determines whether a Sprites bounding box is visible within the current viewport.
  */
-export const isInsideViewport = ( spriteBounds: Rectangle, viewport: Viewport ): boolean => {
+export function isInsideViewport( spriteBounds: Rectangle, viewport: Viewport ): boolean {
     ({ left, top } = spriteBounds );
     return ( left + spriteBounds.width )  >= viewport.left && left <= viewport.right &&
            ( top  + spriteBounds.height ) >= viewport.top  && top  <= viewport.bottom;
-};
+}
 
 /**
  * If the full zCanvas "document" is represented inside a smaller, pannable viewport
@@ -47,7 +47,7 @@ export const isInsideViewport = ( spriteBounds: Rectangle, viewport: Viewport ):
  * NOTE: the returned destination coordinates are relative to the canvas, not the viewport !
  * As such this can directly be used with IRenderer.drawImage()
  */
-export const calculateDrawRectangle = ( spriteBounds: Rectangle, viewport: Viewport ): TransformedDrawBounds => {
+export function calculateDrawRectangle( spriteBounds: Rectangle, viewport: Viewport ): TransformedDrawBounds {
     ({ left, top, width, height } = spriteBounds );
     const {
         left: viewportX,
@@ -87,4 +87,25 @@ export const calculateDrawRectangle = ( spriteBounds: Rectangle, viewport: Viewp
             height
         }
     };
-};
+}
+
+/**
+ * when stretching, the non-dominant side of the preferred rectangle will scale to reflect the
+ * ratio of the available space, while the dominant side remains at its current size
+ */
+export function lockedScale( idealWidth: number, idealHeight: number, availableWidth: number, availableHeight: number ): Size {
+    const idealAspectRatio  = idealWidth / idealHeight;
+    const screenAspectRatio = availableWidth / availableHeight;
+
+    let width  = idealWidth;
+    let height = idealHeight;
+
+    if ( idealAspectRatio > screenAspectRatio ) {
+        // the ideal is landscape oriented
+        height = idealWidth / screenAspectRatio;
+    } else {
+        // the ideal is portrait or square oriented
+        width = idealHeight * screenAspectRatio;
+    }
+    return { width, height };
+}

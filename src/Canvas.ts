@@ -25,6 +25,7 @@ import { IRenderer } from "./rendering/IRenderer";
 import RenderAPI from "./rendering/RenderAPI";
 import EventHandler from "./utils/EventHandler";
 import { toggleFullScreen } from "./utils/Fullscreen";
+import { lockedScale } from "./utils/ImageMath";
 import Collision from "./Collision";
 import type Sprite from "./Sprite";
 
@@ -183,7 +184,7 @@ export default class Canvas {
         if ( parentElement instanceof HTMLElement ) {
             this.insertInPage( parentElement );
         }
-        requestAnimationFrame( () => this.handleResize() ); // calculates appropriate scale
+        this.handleResize(); // calculates appropriate scale
     }
 
     /* public methods */
@@ -510,7 +511,7 @@ export default class Canvas {
     scale( x: number, y = x ): void {
         this._scale = { x, y };
 
-        const scaleStyle = x === 1 && y === 1 ? '' : `scale(${x}, ${y})`;
+        const scaleStyle = x === 1 && y === 1 ? "" : `scale(${x}, ${y})`;
         const { style }  = this._element;
 
         // @ts-expect-error TS7015: Element implicitly has an 'any' type because index expression is not of type 'number'.
@@ -557,62 +558,44 @@ export default class Canvas {
         // const { clientWidth, clientHeight } = document.documentElement;
         const { innerWidth, innerHeight } = window;
 
-        const idealWidth  = this._preferredWidth;
-        const idealHeight = this._preferredHeight;
+        let idealWidth  = this._preferredWidth;
+        let idealHeight = this._preferredHeight;
 
-        let xScale = 1;
-        let yScale = 1;
+        let scale = 1;
 
-        const stretchToFit = this._stretchToFit || innerWidth < idealWidth || innerHeight < idealHeight;
+        const stretchToFit = !this._viewport && ( this._stretchToFit || innerWidth < idealWidth || innerHeight < idealHeight );
 
         if ( stretchToFit ) {
 
             // when stretching, the non-dominant side of the preferred rectangle will scale to reflect the
             // ratio of the available screen space, while the dominant side remains at its current size
+
+            const { width, height } = lockedScale( idealWidth, idealHeight, innerWidth, innerHeight );
+
+            scale = innerWidth / width;
             
-            const idealAspectRatio  = idealWidth / idealHeight;
-            const screenAspectRatio = innerWidth / innerHeight;
-
-            let targetWidth: number;
-            let targetHeight: number;
-
-            if ( idealAspectRatio > screenAspectRatio ) {
-                // the ideal is landscape oriented
-                targetWidth = idealWidth;
-                targetHeight = idealWidth / screenAspectRatio;
-            } else {
-                // the ideal is portrait or square oriented
-                targetHeight = idealHeight;
-                targetWidth = idealHeight * screenAspectRatio;
-            }
-
-            xScale = innerWidth  / targetWidth;
-            yScale = innerHeight / targetHeight;
-
-            this.setDimensions( targetWidth, targetHeight, false, true );
+            this.setDimensions( width, height, false, true );
         } else {                
             const ratio        = idealHeight / idealWidth;
             const targetWidth  = min( idealWidth, innerWidth );
-            const targetHeight = min( innerHeight, round( targetWidth * ratio ));
+            //const targetHeight = min( innerHeight, round( targetWidth * ratio ));
         
             this.setDimensions( idealWidth, idealHeight, false );
         
-            // take into account that certain resolutions are lower than the ideal width, scale canvas to fit width
-            xScale = yScale = innerWidth < idealWidth ? innerWidth / idealWidth : 1;
-        
             // the viewport however is local to the client window size
+            /*
             if ( this._viewport ) {
-                const viewportWidth  = targetWidth  / xScale;
-                const viewportHeight = targetHeight / yScale;
+                const viewportWidth  = targetWidth  / scale;
+                const viewportHeight = targetHeight / scale;
                 
                 this.setViewport( viewportWidth, viewportHeight );
-            }
+            }*/
         }
 
         // we override the scale adjustment performed by updateCanvasSize above as
         // we lock the scaleed to the ratio of the desired to actual screen dimensions
 
-        this.scale( xScale, yScale );
+        this.scale( scale );
     }
 
     /**
