@@ -25,12 +25,12 @@ import Loader from "../Loader";
 import { readFile } from "../utils/FileUtil";
 import { imageToBitmap } from "../utils/ImageUtil";
 import RendererImpl from "./RendererImpl";
-import type { IRenderer, DrawContext } from "./IRenderer";
+import type { IRenderer, DrawProps, TextProps } from "./IRenderer";
 // @ts-expect-error cannot handle Vite parameters for inlining as Blob
 import CanvasWorker from "../workers/canvas.worker?worker&inline";
 import Cache from "../utils/Cache";
 
-type DrawCommand = ( string | number | DrawContext )[];
+type DrawCommand = ( string | number | DrawProps )[];
 
 /**
  * All draw commands are executed on the RenderAPI which can delegate
@@ -279,8 +279,8 @@ export default class RenderAPI implements IRenderer {
         this.onDraw( "drawCircle", x, y, radius, fillColor, strokeColor );
     }
 
-    drawImage( resourceId: string, x: number, y: number, width: number, height: number, drawContext?: DrawContext, ): void {
-        this.onDraw( "drawImage", resourceId, x, y, width, height, drawContext );
+    drawImage( resourceId: string, x: number, y: number, width: number, height: number, props?: DrawProps ): void {
+        this.onDraw( "drawImage", resourceId, x, y, width, height, props );
     }
 
     drawImageCropped(
@@ -293,12 +293,16 @@ export default class RenderAPI implements IRenderer {
         destinationY: number,
         destinationWidth: number,
         destinationHeight: number,
-        drawContext?: DrawContext,
+        props?: DrawProps,
     ): void {
         this.onDraw( "drawImageCropped",
             resourceId, sourceX, sourceY, sourceWidth, sourceHeight,
-            destinationX, destinationY, destinationWidth, destinationHeight, drawContext
+            destinationX, destinationY, destinationWidth, destinationHeight, props
         );
+    }
+
+    drawText( text: TextProps, x: number, y: number, props?: DrawProps ): void {
+        this.onDraw( "drawText", text, x, y, props );
     }
 
     drawPattern( patternResourceId: string, x: number, y: number, width: number, height: number ): void {

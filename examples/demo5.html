@@ -19,19 +19,25 @@
         <div class="demo-canvas-container"><!-- x --></div>
         <div class="demo-controls">
             <div>
-                <label for="file">Select local image file</label>
+                <button type="button" id="fileSelect">Select file</button>
                 <input type="file" id="file"
                     accept="image/png,image/gif,image/jpeg"
+                    style="display: none;"
                 />
-                <label for="scale">Zoom factor</label>
+            </div>
+            <div>
+                <label for="scale">Zoom</label>
                 <input type="range" id="scale" min="1" max="4" value="1" step=".1" />
+            </div>
+            <div>
                 <button type="button" id="save">Save output</button>
+                <button type="button" id="fullscreen">Fullscreen</button>
             </div>
             <!-- <button type="button" id="fullscreen">Fullscreen</button> -->
         </div>
         <p class="demo-description">
             Demo features : a simple utility that can load images which can be
-            panned and zoomed inside the browser, where the visual result can be saved to disk.
+            panned and zoomed inside the browser, where the visual result can be saved as an image file.
         </p>
     </div>
     <script type="text/javascript">
@@ -61,6 +67,7 @@
                 height: CANVAS_HEIGHT,
                 preventEventBubbling: true,
                 parentElement: canvasContainer,
+                backgroundColor: "#b6b6b6",
                 onResize: ( width, height ) => {
                     // resize demo container to accomodate the canvas size
                     demoContainer.style.width = `${width}px`;
@@ -68,7 +75,21 @@
             });
             addCanvasDemoControls( demoContainer, cvs );
 
-            // create the sprite that will represent the loaded image
+            // create a Sprite to render a placeholde rmessage
+            class TextSprite extends Sprite {
+                constructor( text, opts ) {
+                    super( opts );
+                    this.textProps = { text, color: "#000", font: "Arial", size: 24, unit: "pt", center: true };
+                }
+
+                draw( renderer ) {
+                    renderer.drawText( this.textProps, this.getX(), this.getY(), this._drawProps );
+                }
+            }
+            const text = new TextSprite( "No image loaded", { x: CANVAS_WIDTH / 2, y: CANVAS_HEIGHT / 2 });
+            cvs.addChild( text );
+
+            // create the Sprite that will represent the loaded image
             class CroppableImage extends Sprite {
                 constructor( opts ) {
                     super( opts );
@@ -104,6 +125,18 @@
             let orgImageHeight = 0;
             let minImageWidth  = 0;
             let minImageHeight = 0;
+
+            document.getElementById( "fileSelect" ).onclick = event => {
+                // this is just some hackaroni to trigger the file selector from the
+                // hidden file input. File inputs look uglier than buttons...
+                const simulatedEvent = document.createEvent( "MouseEvent" );
+                simulatedEvent.initMouseEvent(
+                    "click", true, true, window, 1,
+                    0, 0, 0, 0, false,
+                    false, false, false, 0, null
+                );
+                document.getElementById( "file" ).dispatchEvent( simulatedEvent );
+            };
 
             // read local file data into the Sprite Bitmap when the
             // user has selected an image file
@@ -148,6 +181,8 @@
 
                     // set the loaded image Bitmap as the Sprite image source using calculated dimensions
                     sprite.setResource( "loadedFile", minImageWidth, minImageHeight );
+
+                    cvs.removeChild( text ); // remove the placeholder text
                 }).catch(() => {
                     alert( "Could not decode image from selected File" );
                 });

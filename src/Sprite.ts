@@ -23,12 +23,10 @@
 import type Canvas from "./Canvas";
 import DisplayObject from "./DisplayObject";
 import type { Point, Rectangle, SpriteSheet, Viewport } from "./definitions/types";
-import type { IRenderer, DrawContext } from "./rendering/IRenderer";
+import type { IRenderer, DrawProps } from "./rendering/IRenderer";
 import { isInsideArea, calculateDrawRectangle } from "./utils/ImageMath";
 
 const { min, max } = Math;
-const ONE_EIGHTY_OVER_PI = 180 / Math.PI;
-const PI_OVER_ONE_EIGHTY = Math.PI / 180;
 const HALF = 0.5;
 
 interface SpriteProps {
@@ -86,7 +84,7 @@ export default class Sprite extends DisplayObject<Sprite> {
         tileHeight: number;
         onComplete?: ( sprite: Sprite ) => void;
     } | undefined;
-    protected _drawContext: DrawContext | undefined;
+    protected _drawProps: DrawProps | undefined;
     protected _resourceId: string; // resourceId registered in renderer Cache
 
     protected _pressTime: number;
@@ -119,6 +117,7 @@ export default class Sprite extends DisplayObject<Sprite> {
         this.collidable = collidable;
 
         this._mask   = mask;
+        this._scale  = 1;
         this._bounds = { left: 0, top: 0, width, height };
 
         /* initialization */
@@ -327,20 +326,27 @@ export default class Sprite extends DisplayObject<Sprite> {
     getBounds(): Rectangle {
         return this._bounds;
     }
+
+    getDrawProps(): DrawProps {
+        if ( !this._drawProps ) {
+            this.invalidateDrawProps( true );
+        }
+        return this._drawProps;
+    }
     
     getRotation(): number {
-        return this._rotation * ONE_EIGHTY_OVER_PI;
+        return this._rotation;
     }
 
     setRotation( angleInDegrees: number, optPivot?: Point ): void {
-        this._rotation = ( angleInDegrees % 360 ) * PI_OVER_ONE_EIGHTY;
+        this._rotation = ( angleInDegrees % 360 );
         this._pivot = optPivot;
-        this.invalidateDrawContext();
+        this.invalidateDrawProps();
     }
 
     setScale( value: number ): void {
         this._scale = value;
-        this.invalidateDrawContext();
+        this.invalidateDrawProps();
     }
 
     /**
@@ -441,10 +447,10 @@ export default class Sprite extends DisplayObject<Sprite> {
                         this._resourceId,
                         src.left, src.top, src.width, src.height,
                         dest.left, dest.top, dest.width, dest.height,
-                        this._drawContext,
+                        this._drawProps,
                     );
                 } else {
-                    renderer.drawImage( this._resourceId, left, top, width, height, this._drawContext );
+                    renderer.drawImage( this._resourceId, left, top, width, height, this._drawProps );
                 }
             }
             else {
@@ -465,7 +471,7 @@ export default class Sprite extends DisplayObject<Sprite> {
                     aniProps.type.row * tileHeight, // tile y offset
                     tileWidth, tileHeight,
                     left, top, width, height,
-                    this._drawContext,
+                    this._drawProps,
                 );
             }
         }
@@ -872,15 +878,16 @@ export default class Sprite extends DisplayObject<Sprite> {
 
     /* protected methods */
 
-    protected invalidateDrawContext(): void {
-        if ( this._rotation !== 0 || this._mask || this._scale !== 1 ) {
-            this._drawContext = this._drawContext ?? {}; // pool Object instance
-            const ctx = this._drawContext;
+    protected invalidateDrawProps( force = false ): void {
+        if ( force ||
+            ( this._rotation !== 0 || this._mask || this._scale !== 1 )) {
+            this._drawProps = this._drawProps ?? { alpha: 1, safeMode: false }; // pool Object instance
+            const props = this._drawProps;
             
-            ctx.rotation  = this._rotation;
-            ctx.pivot     = this._pivot;
-            ctx.blendMode = this._mask ? "destination-in" : undefined;
-            ctx.scale     = this._scale;
+            props.rotation  = this._rotation;
+            props.pivot     = this._pivot;
+            props.blendMode = this._mask ? "destination-in" : undefined;
+            props.scale     = this._scale;
         }
     }
 

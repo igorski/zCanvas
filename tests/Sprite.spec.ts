@@ -1,4 +1,5 @@
 import { describe, it, expect, beforeAll, beforeEach, afterEach, vi } from "vitest";
+import "vitest-canvas-mock";
 import Canvas from "../src/Canvas";
 import Sprite from "../src/Sprite";
 import type { IRenderer } from "../src/rendering/IRenderer";

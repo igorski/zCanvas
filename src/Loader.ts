@@ -132,7 +132,6 @@ const Loader = {
                 if ( Loader.isReady( image )) {
                     resolve();
                 } else if ( ++iterations === MAX_ITERATIONS ) {
-                    console.error( typeof image );
                     reject( new Error( "Image could not be resolved. This shouldn't occur." ));
                 } else {
                     // requestAnimationFrame preferred over a timeout as

@@ -160,7 +160,7 @@ export default class Canvas extends DisplayObject<Canvas> {
         this.setFrameRate( fps );
         this.setAnimatable( animate );
 
-        if ( !!backgroundColor ) {
+        if ( backgroundColor ) {
             this.setBackgroundColor( backgroundColor );
         }
 

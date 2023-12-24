@@ -4,18 +4,29 @@
     <meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable = no" name="viewport">
     <meta charset="utf-8" />
     <title>zCanvas integrating third party animation libraries example</title>
+    <!-- load demo assets -->
     <link rel="stylesheet" href="./assets/styles.css">
     <script type="text/javascript" src="./assets/images.js"></script>
+    <script type="text/javascript" src="./assets/utils.js"></script>
     <!-- include RequireJS to resolve dependencies -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.1.14/require.min.js" type="text/javascript"></script>
     <!-- include Greensock TweenMax -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/1.19.0/TweenMax.min.js" type="text/javascript"></script>
 </head>
 <body>
-    <div id="container">
-        <h1>zCanvas demo #4: Animating using 3rd party libraries</h1>
-        <div id="demo"><!-- x --></div>
-        <p>
+    <div class="demo-container">
+        <div class="demo-header">
+            <h1>zCanvas : Integrating 3rd party libraries</h1>
+        </div>
+        <div class="demo-canvas-container"><!-- x --></div>
+        <div class="demo-controls">
+            <div>
+                <label for="fps">Framerate (15 to 60 fps)</label>
+                <input type="range" id="fps" min="15" max="60" value="60" step="1" />
+            </div>
+            <button type="button" id="fullscreen">Fullscreen</button>
+        </div>
+        <p class="demo-description">
             Demo features : multiple Sprites, each moving using different easing functions from the
             Greensock TweenMax library. The star shape also acts as a mask for an underlying photo.
         </p>
@@ -36,32 +47,24 @@
             // STEP 1 : SETUP
             // --------------------------------------
 
-            const container = document.getElementById( "demo" );
+            const demoContainer   = document.querySelector( ".demo-container" );
+            const canvasContainer = document.querySelector( ".demo-canvas-container" );
 
-            // get window dimensions
-
-            let w, h;
-            if ( window.outerHeight ) {
-                w = window.outerWidth;
-                h = window.outerHeight;
-            }
-            else {
-                w = document.body.clientWidth;
-                h = document.body.clientHeight;
-            }
-
-            // create a new canvas that renders at 60 fps
-            // keep it within the device / browser bounds
-            const cvsWidth  = ( w < 800 ) ? w * .93 : 800;
-            const cvsHeight = ( h < 500 ) ? h : 500;
+            const cvsWidth  = 800;
+            const cvsHeight = 400;
             const cvs = new Canvas({
                 width: cvsWidth,
                 height: cvsHeight,
                 animate: true,
                 fps: 60,
                 preventEventBubbling: true,
-                parentElement: container
+                parentElement: canvasContainer,
+                onResize: ( width, height ) => {
+                    // resize demo container to accomodate the canvas size
+                    demoContainer.style.width = `${width}px`;
+                }
             });
+            addCanvasDemoControls( demoContainer, cvs );
 
             // register assets
 
@@ -100,22 +103,21 @@
                 mask: true
             });
 
-            const starBounds = spriteMask.getBounds();    // the stars properties we will be tweening
-            const stl = new TimelineMax({ repeat: 999 }); // timeline for the star
+            // grab a reference to the star properties we will be tweening
+            const starTransform = spriteMask.getDrawProps();
+            const starTimeline  = new TimelineMax({ repeat: 999 }); // timeline for the star
 
-            const doubleSize = starSize * 2;
+            const DURATION = 3;
+            const SCALE_FACTOR = 1.5;
 
-            stl.to(
-                starBounds, 2, {
-                    left: "-=" + ( doubleSize / 2 ),
-                    top: "-=" + ( doubleSize / 2 ),
-                    height: "+=" + doubleSize,
-                    width: "+=" + doubleSize,
+            starTimeline.to(
+                starTransform, DURATION, {
+                    scale: "+=" + SCALE_FACTOR,
+                    rotation: "+=" + 360,
                     ease: Elastic.easeInOut
                 }
             ).to(
-                starBounds, 2, { left: "+=" + ( doubleSize / 2), top: "+=" + ( doubleSize / 2),
-                        width: "-=" + doubleSize, height: "-=" + doubleSize, ease: Power4.easeIn }
+                starTransform, DURATION, { scale: "-=" + SCALE_FACTOR, rotation: 0, ease: Power4.easeIn }
             );
             cvs.addChild( spriteMask ); // add star making sprite to canvas so it is visible
 
@@ -124,18 +126,18 @@
             // aSizeRadius defines the radius of the circles bounds
 
             class CircleSprite extends Sprite {
-                constructor( x, y, aPositionRadius, aSizeRadius, aColor ) {
+                constructor( x, y, positionRadius, sizeRadius, color ) {
                     super({
-                        x: x - aPositionRadius * 2,
-                        y: y - aPositionRadius * 1.5,
-                        width: aPositionRadius * 2,
-                        height: aPositionRadius * 2
+                        x: x - positionRadius * 2,
+                        y: y - positionRadius * 1.5,
+                        width: positionRadius * 2,
+                        height: positionRadius * 2
                     });
 
                     /* instance properties */
 
-                    this.radius = aSizeRadius;
-                    this.color = aColor;
+                    this.radius = sizeRadius;
+                    this.color = color;
 
                     this.setDraggable( true );
                 }

@@ -28,7 +28,7 @@ import type { Point } from "../definitions/types";
  */
 export interface IRenderer {
     // these are supplied for maximum compatibility, however for a performance gain
-    // it is recommended to use DrawContext objects supplied to the draw-commands instead
+    // it is recommended to use DrawProps objects supplied to the draw-commands instead
     // as they are optimized to use less state changing instruction on the Canvas
 
     save(): void
@@ -53,7 +53,7 @@ export interface IRenderer {
         y: number,
         width?: number,
         height?: number,
-        drawContext?: DrawContext,
+        props?: DrawProps,
     ): void
     drawImageCropped(
         resourceId: string,
@@ -65,8 +65,9 @@ export interface IRenderer {
         destinationY: number,
         destinationWidth: number,
         destinationHeight: number,
-        drawContext?: DrawContext,
+        props?: DrawProps,
     ): void
+    drawText( text: TextProps, x: number, y: number, props?: DrawProps ): void
 
     createPattern( resourceId: string, repetition: "repeat" | "repeat-x" | "repeat-y" | "no-repeat" ): void
     drawPattern( patternResourceId: string, x: number, y: number, width: number, height: number ): void
@@ -75,11 +76,22 @@ export interface IRenderer {
 // when these are set, save() and restore() will be applied as appropriate
 // during image drawing
 
-export type DrawContext = {
+export type DrawProps = {
     scale?: number;
     rotation?: number;
     pivot?: Point;
     alpha?: number;
     blendMode?: GlobalCompositeOperation;
     safeMode?: boolean;
+};
+
+export type TextProps = {
+    text: string;
+    color: string;
+    font?: string;
+    size?: number;
+    unit?: string;
+    lineHeight?: number;
+    spacing?: number;
+    center?: boolean;
 };

@@ -20,9 +20,17 @@
  * IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-import type { IRenderer, DrawContext } from "./IRenderer";
+import type { IRenderer, DrawProps, TextProps } from "./IRenderer";
+import { renderMultiLineText, measureLines } from "./components/TextRenderer";
 import Cache from "../utils/Cache";
 
+enum ResetCommand {
+    NONE = 0,
+    ALL,
+    TRANSFORM
+};
+
+const DEG_TO_RAD = Math.PI / 180;
 const HALF = 0.5;
 let ctx: CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D;
 
@@ -165,11 +173,11 @@ export default class RendererImpl implements IRenderer {
         }
     }
 
-    drawImage( resourceId: string, x: number, y: number, width?: number, height?: number, drawContext?: DrawContext ): void {
+    drawImage( resourceId: string, x: number, y: number, width?: number, height?: number, props?: DrawProps ): void {
         if ( !this._bitmapCache.has( resourceId )) {
             return;
         }
-        const savedState = drawContext ? this.applyDrawContext( drawContext, x, y, width, height ) : false;
+        const prep = props ? this.prepare( props, x, y, width, height ) : ResetCommand.NONE;
 
         if ( width === undefined ) {
             this._context.drawImage( this._bitmapCache.get( resourceId ), x, y );
@@ -179,15 +187,13 @@ export default class RendererImpl implements IRenderer {
         if ( this._debug ) {
             this.drawRect( x, y, width, height, "#FF0000", "stroke" );
         }
-        if ( savedState ) {
-            this.restore();
-        }
+        this.applyReset( prep );
     }
 
     drawImageCropped( resourceId: string,
         sourceX: number, sourceY: number, sourceWidth: number, sourceHeight: number,
         destinationX: number, destinationY: number, destinationWidth: number, destinationHeight: number,
-        drawContext?: DrawContext,
+        props?: DrawProps,
     ): void {
         if ( !this._bitmapCache.has( resourceId )) {
             return;
@@ -197,12 +203,11 @@ export default class RendererImpl implements IRenderer {
         // in case you are uncertain that the provided arguments are within bounds of the
         // canvas, you can use safeMode to perform the corrections
 
-        if ( drawContext?.safeMode ) {
+        if ( props?.safeMode ) {
 
             if ( destinationWidth <= 0 || destinationHeight <= 0 ) {
                 return;
             }
-
             const source = this._bitmapCache.get( resourceId );
 
             // clipping rectangle doesn't have to exceed <canvas> dimensions
@@ -224,7 +229,7 @@ export default class RendererImpl implements IRenderer {
             }
         }
 
-        const savedState = drawContext ? this.applyDrawContext( drawContext, destinationX, destinationY, destinationWidth, destinationHeight ) : false;
+        const prep = props ? this.prepare( props, destinationX, destinationY, destinationWidth, destinationHeight ) : ResetCommand.NONE;
 
         // By rounding the values we omit subpixel content which provdes a performance boost
         // Safari also greatly benefits from round numbers as subpixel content is sometimes ommitted from rendering!
@@ -244,10 +249,23 @@ export default class RendererImpl implements IRenderer {
         if ( this._debug ) {
             this.drawRect( destinationX, destinationY, destinationWidth, destinationHeight, "#FF0000", "stroke" );
         }
+        this.applyReset( prep );
+    }
 
-        if ( savedState ) {
-            this.restore();
+    drawText( text: TextProps, x: number, y: number, props?: DrawProps ): void {
+        // measure bounding box, this also applies the text style
+        const { lines, width, height } = measureLines( text, this._context );
+
+        // render text from the center of the coordinate
+        if ( text.center ) {
+            x -= ( width  * HALF );
+            y -= ( height * HALF );
         }
+        const prep = props ? this.prepare( props, x, y, width, height ) : ResetCommand.NONE;
+
+        renderMultiLineText( this._context, lines, text, x, y );
+   
+        this.applyReset( prep );
     }
 
     createPattern( resourceId: string, repetition: "repeat" | "repeat-x" | "repeat-y" | "no-repeat" ): void {
@@ -272,33 +290,33 @@ export default class RendererImpl implements IRenderer {
 
     /* internal methods */
 
-    private applyDrawContext( drawContext: DrawContext, x: number, y: number, width: number, height: number ): boolean {
-        // TODO clean up
-        const hasScale    = drawContext.scale !== undefined && drawContext.scale !== 1;
-        const hasRotation = drawContext.rotation !== 0;
-        const hasAlpha    = drawContext.alpha !== undefined;
-        const hasBlend    = drawContext.blendMode !== undefined;
+    protected prepare( props: DrawProps, x: number, y: number, width: number, height: number ): ResetCommand {
+        const hasScale    = props.scale !== undefined && props.scale !== 1;
+        const hasRotation = props.rotation !== 0;
+        const hasAlpha    = props.alpha !== undefined;
+        const hasBlend    = props.blendMode !== undefined;
 
-        // TODO rotation
+        const mustSave      = hasAlpha || hasBlend;
+        const mustTransform = hasScale || hasRotation;
 
-        let saveState = hasScale || hasRotation || hasAlpha || hasBlend;
-
-        if ( saveState ) {
-            this.save(); // TODO maybe not for scaled rotations (just reset the transform?)
+        if ( mustSave ) {
+            this.save();
+        } else if ( !mustTransform ) {
+            return ResetCommand.NONE; // nothing to do
         }
 
-        if ( hasScale && !hasRotation ) {
-            this.scale( drawContext.scale );
-        }
+        // TODO : check result of scale without transform
 
-        if ( hasRotation ) {
-            const scale = drawContext.scale ?? 1;
+        if ( mustTransform ) {
+            const scale = props.scale ?? 1;
 
-            const centerX = drawContext.pivot?.x ?? x + width  * HALF;
-            const centerY = drawContext.pivot?.y ?? y + height * HALF;
+            const centerX = props.pivot?.x ?? x + width  * HALF;
+            const centerY = props.pivot?.y ?? y + height * HALF;
 
-            const cos = Math.cos( drawContext.rotation ) * scale;
-            const sin = Math.sin( drawContext.rotation ) * scale;
+            const rotation = props.rotation * DEG_TO_RAD;
+
+            const cos = Math.cos( rotation ) * scale;
+            const sin = Math.sin( rotation ) * scale;
 
             // Apply the combined transformation matrix using setTransform
             this._context.setTransform( cos, sin, -sin, cos,
@@ -308,12 +326,20 @@ export default class RendererImpl implements IRenderer {
         }
 
         if ( hasBlend ) {
-            this.setBlendMode( drawContext.blendMode );
+            this.setBlendMode( props.blendMode );
         }
 
         if ( hasAlpha ) {
-            this.setAlpha( drawContext.alpha );
+            this.setAlpha( props.alpha );
         }
-        return saveState;
+        return mustSave ? ResetCommand.ALL : ResetCommand.TRANSFORM;
+    }
+
+    protected applyReset( cmd: ResetCommand ): void {
+        if ( cmd === ResetCommand.TRANSFORM ) {
+            this._context.resetTransform();
+        } else if ( cmd === ResetCommand.ALL ) {
+            this.restore();
+        }
     }
 }
