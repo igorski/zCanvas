@@ -893,7 +893,7 @@ describe( "Canvas", () => {
             const canvas = new Canvas();
 
             // @ts-expect-error snooping on a protected property
-            const removeSpy = vi.spyOn( canvas, "removeListeners" );
+            const removeSpy = vi.spyOn( canvas._eventHandler, "dispose" );
 
             canvas.dispose();
 

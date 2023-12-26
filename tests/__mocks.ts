@@ -49,5 +49,6 @@ export function createMockRenderer(): IRenderer {
         drawImage: vi.fn(),
         drawImageCropped: vi.fn(),
         drawPattern: vi.fn(),
+        drawText: vi.fn(),
     };
 }
