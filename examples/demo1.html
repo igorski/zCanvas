@@ -9,7 +9,7 @@
     <script type="text/javascript" src="./assets/images.js"></script>
     <script type="text/javascript" src="./assets/utils.js"></script>
     <!-- include RequireJS to resolve dependencies -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.1.14/require.min.js" type="text/javascript"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js" type="text/javascript"></script>
 </head>
 <body>
     <div class="demo-container">
@@ -181,9 +181,9 @@
                         
                         // are we moving horizontally ?
 
-                        if ( this.xSpeed !== 0 ) {
+                        if ( this.xSpeed > this.FRICTION || this.xSpeed < -this.FRICTION ) {
 
-                            targetX += this.xSpeed;
+                            targetX += this.xSpeed * framesSinceLastUpdate;
 
                             // keep in bounds (exiting screen on left/right result in appearing on right/left)
 
@@ -217,24 +217,19 @@
                             // horizontal collision, e.g. touched wall
                             // link to wall by taking the current position plus the
                             // x-index of the collision minus the total width of the sprite
-                            targetX = this.getX() + horizontalCollision.x - this.getWidth();
-                            this.setX( targetX );
-                            // horizontal collision during any kind of y displacement implies
-                            // Hero is jumping/falling against a wall
-                            if ( this.ySpeed !== 0 ) {
-                                this.setX( movingLeft ? prevX + 1 : prevX - 1 );
-                            }
+                            targetX = this.getX() + horizontalCollision.x - thisWidth;
+                            this.setX( prevX );//targetX );
                         }
 
                         this.setY( targetY );
                         if ( verticalCollision = cvs.collision.pixelCollision( this, wallSprite, true )) {
-                            // vertical collision, e.g. touched ground
+                            // vertical collision, e.g. touched ground or bumped head
                             // link to ground by taking the current position plus the
                             // y-index of the collision minus the total height of the sprite
-                            if ( verticalCollision.y === 0 ) {
+                            if ( verticalCollision.y < thisHeight / 2 ) {
                                 this.setY( prevY );
                             } else {
-                                this.setY( this.getY() + verticalCollision.y - this.getHeight());
+                                this.setY( this.getY() + verticalCollision.y - thisHeight );
                             }
                             this.jumping = false;
                         }
@@ -244,17 +239,20 @@
 
                         if ( !this.running ) {
                             if ( this.xSpeed < 0 ) {
-                                this.xSpeed += ( this.FRICTION * framesSinceLastUpdate );
+                                this.xSpeed += this.FRICTION;
                             } else if ( this.xSpeed > 0 ) {
-                                this.xSpeed -= ( this.FRICTION * framesSinceLastUpdate );
+                                this.xSpeed -= this.FRICTION;
                             }
                         }
 
                         // in case the user has stopped holding the jump button down, we
                         // slowly reduce the heros speed so he falls back down
 
-                        if ( this.jumping && !this.falling && --this._jumpCount <= 0 ) {
-                            this.falling = true;
+                        if ( this.jumping && !this.falling ) {
+                            this._jumpCount -= framesSinceLastUpdate;
+                            if ( this._jumpCount <= 0 ) {
+                                this.falling = true;
+                            }
                         }
                     }
                 }
@@ -295,12 +293,12 @@
                 });
                 cvs.addChild( wallSprite );
 
-                // cache the player and level bitmaps to speed up pixel based collision detection
+                // cache the bitmap resources
                 await Promise.all([
                     cvs.getResource( "level" ),
                     cvs.getResource( "spritesheet" ),
                 ]);
-
+                // cache the player and level bitmaps to speed up pixel based collision detection
                 await Promise.all([
                     cvs.collision.cache( "level" ),
                     cvs.collision.cache( "spritesheet" ),
@@ -326,21 +324,21 @@
                 const blockedCodes = [ 32, 38, 40, 37, 39 ]; // keycodes to block default behaviour of
 
                 window.addEventListener( "keydown", e => {
-                    switch ( e.keyCode ) {
+                    switch ( e.key ) {
                         // move up (jump)
-                        case 38:
+                        case " ":
                             hero.jump();
                             break;
 
                         // move hero to the right
-                        case 39:
+                        case "ArrowRight":
                             if ( !hero.running ) {
                                 hero.run( 1 );
                             }
                             break;
 
                         // move hero to the left
-                        case 37:
+                        case "ArrowLeft":
                             if ( !hero.running ) {
                                 hero.run( 0 );
                             }

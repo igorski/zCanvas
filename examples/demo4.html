@@ -9,7 +9,7 @@
     <script type="text/javascript" src="./assets/images.js"></script>
     <script type="text/javascript" src="./assets/utils.js"></script>
     <!-- include RequireJS to resolve dependencies -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.1.14/require.min.js" type="text/javascript"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js" type="text/javascript"></script>
     <!-- include Greensock TweenMax -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/1.19.0/TweenMax.min.js" type="text/javascript"></script>
 </head>
@@ -57,6 +57,7 @@
                 height: cvsHeight,
                 animate: true,
                 fps: 60,
+                smoothing: false,
                 preventEventBubbling: true,
                 parentElement: canvasContainer,
                 onResize: ( width, height ) => {
@@ -70,6 +71,7 @@
 
             Promise.all([
                 cvs.loadResource( "background", IMAGE_BACKGROUND ),
+                cvs.loadResource( "spritesheet", IMAGE_SPRITE_SHEET ),
                 cvs.loadResource( "star", IMAGE_STAR ),
             ]);
 
@@ -212,6 +214,52 @@
                 // add circle sprite to canvas so we can see it
                 cvs.addChild( cs );
             }
+
+            const hero = new Sprite({
+                x: 150,
+                y: 250,
+                width: 38,
+                height: 35,
+                resourceId: "spritesheet",
+                sheet: [
+                    { row: 0, col: 0, fpt: 5, amount: 3 },  // standing still, facing left
+                    { row: 1, col: 0, fpt: 5, amount: 3 },  // standing still, facing right
+                    { row: 2, col: 0, fpt: 3, amount: 10 }, // running, facing left
+                    { row: 3, col: 0, fpt: 3, amount: 10 }  // running facing right
+                ]
+            });
+            cvs.addChild( hero );
+            hero.switchAnimation( 3 );
+
+            const heroTimeline  = new TimelineMax({ repeat: 999 }); // timeline for the star
+            const heroBounds = hero.getBounds();
+            const heroTransform = hero.getDrawProps();
+
+            TweenMax.to(heroBounds, 5, { 
+                    left: "+="+ 400,
+                    onComplete: () => {
+                        hero.switchAnimation(2);
+                        TweenMax.to(
+                    heroBounds, 5, { left: "-=" + 400, delay: 5}
+                );
+                }});
+                TweenMax.to(
+                    heroBounds, 5, { left: "-=" + 400, delay: 5}
+                );
+
+            heroTimeline.to(
+                heroTransform, 3, {
+                    scale: "+=" + 5,
+                    rotation: "+=" + 360,
+                    delay: 1,
+                    ease: Elastic.easeInOut,
+                    onComplete: () => {
+                        heroTransform.rotation = 0;
+                    }
+                }
+            ).to(
+                heroTransform, DURATION, { scale: "-=" + 5, ease: Power4.easeIn }
+            );
         });
 
     </script>
