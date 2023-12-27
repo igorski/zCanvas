@@ -105,7 +105,7 @@ export default class Sprite extends DisplayObject<Sprite> {
         sheet = [],
         sheetTileWidth = 0,
         sheetTileHeight = 0
-    }: SpriteProps = { width: 64, height: 64 } ) {
+    }: SpriteProps = { width: 0, height: 0 } ) {
         super();
 
         /* assertions */
@@ -166,6 +166,23 @@ export default class Sprite extends DisplayObject<Sprite> {
         if ( draggable && !this._interactive ) {
             this.setInteractive( true );
         }
+    }
+
+    /**
+     * whether this Sprite is interactive (should responds to user
+     * interactions such as mouse hover, mouse clicks / touches, etc.)
+     */
+    getInteractive(): boolean {
+        return this._interactive;
+    }
+
+    /**
+     * toggle whether this Sprite can receive user interaction events, when
+     * false this Sprite is omitted from "handleInteraction"-queries
+     * executed when the user interacts with the parent StageCanvas element
+     */
+    setInteractive( value: boolean ): void {
+        this._interactive = value;
     }
 
     getX(): number {
@@ -344,61 +361,13 @@ export default class Sprite extends DisplayObject<Sprite> {
         this.invalidateDrawProps();
     }
 
+    getScale(): number {
+        return this._scale;
+    }
+
     setScale( value: number ): void {
         this._scale = value;
         this.invalidateDrawProps();
-    }
-
-    /**
-     * whether this Sprite is interactive (should responds to user
-     * interactions such as mouse hover, mouse clicks / touches, etc.)
-     */
-    getInteractive(): boolean {
-        return this._interactive;
-    }
-
-    /**
-     * toggle whether this Sprite can receive user interaction events, when
-     * false this Sprite is omitted from "handleInteraction"-queries
-     * executed when the user interacts with the parent StageCanvas element
-     */
-    setInteractive( value: boolean ): void {
-        this._interactive = value;
-    }
-
-    /**
-     * invoked on each render cycle before the draw-method is invoked, you can override this in your subclass
-     * for custom logic / animation such as updating the state of this Object (like position, size, etc.)
-     *
-     * (!) this method will NOT fire if "onUpdate" was provided to the canvas, onUpdate can be used to
-     * centralize all update logic (e.g. for game loops)
-     *
-     * @public
-     * @param {DOMHighResTimeStamp} now the current timestamp relative
-     *                              to the document time origin. Can be used
-     *                              to perform strict timed operations.
-     * @param {number} framesSinceLastUpdate the amount of frames that have elapsed
-     *                 since the last update. This should usually equal 1 but can
-     *                 be higher / lower at canvas frame rates other than the device framerate.
-     *                 This value can be used to calculate appropriate values for timed operations
-     *                 (e.g. animation speed) to compensate for dropped frames
-     */
-    update( now: DOMHighResTimeStamp, framesSinceLastUpdate: number ): void {
-
-        // override in prototype-extensions or instance
-        // recursively update this sprites children :
-
-        let theSprite = this._children[ 0 ];
-        while ( theSprite ) {
-            theSprite.update( now, framesSinceLastUpdate );
-            theSprite = theSprite.next;
-        }
-
-        // if this sprite has a spritesheet, progress its animation
-
-        if ( this._animation ) {
-            this.updateAnimation( framesSinceLastUpdate );
-        }
     }
 
     /**
@@ -407,82 +376,6 @@ export default class Sprite extends DisplayObject<Sprite> {
      */
     isVisible( viewport?: Viewport ): boolean {
         return isInsideArea( this._bounds, viewport ? viewport : this.canvas.bbox );
-    }
-
-    /**
-     * invoked by the canvas whenever it renders a new frame / updates the on-screen contents
-     * this is where the Sprite is responsible for rendering its contents onto the screen
-     * By default, it will render it's Bitmap image/spritesheet at its described coordinates and dimensions,
-     * but you can override this method for your own custom rendering logic (e.g. drawing custom shapes)
-     *
-     * @param {IRenderer} renderer to draw on
-     * @param {Viewport=} viewport optional viewport defining the currently visible canvas area
-     */
-    draw( renderer: IRenderer, viewport?: Viewport ): void {
-
-        // extend in subclass if you're drawing a custom object instead of a image resource
-        // don't forget to draw the child display list when overriding this method!
-
-        const bounds = this._bounds;
-
-        // only render when the Sprite has a valid resource and is within visual bounds
-  
-        const render = !!this._resourceId && this.isVisible( viewport );
-
-        if ( render ) {
-
-            const aniProps = this._animation;
-            let { left, top, width, height } = bounds;
-
-            // note we use a fast rounding operation to prevent fractional values
-
-            if ( !aniProps ) {
-
-                // no spritesheet defined
-
-                if ( viewport ) {
-                    // bounds are defined, draw partial Bitmap
-                    const { src, dest } = calculateDrawRectangle( bounds, viewport );
-                    renderer.drawImageCropped(
-                        this._resourceId,
-                        src.left, src.top, src.width, src.height,
-                        dest.left, dest.top, dest.width, dest.height,
-                        this._drawProps,
-                    );
-                } else {
-                    renderer.drawImage( this._resourceId, left, top, width, height, this._drawProps );
-                }
-            }
-            else {
-
-                // spritesheet defined, draw tile
-
-                const tileWidth  = aniProps.tileWidth  ? aniProps.tileWidth  : ( HALF + width )  << 0;
-                const tileHeight = aniProps.tileHeight ? aniProps.tileHeight : ( HALF + height ) << 0;
-
-                if ( viewport ) {
-                    left -= viewport.left;
-                    top  -= viewport.top;
-                }
-
-                renderer.drawImageCropped(
-                    this._resourceId,
-                    aniProps.col      * tileWidth,  // tile x offset
-                    aniProps.type.row * tileHeight, // tile y offset
-                    tileWidth, tileHeight,
-                    left, top, width, height,
-                    this._drawProps,
-                );
-            }
-        }
-
-        // draw this Sprites children onto the canvas
-
-        let childSprite = this._children[ 0 ];
-        while ( childSprite ) {
-            childSprite.draw( renderer, viewport );
-            childSprite = childSprite.next;
-        }
     }
 
     /**
@@ -699,6 +592,117 @@ export default class Sprite extends DisplayObject<Sprite> {
         child.setCanvas( this.canvas );
         return super.addChild( child );
     }
+
+    /**
+     * invoked on each render cycle before the draw-method is invoked, you can override this in your subclass
+     * for custom logic / animation such as updating the state of this Object (like position, size, etc.)
+     *
+     * (!) this method will NOT fire if "onUpdate" was provided to the canvas, onUpdate can be used to
+     * centralize all update logic (e.g. for game loops)
+     *
+     * @public
+     * @param {DOMHighResTimeStamp} now the current timestamp relative
+     *                              to the document time origin. Can be used
+     *                              to perform strict timed operations.
+     * @param {number} framesSinceLastUpdate the amount of frames that have elapsed
+     *                 since the last update. This should usually equal 1 but can
+     *                 be higher / lower at canvas frame rates other than the device framerate.
+     *                 This value can be used to calculate appropriate values for timed operations
+     *                 (e.g. animation speed) to compensate for dropped frames
+     */
+    update( now: DOMHighResTimeStamp, framesSinceLastUpdate: number ): void {
+
+        // override in prototype-extensions or instance
+        // recursively update this sprites children :
+
+        let theSprite = this._children[ 0 ];
+        while ( theSprite ) {
+            theSprite.update( now, framesSinceLastUpdate );
+            theSprite = theSprite.next;
+        }
+
+        // if this sprite has a spritesheet, progress its animation
+
+        if ( this._animation ) {
+            this.updateAnimation( framesSinceLastUpdate );
+        }
+    }
+
+    /**
+     * invoked by the canvas whenever it renders a new frame / updates the on-screen contents
+     * this is where the Sprite is responsible for rendering its contents onto the screen
+     * By default, it will render it's Bitmap image/spritesheet at its described coordinates and dimensions,
+     * but you can override this method for your own custom rendering logic (e.g. drawing custom shapes)
+     *
+     * @param {IRenderer} renderer to draw on
+     * @param {Viewport=} viewport optional viewport defining the currently visible canvas area
+     */
+    draw( renderer: IRenderer, viewport?: Viewport ): void {
+
+        // extend in subclass if you're drawing a custom object instead of a image resource
+        // don't forget to draw the child display list when overriding this method!
+
+        const bounds = this._bounds;
+
+        // only render when the Sprite has a valid resource and is within visual bounds
+    
+        const render = !!this._resourceId && this.isVisible( viewport );
+
+        if ( render ) {
+
+            const aniProps = this._animation;
+            let { left, top, width, height } = bounds;
+
+            // note we use a fast rounding operation to prevent fractional values
+
+            if ( !aniProps ) {
+
+                // no spritesheet defined
+
+                if ( viewport ) {
+                    // bounds are defined, draw partial Bitmap
+                    const { src, dest } = calculateDrawRectangle( bounds, viewport );
+                    renderer.drawImageCropped(
+                        this._resourceId,
+                        src.left, src.top, src.width, src.height,
+                        dest.left, dest.top, dest.width, dest.height,
+                        this._drawProps,
+                    );
+                } else {
+                    renderer.drawImage( this._resourceId, left, top, width, height, this._drawProps );
+                }
+            }
+            else {
+
+                // spritesheet defined, draw tile
+
+                const tileWidth  = aniProps.tileWidth  ? aniProps.tileWidth  : ( HALF + width )  << 0;
+                const tileHeight = aniProps.tileHeight ? aniProps.tileHeight : ( HALF + height ) << 0;
+
+                if ( viewport ) {
+                    left -= viewport.left;
+                    top  -= viewport.top;
+                }
+
+                renderer.drawImageCropped(
+                    this._resourceId,
+                    aniProps.col      * tileWidth,  // tile x offset
+                    aniProps.type.row * tileHeight, // tile y offset
+                    tileWidth, tileHeight,
+                    left, top, width, height,
+                    this._drawProps,
+                );
+            }
+        }
+
+        // draw this Sprites children onto the canvas
+
+        let childSprite = this._children[ 0 ];
+        while ( childSprite ) {
+            childSprite.draw( renderer, viewport );
+            childSprite = childSprite.next;
+        }
+    }    
 
     /**
      * clean up all resources allocated to this Sprite

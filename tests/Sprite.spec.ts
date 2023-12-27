@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeAll, beforeEach, afterEach, vi } from "vitest";
 import "vitest-canvas-mock";
+import type { SpriteSheet } from "../src/definitions/types";
 import Canvas from "../src/Canvas";
 import Sprite from "../src/Sprite";
 import type { IRenderer } from "../src/rendering/IRenderer";
@@ -23,8 +24,6 @@ describe( "Sprite", () => {
     let y: number;
     let width: number;
     let height: number;
-    let collidable: boolean;
-    let mask: boolean;
 
     // executed before the tests start running
 
@@ -41,61 +40,88 @@ describe( "Sprite", () => {
         y      = Math.round( Math.random() * 100 ) + 1;
         width  = Math.round( Math.random() * 100 ) + 10;
         height = Math.round( Math.random() * 100 ) + 10;
-
-        // random values for optional properties
-        collidable = ( Math.random() > .5 );
-        mask       = ( Math.random() > .5 );
     });
 
     afterEach(() => {
         vi.restoreAllMocks();
     });
 
-    it( "should construct with a single data Object", () => {
-        const interactive = Math.random() > .5;
-        const sprite = new Sprite({
-            x, y, width, height, collidable, mask, interactive, resourceId,
+    describe( "constructor", () => {
+        it( "should not construct without valid dimensions specified", () => {
+            expect(() => {
+                new Sprite();
+            }).toThrow( /cannot construct a Sprite without valid dimensions/ );
+
+            expect(() => {
+                new Sprite({ width: 0, height: 0 });
+            }).toThrow( /cannot construct a Sprite without valid dimensions/ );
+
+            expect(() => {
+                new Sprite({ width: -1, height: -1 });
+            }).toThrow( /cannot construct a Sprite without valid dimensions/ );
+
+            expect(() => {
+                new Sprite({ width: 10, height: 10 });
+            }).not.toThrow();
         });
 
-        expect( sprite.getX() ).toEqual( x );
-        expect( sprite.getY() ).toEqual( y );
-        expect( sprite.getWidth() ).toEqual( width );
-        expect( sprite.getHeight() ).toEqual( height );
-        expect( sprite.getResourceId() ).toEqual( resourceId );
-        expect( sprite.collidable ).toEqual( collidable );
-        expect( sprite.getInteractive() ).toEqual( interactive );
-        expect( sprite._mask ).toEqual( mask );
-    });
+        it( "should construct accepting definitions for coordinates and dimensions", () => {
+            const sprite = new Sprite({ x, y, width, height });
 
-    it( "should not construct without valid dimensions specified", () => {
-        expect(() => {
-            new Sprite({ width: 0, height: 0 });
-        }).toThrow( /cannot construct a Sprite without valid dimensions/ );
+            expect( sprite.getX() ).toEqual( x );
+            expect( sprite.getY() ).toEqual( y );
+            expect( sprite.getWidth() ).toEqual( width );
+            expect( sprite.getHeight() ).toEqual( height );
+        });
 
-        expect(() => {
-            new Sprite({ width: -1, height: -1 });
-        }).toThrow( /cannot construct a Sprite without valid dimensions/ );
+        it( "should have appropriate default values when optional properties are not provided", () => {
+            const sprite = new Sprite({ width, height });
 
-        expect(() => {
-            new Sprite({ width: 10, height: 10 });
-        }).not.toThrow();
-    });
+            expect( sprite.getX() ).toEqual( 0 );
+            expect( sprite.getY() ).toEqual( 0 );
+            expect( sprite.getRotation() ).toEqual( 0 );
+            expect( sprite.getScale() ).toEqual( 1 );
+            expect( sprite.getResourceId() ).toBeUndefined();
+            expect( sprite.collidable ).toBe( false );
+            expect( sprite.getInteractive() ).toBe( false );
+            // @ts-expect-error snooping on protected property
+            expect( sprite._mask ).toBe( false );
+        });
 
-    it( "should not construct with a spritesheet if no resource id was specified", () => {
-        expect(() => {
-            new Sprite({ width, height, sheet: [ {} ] });
-        }).toThrow( /cannot use a spritesheet without a valid resource id/ );
+        it( "should apply the optional properties appropriately", () => {
+            const sprite = new Sprite({
+                width, height,
+                collidable: true,
+                mask: true,
+                interactive: true,
+                resourceId: "foo",
+                rotation: 12,
+            });
 
-        expect(() => {
-            new Sprite({ width, height, resourceId, sheet: [ {} ] });
-        }).not.toThrow();
-    });
+            expect( sprite.getResourceId() ).toEqual( "foo" );
+            expect( sprite.getRotation() ).toEqual( 12 );
+            expect( sprite.collidable ).toBe( true );
+            expect( sprite.getInteractive() ).toBe( true );
+            // @ts-expect-error snooping on protected property
+            expect( sprite._mask ).toBe( true );
+        });
 
-    it( "should by default construct at a 0, 0 coordinate", () => {
-        const sprite = new Sprite({ width, height });
+        it( "should not construct with a spritesheet when no resourceId was provided", () => {
+            expect(() => {
+                new Sprite({ width, height, sheet: [ {} ] });
+            }).toThrow( /cannot use a spritesheet without a valid resource id/ );
 
-        expect( sprite.getX() ).toEqual( 0 );
-        expect( sprite.getY() ).toEqual( 0 );
+            expect(() => {
+                new Sprite({ width, height, resourceId, sheet: [ {} ] });
+            }).not.toThrow();
+        });
+
+        it( "should by default construct at a 0, 0 coordinate", () => {
+            const sprite = new Sprite({ width, height });
+
+            expect( sprite.getX() ).toEqual( 0 );
+            expect( sprite.getY() ).toEqual( 0 );
+        });
     });
 
     it( "should be able to toggle its draggable state", () => {
@@ -104,6 +130,7 @@ describe( "Sprite", () => {
         expect( sprite.getDraggable() ).toBe( false );
 
         sprite.setDraggable( true );
+
         expect( sprite.getDraggable() ).toBe( true );
         expect( sprite.getInteractive() ).toBe( true );
 
@@ -120,8 +147,7 @@ describe( "Sprite", () => {
 
     it( "should be able to toggle its interactive state", () => {
         const sprite = new Sprite({ width, height });
-        expect( sprite.getInteractive() ).toBe( false );
-
+   
         sprite.setInteractive( true );
         expect( sprite.getInteractive() ).toBe( true );
 
@@ -132,8 +158,8 @@ describe( "Sprite", () => {
     it( "should be able to update its coordinates", () => {
         const sprite = new Sprite({ x, y, width, height });
 
-        const newX = Math.round( Math.random() * 100 ) + 10;
-        const newY = Math.round( Math.random() * 100 ) + 10;
+        const newX = x + 10;
+        const newY = y + 15;
 
         sprite.setX( newX );
         sprite.setY( newY );
@@ -145,10 +171,10 @@ describe( "Sprite", () => {
     it( "should be able to update its coordinates and its child coordinates recursively", () => {
         const sprite = new Sprite({ x, y, width, height });
 
-        const child1X = Math.round( Math.random() * 100 ) + 10;
-        const child1Y = Math.round( Math.random() * 100 ) + 10;
-        const child2X = Math.round( Math.random() * 100 ) + 10;
-        const child2Y = Math.round( Math.random() * 100 ) + 10;
+        const child1X = x + 10;
+        const child1Y = y + 15;
+        const child2X = x + 20;
+        const child2Y = y + 30;
 
         const child1  = new Sprite({
             x: child1X,
@@ -185,6 +211,30 @@ describe( "Sprite", () => {
         expect( child2.getY() ).toEqual( expectedChild2Y );
     });
 
+    it( "should be able to update its width", () => {
+        const sprite = new Sprite({ x, y, width, height, resourceId });
+        let newWidth = width;
+
+        while ( width === newWidth ) {
+            newWidth = Math.round( Math.random() * 1000 );
+        }
+        sprite.setWidth( newWidth );
+
+        expect( sprite.getWidth() ).toEqual( newWidth );
+    });
+
+    it( "should be able to update its height", () => {
+        const sprite = new Sprite({ x, y, width, height, resourceId });
+        let newHeight = height;
+
+        while ( height === newHeight ) {
+            newHeight = Math.round( Math.random() * 1000 );
+        }
+        sprite.setHeight( newHeight );
+
+        expect( sprite.getHeight() ).toEqual( newHeight );
+    });
+
     it( "should have a bounds rectangle describing its offset and dimensions", () => {
         const sprite = new Sprite({ x, y, width, height });
         const bounds = sprite.getBounds();
@@ -195,31 +245,220 @@ describe( "Sprite", () => {
         expect( bounds.height ).toEqual( height );
     });
 
-    it( "should invoke the update() method on its children recursively", () => {
-        const expectedUpdates = 3;
-        let updated = 0;
-
-        // hijack update Function
-
-        const orgUpdateFn = Sprite.prototype.update;
-        vi.spyOn( Sprite.prototype, "update" ).mockImplementation( function() {
-            ++updated;
-            orgUpdateFn.call( this );
+    describe( "when managing its rotation", () => {
+        it( "should be able to get and set its rotation", () => {
+            const sprite = new Sprite({ width, height });
+    
+            sprite.setRotation( 12 );
+    
+            expect( sprite.getRotation() ).toEqual( 12 );
         });
-        const sprite = new Sprite({ width, height });
-        const child1 = new Sprite({ width, height });
-        const child2 = new Sprite({ width, height });
 
-        sprite.addChild( child1 );
-        child1.addChild( child2 );
+        it( "should invalidate the cached DrawProps", () => {
+            const sprite = new Sprite({ width, height });
 
-        // update
+            // @ts-expect-error snooping on protected property
+            const invalidateSpy = vi.spyOn( sprite, "invalidateDrawProps" );
 
-        sprite.update( 0, 1 );
+            sprite.setRotation( 12 );
 
-        // evaluate
+            expect( invalidateSpy ).toHaveBeenCalled();
+        });
 
-        expect( updated ).toEqual( expectedUpdates );
+        it( "should set the provided value and onto the draw props", () => {
+            const sprite = new Sprite({ width, height });
+
+            sprite.setRotation( 12 );
+
+            expect( sprite.getDrawProps().rotation ).toEqual( 12 );
+            expect( sprite.getDrawProps().pivot ).toBeUndefined();
+        });
+
+        it( "should set the provided value and optional pivot point onto the draw props", () => {
+            const sprite = new Sprite({ width, height });
+
+            sprite.setRotation( 12, { x: 7, y: 8 });
+
+            expect( sprite.getDrawProps().rotation ).toEqual( 12 );
+            expect( sprite.getDrawProps().pivot ).toEqual({ x: 7, y: 8 });
+        });
+    });
+
+    describe( "when managing its scale", () => {
+        it( "should be able to get and set its scale", () => {
+            const sprite = new Sprite({ width, height });
+    
+            sprite.setScale( 7 );
+    
+            expect( sprite.getScale() ).toEqual( 7 );
+        });
+
+        it( "should invalidate the cached DrawProps", () => {
+            const sprite = new Sprite({ width, height });
+
+            // @ts-expect-error snooping on protected property
+            const invalidateSpy = vi.spyOn( sprite, "invalidateDrawProps" );
+
+            sprite.setScale( 7 );
+
+            expect( invalidateSpy ).toHaveBeenCalled();
+        });
+
+        it( "should set the provided value and onto the draw props", () => {
+            const sprite = new Sprite({ width, height });
+
+            sprite.setScale( 7 );
+
+            expect( sprite.getDrawProps().scale ).toEqual( 7 );
+        });
+    });
+
+    describe( "when managing its DrawProps for transformations and blending effects", () => {
+        it( "should by default not have a DrawProps instance", () => {
+            const sprite = new Sprite({ width, height });
+
+            // @ts-expect-error snooping on protected property
+            expect( sprite._drawProps ).toBeUndefined();
+        });
+
+        it( "should have a DrawProps instance when a transformation was provided to the constructor", () => {
+            const sprite = new Sprite({ width, height, rotation: 12 });
+
+            // @ts-expect-error snooping on protected property
+            expect( sprite._drawProps ).toBeDefined();
+        });
+
+        it( "should lazily create a DrawProps instance when using the getter", () => {
+            const sprite = new Sprite({ width, height });
+
+            expect( sprite.getDrawProps() ).toBeDefined();
+
+            // @ts-expect-error snooping on protected property
+            expect( sprite.getDrawProps() ).toEqual( sprite._drawProps );
+        });
+
+        describe( "and invalidating the DrawProps instance", () => {
+            it( "should not do anything when there are no transformations specified for the Sprite", () => {
+                const sprite = new Sprite({ width, height });
+
+                // @ts-expect-error snooping on protected property
+                sprite.invalidateDrawProps();
+
+                // @ts-expect-error snooping on protected property
+                expect( sprite._drawProps ).toBeUndefined();
+            });
+
+            it( "should create a DrawProps instance when the optional force flag was provided", () => {
+                const sprite = new Sprite({ width, height });
+
+                // @ts-expect-error snooping on protected property
+                sprite.invalidateDrawProps( true );
+
+                // @ts-expect-error snooping on protected property
+                expect( sprite._drawProps ).toEqual({
+                    alpha: 1,
+                    rotation: 0,
+                    pivot: undefined,
+                    blendMode: undefined,
+                    scale: 1,
+                    safeMode: false
+                });
+            });
+
+            it( "should create a DrawProps instance when rotation is specified for the Sprite", () => {
+                const sprite = new Sprite({ width, height });
+
+                sprite.setRotation( 12 );
+
+                // @ts-expect-error snooping on protected property
+                expect( sprite._drawProps ).toEqual({
+                    alpha: 1,
+                    rotation: 12,
+                    pivot: undefined,
+                    blendMode: undefined,
+                    scale: 1,
+                    safeMode: false
+                });
+            });
+
+            it( "should create a DrawProps instance when rotation is specified along with a Pivot point for the Sprite", () => {
+                const sprite = new Sprite({ width, height });
+
+                sprite.setRotation( 12, { x: 10, y: 15 });
+
+                // @ts-expect-error snooping on protected property
+                expect( sprite._drawProps ).toEqual({
+                    alpha: 1,
+                    rotation: 12,
+                    pivot: { x: 10, y: 15 },
+                    blendMode: undefined,
+                    scale: 1,
+                    safeMode: false
+                });
+            });
+
+            it( "should create a DrawProps instance when scale is specified for the Sprite", () => {
+                const sprite = new Sprite({ width, height });
+
+                sprite.setScale( 5 );
+
+                // @ts-expect-error snooping on protected property
+                expect( sprite._drawProps ).toEqual({
+                    alpha: 1,
+                    rotation: 0,
+                    pivot: undefined,
+                    blendMode: undefined,
+                    scale: 5,
+                    safeMode: false
+                });
+            });
+
+            it( "should create a DrawProps instance when a mask is specified for the Sprite", () => {
+                const sprite = new Sprite({ width, height, mask: true });
+
+                // @ts-expect-error snooping on protected property
+                expect( sprite._drawProps ).toEqual({
+                    alpha: 1,
+                    rotation: 0,
+                    pivot: undefined,
+                    blendMode: "destination-in",
+                    scale: 1,
+                    safeMode: false
+                });
+            });
+        });
+    });
+
+    describe( "when determining its visibility", () => {
+        it( "should check against the provided Viewport", () => {
+            const canvas = new Canvas({ viewport: { width, height }});
+            const sprite = new Sprite({ width, height });
+
+            mockMathFn.mockImplementation( fn => {
+                if ( fn === "isInsideArea" ) {
+                    return true;
+                }
+            });
+            canvas.addChild( sprite );
+            
+            expect( sprite.isVisible( canvas.getViewport() )).toBe( true );
+            expect( mockMathFn ).toHaveBeenCalledWith( "isInsideArea", sprite.getBounds(), canvas.getViewport() );
+        });
+
+        it( "should fall back to checking the Canvas' bounding box when no Viewport was provided", () => {
+            const canvas = new Canvas();
+            const sprite = new Sprite({ width, height });
+
+            mockMathFn.mockImplementation( fn => {
+                if ( fn === "isInsideArea" ) {
+                    return true;
+                }
+            });
+            canvas.addChild( sprite );
+
+            expect( sprite.isVisible()).toBe( true );
+            expect( mockMathFn ).toHaveBeenCalledWith( "isInsideArea", sprite.getBounds(), canvas.bbox );
+        });
     });
 
     it( "should be able to determine whether a coordinate is inside the sprites bounding box", () => {
@@ -300,6 +539,40 @@ describe( "Sprite", () => {
         expect( sprite.collidesWithEdge( sprite2, 3 )).toBe( true );
     });
 
+    describe( "when managing its resourceId", () => {
+        it( "should be able to update its resource", () => {
+            const sprite = new Sprite({ x, y, width, height });
+
+            sprite.setResource( resourceId );
+
+            expect( sprite.getResourceId() ).toEqual( resourceId );
+
+            sprite.setResource( null );
+            expect( sprite.getResourceId() ).toBeNull();
+        });
+
+        it( "should by default keep its current size when updating resources", () => {
+            const sprite = new Sprite({ x, y, width, height });
+
+            sprite.setResource( resourceId );
+
+            expect( sprite.getWidth() ).toEqual( width );
+            expect( sprite.getHeight() ).toEqual( height );
+        });
+
+        it( "should be able to update its resource and size", () => {
+            const sprite = new Sprite({ x, y, width, height });
+            const newResourceId = "bar";
+
+            const newWidth = 10, newHeight = 10;
+
+            sprite.setResource( newResourceId, newWidth, newHeight );
+
+            expect( sprite.getWidth() ).toEqual( newWidth );
+            expect( sprite.getHeight() ).toEqual( newHeight );
+        });
+    });
+
     it( "should be able to set a parent Sprite", () => {
         const sprite = new Sprite({ x, y, width, height });
         const child = new Sprite({ x, y, width, height });
@@ -313,7 +586,7 @@ describe( "Sprite", () => {
         expect( child.getParent() ).toBeUndefined();
     });
 
-    it( "should be able to set the Canvas onto itself and inner children", () => {
+    it( "should be able to set the Canvas onto itself and children", () => {
         const sprite = new Sprite({ x, y, width, height });
         const child = new Sprite({ x, y, width, height });
 
@@ -378,98 +651,7 @@ describe( "Sprite", () => {
         expect( child.canvas ).toEqual( canvas );
     });
 
-    it( "should be able to update its resource", () => {
-        const sprite = new Sprite({ x, y, width, height });
-
-        sprite.setResource( resourceId );
-
-        expect( sprite.getResourceId() ).toEqual( resourceId );
-
-        sprite.setResource( null );
-        expect( sprite.getResourceId() ).toBeNull();
-    });
-
-    it( "should by default keep its current size when updating resources", () => {
-        const sprite = new Sprite({ x, y, width, height });
-
-        sprite.setResource( resourceId );
-
-        expect( sprite.getWidth() ).toEqual( width );
-        expect( sprite.getHeight() ).toEqual( height );
-    });
-
-    it( "should be able to update its resource and size", () => {
-        const sprite = new Sprite({ x, y, width, height });
-        const newResourceId = "bar";
-
-        const newWidth = 10, newHeight = 10;
-
-        sprite.setResource( newResourceId, newWidth, newHeight );
-
-        expect( sprite.getWidth() ).toEqual( newWidth );
-        expect( sprite.getHeight() ).toEqual( newHeight );
-    });
-
-    it( "should be able to update its width", () => {
-        const sprite = new Sprite({ x, y, width, height, resourceId });
-        let newWidth = width;
-
-        while ( width === newWidth ) {
-            newWidth = Math.round( Math.random() * 1000 );
-        }
-        sprite.setWidth( newWidth );
-
-        expect( sprite.getWidth() ).toEqual( newWidth );
-    });
-
-    it( "should be able to update its height", () => {
-        const sprite = new Sprite({ x, y, width, height, resourceId });
-        let newHeight = height;
-
-        while ( height === newHeight ) {
-            newHeight = Math.round( Math.random() * 1000 );
-        }
-        sprite.setHeight( newHeight );
-
-        expect( sprite.getHeight() ).toEqual( newHeight );
-    });
-
-    it( "should render its Bitmap in tiles when a spritesheet is defined", () => {
-        const sheet = [
-            { row: 0, col: 0, amount: 5, fpt: 5 }
-        ];
-        const sprite = new Sprite({ width, height, sheet, resourceId });
-        const aniProps = sprite._animation;
-        const animation = sheet[ 0 ];
-
-        expect( aniProps.col ).toEqual( animation.col );
-        expect( aniProps.maxCol ).toEqual( animation.col + ( animation.amount - 1 ));
-        expect( aniProps.fpt ).toEqual( animation.fpt );
-        expect( aniProps.counter ).toEqual( 0 );
-
-        for ( let i = 0; i < animation.fpt; ++i ) {
-            sprite.update( Date.now() + i );
-
-            if ( i < animation.fpt - 1 ) {
-                 expect( aniProps.counter ).toEqual( i + 1 );
-            } else {
-                // expected counter to have reset after having met the max frames per tile
-                expect( aniProps.counter ).toEqual( 0 );
-            }
-        }
-        // expected column to have advanced after having met the max frames per tile
-        expect( aniProps.col ).toEqual( 1 );
-
-        aniProps.col = sheet.amount - 1;
-        aniProps.counter = sheet.fpt - 1;
-
-        sprite.update( Date.now() );
-
-        // expected column to have jumped back to the first index after having played all tile frames
-        //expect( aniProps.col ).toEqual( animation.col );
-    });
-
-    it( "should accept alternate dimensions for the spritesheet tiles", () => {
+    it( "should accept alternative dimensions for the spritesheet tiles", () => {
         const sheet = [
             { row: 0, col: 0, amount: 5, fpt: 5 }
         ];
@@ -479,59 +661,174 @@ describe( "Sprite", () => {
             width, height, sheet, resourceId,
             sheetTileWidth: tileWidth, sheetTileHeight: tileHeight
         });
-        expect( sprite._animation.tileWidth ).toEqual( tileWidth );
-        expect( sprite._animation.tileHeight ).toEqual( tileHeight );
+        // @ts-expect-error snooping on protected property
+        const animation = sprite._animation!;
+
+        expect( animation.tileWidth ).toEqual( tileWidth );
+        expect( animation.tileHeight ).toEqual( tileHeight );
     });
 
-    it( "should fire an animation callback if a sheet animation has completed", (): Promise<void> => {
-        return new Promise( resolve => {
-            const sheet = [
-                { row: 0, col: 0, amount: 5, fpt: 5, onComplete: spriteRef => {
-                    // expected animation complete handler to have returned reference to its calling Sprite
-                    expect( spriteRef ).toEqual( sprite );
-                    resolve();
-                }}
-            ];
-            const sprite = new Sprite({ width, height, sheet, resourceId });
-            const animation = sheet[ 0 ];
+    describe( "when updating the Sprite prior to rendering", () => {
+        it( "should invoke the update() method on its children recursively", () => {
+            const sprite = new Sprite({ width, height });
+            const child1 = new Sprite({ width, height });
+            const child2 = new Sprite({ width, height });
 
-            for ( let i = 0; i < animation.amount; ++i ) {
-                for ( let j = 0; j < animation.fpt; ++j ) {
-                    sprite.update( Date.now() + i + j, 1 );
+            sprite.addChild( child1 );
+            child1.addChild( child2 );
+
+            const child1updateSpy = vi.spyOn( child1, "update" );
+            const child2updateSpy = vi.spyOn( child2, "update" );
+
+            // update
+
+            const now = window.performance.now();
+            const elapsedFrames = 1.5;
+
+            sprite.update( now, elapsedFrames );
+
+            // evaluate
+
+            expect( child1updateSpy ).toHaveBeenCalledWith( now, elapsedFrames );
+            expect( child2updateSpy ).toHaveBeenCalledWith( now, elapsedFrames );
+        });
+
+        describe( "and the Sprite has a spritesheet animation", () => {
+            it( "should render its Bitmap in tiles", () => {
+                const sheet = [
+                    { row: 0, col: 0, amount: 5, fpt: 5 }
+                ] as SpriteSheet[];
+                const sprite = new Sprite({ width, height, sheet, resourceId });
+        
+                // @ts-expect-error snooping on protected property
+                const aniProps = sprite._animation!;
+                const animation = sheet[ 0 ];
+        
+                expect( aniProps.col ).toEqual( animation.col );
+                expect( aniProps.maxCol ).toEqual( animation.col + ( animation.amount - 1 ));
+                expect( aniProps.fpt ).toEqual( animation.fpt );
+                expect( aniProps.counter ).toEqual( 0 );
+        
+                for ( let i = 0; i < animation.fpt; ++i ) {
+                    sprite.update( window.performance.now() + i, 1 );
+        
+                    if ( i < animation.fpt - 1 ) {
+                         expect( aniProps.counter ).toEqual( i + 1 );
+                    } else {
+                        // expected counter to have reset after having met the max frames per tile
+                        expect( aniProps.counter ).toEqual( 0 );
+                    }
                 }
-            }
+                // expected column to have advanced after having met the max frames per tile
+                expect( aniProps.col ).toEqual( 1 );
+        
+                aniProps.col     = animation.amount - 1;
+                aniProps.counter = animation.fpt - 1;
+        
+                sprite.update( window.performance.now(), 1 );
+        
+                // expected column to have jumped back to the first index after having played all tile frames
+                expect( aniProps.col ).toEqual( animation.col );
+            });
+        
+            it( "should fire an animation callback when a sheet animation has completed", (): Promise<void> => {
+                return new Promise( resolve => {
+                    const sheet = [
+                        { row: 0, col: 0, amount: 5, fpt: 5, onComplete: spriteRef => {
+                            // expected animation complete handler to have returned reference to its calling Sprite
+                            expect( spriteRef ).toEqual( sprite );
+                            resolve();
+                        }}
+                    ];
+                    const sprite = new Sprite({ width, height, sheet, resourceId });
+                    const animation = sheet[ 0 ];
+        
+                    for ( let i = 0; i < animation.amount; ++i ) {
+                        for ( let j = 0; j < animation.fpt; ++j ) {
+                            sprite.update( window.performance.now() + i + j, 1 );
+                        }
+                    }
+                });
+            });
+
+            it( "should advance the animation by the elapsed frames", () => {
+                const sheet = [
+                    { row: 0, col: 0, amount: 5, fpt: 5 }
+                ];
+                const sprite = new Sprite({ width, height, sheet, resourceId })
+
+                // @ts-expect-errors nooping on protected property
+                const updateAnimationSpy = vi.spyOn( sprite, "updateAnimation" );
+
+                sprite.update( window.performance.now(), 1.65 );
+
+                expect( updateAnimationSpy ).toHaveBeenCalledWith( 1.65 );
+            });
         });
     });
 
-    describe( "when determining its visibility", () => {
-        it( "should check against the provided Viewport", () => {
-            const canvas = new Canvas({ viewport: { width, height }});
-            const sprite = new Sprite({ width, height });
+    describe( "when rendering its contents", () => {
+        const viewport = { left: 10, top: 10, width: 100, height: 50, right: 110, bottom: 60 };
+        
+        let mockRenderer: IRenderer;
+        let sprite: Sprite;
 
-            mockMathFn.mockImplementation( fn => {
-                if ( fn === "isInsideArea" ) {
-                    return true;
-                }
-            });
+        beforeEach(() => {
+            mockRenderer = createMockRenderer();
+            sprite = new Sprite({ x: 5, y: 5, width: 50, height: 50, resourceId });
             canvas.addChild( sprite );
+        });
+
+        it ( "should not draw when it has no resource associated with it", () => {
+            sprite.setResource( null );
+            sprite.draw( mockRenderer, viewport );
+            expect( mockRenderer.drawImage ).not.toHaveBeenCalled();
+        });
+
+        it( "should draw when it has a resource", () => {
+            vi.spyOn( sprite, "isVisible" ).mockImplementation(() => true );
+            sprite.draw( mockRenderer );
             
-            expect( sprite.isVisible( canvas.getViewport() )).toBe( true );
-            expect( mockMathFn ).toHaveBeenCalledWith( "isInsideArea", sprite.getBounds(), canvas.getViewport() );
+            expect( mockRenderer.drawImage ).toHaveBeenCalledWith(
+                resourceId,
+                expect.any( Number ), expect.any( Number ), expect.any( Number ), expect.any( Number ), undefined
+            );
         });
 
-        it( "should fall back to checking the Canvas' bounding box when no Viewport was provided", () => {
-            const canvas = new Canvas();
-            const sprite = new Sprite({ width, height });
+        describe( "and a viewport is provided", () => {
+            it( "should perform a boundary check and not draw when the Sprite is outside of visible bounds", () => {
+                const visibleSpy = vi.spyOn( sprite, "isVisible" ).mockImplementation(() => false );
 
-            mockMathFn.mockImplementation( fn => {
-                if ( fn === "isInsideArea" ) {
-                    return true;
-                }
+                sprite.draw( mockRenderer, viewport );
+
+                expect( visibleSpy ).toHaveBeenCalledWith( viewport );
+                expect( mockRenderer.drawImage ).not.toHaveBeenCalled();
             });
-            canvas.addChild( sprite );
 
-            expect( sprite.isVisible()).toBe( true );
-            expect( mockMathFn ).toHaveBeenCalledWith( "isInsideArea", sprite.getBounds(), canvas.bbox );
+            it( "should perform a boundary check and draw when the Sprite is inside visible bounds", () => {
+                mockMathFn.mockImplementation( fn => {
+                    if ( fn === "calculateDrawRectangle" ) {
+                        return {
+                            src : { left: 1, top: 2, width: 3, height: 4 },
+                            dest: { left: 5, top: 6, width: 7, height: 8 }
+                        };
+                    }
+                });
+
+                const visibleSpy = vi.spyOn( sprite, "isVisible" ).mockImplementation(() => true );
+
+                sprite.draw( mockRenderer, viewport );
+
+                expect( visibleSpy ).toHaveBeenCalledWith( viewport );
+                expect( mockMathFn ).toHaveBeenCalledWith( "calculateDrawRectangle", sprite.getBounds(), viewport );
+                expect( mockRenderer.drawImageCropped ).toHaveBeenCalledWith(
+                    sprite.getResourceId(),
+                    expect.any( Number ), expect.any( Number ), expect.any( Number ), expect.any( Number ),
+                    expect.any( Number ), expect.any( Number ), expect.any( Number ), expect.any( Number ),
+                    // @ts-expect-error snooping on protected property
+                    sprite._drawContext,
+                );
+            });
         });
     });
 
@@ -588,15 +885,19 @@ describe( "Sprite", () => {
 
                 it( "should call its handlePress handler", () => {
                     const sprite = new Sprite({ x: 5, y: 5, width: 10, height: 10, interactive: true });
-                    vi.spyOn( sprite, "handlePress" );
+                    
+                    // @ts-expect-error snooping on protected property
+                    const pressSpy = vi.spyOn( sprite, "handlePress" );
                     const handled = sprite.handleInteraction( mockEvent.offsetX, mockEvent.offsetY, mockEvent );
-                    expect( sprite.handlePress ).toHaveBeenCalledWith( mockEvent.offsetX, mockEvent.offsetY, mockEvent );
+
+                    expect( pressSpy ).toHaveBeenCalledWith( mockEvent.offsetX, mockEvent.offsetY, mockEvent );
                     expect( handled ).toBe( true );
                 });
 
                 it( "should not allow dragging for non draggable sprites", () => {
                     const sprite = new Sprite({ x: 5, y: 5, width: 10, height: 10, interactive: true });
                     const handled = sprite.handleInteraction( mockEvent.offsetX, mockEvent.offsetY, mockEvent );
+                   
                     expect( sprite.isDragging ).toBe( false );
                     expect( handled ).toBe( true );
                 });
@@ -605,6 +906,7 @@ describe( "Sprite", () => {
                     const sprite = new Sprite({ x: 5, y: 5, width: 10, height: 10, interactive: true });
                     sprite.setDraggable( true );
                     const handled = sprite.handleInteraction( mockEvent.offsetX, mockEvent.offsetY, mockEvent );
+                    
                     expect( sprite.isDragging ).toBe( true );
                     expect( handled ).toBe( true );
                 });
@@ -617,22 +919,31 @@ describe( "Sprite", () => {
 
                 it( "should not do anything for a non draggable sprite", () => {
                     const sprite = new Sprite({ x: 5, y: 5, width: 10, height: 10, interactive: true });
-                    vi.spyOn( sprite, "handleMove" );
+                    // @ts-expect-error snooping on protected property
+                    const moveSpy = vi.spyOn( sprite, "handleMove" );
+
                     sprite.handleInteraction( mockEvent.offsetX, mockEvent.offsetY, mockEvent );
-                    expect( sprite.handleMove ).not.toHaveBeenCalled();
+                    expect( moveSpy ).not.toHaveBeenCalled();
                 });
 
                 it( "should call the move handler for a draggable sprite that is being dragged", () => {
                     const canvas = new Canvas({ width: 10, height: 10 });
                     const sprite = new Sprite({ x: 5, y: 5, width: 10, height: 10, interactive: true });
                     canvas.addChild( sprite );
-                    vi.spyOn( sprite, "handleMove" );
+
+                    // @ts-expect-error snooping on protected property
+                    const moveSpy = vi.spyOn( sprite, "handleMove" );
+
                     sprite.setDraggable( true );
                     sprite.isDragging = true;
+
+                    // @ts-expect-error snooping on protected property
                     sprite._dragStartOffset = { x: sprite.getX(), y: sprite.getY() };
+                    // @ts-expect-error snooping on protected property
                     sprite._dragStartEventCoordinates = { x: mockEvent.offsetX, y: mockEvent.offsetY };
                     const handled = sprite.handleInteraction( mockEvent.offsetX, mockEvent.offsetY, mockEvent );
-                    expect( sprite.handleMove ).toHaveBeenCalledWith( mockEvent.offsetX, mockEvent.offsetY, mockEvent );
+                    
+                    expect( moveSpy ).toHaveBeenCalledWith( mockEvent.offsetX, mockEvent.offsetY, mockEvent );
                     expect( handled ).toBe( true );
                 });
             });
@@ -685,71 +996,6 @@ describe( "Sprite", () => {
                     expect( sprite.isDragging ).toBe( false );
                     expect( handled ).toBe( true );
                 });
-            });
-        });
-    });
-
-    describe( "when rendering its contents", () => {
-        const viewport = { left: 10, top: 10, width: 100, height: 50, right: 110, bottom: 60 };
-        
-        let mockRenderer: IRenderer;
-        let sprite: Sprite;
-
-        beforeEach(() => {
-            mockRenderer = createMockRenderer();
-            sprite = new Sprite({ x: 5, y: 5, width: 50, height: 50, resourceId });
-            canvas.addChild( sprite );
-        });
-
-        it ( "should not draw when it has no resource associated with it", () => {
-            sprite.setResource( null );
-            sprite.draw( mockRenderer, viewport );
-            expect( mockRenderer.drawImage ).not.toHaveBeenCalled();
-        });
-
-        it( "should draw when it has a resource", () => {
-            sprite.draw( mockRenderer );
-            vi.spyOn( sprite, "isVisible" ).mockImplementation(() => true );
-
-            expect( mockRenderer.drawImage ).toHaveBeenCalledWith(
-                resourceId,
-                expect.any( Number ), expect.any( Number ), expect.any( Number ), expect.any( Number )
-            );
-        });
-
-        describe( "and a viewport is passed", () => {
-            it( "should perform a boundary check and not draw when the Sprite is outside of visible bounds", () => {
-                const visibleSpy = vi.spyOn( sprite, "isVisible" ).mockImplementation(() => false );
-
-                sprite.draw( mockRenderer, viewport );
-
-                expect( visibleSpy ).toHaveBeenCalledWith( viewport );
-                expect( mockRenderer.drawImage ).not.toHaveBeenCalled();
-            });
-
-            it( "should perform a boundary check and draw when the Sprite is inside visible bounds", () => {
-                mockMathFn.mockImplementation( fn => {
-                    if ( fn === "calculateDrawRectangle" ) {
-                        return {
-                            src: { left: 1, top: 2, width: 3, height: 4 },
-                            dest: { let: 5, top: 6, width: 7, height: 8 }
-                        };
-                    }
-                });
-
-                const visibleSpy = vi.spyOn( sprite, "isVisible" ).mockImplementation(() => true );
-
-                sprite.draw( mockRenderer, viewport );
-
-                expect( visibleSpy ).toHaveBeenCalledWith( viewport );
-                expect( mockMathFn ).toHaveBeenCalledWith( "calculateDrawRectangle", sprite.getBounds(), viewport );
-                expect( mockRenderer.drawImageCropped ).toHaveBeenCalledWith(
-                    sprite.getResourceId(),
-                    expect.any( Number ), expect.any( Number ), expect.any( Number ), expect.any( Number ),
-                    expect.any( Number ), expect.any( Number ), expect.any( Number ), expect.any( Number ),
-                    // @ts-expect-error snooping on protected property
-                    sprite._drawContext,
-                );
             });
         });
     });
