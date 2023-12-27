@@ -21,7 +21,7 @@
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 import type Sprite from "../Sprite";
-export type { IRenderer, DrawProps } from "../rendering/IRenderer";
+export type { IRenderer, ColorOrTransparent, DrawProps, StrokeProps, TextProps } from "../rendering/IRenderer";
 
 export type Size = {
     width: number;

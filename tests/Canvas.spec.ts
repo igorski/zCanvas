@@ -680,7 +680,7 @@ describe( "Canvas", () => {
                     expect( timestamp ).toEqual( now + ( 1000 / 60 ));
                     // as the environment manages less fps than the configured value, we
                     // should progress the update() by more frames
-                    expect( Math.round( framesSinceLastRender )).toEqual( 2 );
+                    expect( Math.ceil( framesSinceLastRender )).toEqual( 2 );
     
                     resolve();
                 }});

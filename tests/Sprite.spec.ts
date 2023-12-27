@@ -313,6 +313,17 @@ describe( "Sprite", () => {
         });
     });
 
+    it( "should call the invalidate() handler of the parent Canvas when invalidate() is called", () => {
+        const sprite = new Sprite({ width, height });
+        canvas.addChild( sprite );
+
+        const invalidateSpy = vi.spyOn( canvas, "invalidate" );
+
+        sprite.invalidate();
+
+        expect( invalidateSpy ).toHaveBeenCalled();
+    });
+
     describe( "when managing its DrawProps for transformations and blending effects", () => {
         it( "should by default not have a DrawProps instance", () => {
             const sprite = new Sprite({ width, height });

@@ -885,7 +885,15 @@ export default class Sprite extends DisplayObject<Sprite> {
     protected invalidateDrawProps( force = false ): void {
         if ( force ||
             ( this._rotation !== 0 || this._mask || this._scale !== 1 )) {
-            this._drawProps = this._drawProps ?? { alpha: 1, safeMode: false }; // pool Object instance
+
+            // pool Object instance
+            
+            this._drawProps = this._drawProps ?? {
+                alpha: 1,
+                rotation: 0,
+                scale: 1,
+                safeMode: false
+            };
             const props = this._drawProps;
             
             props.rotation  = this._rotation;

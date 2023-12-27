@@ -20,18 +20,21 @@
  * IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-import type { IRenderer, DrawProps, TextProps } from "./IRenderer";
+import type { IRenderer, DrawProps, StrokeProps, TextProps } from "./IRenderer";
+import type { Point } from "../definitions/types";
 import { renderMultiLineText, measureLines } from "./components/TextRenderer";
 import Cache from "../utils/Cache";
 
-enum ResetCommand {
+export enum ResetCommand {
     NONE = 0,
     ALL,
     TRANSFORM
 };
 
+const TRANSPARENT = "transparent";
 const DEG_TO_RAD = Math.PI / 180;
 const HALF = 0.5;
+
 let ctx: CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D;
 
 export default class RendererImpl implements IRenderer {
@@ -122,55 +125,89 @@ export default class RendererImpl implements IRenderer {
         this._context.globalAlpha = value;
     }
 
-    clearRect( x: number, y: number, width: number, height: number ): void {
-        this._context.clearRect( x, y, width, height );
-    }
-
-    drawRect( x: number, y: number, width: number, height: number, color: string, fillType = "fill" ): void {
-        ctx = this._context;
-
-        if ( fillType === "fill" ) {
-            ctx.fillStyle = color;
-            ctx.fillRect( x, y, width, height );
-        } else {
-            const lineWidth = 1;
-            ctx.lineWidth   = lineWidth;
-            ctx.strokeStyle = color;
-            ctx.strokeRect( HALF + ( x - lineWidth ), HALF + ( y - lineWidth ), width, height );
+    drawPath( points: Point[], color = TRANSPARENT, stroke?: StrokeProps ): void {
+        ctx.beginPath();
+        ctx.moveTo( points[ 0 ].x, points[ 0 ].y );
+            
+        for ( const point of points ) {
+            ctx.lineTo( point.x, point.y );
         }
-    }
-
-    drawRoundRect( x: number, y: number, width: number, height: number, radius: number, color: string, fillType?: "fill" | "stroke" ): void {
-        ctx = this._context;
-
-        if ( fillType === "fill" ) {
-            ctx.fillStyle = color;
-            ctx.fillRect( x, y, width, height );
-        } else {
-            ctx.strokeStyle = color;
-            ctx.beginPath();
-            ctx.roundRect( x, y, width, height, radius );
+        if ( color !== TRANSPARENT ) {
+            ctx.fill();
+        }
+        if ( stroke ) {
+            ctx.lineWidth   = stroke.size;
+            ctx.strokeStyle = stroke.color;
             ctx.stroke();
         }
+        ctx.closePath();
     }
 
-    drawCircle( x: number, y: number, radius: number, fillColor = "transparent", strokeColor?: string ): void {
+    clearRect( x: number, y: number, width: number, height: number, props?: DrawProps ): void {
+        const prep = props ? this.prepare( props, x, y, width, height ) : ResetCommand.NONE;
+
+        this._context.clearRect( x, y, width, height );
+
+        this.applyReset( prep );
+    }
+
+    drawRect( x: number, y: number, width: number, height: number, color = TRANSPARENT, stroke?: StrokeProps, props?: DrawProps ): void {
+        const prep = props ? this.prepare( props, x, y, width, height ) : ResetCommand.NONE;
+
+        ctx = this._context;
+
+        if ( color !== TRANSPARENT ) {
+            ctx.fillStyle = color;
+            ctx.fillRect( x, y, width, height );
+        }
+        if ( stroke ) {
+            const lineWidth = stroke.size;
+            ctx.lineWidth   = lineWidth;
+            ctx.strokeStyle = stroke.color;
+            ctx.strokeRect( HALF + ( x - lineWidth ), HALF + ( y - lineWidth ), width, height );
+        }
+        this.applyReset( prep );
+    }
+
+    drawRoundRect( x: number, y: number, width: number, height: number, radius: number, color = TRANSPARENT, stroke?: StrokeProps, props?: DrawProps ): void {
+        const prep = props ? this.prepare( props, x, y, width, height ) : ResetCommand.NONE;
+
+        ctx = this._context;
+
+        if ( color !== TRANSPARENT ) {
+            ctx.fillStyle = color;
+            ctx.fillRect( x, y, width, height );
+        }
+        if ( stroke ) {
+            const lineWidth = stroke.size;
+            ctx.strokeStyle = stroke.color;
+            ctx.beginPath();
+            ctx.roundRect( HALF + ( x - lineWidth ), HALF + ( y - lineWidth ), width, height, radius );
+            ctx.stroke();
+        }
+        this.applyReset( prep );
+    }
+
+    drawCircle( x: number, y: number, radius: number, fillColor = TRANSPARENT, stroke?: StrokeProps, props?: DrawProps ): void {
+        const prep = props ? this.prepare( props, x, y, radius * 2, radius * 2 ) : ResetCommand.NONE;
+
         ctx = this._context;
 
         ctx.beginPath();
         ctx.arc( x + radius, y + radius, radius, 0, 2 * Math.PI, false );
 
-        if ( fillColor !== "transparent" ) {
+        if ( fillColor !== TRANSPARENT ) {
             ctx.fillStyle = fillColor;
             ctx.fill();
         }
 
-        if ( strokeColor ) {
-            ctx.lineWidth = 5;
-            ctx.strokeStyle = strokeColor;
+        if ( stroke ) {
+            ctx.lineWidth   = stroke.size;
+            ctx.strokeStyle = stroke.color;
             ctx.closePath();
             ctx.stroke();
         }
+        this.applyReset( prep );
     }
 
     drawImage( resourceId: string, x: number, y: number, width?: number, height?: number, props?: DrawProps ): void {
@@ -185,7 +222,7 @@ export default class RendererImpl implements IRenderer {
             this._context.drawImage( this._bitmapCache.get( resourceId ), x, y, width, height );
         }
         if ( this._debug ) {
-            this.drawRect( x, y, width, height, "#FF0000", "stroke" );
+            this.drawRect( x, y, width, height, TRANSPARENT, { size: 1, color: "red" });
         }
         this.applyReset( prep );
     }
@@ -247,7 +284,7 @@ export default class RendererImpl implements IRenderer {
         );
 
         if ( this._debug ) {
-            this.drawRect( destinationX, destinationY, destinationWidth, destinationHeight, "#FF0000", "stroke" );
+            this.drawRect( destinationX, destinationY, destinationWidth, destinationHeight, TRANSPARENT, { size: 1, color: "red" });
         }
         this.applyReset( prep );
     }
@@ -291,9 +328,9 @@ export default class RendererImpl implements IRenderer {
     /* internal methods */
 
     protected prepare( props: DrawProps, x: number, y: number, width: number, height: number ): ResetCommand {
-        const hasScale    = props.scale !== undefined && props.scale !== 1;
+        const hasScale    = props.scale !== 1;
         const hasRotation = props.rotation !== 0;
-        const hasAlpha    = props.alpha !== undefined;
+        const hasAlpha    = props.alpha !== 1;
         const hasBlend    = props.blendMode !== undefined;
 
         const mustSave      = hasAlpha || hasBlend;

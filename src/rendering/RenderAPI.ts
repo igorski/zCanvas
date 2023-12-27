@@ -20,12 +20,12 @@
  * IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-import type { ImageSource, Size } from "../definitions/types";
+import type { ImageSource, Point, Size } from "../definitions/types";
 import Loader from "../Loader";
 import { readFile } from "../utils/FileUtil";
 import { imageToBitmap } from "../utils/ImageUtil";
 import RendererImpl from "./RendererImpl";
-import type { IRenderer, DrawProps, TextProps } from "./IRenderer";
+import type { IRenderer, ColorOrTransparent, DrawProps, StrokeProps, TextProps } from "./IRenderer";
 // @ts-expect-error cannot handle Vite parameters for inlining as Blob
 import CanvasWorker from "../workers/canvas.worker?worker&inline";
 import Cache from "../utils/Cache";
@@ -263,20 +263,24 @@ export default class RenderAPI implements IRenderer {
         this.onDraw( "setAlpha", value );
     }
 
-    clearRect( x: number, y: number, width: number, height: number ): void {
-        this.onDraw( "clearRect", x, y, width, height );
+    drawPath( points: Point[], color?: ColorOrTransparent, stroke?: StrokeProps ): void {
+        this.onDraw( "drawPath", points, color, stroke );
     }
 
-    drawRect( x: number, y: number, width: number, height: number, color: string, fillType?: "fill" | "stroke" ): void {
-        this.onDraw( "drawRect", x, y, width, height, color, fillType );
+    clearRect( x: number, y: number, width: number, height: number, props?: DrawProps ): void {
+        this.onDraw( "clearRect", x, y, width, height, props );
     }
 
-    drawRoundRect( x: number, y: number, width: number, height: number, radius: number, color: string, fillType?: "fill" | "stroke" ): void {
-        this.onDraw( "drawRoundRect", x, y, width, height, radius, color, fillType );
+    drawRect( x: number, y: number, width: number, height: number, color?: ColorOrTransparent, stroke?: StrokeProps, props?: DrawProps ): void {
+        this.onDraw( "drawRect", x, y, width, height, color, stroke, props );
     }
 
-    drawCircle( x: number, y: number, radius: number, fillColor = "transparent", strokeColor?: string ): void {
-        this.onDraw( "drawCircle", x, y, radius, fillColor, strokeColor );
+    drawRoundRect( x: number, y: number, width: number, height: number, radius: number, color?: ColorOrTransparent, stroke?: StrokeProps, props?: DrawProps ): void {
+        this.onDraw( "drawRoundRect", x, y, width, height, radius, color, stroke, props );
+    }
+
+    drawCircle( x: number, y: number, radius: number, fillColor = "transparent", stroke?: StrokeProps, props?: DrawProps ): void {
+        this.onDraw( "drawCircle", x, y, radius, fillColor, stroke, props );
     }
 
     drawImage( resourceId: string, x: number, y: number, width: number, height: number, props?: DrawProps ): void {

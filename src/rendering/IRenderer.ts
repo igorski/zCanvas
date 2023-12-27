@@ -43,10 +43,13 @@ export interface IRenderer {
     setBlendMode( type: GlobalCompositeOperation ): void
     setAlpha( value: number ): void
 
-    clearRect( x: number, y: number, width: number, height: number ): void;
-    drawRect( x: number, y: number, width: number, height: number, color: string, fillType?: "fill" | "stroke" ): void
-    drawRoundRect( x: number, y: number, width: number, height: number, radius: number, color: string, fillType?: "fill" | "stroke" ): void
-    drawCircle( x: number, y: number, radius: number, fillColor?: string, strokeColor?: string ): void
+    // graphic rendering
+
+    drawPath( points: Point[], color?: ColorOrTransparent, stroke?: StrokeProps ): void;
+    clearRect( x: number, y: number, width: number, height: number, props?: DrawProps ): void;
+    drawRect( x: number, y: number, width: number, height: number, color?: ColorOrTransparent, stroke?: StrokeProps, props?: DrawProps ): void
+    drawRoundRect( x: number, y: number, width: number, height: number, radius: number, color?: ColorOrTransparent, stroke?: StrokeProps, props?: DrawProps ): void
+    drawCircle( x: number, y: number, radius: number, color?: string, stroke?: StrokeProps, props?: DrawProps ): void
     drawImage(
         resourceId: string,
         x: number,
@@ -73,16 +76,9 @@ export interface IRenderer {
     drawPattern( patternResourceId: string, x: number, y: number, width: number, height: number ): void
 };
 
-// when these are set, save() and restore() will be applied as appropriate
-// during image drawing
-
-export type DrawProps = {
-    scale?: number;
-    rotation?: number;
-    pivot?: Point;
-    alpha?: number;
-    blendMode?: GlobalCompositeOperation;
-    safeMode?: boolean;
+export type StrokeProps = {
+    color: string;
+    size: number;
 };
 
 export type TextProps = {
@@ -94,4 +90,18 @@ export type TextProps = {
     lineHeight?: number;
     spacing?: number;
     center?: boolean;
+};
+
+export type ColorOrTransparent = string | undefined;
+
+// when these are set, save() and restore() will be applied as appropriate
+// during image drawing
+
+export type DrawProps = {
+    scale: number;
+    rotation: number;
+    alpha: number;
+    blendMode?: GlobalCompositeOperation;
+    pivot?: Point;
+    safeMode?: boolean;
 };

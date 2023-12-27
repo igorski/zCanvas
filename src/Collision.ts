@@ -96,21 +96,17 @@ export default class Collision {
      *
      * @param {Sprite} sprite1
      * @param {Sprite} sprite2
-     * @param {boolean=} returnAsCoordinate optional (defaults to false), when false
-     *        boolean value is returned for the collision, when true an Object with
-     *        x- and y-coordinates is returned to specify at which x- and y-coordinate
-     *        a pixel collision occurred. This can be verified against sprite1's bounds
-     *        to determine where the collision occurred (e.g. left, bottom, etc.) If no
-     *        collision occurred, boolean false is returned
-     *
-     * @return {boolean|Point}
+     * @returns {Point|undefined} when a collision occurred, x- and y-coordinates are returned to specify at
+     *     which x- and y-coordinate the collision occurred. This can be verified against sprite1's bounds
+     *     to determine where the collision occurred (e.g. left, bottom, etc.).
+     *     When no collision occurred, undefined is returned
      */
-    pixelCollision( sprite1: Sprite, sprite2: Sprite, returnAsCoordinate = false ): Point | boolean {
+    pixelCollision( sprite1: Sprite, sprite2: Sprite ): Point | undefined {
 
         const rect = sprite1.getIntersection( sprite2 ); // check if sprites actually overlap
     
         if ( rect === undefined ) {
-            return false;
+            return undefined;
         }
     
         this.getPixelArray( sprite1, rect, pixels1 );
@@ -126,12 +122,12 @@ export default class Collision {
         for ( let y = 0; y < yy; ++y ) {
             for ( let x = 0; x < xx; ++x ) {
                 if ( pixels1[ i ] === NON_TRANSPARENT && pixels2[ i ] === NON_TRANSPARENT ) {
-                    return returnAsCoordinate ? { x, y } : true;
+                    return { x, y };
                 }
                 ++i;
             }
         }
-        return false;
+        return undefined;
     }
     
     /**
