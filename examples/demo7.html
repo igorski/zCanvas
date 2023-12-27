@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable = no" name="viewport">
+    <meta charset="utf-8" />
+    <title>zCanvas pannable viewport example</title>
+    <!-- load demo assets -->
+    <link rel="stylesheet" href="./assets/styles.css">
+    <script type="text/javascript" src="./assets/images.js"></script>
+    <script type="text/javascript" src="./assets/utils.js"></script>
+</head>
+<body>
+<div class="demo-container">
+    <div class="demo-header">
+        <h1>zCanvas : Pannable viewport</h1>
+    </div>
+    <div class="demo-wrapper">
+        <div class="demo-canvas-container"><!-- x --></div>
+        <div id="verticalScroll">
+            <div class="handle"></div>
+        </div>
+        <div id="horizontalScroll">
+            <div class="handle"></div>
+        </div>
+    </div>
+    <div class="demo-controls">
+        <div>
+            <label for="fps">Framerate (15 to 60 fps)</label>
+            <input type="range" id="fps" min="15" max="60" value="60" step="1" />
+        </div>
+    </div>
+    <p class="demo-description">
+        Demo features : a large zCanvas filled with a large background image, constrained in 
+        a small viewport. The Canvas contains a single tile sheet sprite
+        and several random draggable circles. By using the scrollbars the viewport inside zCanvas
+        can be panned.
+    </p>
+</div>
+<script type="module">
+import { Canvas, Sprite } from "../dist/zcanvas.mjs";
+
+// STEP 1 : SETUP
+// --------------------------------------
+
+const demoContainer   = document.querySelector( ".demo-container" );
+const canvasContainer = document.querySelector( ".demo-canvas-container" );
+
+const idealVpWidth  = 640;
+const idealVpHeight = 320;
+const bgWidth       = 800;
+const bgHeight      = 1067; // is size of IMAGE_BACKGROUND assets
+const cvsWidth      = bgWidth;
+const cvsHeight     = bgHeight;
+
+let cvs;
+cvs = new Canvas({
+    width: cvsWidth,
+    height: cvsHeight,
+    preventEventBubbling: true,
+    parentElement: canvasContainer,
+    backgroundColor: "#00ff00",
+    animate: true,
+    viewport: { width: idealVpWidth, height: idealVpHeight },
+    viewportHandler: handleCanvasEvent,
+    onResize: ( width, height ) => {
+        // resize demo container to accommodate the canvas size
+        demoContainer.style.width = `${width}px`;
+
+        if ( !cvs ) {
+            return; // still in construction phase
+        }
+        const { innerWidth, innerHeight } = window;
+        const currentViewport = cvs.getViewport();
+
+        // in case the available window size is smaller than the viewport size
+        // we downscale the viewport
+
+        if ( innerWidth < currentViewport.width || innerHeight < currentViewport.height ) {
+            cvs.setViewport(
+                Math.min( currentViewport.width, innerWidth ),
+                Math.min( currentViewport.height, innerHeight )
+            );
+        } else if ( innerWidth > idealVpWidth || innerHeight > idealVpHeight ) {
+            // else we scale it to the ideal size
+            if ( currentViewport.width !== idealVpWidth || currentViewport.height !== idealVpHeight ) {
+                cvs.setViewport( idealVpWidth, idealVpHeight );
+                cvs.handleResize();
+            }
+        }
+        cacheScrollHandleSizes();
+    }
+});
+addCanvasDemoControls( demoContainer, cvs );
+
+// register assets
+
+Promise.all([
+    cvs.loadResource( "background",  IMAGE_BACKGROUND ),
+    cvs.loadResource( "spritesheet", IMAGE_SPRITE_SHEET ),
+]).then(() => {
+    class CircleSprite extends Sprite {
+        constructor( x, y, radius, color ) {
+            super({
+                x: x - radius * 2,
+                y: y - radius * 1.5,
+                width: radius * 2,
+                height: radius * 2
+            });
+
+            /* instance properties */
+
+            this.radius = radius;
+            this.color  = color;
+            this.setDraggable( true );
+
+            this.hoverStroke = { size: 5, color: "#FF9900" };
+        }
+
+        /* overridden zCanvas.sprite methods */
+
+        draw( renderer, viewport ) {
+            const x = this.getX() - viewport.left;
+            const y = this.getY() - viewport.top;
+
+            renderer.drawCircle(
+                x, y, this.radius,
+                // when hovering the circle is white
+                this.hover ? "#FFFFFF" : this.color,
+                // when hovering, we add an outline to the circle
+                this.hover ? this.hoverStroke : undefined
+            );
+        }
+    }
+
+    // first sprite will act as a background
+    // (see included "assets.js"-file for the IMAGE_BACKGROUND data)
+
+    cvs.addChild( new Sprite({
+        width: bgWidth,
+        height: bgHeight,
+        resourceId: "background",
+    }));
+
+    // fill area with Sprites
+
+    for ( let i = 0; i < 50; ++i ) {
+        cvs.addChild( new CircleSprite( cvsWidth * Math.random(), cvsHeight * Math.random(), 10 + ( Math.random() * 25 ), "#FF0099" ));
+    }
+
+    // add a single Sprite using a tilesheet animation
+    // (see included "assets.js"-file for the IMAGE_SPRITE_SHEET data)
+
+    const hero = new Sprite({
+        x: idealVpWidth  / 2 - 38 / 2,
+        y: idealVpHeight / 2 - 35 / 2,
+        width: 38,
+        height: 35,
+        resourceId: "spritesheet",
+        sheet: [
+            { row: 1, col: 0, fpt: 5, amount: 3 },  // standing still, facing right
+        ]
+    });
+    cvs.addChild( hero );
+});
+
+// STEP 2 : CONFIGURE VIEWPORT SCROLLBARS
+// --------------------------------------
+
+const horScroll = document.querySelector( "#horizontalScroll" );
+const verScroll = document.querySelector( "#verticalScroll" );
+const horHandle = horScroll.querySelector( ".handle" );
+const verHandle = verScroll.querySelector( ".handle" );
+
+const trackWidth   = idealVpWidth;
+const trackHeight  = idealVpHeight;
+const scrollWidth  = cvsWidth  - idealVpWidth;
+const scrollHeight = cvsHeight - idealVpHeight;
+
+let horHandleSize = 0;
+let verHandleSize = 0;
+let scrollLeft    = 0;
+let scrollTop     = 0;
+
+function cacheScrollHandleSizes() {
+    horHandleSize = ( cvs.getViewport().width  / cvs.getWidth() )  * trackWidth;
+    verHandleSize = ( cvs.getViewport().height / cvs.getHeight() ) * trackHeight;
+
+    horHandle.style.width  = `${horHandleSize}px`;
+    verHandle.style.height = `${verHandleSize}px`;
+}
+cacheScrollHandleSizes();
+
+// STEP 3 : ATTACH HANDLERS TO VIEWPORT SCROLLBARS
+// -----------------------------------------------
+
+const downEvents = [ "mousedown", "touchstart" ];
+const moveEvents = [ "mousemove", "touchmove", "wheel" ];
+const upEvents   = [ "mouseup", "touchend", "touchcancel" ];
+
+downEvents.forEach( type => {
+    horScroll.addEventListener( type, handleScrollEvent );
+    verScroll.addEventListener( type, handleScrollEvent );
+});
+upEvents.forEach( type => {
+    window.addEventListener( type, handleScrollEvent );
+});
+moveEvents.forEach( type => {
+    window.addEventListener( type, handleScrollEvent, { passive: false });
+});
+
+let hasHorizontalScroll = false;
+let hasVerticalScroll   = false;
+// these ratios describe the % of total in 0 - 1 range
+let viewportXratio = 0;
+let viewportYratio = 0;
+
+function handleScrollEvent( e ) {
+    const isHorizontalScrollTrack = e.target === horScroll;
+    const isVerticalScrollTrack   = e.target === verScroll;
+    // pointer down == scroll start
+    if ( downEvents.includes( e.type )) {
+        if ( isHorizontalScrollTrack ) {
+            hasHorizontalScroll = true;
+            hasVerticalScroll   = false;
+        } else if ( isVerticalScrollTrack ) {
+            hasHorizontalScroll = false;
+            hasVerticalScroll   = true;
+        }
+    }
+    // pointer up == scroll end
+    if ( upEvents.includes( e.type )) {
+        hasHorizontalScroll = false;
+        hasVerticalScroll   = false;
+    }
+    if (( !hasHorizontalScroll && !hasVerticalScroll ) || ( !isHorizontalScrollTrack && !isVerticalScrollTrack )) {
+        return;
+    }
+    // pointer move == move scroll bar
+    if ( moveEvents.includes( e.type )) {
+        let pointerX = e.offsetX;
+        let pointerY = e.offsetY;
+        // touch event handling
+        const touches = e.touches || e.changedTouches;
+        if ( touches && touches.length ) {
+            pointerX = touches[ 0 ].pageX;
+            pointerY = touches[ 0 ].pageY;
+            e.preventDefault(); // prevents page bounce
+        }
+        if ( isHorizontalScrollTrack ) {
+            viewportXratio = Math.max( 0, pointerX / trackWidth );
+            positionHorizontalHandle();
+        }
+        if ( isVerticalScrollTrack ) {
+            viewportYratio = Math.max( 0, pointerY / trackHeight );
+            positionVerticalHandle();
+        }
+        cvs.panViewport(
+            Math.round( viewportXratio * ( cvs.getWidth()  - idealVpWidth )),
+            Math.round( viewportYratio * ( cvs.getHeight() - idealVpHeight ))
+        );
+    }
+}
+
+function handleCanvasEvent( e ) {
+    // panning can also be adjusted internally by zCanvas (for instance wheel/trackpad event)
+    // by listening to these events we can keep the scroll handle offsets in sync
+    if ( e.type === "panned" ) {
+        viewportXratio = e.value.left / ( cvsWidth  - idealVpWidth );
+        viewportYratio = e.value.top  / ( cvsHeight - idealVpHeight );
+        positionHorizontalHandle();
+        positionVerticalHandle();
+    }
+}
+
+function positionHorizontalHandle() {
+    horHandle.style.left = (( trackWidth - horHandleSize ) * viewportXratio ) + "px";
+}
+
+function positionVerticalHandle() {
+    verHandle.style.top = (( trackHeight - verHandleSize ) * viewportYratio ) + "px";
+}
+
+</script>
+<style type="text/css">
+    .demo-wrapper {
+        position: relative;
+        display: inline-block;
+    }
+    #verticalScroll,
+    #horizontalScroll {
+        position: absolute;
+        background-color: #666;
+    }
+    #verticalScroll {
+        right: 0;
+        top: 0;
+        width: 20px;
+        height: 100%;
+    }
+    #horizontalScroll {
+        bottom: 0;
+        left: 0;
+        width: 100%;
+        height: 20px;
+    }
+    .handle {
+        position: absolute;
+        background-color: #B6B6B6;
+        pointer-events: none; /* the background captures the events */
+    }
+    #verticalScroll .handle {
+        width: 100%;
+        min-height: 5px;
+    }
+    #horizontalScroll .handle {
+        height: 100%;
+        min-width: 5px;
+    }
+</style>
+</body>
+</html>

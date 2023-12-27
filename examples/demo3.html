@@ -8,213 +8,199 @@
     <link rel="stylesheet" href="./assets/styles.css">
     <script type="text/javascript" src="./assets/images.js"></script>
     <script type="text/javascript" src="./assets/utils.js"></script>
-    <!-- include RequireJS to resolve dependencies -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js" type="text/javascript"></script>
 </head>
 <body>
-    <div class="demo-container">
-        <div class="demo-header">
-            <h1>zCanvas : Layers and interactions</h1>
-        </div>
-        <div class="demo-canvas-container"><!-- x --></div>
-        <div class="demo-controls">
-            <div>
-                <label for="fps">Framerate (15 to 60 fps)</label>
-                <input type="range" id="fps" min="15" max="60" value="60" step="1" />
-            </div>
-            <button type="button" id="fullscreen">Fullscreen</button>
-        </div>
-        <p class="demo-description">
-            Demo features : multiple nested Sprites (the circles), masking (the scrollable star layer) and restricted
-            movement (the rectangle). The circles are movable by either mouse or touch, either individually or at once (dragging the large circle
-            will drag its child circles), while the rectangle is also draggable but constrained to the bottom right part of the canvas
-            (illustrated by the thin red outline). Note that you can drag the rectangle under the circle, but after release, the
-            higher circle layer takes precendence in responding to the mouse / touch events.
-        </p>
+<div class="demo-container">
+    <div class="demo-header">
+        <h1>zCanvas : Layers and interactions</h1>
     </div>
-    <script type="text/javascript">
+    <div class="demo-canvas-container"><!-- x --></div>
+    <div class="demo-controls">
+        <div>
+            <label for="fps">Framerate (15 to 60 fps)</label>
+            <input type="range" id="fps" min="15" max="60" value="60" step="1" />
+        </div>
+        <button type="button" id="fullscreen">Fullscreen</button>
+    </div>
+    <p class="demo-description">
+        Demo features : multiple nested Sprites (the circles), masking (the scrollable star layer) and restricted
+        movement (the rectangle). The circles are movable by either mouse or touch, either individually or at once (dragging the large circle
+        will drag its child circles), while the rectangle is also draggable but constrained to the bottom right part of the canvas
+        (illustrated by the thin red outline). Note that you can drag the rectangle under the circle, but after release, the
+        higher circle layer takes precendence in responding to the mouse / touch events.
+    </p>
+</div>
+<script type="module">
+import { Canvas, Sprite } from "../dist/zcanvas.mjs";
 
-        // resolve dependencies
+// STEP 1 : SETUP
+// --------------------------------------
 
-        requirejs.config({
-            baseUrl : "../dist/",
-            urlArgs : "bust=" + Date.now()
+const demoContainer   = document.querySelector( ".demo-container" );
+const canvasContainer = document.querySelector( ".demo-canvas-container" );
+
+// create a new canvas that renders at 60 fps
+// keep it within the device / browser bounds
+const cvsWidth  = 800;
+const cvsHeight = 500;
+const cvs       = new Canvas({
+    width: cvsWidth,
+    height: cvsHeight,
+    animate: true,
+    preventEventBubbling: true,
+    parentElement: canvasContainer,
+    onResize: ( width, height ) => {
+        // resize demo container to accomodate the canvas size
+        demoContainer.style.width = `${width}px`;
+    }
+});
+addCanvasDemoControls( demoContainer, cvs );
+
+const cvsCenterX = cvsWidth  / 2;
+const cvsCenterY = cvsHeight / 2;
+
+Promise.all([
+    cvs.loadResource( "background", IMAGE_BACKGROUND ),
+    cvs.loadResource( "star", IMAGE_STAR )
+]);
+
+// STEP 2 : ADDING THE SPRITES
+// ---------------------------
+
+// first sprite will act as a background
+// (see included "assets.js"-file for the assetBackground-image data)
+
+const bgWidth  = 800;
+const bgHeight = 1067;
+const bgSprite = new Sprite({ width: bgWidth, height: bgHeight, resourceId: "background" });
+
+cvs.addChild( bgSprite );   // add the background to the canvas so it is visible
+
+// SCROLLING MASK SPRITE
+// ---------------------
+// a sprite that will act as a mask for underlying content
+// (see included "images.js"-file for the assetStar-image data)
+
+const starSize = cvsWidth * .3; // make the star slightly smaller than the canvas
+
+const spriteMask = new Sprite({
+    x: cvsCenterX - starSize / 2,
+    y: cvsCenterY - starSize / 2,
+    width: starSize,
+    height: starSize,
+    resourceId: "star",
+    mask: true
+});
+
+// custom overrides, to demonstrate a simple custom behaviour
+// where animation is perfectly timed (test by switching tabs in
+// the browser, animation stops when switching tabs, but by calculating
+// position by verifying elapsed time, it appears as if the application
+// hasn't been paused. Though you could actually prefer a "pause" depending on context...
+
+let direction      = 1; // 0 being left, 1 being right
+let speed          = 2; // the amount of pixels we move per frame
+let prevStamp      = window.performance.now();
+let maxXPosition   = cvsWidth - starSize;
+
+spriteMask.update = function( timestamp, framesSinceLastUpdate ) {
+
+    const delta = ( timestamp - prevStamp );
+    prevStamp = timestamp; // store last timestamp
+
+    // slide the background either up or down
+
+    const amount = speed / cvs.getRenderInterval() * framesSinceLastUpdate * delta;
+
+    if ( direction == 0 ) {
+        this.setX( this.getX() - amount );
+    } else {
+        this.setX( this.getX() + amount );
+    }
+    const currentPosition = this.getX();
+
+    // keep movement within canvas bounds
+
+    if ( currentPosition > maxXPosition ) {
+        direction = 0;
+    } else if ( currentPosition < 0 ) {
+        direction = 1;
+    }
+};
+
+// NESTED CIRCLE SPRITES
+// ---------------------
+// custom sprite extension we use to draw a circle that highlights
+// when it is hovered by the mouse cursor
+
+class CircleSprite extends Sprite {
+    constructor( x, y, radius, color ) {
+        super({
+            x, y, width: radius * 2, height: radius * 2
         });
+        this.radius = radius;
+        this.color  = color;
+        this.setDraggable( true );
+    }
 
-        require( [ "zcanvas.umd" ], zCanvas => {
+    /* overridden Srite methods */
 
-            const { Canvas, Sprite } = zCanvas;
+    draw( renderer ) {
+        renderer.drawCircle(
+            this.getX(), this.getY(), this.radius,
+            this.hover ? "#FFFFFF" : this.color, // when hovering the circle is white
+            { color: "#FF9900", size: 5 },
+        );
+        super.draw( renderer ); // will invoke the drawing of nested child elements
+    }
+};
 
-            // STEP 1 : SETUP
-            // --------------------------------------
+// create the circle instances, note all circles beyond circle1 will be children of circle1
+// (and thus should move according to the mutations of circle1)
+const largeCircleSize = cvsHeight / 5;
+const smallCircleSize = cvsHeight / 10;
 
-            const demoContainer   = document.querySelector( ".demo-container" );
-            const canvasContainer = document.querySelector( ".demo-canvas-container" );
+const circle1 = new CircleSprite( cvsCenterX - largeCircleSize, cvsCenterY - largeCircleSize, largeCircleSize, "#FF0000" );
+const circle2 = new CircleSprite( cvsCenterX, circle1.getY() - smallCircleSize / 2, smallCircleSize, "#0000FF" );
+const circle3 = new CircleSprite( cvsCenterX, circle1.getY() + largeCircleSize + smallCircleSize, smallCircleSize, "#00FF00" );
 
-            // create a new canvas that renders at 60 fps
-            // keep it within the device / browser bounds
-            const cvsWidth  = 800;
-            const cvsHeight = 500;
-            const cvs       = new Canvas({
-                width: cvsWidth,
-                height: cvsHeight,
-                animate: true,
-                preventEventBubbling: true,
-                parentElement: canvasContainer,
-                onResize: ( width, height ) => {
-                    // resize demo container to accomodate the canvas size
-                    demoContainer.style.width = `${width}px`;
-                }
-            });
-            addCanvasDemoControls( demoContainer, cvs );
-            
-            const cvsCenterX = cvsWidth  / 2;
-            const cvsCenterY = cvsHeight / 2;
+// CONSTRAINED RECTANGLE SPRITE
+// ----------------------------
 
-            Promise.all([
-                cvs.loadResource( "background", IMAGE_BACKGROUND ),
-                cvs.loadResource( "star", IMAGE_STAR )
-            ]);
+const rectSize  = bgHeight / 15;
+const rectangle = new Sprite({
+    x: cvsWidth * .75,
+    y: cvsHeight * .5,
+    width: rectSize,
+    height: rectSize,
+    interactive: true
+});
+rectangle.setConstraint( cvsWidth / 2, cvsHeight / 2, cvsWidth / 2, cvsHeight / 2 ); // add a constraint
+rectangle.setDraggable( true, true ); // we'd like to be able to drag the Rectangle but restrict its movements
 
-            // STEP 2 : ADDING THE SPRITES
-            // ---------------------------
+// Rectangle draw logic
+rectangle.draw = function( renderer ) {
+    renderer.drawRect(
+        this.getX(), this.getY(), this.getWidth(), this.getHeight(),
+        this.hover ? "#FF0000" : "#FF00FF" // when hovering the rectangle is red
+    );
 
-            // first sprite will act as a background
-            // (see included "assets.js"-file for the assetBackground-image data)
+    // but also draw its bounding box just for demonstration purposes
+    const constraint = this.getConstraint();
+    renderer.drawRect(
+        constraint.left, constraint.top, constraint.width, constraint.height, "transparent", { size: 1, color: "red" }
+    );
+};
 
-            const bgWidth  = 800;
-            const bgHeight = 1067;
-            const bgSprite = new Sprite({ width: bgWidth, height: bgHeight, resourceId: "background" });
-           
-            cvs.addChild( bgSprite );   // add the background to the canvas so it is visible
+// add all Sprites to the canvas display list so they are visible
 
-            // SCROLLING MASK SPRITE
-            // ---------------------
-            // a sprite that will act as a mask for underlying content
-            // (see included "images.js"-file for the assetStar-image data)
+cvs.addChild( spriteMask );
+cvs.addChild( rectangle );
+cvs.addChild( circle1 );
 
-            const starSize = cvsWidth * .3; // make the star slightly smaller than the canvas
-
-            const spriteMask = new Sprite({
-                x: cvsCenterX - starSize / 2,
-                y: cvsCenterY - starSize / 2,
-                width: starSize,
-                height: starSize,
-                resourceId: "star",
-                mask: true
-            });
-
-            // custom overrides, to demonstrate a simple custom behaviour
-            // where animation is perfectly timed (test by switching tabs in
-            // the browser, animation stops when switching tabs, but by calculating
-            // position by verifying elapsed time, it appears as if the application
-            // hasn't been paused. Though you could actually prefer a "pause" depending on context...
-
-            let direction      = 1; // 0 being left, 1 being right
-            let speed          = 2; // the amount of pixels we move per frame
-            let prevStamp      = window.performance.now();
-            let maxXPosition   = cvsWidth - starSize;
-
-            spriteMask.update = function( timestamp, framesSinceLastUpdate ) {
-
-                const delta = ( timestamp - prevStamp );
-                prevStamp = timestamp; // store last timestamp
-
-                // slide the background either up or down
-
-                const amount = speed / cvs.getRenderInterval() * framesSinceLastUpdate * delta;
-
-                if ( direction == 0 ) {
-                    this.setX( this.getX() - amount );
-                } else {
-                    this.setX( this.getX() + amount );
-                }
-                const currentPosition = this.getX();
-
-                // keep movement within canvas bounds
-
-                if ( currentPosition > maxXPosition ) {
-                    direction = 0;
-                } else if ( currentPosition < 0 ) {
-                    direction = 1;
-                }
-            };
-
-            // NESTED CIRCLE SPRITES
-            // ---------------------
-            // custom sprite extension we use to draw a circle that highlights
-            // when it is hovered by the mouse cursor
-
-            class CircleSprite extends Sprite {
-                constructor( x, y, radius, color ) {
-                    super({
-                        x, y, width: radius * 2, height: radius * 2
-                    });
-                    this.radius = radius;
-                    this.color  = color;
-                    this.setDraggable( true );
-                }
-
-                /* overridden Srite methods */
-
-                draw( renderer ) {
-                    renderer.drawCircle(
-                        this.getX(), this.getY(), this.radius,
-                        this.hover ? "#FFFFFF" : this.color, // when hovering the circle is white
-                        "#FF9900"
-                    );
-                    super.draw( renderer ); // will invoke the drawing of nested child elements
-                }
-            };
-
-            // create the circle instances, note all circles beyond circle1 will be children of circle1
-            // (and thus should move according to the mutations of circle1)
-            const largeCircleSize = cvsHeight / 5;
-            const smallCircleSize = cvsHeight / 10;
-
-            const circle1 = new CircleSprite( cvsCenterX - largeCircleSize, cvsCenterY - largeCircleSize, largeCircleSize, "#FF0000" );
-            const circle2 = new CircleSprite( cvsCenterX, circle1.getY() - smallCircleSize / 2, smallCircleSize, "#0000FF" );
-            const circle3 = new CircleSprite( cvsCenterX, circle1.getY() + largeCircleSize + smallCircleSize, smallCircleSize, "#00FF00" );
-
-            // CONSTRAINED RECTANGLE SPRITE
-            // ----------------------------
-
-            const rectSize  = bgHeight / 15;
-            const rectangle = new Sprite({
-                x: cvsWidth * .75,
-                y: cvsHeight * .5,
-                width: rectSize,
-                height: rectSize,
-                interactive: true
-            });
-            rectangle.setConstraint( cvsWidth / 2, cvsHeight / 2, cvsWidth / 2, cvsHeight / 2 ); // add a constraint
-            rectangle.setDraggable( true, true ); // we'd like to be able to drag the Rectangle but restrict its movements
-
-            // Rectangle draw logic
-            rectangle.draw = function( renderer ) {
-                renderer.drawRect(
-                    this.getX(), this.getY(), this.getWidth(), this.getHeight(),
-                    this.hover ? "#FF0000" : "#FF00FF" // when hovering the rectangle is red
-                );
-
-                // but also draw its bounding box just for demonstration purposes
-                const constraint = this.getConstraint();
-                renderer.drawRect(
-                    constraint.left, constraint.top, constraint.width, constraint.height, "#FF0000", "stroke"
-                );
-            };
-
-            // add all Sprites to the canvas display list so they are visible
-
-            cvs.addChild( spriteMask );
-            cvs.addChild( rectangle );
-            cvs.addChild( circle1 );
-
-            // add all additional circles to the display list of circle1 so they are nested
-            circle1.addChild( circle2 );
-            circle1.addChild( circle3 );
-        });
-
-    </script>
+// add all additional circles to the display list of circle1 so they are nested
+circle1.addChild( circle2 );
+circle1.addChild( circle3 );
+</script>
 </body>
 </html>

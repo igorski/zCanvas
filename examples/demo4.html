@@ -8,260 +8,189 @@
     <link rel="stylesheet" href="./assets/styles.css">
     <script type="text/javascript" src="./assets/images.js"></script>
     <script type="text/javascript" src="./assets/utils.js"></script>
-    <!-- include RequireJS to resolve dependencies -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js" type="text/javascript"></script>
-    <!-- include Greensock TweenMax -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/1.19.0/TweenMax.min.js" type="text/javascript"></script>
+    <!-- include GSAP for animation -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.4/gsap.min.js"></script>
 </head>
 <body>
-    <div class="demo-container">
-        <div class="demo-header">
-            <h1>zCanvas : Integrating 3rd party libraries</h1>
-        </div>
-        <div class="demo-canvas-container"><!-- x --></div>
-        <div class="demo-controls">
-            <div>
-                <label for="fps">Framerate (15 to 60 fps)</label>
-                <input type="range" id="fps" min="15" max="60" value="60" step="1" />
-            </div>
-            <button type="button" id="fullscreen">Fullscreen</button>
-        </div>
-        <p class="demo-description">
-            Demo features : multiple Sprites, each moving using different easing functions from the
-            Greensock TweenMax library. The star shape also acts as a mask for an underlying photo.
-        </p>
+<div class="demo-container">
+    <div class="demo-header">
+        <h1>zCanvas : Integrating 3rd party animation libraries</h1>
     </div>
-    <script type="text/javascript">
+    <div class="demo-canvas-container"><!-- x --></div>
+    <div class="demo-controls">
+        <div>
+            <label for="fps">Framerate (15 to 60 fps)</label>
+            <input type="range" id="fps" min="15" max="60" value="60" step="1" />
+        </div>
+        <button type="button" id="fullscreen">Fullscreen</button>
+    </div>
+    <p class="demo-description">
+        Demo features : multiple Sprites, each moving using different easing functions from the
+        <a href="https://gsap.com/" title="GSAP homepage" target="_blank"></a>GreenSock Animation Platform</a>.
+    </p>
+</div>
+<script type="module">
+import { Canvas, Sprite } from "../dist/zcanvas.mjs";
 
-        // resolve dependencies
+// STEP 1 : SETUP
+// --------------------------------------
 
-        requirejs.config({
-            baseUrl : "../dist/",
-            urlArgs : "bust=" + Date.now()
+const demoContainer   = document.querySelector( ".demo-container" );
+const canvasContainer = document.querySelector( ".demo-canvas-container" );
+
+const CANVAS_WIDTH  = 800;
+const CANVAS_HEIGHT = 400;
+
+const cvs = new Canvas({
+    width: CANVAS_WIDTH,
+    height: CANVAS_HEIGHT,
+    animate: true,
+    fps: IDEAL_FPS,
+    preventEventBubbling: true,
+    parentElement: canvasContainer,
+    onResize: ( width, height ) => {
+        // resize demo container to accomodate the canvas size
+        demoContainer.style.width = `${width}px`;
+    }
+});
+addCanvasDemoControls( demoContainer, cvs );
+
+// register assets
+
+Promise.all([
+    cvs.loadResource( "background", IMAGE_BACKGROUND ),
+    cvs.loadResource( "spritesheet", IMAGE_SPRITE_SHEET ),
+    cvs.loadResource( "star", IMAGE_STAR ),
+    cvs.loadResource( "logo", IMAGE_IGORSKI_LOGO ),
+]).then(() => {
+
+    const cvsCenterX = cvs.getWidth()  / 2;
+    const cvsCenterY = cvs.getHeight() / 2;
+
+    // STEP 2 : ADDING THE SPRITES
+    // ---------------------------
+
+    // first sprite will act as a background
+    // (see included "assets.js"-file for the assetBackground-image data)
+
+    const bgWidth  = 800;
+    const bgHeight = 1067;
+    const bgSprite = new Sprite({ width: bgWidth, height: bgHeight, resourceId: "background" });
+
+    // 2.1 ANIMATING STAR
+    // a star-shaped Sprite that will act as a mask for underlying content
+    // (see included "images.js"-file for the assetStar-image data)
+
+    const starSize = CANVAS_WIDTH / 3; // make the star a bit smaller than the canvas
+    const starMask = new Sprite({
+        x: cvsCenterX - starSize / 2,
+        y: cvsCenterY - starSize / 2,
+        width: starSize,
+        height: starSize,
+        resourceId: "star",
+        mask: true,
+    });
+
+    // 2.2 RUNNING MEGAMAN CHARACTER
+    // Megaman running across the screen using a Spritesheet for animation
+
+    const megaman = new Sprite({
+        x: 150,
+        y: 300,
+        width: 38,
+        height: 35,
+        resourceId: "spritesheet",
+        sheet: [
+            { row: 0, col: 0, fpt: 5, amount: 3 },  // standing still, facing left
+            { row: 1, col: 0, fpt: 5, amount: 3 },  // standing still, facing right
+            { row: 2, col: 0, fpt: 3, amount: 10 }, // running, facing left
+            { row: 3, col: 0, fpt: 3, amount: 10 }  // running facing right
+        ]
+    });
+    megaman.switchAnimation( 3 );
+
+    // 2.3 SCALING LOGOS
+    // Logos scaling with changing easing functions
+
+    const BLOCK_SIZE = 50;
+    const COLUMNS = Math.round( CANVAS_WIDTH / BLOCK_SIZE );
+    const blocks  = [];
+
+    for ( let i = 0; i < COLUMNS; ++i ) {
+        const block = new Sprite({
+            resourceId: "logo",
+            x: i * ( BLOCK_SIZE * 2 ),
+            y: cvs.getHeight() / 2,
+            width: BLOCK_SIZE,
+            height: BLOCK_SIZE
         });
+        blocks.push( block );
+    }
 
-        require( [ "zcanvas.umd" ], zCanvas => {
+    // add the Sprites
 
-            const { Canvas, Sprite } = zCanvas;
+    cvs.addChild( bgSprite );
+    cvs.addChild( starMask );
+    blocks.forEach( block => cvs.addChild( block ));
+    cvs.addChild( megaman );
 
-            // STEP 1 : SETUP
-            // --------------------------------------
+    // STEP 3 : ANIMATION EXAMPLE (GreenSock Animation Platform)
+    // --------------------------------------------------------
+    // using GSAP's direction animation calls and timelines
 
-            const demoContainer   = document.querySelector( ".demo-container" );
-            const canvasContainer = document.querySelector( ".demo-canvas-container" );
+    const starTimeline  = new gsap.timeline({ repeat: 999 }); // timeline for the star
+    const starTransform = starMask.getTransforms(); // the Sprites transformation matrix
+    
+    const starAniDuration = 3;
 
-            const cvsWidth  = 800;
-            const cvsHeight = 400;
-            const cvs = new Canvas({
-                width: cvsWidth,
-                height: cvsHeight,
-                animate: true,
-                fps: 60,
-                smoothing: false,
-                preventEventBubbling: true,
-                parentElement: canvasContainer,
-                onResize: ( width, height ) => {
-                    // resize demo container to accomodate the canvas size
-                    demoContainer.style.width = `${width}px`;
+    starTimeline.to(
+        starTransform, starAniDuration, {
+            scale: 1.5,
+            rotation: 360,
+            ease: Elastic.easeInOut,
+        }
+    ).to( starTransform, starAniDuration, {
+        scale: 1,
+        rotation: 0,
+        ease: Power4.easeIn,
+    });
+
+    const blockAniDuration = 2;
+    for ( let i = 0, l = blocks.length; i < l; ++i ) {
+        const blockTransforms = blocks[ i ].getTransforms();
+        new gsap.timeline({ repeat: 999 })
+            .to( blockTransforms, blockAniDuration, {
+                scale: 2, ease: Power4.easeInOut, delay: ( i * .1 )
+            }).
+            to( blockTransforms, blockAniDuration, {
+                scale: 0.5,
+                ease: Elastic.easeIn,
+                delay: ( i * .1 )
+            }).to(
+                blockTransforms, blockAniDuration, {
+                    scale: 1,
+                    ease: Elastic.easeOut
                 }
-            });
-            addCanvasDemoControls( demoContainer, cvs );
-
-            // register assets
-
-            Promise.all([
-                cvs.loadResource( "background", IMAGE_BACKGROUND ),
-                cvs.loadResource( "spritesheet", IMAGE_SPRITE_SHEET ),
-                cvs.loadResource( "star", IMAGE_STAR ),
-            ]);
-
-            const cvsCenterX = cvs.getWidth()  / 2;
-            const cvsCenterY = cvs.getHeight() / 2;
-
-            // STEP 2 : ADDING THE SPRITES
-            // ---------------------------
-
-            // first sprite will act as a background
-            // (see included "assets.js"-file for the assetBackground-image data)
-
-            const bgWidth  = 800;
-            const bgHeight = 1067;
-            const bgSprite = new Sprite({ width: bgWidth, height: bgHeight, resourceId: "background" });
-            
-            cvs.addChild( bgSprite );   // add the background to the canvas so it is visible
-
-            // RESIZING MASK SPRITE
-            // --------------------
-            // a sprite that will act as a mask for underlying content
-            // (see included "images.js"-file for the assetStar-image data)
-
-            const starSize = cvsWidth * .3; // make the star slightly smaller than the canvas
-            const spriteMask = new Sprite({
-                x: cvsCenterX - starSize / 2,
-                y: cvsCenterY - starSize / 2,
-                width: starSize,
-                height: starSize,
-                resourceId: "star",
-                mask: true
-            });
-
-            // grab a reference to the star properties we will be tweening
-            const starTransform = spriteMask.getDrawProps();
-            const starTimeline  = new TimelineMax({ repeat: 999 }); // timeline for the star
-
-            const DURATION = 3;
-            const SCALE_FACTOR = 1.5;
-
-            starTimeline.to(
-                starTransform, DURATION, {
-                    scale: "+=" + SCALE_FACTOR,
-                    rotation: "+=" + 360,
-                    ease: Elastic.easeInOut
-                }
-            ).to(
-                starTransform, DURATION, { scale: "-=" + SCALE_FACTOR, rotation: 0, ease: Power4.easeIn }
             );
-            cvs.addChild( spriteMask ); // add star making sprite to canvas so it is visible
+    }
+    
+    const megamanTimeline = new gsap.timeline({ repeat: 999 }); // timeline for Megaman
 
-            // ANIMATING CIRCLES
-            // aPositionRadius defines the radius of the circle all circles will be aligned to
-            // aSizeRadius defines the radius of the circles bounds
+    const movement = 400;
+    const megamanAniDuration = 5;
 
-            class CircleSprite extends Sprite {
-                constructor( x, y, positionRadius, sizeRadius, color ) {
-                    super({
-                        x: x - positionRadius * 2,
-                        y: y - positionRadius * 1.5,
-                        width: positionRadius * 2,
-                        height: positionRadius * 2
-                    });
-
-                    /* instance properties */
-
-                    this.radius = sizeRadius;
-                    this.color = color;
-
-                    this.setDraggable( true );
-                }
-
-                /* overridden zCanvas.sprite methods */
-
-                // here we override the getters and setters to accommodate for the radius of the circle as
-                // the circles center point is the x- and y-coordinate to provide from-center-snapping
-
-                getX() {
-                    return super.getX() + this.getWidth();
-                }
-
-                getY() {
-                    return super.getY() + this.getHeight();
-                }
-
-                draw( renderer ) {
-                    renderer.drawCircle(
-                        this.getX(), this.getY(), this.radius,
-                        this.hover ? "#FFFFFF" : this.color, // when hovering the circle is white
-                        this.hover ? "#FF9900" : undefined, // when hovering we add an outline to the circle
-                    );
-                    super.draw( renderer ); // will invoke the drawing of nested child elements
-                }
-            };
-
-            // helper function to calculate x, y coordinate of each CircleSprite
-
-            function calcPosition( radius, angle ) {
-                return {
-                    x: cvsCenterX + radius * Math.cos( angle * Math.PI / 180 ),
-                    y: cvsCenterY + radius * Math.sin( angle * Math.PI / 180 )
-                }
-            }
-            const positionRadius = 100; // radius of the circles position
-            const radius = 7;           // radius of the circles size
-
-            // generate the circle sprites
-
-            for ( let i = 0, total = 50; i < total; ++i ) {
-
-                /// calc x and y position with radius of center +
-                const angle = i * ( 360 / total );
-                const targetPosition = calcPosition( positionRadius, angle );
-                const scaledPosition = calcPosition( positionRadius * 2, angle );
-
-                // note we construct all circles from the center of the canvas
-                const cs = new CircleSprite( cvsCenterX, cvsCenterY, 7, radius, "#FF00AE" );
-
-                // each circle sprite has its own timeline where it moves form the canvas
-                // center to its unique position, and back to the center again, each sprite
-                // starts at a different time from the other (see "delay")
-
-                new TimelineMax({ repeat: 999 }).
-                    to( cs.getBounds(), 2, {
-                        left: targetPosition.x, top: targetPosition.y, ease: Power4.easeInOut, delay: ( i * .1 )
-                    }).
-                    to( cs.getBounds(), 2, {
-                        left: scaledPosition.x,
-                        top:  scaledPosition.y,
-                        ease: Elastic.easeIn,
-                        delay: ( i * .1 )
-                    }).to(
-                        cs.getBounds(), 2, {
-                            left: cvsCenterX,
-                            top: cvsCenterY,
-                            ease: Elastic.easeOut
-                        }
-                    );
-
-                // add circle sprite to canvas so we can see it
-                cvs.addChild( cs );
-            }
-
-            const hero = new Sprite({
-                x: 150,
-                y: 250,
-                width: 38,
-                height: 35,
-                resourceId: "spritesheet",
-                sheet: [
-                    { row: 0, col: 0, fpt: 5, amount: 3 },  // standing still, facing left
-                    { row: 1, col: 0, fpt: 5, amount: 3 },  // standing still, facing right
-                    { row: 2, col: 0, fpt: 3, amount: 10 }, // running, facing left
-                    { row: 3, col: 0, fpt: 3, amount: 10 }  // running facing right
-                ]
-            });
-            cvs.addChild( hero );
-            hero.switchAnimation( 3 );
-
-            const heroTimeline  = new TimelineMax({ repeat: 999 }); // timeline for the star
-            const heroBounds = hero.getBounds();
-            const heroTransform = hero.getDrawProps();
-
-            TweenMax.to(heroBounds, 5, { 
-                    left: "+="+ 400,
-                    onComplete: () => {
-                        hero.switchAnimation(2);
-                        TweenMax.to(
-                    heroBounds, 5, { left: "-=" + 400, delay: 5}
-                );
-                }});
-                TweenMax.to(
-                    heroBounds, 5, { left: "-=" + 400, delay: 5}
-                );
-
-            heroTimeline.to(
-                heroTransform, 3, {
-                    scale: "+=" + 5,
-                    rotation: "+=" + 360,
-                    delay: 1,
-                    ease: Elastic.easeInOut,
-                    onComplete: () => {
-                        heroTransform.rotation = 0;
-                    }
-                }
-            ).to(
-                heroTransform, DURATION, { scale: "-=" + 5, ease: Power4.easeIn }
-            );
+    megamanTimeline.to( 
+        megaman.getBounds(), megamanAniDuration, { 
+            left: `+=${movement}`,
+            onComplete: () => megaman.switchAnimation( 2 ) // face the left
+        }
+    ).to(
+        megaman.getBounds(), megamanAniDuration, {
+            left: `-=${movement}`,
+            ease: Cubic.easeInOut,
+            onComplete: () => megaman.switchAnimation( 3 ) // fact the right
         });
-
-    </script>
+});
+</script>
 </body>
 </html>

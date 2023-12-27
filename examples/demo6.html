@@ -3,330 +3,207 @@
 <head>
     <meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable = no" name="viewport">
     <meta charset="utf-8" />
-    <title>zCanvas pannable viewport example</title>
+    <title>zCanvas image manipulation example</title>
     <!-- load demo assets -->
     <link rel="stylesheet" href="./assets/styles.css">
     <script type="text/javascript" src="./assets/images.js"></script>
     <script type="text/javascript" src="./assets/utils.js"></script>
-    <!-- include RequireJS to resolve dependencies -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js" type="text/javascript"></script>
 </head>
 <body>
-    <div class="demo-container">
-        <div class="demo-header">
-            <h1>zCanvas : Pannable viewport</h1>
-        </div>
-        <div class="demo-wrapper">
-            <div class="demo-canvas-container"><!-- x --></div>
-            <div id="verticalScroll">
-                <div class="handle"></div>
-            </div>
-            <div id="horizontalScroll">
-                <div class="handle"></div>
-            </div>
-        </div>
-        <div class="demo-controls">
-            <div>
-                <label for="fps">Framerate (15 to 60 fps)</label>
-                <input type="range" id="fps" min="15" max="60" value="60" step="1" />
-            </div>
-        </div>
-        <p class="demo-description">
-            Demo features : a large zCanvas filled with a large background image, constrained in 
-            a small viewport. The Canvas contains a single tile sheet sprite
-            and several random draggable circles. By using the scrollbars the viewport inside zCanvas
-            can be panned.
-        </p>
+<div class="demo-container">
+    <div class="demo-header">
+        <h1>zCanvas : Sprite Bitmap manipulation</h1>
     </div>
-    <script type="text/javascript">
+    <div class="demo-canvas-container"><!-- x --></div>
+    <div class="demo-controls">
+        <div>
+            <button type="button" id="fileSelect">Select file</button>
+            <input type="file" id="file"
+                accept="image/png,image/gif,image/jpeg"
+                style="display: none;"
+            />
+        </div>
+        <div>
+            <label for="scale">Zoom</label>
+            <input type="range" id="scale" min="1" max="4" value="1" step=".1" />
+        </div>
+        <div>
+            <button type="button" id="save">Save output</button>
+            <button type="button" id="fullscreen">Fullscreen</button>
+        </div>
+        <!-- <button type="button" id="fullscreen">Fullscreen</button> -->
+    </div>
+    <p class="demo-description">
+        Demo features : a simple utility that can load images which can be
+        panned and zoomed inside the browser, where the visual result can be saved as an image file.
+    </p>
+</div>
+<script type="module">
+import { Canvas, Sprite } from "../dist/zcanvas.mjs";
 
-        // resolve dependencies
+// STEP 1 : SETUP
+// --------------------------------------
 
-        requirejs.config({
-            baseUrl : "../dist/",
-            urlArgs : "bust=" + Date.now()
-        });
+const demoContainer   = document.querySelector( ".demo-container" );
+const canvasContainer = document.querySelector( ".demo-canvas-container" );
 
-        require( [ "zcanvas.umd" ], zCanvas => {
+const CANVAS_WIDTH  = 800;
+const CANVAS_HEIGHT = 320;
 
-            const { Canvas, Sprite } = zCanvas;
+const cvs = new Canvas({
+    width: CANVAS_WIDTH,
+    height: CANVAS_HEIGHT,
+    preventEventBubbling: true,
+    parentElement: canvasContainer,
+    backgroundColor: "#b6b6b6",
+    onResize: ( width, height ) => {
+        // resize demo container to accomodate the canvas size
+        demoContainer.style.width = `${width}px`;
+    }
+});
+addCanvasDemoControls( demoContainer, cvs );
 
-            // STEP 1 : SETUP
-            // --------------------------------------
+// create a Sprite to render a placeholder message
+class TextSprite extends Sprite {
+    constructor( text, opts ) {
+        super( opts );
+        this.textProps = { text, color: "#000", font: "Arial", size: 24, unit: "pt", center: true };
+    }
+    draw( renderer ) {
+        renderer.drawText( this.textProps, this.getX(), this.getY(), this.getDrawProps() );
+    }
+}
+const text = new TextSprite( "No image loaded", { x: CANVAS_WIDTH / 2, y: CANVAS_HEIGHT / 2 });
+cvs.addChild( text );
 
-            const demoContainer   = document.querySelector( ".demo-container" );
-            const canvasContainer = document.querySelector( ".demo-canvas-container" );
+// create the Sprite that will represent the loaded image
+class CroppableImage extends Sprite {
+    constructor( opts ) {
+        super( opts );
+    }
 
-            const idealVpWidth  = 640;
-            const idealVpHeight = 320;
-            const bgWidth       = 800;
-            const bgHeight      = 1067; // is size of IMAGE_BACKGROUND assets
-            const cvsWidth      = bgWidth;
-            const cvsHeight     = bgHeight;
+    // override the setBounds method (invoked by the pointer event handlers) as
+    // we want to constrain the movement to always keep the full Canvas occupied
+    // and not allowing dragging the image outside of visible bounds. As the
+    // image can be scaled, we override this method instead of customizing the setConstraint()
 
-            let cvs;
-            cvs = new Canvas({
-                width: cvsWidth,
-                height: cvsHeight,
-                preventEventBubbling: true,
-                parentElement: canvasContainer,
-                backgroundColor: "#00ff00",
-                animate: true,
-                viewport: { width: idealVpWidth, height: idealVpHeight },
-                viewportHandler: handleCanvasEvent,
-                onResize: ( width, height ) => {
-                    // resize demo container to accommodate the canvas size
-                    demoContainer.style.width = `${width}px`;
+    setBounds( x, y, width, height ) {
+        // determine the max x and y positions at which the image will remain visible
+        const maxX = -( width  - cvs.getWidth() );
+        const maxY = -( height - cvs.getHeight() );
 
-                    if ( !cvs ) {
-                        return; // still in construction phase
-                    }
-                    const { innerWidth, innerHeight } = window;
-                    const currentViewport = cvs.getViewport();
+        this.setWidth ( width );
+        this.setHeight( height );
+        
+        this.setX( Math.min( 0, Math.max( maxX, x )));
+        this.setY( Math.min( 0, Math.max( maxY, y )));
+    }
+};
+const sprite = new CroppableImage({ interactive: true });
 
-                    // in case the available window size is smaller than the viewport size
-                    // we downscale the viewport
+// enable in-bounds Sprite dragging
+sprite.setDraggable( true, true );
+cvs.addChild( sprite );
 
-                    if ( innerWidth < currentViewport.width || innerHeight < currentViewport.height ) {
-                        cvs.setViewport(
-                            Math.min( currentViewport.width, innerWidth ),
-                            Math.min( currentViewport.height, innerHeight )
-                        );
-                    } else if ( innerWidth > idealVpWidth || innerHeight > idealVpHeight ) {
-                        // else we scale it to the ideal size
-                        if ( currentViewport.width !== idealVpWidth || currentViewport.height !== idealVpHeight ) {
-                            cvs.setViewport( idealVpWidth, idealVpHeight );
-                            cvs.handleResize();
-                        }
-                    }
-                    cacheScrollHandleSizes();
-                }
-            });
-            addCanvasDemoControls( demoContainer, cvs );
+// STEP 2 : ATTACH LISTENERS TO FORM ELEMENTS
+// ------------------------------------------
 
-            // register assets
-            
-            Promise.all([
-                cvs.loadResource( "background",  IMAGE_BACKGROUND ),
-                cvs.loadResource( "spritesheet", IMAGE_SPRITE_SHEET ),
-            ]).then(() => {
-                class CircleSprite extends Sprite {
-                    constructor( x, y, radius, color ) {
-                        super({
-                            x: x - radius * 2,
-                            y: y - radius * 1.5,
-                            width: radius * 2,
-                            height: radius * 2
-                        });
+let orgImageWidth  = 0;
+let orgImageHeight = 0;
+let minImageWidth  = 0;
+let minImageHeight = 0;
 
-                        /* instance properties */
+document.getElementById( "fileSelect" ).onclick = event => {
+    // this is just some hackaroni to trigger the file selector from the
+    // hidden file input. File inputs look uglier than buttons...
+    const simulatedEvent = document.createEvent( "MouseEvent" );
+    simulatedEvent.initMouseEvent(
+        "click", true, true, window, 1,
+        0, 0, 0, 0, false,
+        false, false, false, 0, null
+    );
+    document.getElementById( "file" ).dispatchEvent( simulatedEvent );
+};
 
-                        this.radius = radius;
-                        this.color  = color;
-                        this.setDraggable( true );
-                    }
+// read local file data into the Sprite Bitmap when the
+// user has selected an image file
 
-                    /* overridden zCanvas.sprite methods */
+document.getElementById( "file" ).onchange = event => {
+    const files = event.target.files;
+    if ( !files || files.length === 0 ) {
+        return;
+    }
+    
+    // load file image data into memory
 
-                    draw( renderer, viewport ) {
-                        const x = this.getX() - viewport.left;
-                        const y = this.getY() - viewport.top;
+    const file = files[ 0 ];
+    cvs.disposeResource( "loadedFile" ); // unload any previously registered resource under the same name
+    cvs.loadResource( "loadedFile", file ).then( imgSize => {
+        orgImageWidth  = imgSize.width;
+        orgImageHeight = imgSize.height;
 
-                        renderer.drawCircle(
-                            x, y, this.radius,
-                            // when hovering the circle is white
-                            this.hover ? "#FFFFFF" : this.color,
-                            // when hovering, we add an outline to the circle
-                            this.hover ? "#FF9900" : undefined
-                        );
-                    }
-                }
+        const canvasWidth  = cvs.getWidth();
+        const canvasHeight = cvs.getHeight();
 
-                // first sprite will act as a background
-                // (see included "assets.js"-file for the IMAGE_BACKGROUND data)
+        // image dimensions at the default (=lowest) zoom level should match canvas dimensions
 
-                cvs.addChild( new Sprite({
-                    width: bgWidth,
-                    height: bgHeight,
-                    resourceId: "background",
-                }));
-
-                // fill area with Sprites
-
-                for ( let i = 0; i < 50; ++i ) {
-                    cvs.addChild( new CircleSprite( cvsWidth * Math.random(), cvsHeight * Math.random(), 10 + ( Math.random() * 25 ), "#FF0099" ));
-                }
-
-                // add a single Sprite using a tilesheet animation
-                // (see included "assets.js"-file for the IMAGE_SPRITE_SHEET data)
-
-                const hero = new Sprite({
-                    x: idealVpWidth  / 2 - 38 / 2,
-                    y: idealVpHeight / 2 - 35 / 2,
-                    width: 38,
-                    height: 35,
-                    resourceId: "spritesheet",
-                    sheet: [
-                        { row: 1, col: 0, fpt: 5, amount: 3 },  // standing still, facing right
-                    ]
-                });
-                cvs.addChild( hero );
-            });
-
-            // STEP 2 : CONFIGURE VIEWPORT SCROLLBARS
-            // --------------------------------------
-
-            const horScroll = document.querySelector( "#horizontalScroll" );
-            const verScroll = document.querySelector( "#verticalScroll" );
-            const horHandle = horScroll.querySelector( ".handle" );
-            const verHandle = verScroll.querySelector( ".handle" );
-
-            const trackWidth   = idealVpWidth;
-            const trackHeight  = idealVpHeight;
-            const scrollWidth  = cvsWidth  - idealVpWidth;
-            const scrollHeight = cvsHeight - idealVpHeight;
-            
-            let horHandleSize = 0;
-            let verHandleSize = 0;
-            let scrollLeft    = 0;
-            let scrollTop     = 0;
-
-            function cacheScrollHandleSizes() {
-                horHandleSize = ( cvs.getViewport().width  / cvs.getWidth() )  * trackWidth;
-                verHandleSize = ( cvs.getViewport().height / cvs.getHeight() ) * trackHeight;
-
-                horHandle.style.width  = `${horHandleSize}px`;
-                verHandle.style.height = `${verHandleSize}px`;
-            }
-            cacheScrollHandleSizes();
-
-            // STEP 3 : ATTACH HANDLERS TO VIEWPORT SCROLLBARS
-            // -----------------------------------------------
-
-            const downEvents = [ "mousedown", "touchstart" ];
-            const moveEvents = [ "mousemove", "touchmove", "wheel" ];
-            const upEvents   = [ "mouseup", "touchend", "touchcancel" ];
-
-            downEvents.forEach( type => {
-                horScroll.addEventListener( type, handleScrollEvent );
-                verScroll.addEventListener( type, handleScrollEvent );
-            });
-            upEvents.forEach( type => {
-                window.addEventListener( type, handleScrollEvent );
-            });
-            moveEvents.forEach( type => {
-                window.addEventListener( type, handleScrollEvent, { passive: false });
-            });
-
-            let hasHorizontalScroll = false;
-            let hasVerticalScroll   = false;
-            // these ratios describe the % of total in 0 - 1 range
-            let viewportXratio = 0;
-            let viewportYratio = 0;
-
-            function handleScrollEvent( e ) {
-                const isHorizontalScrollTrack = e.target === horScroll;
-                const isVerticalScrollTrack   = e.target === verScroll;
-                // pointer down == scroll start
-                if ( downEvents.includes( e.type )) {
-                    if ( isHorizontalScrollTrack ) {
-                        hasHorizontalScroll = true;
-                        hasVerticalScroll   = false;
-                    } else if ( isVerticalScrollTrack ) {
-                        hasHorizontalScroll = false;
-                        hasVerticalScroll   = true;
-                    }
-                }
-                // pointer up == scroll end
-                if ( upEvents.includes( e.type )) {
-                    hasHorizontalScroll = false;
-                    hasVerticalScroll   = false;
-                }
-                if (( !hasHorizontalScroll && !hasVerticalScroll ) || ( !isHorizontalScrollTrack && !isVerticalScrollTrack )) {
-                    return;
-                }
-                // pointer move == move scroll bar
-                if ( moveEvents.includes( e.type )) {
-                    let pointerX = e.offsetX;
-                    let pointerY = e.offsetY;
-                    // touch event handling
-                    const touches = e.touches || e.changedTouches;
-                    if ( touches && touches.length ) {
-                        pointerX = touches[ 0 ].pageX;
-                        pointerY = touches[ 0 ].pageY;
-                        e.preventDefault(); // prevents page bounce
-                    }
-                    if ( isHorizontalScrollTrack ) {
-                        viewportXratio = Math.max( 0, pointerX / trackWidth );
-                        positionHorizontalHandle();
-                    }
-                    if ( isVerticalScrollTrack ) {
-                        viewportYratio = Math.max( 0, pointerY / trackHeight );
-                        positionVerticalHandle();
-                    }
-                    cvs.panViewport(
-                        Math.round( viewportXratio * ( cvs.getWidth()  - idealVpWidth )),
-                        Math.round( viewportYratio * ( cvs.getHeight() - idealVpHeight ))
-                    );
-                }
-            }
-
-            function handleCanvasEvent( e ) {
-                // panning can also be adjusted internally by zCanvas (for instance wheel/trackpad event)
-                // by listening to these events we can keep the scroll handle offsets in sync
-                if ( e.type === "panned" ) {
-                    viewportXratio = e.value.left / ( cvsWidth  - idealVpWidth );
-                    viewportYratio = e.value.top  / ( cvsHeight - idealVpHeight );
-                    positionHorizontalHandle();
-                    positionVerticalHandle();
-                }
-            }
-
-            function positionHorizontalHandle() {
-                horHandle.style.left = (( trackWidth - horHandleSize ) * viewportXratio ) + "px";
-            }
-
-            function positionVerticalHandle() {
-                verHandle.style.top = (( trackHeight - verHandleSize ) * viewportYratio ) + "px";
-            }
-        });
-
-    </script>
-    <style type="text/css">
-        .demo-wrapper {
-            position: relative;
-            display: inline-block;
+        const isLandscape = orgImageWidth >= orgImageHeight;
+        if ( isLandscape ) {
+            minImageWidth  = canvasWidth;
+            minImageHeight = canvasWidth * ( orgImageHeight / orgImageWidth );
+        } else {
+            minImageWidth  = canvasHeight * ( orgImageWidth / orgImageHeight );
+            minImageHeight = canvasHeight;
         }
-        #verticalScroll,
-        #horizontalScroll {
-            position: absolute;
-            background-color: #666;
+
+        // ensure the image is occupying the full canvas without empty space on the non-dominant side
+        let ratio = 1;
+        if ( minImageWidth < canvasWidth ) {
+            ratio = canvasWidth / minImageWidth;
+        } else if ( minImageHeight < canvasHeight ) {
+            ratio = canvasHeight / minImageHeight;
         }
-        #verticalScroll {
-            right: 0;
-            top: 0;
-            width: 20px;
-            height: 100%;
-        }
-        #horizontalScroll {
-            bottom: 0;
-            left: 0;
-            width: 100%;
-            height: 20px;
-        }
-        .handle {
-            position: absolute;
-            background-color: #B6B6B6;
-            pointer-events: none; /* the background captures the events */
-        }
-        #verticalScroll .handle {
-            width: 100%;
-            min-height: 5px;
-        }
-        #horizontalScroll .handle {
-            height: 100%;
-            min-width: 5px;
-        }
-    </style>
+        minImageWidth  *= ratio;
+        minImageHeight *= ratio;
+
+        // set the loaded image Bitmap as the Sprite image source using calculated dimensions
+        sprite.setResource( "loadedFile", minImageWidth, minImageHeight );
+
+        cvs.removeChild( text ); // remove the placeholder text
+    }).catch(() => {
+        alert( "Could not decode image from selected File" );
+    });
+}
+
+// scale the image when the scale slider changes value
+
+document.getElementById( "scale" ).oninput = event => {
+    const scale        = event.target.value;
+    const scaledWidth  = minImageWidth  * scale;
+    const scaledHeight = minImageHeight * scale;
+    const oldBounds    = sprite.getBounds();
+
+    // note we scale from the center of the image to maintain
+    // relative offset (the overridden setBounds() method will correct
+    // the offset if the image is scaled from any of the edges)
+
+    sprite.setBounds(
+        oldBounds.left - ( scaledWidth  / 2 - oldBounds.width  / 2 ),
+        oldBounds.top  - ( scaledHeight / 2 - oldBounds.height / 2 ),
+        scaledWidth,
+        scaledHeight
+    );
+};
+
+// download zCanvas contents as an image file
+
+document.getElementById( "save" ).onclick = () => {
+    const snapshot = cvs.getElement().toDataURL( "image/png" );
+    const downloadLink = document.createElement( "a" );
+    downloadLink.setAttribute( "download", "demo5.png" );
+    downloadLink.setAttribute( "href", snapshot.replace(/^data:image\/png/, "data:application/octet-stream" ));
+    downloadLink.click();
+};
+</script>
 </body>
 </html>
