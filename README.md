@@ -57,19 +57,20 @@ _(for those craving a more hands-on approach, you can also view the source conte
 
 You can view some basic features in the down-and-dirty demos here.
 
-Note these demos were written in vanilla JavaScript without the use of any libraries (other than RequireJS to load a transpiled version of zCanvas).
+Note these demos were written in vanilla JavaScript without the use of any libraries (other than a transpiled version of zCanvas).
 
 ### Game demos
 
- * [Demo #1: Spritesheets and pixel-perfect collisions](https://rawgithub.com/igorski/zcanvas/master/examples/demo1.html)
- * [Demo #2: Custom game loop and fast collision detections](https://rawgithub.com/igorski/zcanvas/master/examples/demo2.html)
+ * [Demo #1: Spritesheets, gameloops and fast collision detection](https://rawgithub.com/igorski/zcanvas/master/examples/demo1.html)
+  * [Demo #2: Pixel-perfect collisions](https://rawgithub.com/igorski/zcanvas/master/examples/demo2.html)
 
 ### Graphics manipulation demos
 
- * [Demo #3: Layers and interactions](https://rawgithub.com/igorski/zcanvas/master/examples/demo3.html)
- * [Demo #4: Integrating 3rd party animation libraries](https://rawgithub.com/igorski/zcanvas/master/examples/demo4.html)
- * [Demo #5: Local image manipulation](https://rawgithub.com/igorski/zcanvas/master/examples/demo5.html)
- * [Demo #6: Pannable viewport](https://rawgithub.com/igorski/zcanvas/master/examples/demo6.html)
+ * [Demo #3: Multi-layer pointer interactions](https://rawgithub.com/igorski/zcanvas/master/examples/demo3.html)
+ * [Demo #4: Integrating 3rd party animation library](https://rawgithub.com/igorski/zcanvas/master/examples/demo4.html)
+  * [Demo #5: Integrating 3rd party physics library](https://rawgithub.com/igorski/zcanvas/master/examples/demo5.html)
+ * [Demo #6: Local image manipulation](https://rawgithub.com/igorski/zcanvas/master/examples/demo6.html)
+ * [Demo #7: Pannable viewport](https://rawgithub.com/igorski/zcanvas/master/examples/demo7.html)
 
 ## Real-life examples
 
