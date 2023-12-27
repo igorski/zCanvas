@@ -99,6 +99,26 @@ describe( "Canvas", () => {
 
             expect( canvas.collision ).toBeInstanceOf( Collision );
         });
+
+        it( "should by default add a listener to track window resize events", () => {
+            const canvas = new Canvas();
+
+            const resizeSpy = vi.spyOn( canvas, "setDimensions" );
+
+            window.dispatchEvent( new Event( "resize", {} ));
+
+            expect( resizeSpy ).toHaveBeenCalled();
+        });
+
+        it( "should not add a listener to track window resize events when autoSize is disabled", () => {
+            const canvas = new Canvas({ autoSize: false });
+
+            const resizeSpy = vi.spyOn( canvas, "setDimensions" );
+
+            window.dispatchEvent( new Event( "resize", {} ));
+
+            expect( resizeSpy ).not.toHaveBeenCalled();
+        });
     });
 
     describe( "when acting as a mediator for the resource Cache", () => {

@@ -53,6 +53,7 @@ interface CanvasProps {
     animate?: boolean;
     smoothing?: boolean;
     stretchToFit?: boolean;
+    autoSize?: boolean;
     viewport?: Size;
     viewportHandler?: ({}: { type: "panned", value: Viewport }) => void;
     preventEventBubbling?: boolean;
@@ -125,6 +126,7 @@ export default class Canvas extends DisplayObject<Canvas> {
         animate = false,
         smoothing = true,
         stretchToFit = false,
+        autoSize = true,
         viewport = null,
         preventEventBubbling = false,
         parentElement = null,
@@ -176,7 +178,7 @@ export default class Canvas extends DisplayObject<Canvas> {
 
         this.setSmoothing( smoothing );
         this.preventEventBubbling( preventEventBubbling );
-        this.addListeners();
+        this.addListeners( autoSize );
 
         if ( parentElement instanceof HTMLElement ) {
             this.insertInPage( parentElement );
@@ -724,7 +726,7 @@ export default class Canvas extends DisplayObject<Canvas> {
      * added onto the canvas, the Canvas will delegate events onto
      * the "children" of the canvas' Display List
      */
-    protected addListeners(): void {
+    protected addListeners( addResizeListener = false ): void {
         if ( !this._eventHandler ) {
             this._eventHandler = new EventHandler();
         }
@@ -746,7 +748,9 @@ export default class Canvas extends DisplayObject<Canvas> {
         if ( this._viewport ) {
             theHandler.add( element, "wheel", theListener );
         }
-        theHandler.add( window, "resize", this.handleResize.bind( this ));
+        if ( addResizeListener ) {
+            theHandler.add( window, "resize", this.handleResize.bind( this ));
+        }
     }
 
     protected removeListeners(): void {
