@@ -44,6 +44,8 @@ interface SpriteProps {
     sheetTileHeight?: number,
 }
 
+type TransformProps = { scale: number, rotation: number, alpha: number };
+
 /**
  * provides an API derived from the Flash Sprite / Display Object for manipulating "Objects" on a canvas element.
  *
@@ -84,9 +86,10 @@ export default class Sprite extends DisplayObject<Sprite> {
         tileHeight: number;
         onComplete?: ( sprite: Sprite ) => void;
     } | undefined;
-    protected _drawProps: DrawProps | undefined;
     protected _resourceId: string; // resourceId registered in renderer Cache
-
+    private _dp: DrawProps | undefined; // derived classes should use the protected getter getDrawProps()
+    private _tf: TransformProps; // // derived classes should use the protected getter getTransforms()
+    
     protected _pressTime: number;
     protected _pressed = false;
     protected _dragStartOffset: Point; // coordinates of this Sprite at the moment drag was started
@@ -343,16 +346,9 @@ export default class Sprite extends DisplayObject<Sprite> {
     getBounds(): Rectangle {
         return this._bounds;
     }
-
-    getDrawProps(): DrawProps {
-        if ( !this._drawProps ) {
-            this.invalidateDrawProps( true );
-        }
-        return this._drawProps;
-    }
     
     getRotation(): number {
-        return this._rotation;
+        return this._dp?.rotation ?? this._rotation; // get from DrawProps (when existing) as outside transforms can tween this value
     }
 
     setRotation( angleInDegrees: number, optPivot?: Point ): void {
@@ -362,12 +358,28 @@ export default class Sprite extends DisplayObject<Sprite> {
     }
 
     getScale(): number {
-        return this._scale;
+        return this._dp?.scale ?? this._scale; // get from DrawProps (when existing) as outside transforms can tween this value
     }
 
     setScale( value: number ): void {
         this._scale = value;
         this.invalidateDrawProps();
+    }
+
+    /**
+     * The transform Object acts as a proxy for the DrawProps Object
+     * passed to the renderer implementation. This because tweening libraries (looking at you, GSAP)
+     * enrich the Object which poses problems when passing the data to the renderer inside the Worker
+     */
+    getTransforms(): TransformProps {
+        if ( !this._dp ) {
+            this.invalidateDrawProps( true ); // lazily create draw props
+        }
+        if ( !this._tf ) {
+            const { scale, rotation, alpha } = this._dp;
+            this._tf = { scale, rotation, alpha };
+        }
+        return this._tf;
     }
 
     /**
@@ -666,10 +678,10 @@ export default class Sprite extends DisplayObject<Sprite> {
                         this._resourceId,
                         src.left, src.top, src.width, src.height,
                         dest.left, dest.top, dest.width, dest.height,
-                        this._drawProps,
+                        this.getDrawProps(),
                     );
                 } else {
-                    renderer.drawImage( this._resourceId, left, top, width, height, this._drawProps );
+                    renderer.drawImage( this._resourceId, left, top, width, height, this.getDrawProps() );
                 }
             }
             else {
@@ -690,7 +702,7 @@ export default class Sprite extends DisplayObject<Sprite> {
                     aniProps.type.row * tileHeight, // tile y offset
                     tileWidth, tileHeight,
                     left, top, width, height,
-                    this._drawProps,
+                    this.getDrawProps(),
                 );
             }
         }
@@ -712,6 +724,21 @@ export default class Sprite extends DisplayObject<Sprite> {
             return;
         }
         super.dispose();
+    }
+
+    /**
+     * Retrieve the latest state of the DrawProps object for the next render.
+     * In case an animation transformation is running, the values are synced.
+     */
+    protected getDrawProps(): DrawProps | undefined {
+        if ( this._tf ) {
+            const { alpha, rotation, scale } = this._tf;
+
+            this._dp.alpha    = alpha;
+            this._dp.rotation = rotation;
+            this._dp.scale    = scale;
+        }
+        return this._dp;
     }
 
     /* event handlers */
@@ -815,7 +842,7 @@ export default class Sprite extends DisplayObject<Sprite> {
             // in case we only handled this object for a short
             // period (250 ms), we assume it was clicked / tapped
 
-            if (( Date.now() - this._pressTime ) < 250 ) {
+            if (( window.performance.now() - this._pressTime ) < 250 ) {
                 this.handleClick();
             }
             this.handleRelease( x, y, event );
@@ -839,7 +866,7 @@ export default class Sprite extends DisplayObject<Sprite> {
                  * timestamp of the moment the interaction down handler was triggered, used for
                  * determining on release whether interaction was actually a tap/click
                  */
-                this._pressTime = Date.now();
+                this._pressTime = window.performance.now();
                 this._pressed = true;
 
                 if ( this._draggable ) {
@@ -888,13 +915,13 @@ export default class Sprite extends DisplayObject<Sprite> {
 
             // pool Object instance
             
-            this._drawProps = this._drawProps ?? {
+            this._dp = this._dp ?? {
                 alpha: 1,
                 rotation: 0,
                 scale: 1,
                 safeMode: false
             };
-            const props = this._drawProps;
+            const props = this._dp;
             
             props.rotation  = this._rotation;
             props.pivot     = this._pivot;
