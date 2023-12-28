@@ -23,17 +23,64 @@ describe( "RendererImpl", () => {
         expect( canvas.getElement().getContext( "2d" )!.imageSmoothingEnabled ).toBe( false );
     });
 
+    describe( "when setting the device pixel ratio", () => {
+        it( "should not do anything when the ratio is 1", () => {
+            const scaleSpy = vi.spyOn( renderer, "scale" );
+            const saveSpy  = vi.spyOn( renderer, "save" );
+
+            renderer.setPixelRatio( 1 );
+
+            expect( scaleSpy ).not.toHaveBeenCalled();
+            expect( saveSpy ).not.toHaveBeenCalled();
+        });
+
+        it( "should not do anything when the ratio is 1", () => {
+            const scaleSpy = vi.spyOn( renderer, "scale" );
+            const saveSpy  = vi.spyOn( renderer, "save" );
+
+            renderer.setPixelRatio( 2.65 );
+
+            expect( scaleSpy ).toHaveBeenCalledWith( 1 );
+            expect( saveSpy ).toHaveBeenCalled();
+        });
+    });
+
+    describe( "when scaling the Canvas context", () => {
+        it( "should use the x value when y hasn't been provided", () => {
+            const ctxScaleSpy = vi.spyOn( ctx, "scale" );
+
+            renderer.scale( 3.5 );
+
+            expect( ctxScaleSpy ).toHaveBeenCalledWith( 3.5, 3.5 );
+        });
+
+        it( "should use the provided values", () => {
+            const ctxScaleSpy = vi.spyOn( ctx, "scale" );
+
+            renderer.scale( 2, 3 );
+
+            expect( ctxScaleSpy ).toHaveBeenCalledWith( 2, 3 );
+        });
+
+        it( "should multiply the scale by the configured pixel ratio", () => {
+            const ctxScaleSpy = vi.spyOn( ctx, "scale" );
+
+            renderer.setPixelRatio( 2.5 );
+            renderer.scale( 2, 3 );
+
+            expect( ctxScaleSpy ).toHaveBeenCalledWith( 5, 7.5 );
+        });
+    });
+
     describe( "when managing transformation and blending operations for a DrawProps definition", () => {
         const x = 20, y = 10, width = 30, height = 15;
 
         let setTransformSpy;
-        let resetTransformSpy;
         let saveSpy;
         let restoreSpy;
 
         beforeEach(() => {
             setTransformSpy = vi.spyOn( ctx, "setTransform" );
-            resetTransformSpy = vi.spyOn( ctx, "resetTransform" );
             saveSpy = vi.spyOn( ctx, "save" );
             restoreSpy = vi.spyOn( ctx, "restore" );
         });
@@ -129,11 +176,13 @@ describe( "RendererImpl", () => {
         });
 
         describe( "and resetting the Context state", () => {
-            it( "should reset the transformation when only transformations were applied", () => {
+            it( "should reset the transformation when only transformations were applied, respecting the configured pixel ratio as scale factor", () => {
+                renderer.setPixelRatio( 2.65 );
+
                 // @ts-expect-error snooping on protected method
                 renderer.applyReset( ResetCommand.TRANSFORM );
 
-                expect( resetTransformSpy ).toHaveBeenCalled();
+                expect( setTransformSpy ).toHaveBeenCalledWith( 2.65, 0, 0, 2.65, 0, 0 );
                 expect( restoreSpy ).not.toHaveBeenCalled();
             });
 
@@ -141,7 +190,7 @@ describe( "RendererImpl", () => {
                 // @ts-expect-error snooping on protected method
                 renderer.applyReset( ResetCommand.ALL );
 
-                expect( resetTransformSpy ).not.toHaveBeenCalled();
+                expect( setTransformSpy ).not.toHaveBeenCalled();
                 expect( restoreSpy ).toHaveBeenCalled();
             });
 
@@ -149,7 +198,7 @@ describe( "RendererImpl", () => {
                 // @ts-expect-error snooping on protected method
                 renderer.applyReset( ResetCommand.NONE );
 
-                expect( resetTransformSpy ).not.toHaveBeenCalled();
+                expect( setTransformSpy ).not.toHaveBeenCalled();
                 expect( restoreSpy ).not.toHaveBeenCalled();
             });
         });
