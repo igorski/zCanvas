@@ -26,6 +26,7 @@ import RenderAPI from "./rendering/RenderAPI";
 import EventHandler from "./utils/EventHandler";
 import { toggleFullScreen, transformPointer } from "./utils/Fullscreen";
 import { constrainAspectRatio } from "./utils/ImageMath";
+import { useWorker } from "./utils/Optimization";
 import Collision from "./Collision";
 import DisplayObject from "./DisplayObject";
 import type Sprite from "./Sprite";
@@ -144,14 +145,8 @@ export default class Canvas extends DisplayObject<Canvas> {
 
         this.DEBUG = debug;
 
-        const { userAgent } = navigator;
-        // TODO: maybe only do Worker for Chrome only?
-        const isSafari = userAgent.includes( "Safari" ) && !userAgent.includes( "Chrome" );
-        
-        const useWorker = [ "auto", "worker" ].includes( optimize ) && !isSafari;
-
         this._element  = document.createElement( "canvas" );
-        this._renderer = new RenderAPI( this._element, useWorker, debug );
+        this._renderer = new RenderAPI( this._element, useWorker( optimize ), debug );
         this.collision = new Collision( this._renderer );
 
         this._updateHandler   = onUpdate;
@@ -526,6 +521,11 @@ export default class Canvas extends DisplayObject<Canvas> {
                     const touches = ( event as TouchEvent ).changedTouches;
                     let i = 0, l = touches.length;
 
+                    // in case canvas is scaled to fit, we need to transform the touch coordinates
+
+                    const xScale = 1 / this._scale.x;
+                    const yScale = 1 / this._scale.y;
+
                     if ( l > 0 ) {
                         let { x, y } = this.getCoordinate();
                         if ( viewport ) {
@@ -539,8 +539,8 @@ export default class Canvas extends DisplayObject<Canvas> {
                             const touch          = touches[ i ];
                             const { identifier } = touch;
 
-                            eventOffsetX = touch.pageX - x;
-                            eventOffsetY = touch.pageY - y;
+                            eventOffsetX = ( touch.pageX * xScale ) - x;
+                            eventOffsetY = ( touch.pageY * yScale ) - y;
 
                             switch ( event.type ) {
                                 // on touchstart events, when we a Sprite handles the event, we
@@ -779,7 +779,7 @@ export default class Canvas extends DisplayObject<Canvas> {
 
         let scale = 1;
 
-        const stretchToFit = !this._viewport && ( this._stretchToFit || innerWidth < idealWidth || innerHeight < idealHeight );
+        const stretchToFit = !this._viewport && this._stretchToFit;//( this._stretchToFit || innerWidth < idealWidth || innerHeight < idealHeight );
 
         if ( stretchToFit ) {
 
@@ -806,6 +806,13 @@ export default class Canvas extends DisplayObject<Canvas> {
                 
                 this.setViewport( viewportWidth, viewportHeight );
             }*/
+
+            // when the ideal dimensions exceed the available bounds, scale the Canvas down
+            if ( !this._viewport ) {
+                if ( idealWidth > innerWidth ) {
+                    scale = innerWidth / idealWidth;
+                }
+            }
         }
 
         // we override the scale adjustment performed by updateCanvasSize above as
@@ -815,7 +822,8 @@ export default class Canvas extends DisplayObject<Canvas> {
     }
 
     protected updateCanvasSize(): void {
-        const scaleFactor = this._pxr;
+        // when smoothing is disabled, there's no need to scale to correct for HDPI screen
+        const scaleFactor = this._smoothing ? this._pxr : 1;
 
         let width: number;
         let height: number;

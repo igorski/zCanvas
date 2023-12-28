@@ -11,25 +11,39 @@
     <script type="text/javascript" src="./assets/demo2_images.js"></script>
 </head>
 <body>
-<div class="demo-container">
+<div class="demo-container demo-container--wide">
     <div class="demo-header">
         <h1>zCanvas : Shoot 'em up with fast collision detection</h1>
     </div>
-    <div class="demo-canvas-container"><!-- x --></div>
-    <div class="demo-controls">
-        <div>
-            <label for="fps">Framerate (15 to 60 fps)</label>
-            <input type="range" id="fps" min="15" max="60" value="60" step="1" />
+    <div class="demo-container__columns">
+    <div class="demo-container__columns-column">
+        <div class="demo-canvas-container"><!-- x --></div>
+        <div class="demo-controls">
+            <div>
+                <label for="fps">Framerate (15 to 60 fps)</label>
+                <input type="range" id="fps" min="15" max="60" value="60" step="1" />
+            </div>
+            <button type="button" id="fullscreen">Fullscreen</button>
         </div>
-        <button type="button" id="fullscreen">Fullscreen</button>
     </div>
-    <p class="demo-description">
-        Demo features : multiple layers of parallax scrolling, endless waves of enemies, spritesheet explosions
-        and tons of bullets using the high performing collision detection routine (which is less precise but adequate
-        in this context). Furthermore, framerate is adjustable at runtime while game speed is maintained.
-        Use arrow keys and spacebar to shoot. A complete game based on this demo, written using zCanvas
-        can be found <a href="https://github.com/igorski/weltkriegsimulator">here</a>.
-    </p>
+    <div class="demo-container__columns-column">
+        <div class="demo-description">
+            <p>
+                Demo features : multiple layers of parallax scrolling, endless waves of enemies, spritesheet explosions
+                and tons of bullets using the high performing collision detection routine (less precise but more than adequate
+                in this context).
+            </p>
+            <p>
+                Furthermore, framerate is adjustable at runtime while game speed is maintained.
+                Use the arrow keys and spacebar to shoot (or the on-screen controls).
+            </p>
+            <p>
+                A complete game based on this demo, written using zCanvas
+                can be found <a href="https://github.com/igorski/weltkriegsimulator">here</a>.
+            </p>
+        </div>
+    </div>
+</div>
 </div>
 <script type="module">
 import { Canvas, Sprite } from "../dist/zcanvas.mjs";
@@ -300,17 +314,18 @@ const cvs = new Canvas({
     animate: true,
     smoothing: false, // pixel art ahoy
     fps: IDEAL_FPS,
-    backgroundColor: "#000099",
+    stretchToFit: isMobile(), // in mobile view all DOM elements apart from canvas container are hidden, so essentially fullscreen
+    backgroundColor: "#000099", // "blue sky"
     preventEventBubbling: true,
     parentElement: canvasContainer,
     onUpdate: handleGameLoop, // see below
     onResize: ( width, height ) => {
         // resize demo container to accommodate the canvas size
-        demoContainer.style.width = `${width}px`;
+        canvasContainer.style.width = `${width}px`;
     }
 });
 addCanvasDemoControls( demoContainer, cvs );
-
+window.cvs = cvs; // QQQ
 // 4.1 register assets
 
 await Promise.all([

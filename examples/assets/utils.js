@@ -1,5 +1,16 @@
 const IDEAL_FPS = 60; // see #fps range slider
 
+/* also see styles.css media query */
+function isMobile() {
+    const size = 480;
+    const { innerWidth, innerHeight } = window;
+    if ( innerWidth > innerHeight ) { // landscape
+        return innerHeight <= size;
+    }
+    // portrait and square
+    return innerWidth <= size;
+}
+
 /**
  * Adds some functionality that allows us to keep the Canvas' container and
  * Canvas contents in sync across resolution / available window space changes

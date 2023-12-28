@@ -99,13 +99,13 @@ export default class RendererImpl implements IRenderer {
         // setTransform() is generally more performant, only use transform() when
         // the canvas is scaled for HDPI screens (allows easier accumulation for scaling factors)
         transformFn = _pixelRatio === 1 ? "setTransform" : "transform";
-
+        /*
         if ( ratio !== 1 ) {
             // prescale the canvas and save it so subsequent drawing operations
             // don't need to take HDPI scaling factors into account
             this.scale( 1 );
             this.save();
-        }
+        }*/
     }
 
     /* IRenderer wrappers */
@@ -131,7 +131,7 @@ export default class RendererImpl implements IRenderer {
     }
 
     scale( xScale: number, yScale = xScale ): void {
-        this._context.scale( xScale * _pixelRatio, yScale * _pixelRatio );
+        this._context.scale( xScale, yScale );// * _pixelRatio, yScale * _pixelRatio );
     }
 
     setBlendMode( mode: GlobalCompositeOperation ): void {
@@ -178,10 +178,9 @@ export default class RendererImpl implements IRenderer {
             ctx.fillRect( x, y, width, height );
         }
         if ( stroke ) {
-            const lineWidth = stroke.size;
-            ctx.lineWidth   = lineWidth;
+            ctx.lineWidth   = stroke.size;
             ctx.strokeStyle = stroke.color;
-            ctx.strokeRect( HALF + ( x - lineWidth ), HALF + ( y - lineWidth ), width, height );
+            ctx.strokeRect( HALF + x, HALF + y, width, height );
         }
         this.applyReset( prep );
     }
@@ -196,10 +195,10 @@ export default class RendererImpl implements IRenderer {
             ctx.fillRect( x, y, width, height );
         }
         if ( stroke ) {
-            const lineWidth = stroke.size;
+            ctx.lineWidth   = stroke.size;
             ctx.strokeStyle = stroke.color;
             ctx.beginPath();
-            ctx.roundRect( HALF + ( x - lineWidth ), HALF + ( y - lineWidth ), width, height, radius );
+            ctx.roundRect( HALF + x, HALF + y, width, height, radius );
             ctx.stroke();
         }
         this.applyReset( prep );

@@ -26,7 +26,7 @@
     </div>
     <p class="demo-description">
         Demo features : integration of the <a href="https://brm.io/matter-js/" title="MatterJS homepage" target="_blank">MatterJS</a> physics library, demonstrating the
-        classic Wrecking Ball simulation. You can drag the ball to cause more havoc.
+        classic Wrecking Ball simulation. You can drag and pick up the ball and rethrow it to cause more havoc.
     </p>
 </div>
 <script type="module">
@@ -49,10 +49,11 @@ const cvs = new Canvas({
     height: CANVAS_HEIGHT,
     animate: true,
     fps: IDEAL_FPS,
-    preventEventBubbling: true,
+    stretchToFit: isMobile(), // in mobile view all DOM elements apart from canvas container are hidden, so essentially fullscreen
+    preventEventBubbling: false, // we want to capture Mouse event on the canvasContainer (see Matter.Mouse usage)
     parentElement: canvasContainer,
     onUpdate( now, framesSinceLastRender ) {
-        const ticks = 1000 / ( Math.min( IDEAL_FPS, cvs.getActualFrameRate() * framesSinceLastRender ));
+        const ticks = 1000 / ( Math.min( IDEAL_FPS, cvs.getActualFrameRate() ) * framesSinceLastRender );
         Matter.Engine.update( engine, ticks );
         // as we have registered a custom update handler we must manually invoke the Sprites update method
         for ( const sprite of cvs.getChildren()) {
@@ -68,142 +69,140 @@ addCanvasDemoControls( demoContainer, cvs );
 
 // register assets
 
-Promise.all([
+await Promise.all([
     cvs.loadResource( "background", IMAGE_BACKGROUND ),
     cvs.loadResource( "logo", IMAGE_IGORSKI_LOGO ),
-]).then(() => {
+]);
 
-    const cvsCenterX = cvs.getWidth()  / 2;
-    const cvsCenterY = cvs.getHeight() / 2;
+const cvsCenterX = cvs.getWidth()  / 2;
+const cvsCenterY = cvs.getHeight() / 2;
 
-    // STEP 2 : ADDING THE SPRITES
-    // ---------------------------
+// STEP 2 : ADDING THE SPRITES
+// ---------------------------
 
-    // first sprite will act as a background
-    // (see included "assets.js"-file for the assetBackground-image data)
+// first sprite will act as a background
+// (see included "assets.js"-file for the assetBackground-image data)
 
-    const bgWidth  = 800;
-    const bgHeight = 1067;
-    const bgSprite = new Sprite({ width: bgWidth, height: bgHeight, resourceId: "background" });
+const bgWidth  = 800;
+const bgHeight = 1067;
+const bgSprite = new Sprite({ width: bgWidth, height: bgHeight, resourceId: "background" });
 
-    cvs.addChild( bgSprite );
+cvs.addChild( bgSprite );
 
-    // 2.1 WRECKING BALL
+// 2.1 WRECKING BALL
 
-    class CircleSprite extends Sprite {
-        constructor( matterBody, color = "gray" ) {
-            const radius = matterBody.circleRadius;
-            super({ width: radius, height: radius });
+class CircleSprite extends Sprite {
+    constructor( matterBody ) {
+        const radius = matterBody.circleRadius;
+        super({ width: radius, height: radius });
 
-            this.body   = matterBody;
-            this.radius = radius;
-            this.color  = color;
-        }
-        update() {
-            // sync renderer with Matter body, note we subtract half its size as in MatterJS
-            // the mass of the body is calculated from its center
-            this.setX( this.body.position.x - this.radius );
-            this.setY( this.body.position.y - this.radius );
-        }
-        draw( renderer, viewport ) {
-            this.isVisible( viewport ) && renderer.drawCircle(
-                this.getX(), this.getY(), this.radius, this.color, { size: 5, color: "#FFF" }
-            );
-        }
+        this.body   = matterBody;
+        this.radius = radius;
     }
-
-    // 2.2 BOXES
-
-    class RectSprite extends Sprite {
-        constructor( width, height, matterBody, isWall ) {
-            super({ width, height });
-            this.body = matterBody;
-            this.setResource( isWall ? undefined : "logo" );
-        }
-        update() {
-            // sync renderer with Matter body, note we subtract half its size as in MatterJS
-            // the mass of the body is calculated from its center
-            this.setX( this.body.position.x - this.getWidth()  / 2 );
-            this.setY( this.body.position.y - this.getHeight() / 2 );
-            this.setRotation( this.body.angle * ( 180 / Math.PI )); // radians to degrees
-        }
-        draw( renderer, viewport ) {
-            if ( this._resourceId ) {
-                return super.draw( renderer, viewport );
-            }
-            this.isVisible( viewport ) && renderer.drawRect(
-                this.getX(), this.getY(), this.getWidth(), this.getHeight(), "grey", undefined, this.getDrawProps()
-            )
-        };
+    update() {
+        // sync renderer with Matter body, note we subtract half its size as in MatterJS
+        // the mass of the body is calculated from its center
+        this.setX( this.body.position.x - this.radius );
+        this.setY( this.body.position.y - this.radius );
     }
-
-    // STEP 3 2. PHYSICS LIBRARY EXAMPLE (MatterJS)
-
-    const centerX    = CANVAS_WIDTH / 2;
-    const centerY    = CANVAS_HEIGHT / 2;
-    const bottom     = CANVAS_HEIGHT;
-    const BLOCK_SIZE = 50;
-    const BALL_SIZE  = 50;
-
-    // convenience methods to create Matter Bodies with zCanvas Sprites to render
-
-    function createRectangle( x, y, width, height, isWall = false ) {
-        const body   = Matter.Bodies.rectangle( x, y, width, height, { isStatic: isWall });
-        const sprite = new RectSprite( width, height, body, isWall );
-        cvs.addChild( sprite );
-
-        return body;
+    draw( renderer, viewport ) {
+        this.isVisible( viewport ) && renderer.drawCircle(
+            this.getX(), this.getY(), this.radius, "gray", { size: 5, color: "#FFF" }
+        );
     }
+}
 
-    function createBall( x, y, radius ) {
-        const ball = Matter.Bodies.circle( x, y, radius, { density: 0.04, frictionAir: 0.005 });
-        const ballSprite =  new CircleSprite( ball );
-        cvs.addChild( ballSprite );
+// 2.2 BOXES
 
-        return ball;
+class RectSprite extends Sprite {
+    constructor( width, height, matterBody, isWall ) {
+        super({ width, height });
+        this.body = matterBody;
+        this.setResource( isWall ? undefined : "logo" );
+    }
+    update() {
+        // sync renderer with Matter body, note we subtract half its size as in MatterJS
+        // the mass of the body is calculated from its center
+        this.setX( this.body.position.x - this.getWidth()  / 2 );
+        this.setY( this.body.position.y - this.getHeight() / 2 );
+        this.setRotation( this.body.angle * ( 180 / Math.PI )); // MatterJS radians to zCanvas degrees
+    }
+    draw( renderer, viewport ) {
+        if ( this._resourceId ) {
+            return super.draw( renderer, viewport ); // if there's a resourceId, we render an image as usual
+        }
+        this.isVisible( viewport ) && renderer.drawRect( // otherwise a grey rectangle it is
+            this.getX(), this.getY(), this.getWidth(), this.getHeight(), "grey", undefined, this.getDrawProps()
+        )
     };
-    const world = engine.world;
+}
 
-    const runner = Matter.Runner.create();
-    Matter.Runner.run( runner, engine );
+// STEP 3 2. PHYSICS LIBRARY EXAMPLE (MatterJS)
 
-    // add bodies
-    const rows = 10;
-    const yy   = bottom - 25 - BLOCK_SIZE * rows;
+const centerX    = CANVAS_WIDTH / 2;
+const centerY    = CANVAS_HEIGHT / 2;
+const bottom     = CANVAS_HEIGHT;
+const BLOCK_SIZE = 50;
+const WALL_SIZE  = 250;
+const BALL_SIZE  = 50;
 
-    const stack = Matter.Composites.stack( centerX, yy, 5, rows, 0, 0, ( x, y ) => {
-        return createRectangle( x, y, BLOCK_SIZE, BLOCK_SIZE );
-    });
+// convenience methods to create Matter Bodies with zCanvas Sprites to render
 
-    Matter.Composite.add( world, [
-        stack,
-        // walls
-        createRectangle( centerX, -BLOCK_SIZE, CANVAS_WIDTH, BLOCK_SIZE, true ), // ceiling
-        createRectangle( centerX, bottom + BLOCK_SIZE / 2, CANVAS_WIDTH, BLOCK_SIZE, true ), // floor
-        createRectangle( CANVAS_WIDTH, centerY, BLOCK_SIZE, bottom, true ), // right side
-        createRectangle( 0, centerY, BLOCK_SIZE, bottom, true ), // left side
-    ]);
+function createRectangle( x, y, width, height, isWall = false ) {
+    const body   = Matter.Bodies.rectangle( x, y, width, height, { isStatic: isWall });
+    const sprite = new RectSprite( width, height, body, isWall );
+    cvs.addChild( sprite );
 
-    const ball = createBall( 100, centerY, BALL_SIZE );
+    return body;
+}
 
-    Matter.Composite.add( world, ball );
-    // optionally create constraint so ball is dangling
-    // Matter.Composite.add( world, Matter.Constraint.create({
-    //     pointA: { x: centerX, y: 0 },
-    //     bodyB: ball
-    // }));
-    Matter.Body.setVelocity( ball, { x: 10, y: 0 }); // launch ball into stack of rectangles
+function createBall( x, y, radius ) {
+    const ball = Matter.Bodies.circle( x, y, radius, { density: 0.04, frictionAir: 0.005 });
+    const ballSprite =  new CircleSprite( ball );
+    cvs.addChild( ballSprite );
 
-    // allow mouse drag of the ball
-    const mouse = Matter.Mouse.create( cvs.getElement() ), mouseConstraint = Matter.MouseConstraint.create( engine, {
-        mouse: mouse,
-        constraint: {
-            stiffness: 0.2,
-        }
-    });
-    Matter.Composite.add( world, mouseConstraint );
+    return ball;
+};
+const world = engine.world;
+
+const runner = Matter.Runner.create();
+Matter.Runner.run( runner, engine );
+
+// add bodies
+const COLUMNS = 5;
+const ROWS    = 10;
+
+const stack = Matter.Composites.stack( centerX, bottom - 25 - BLOCK_SIZE * ROWS, COLUMNS, ROWS, 0, 0, ( x, y ) => {
+    return createRectangle( x, y, BLOCK_SIZE, BLOCK_SIZE );
 });
 
+Matter.Composite.add( world, [
+    stack,
+    // walls
+    createRectangle( centerX, -WALL_SIZE, CANVAS_WIDTH, WALL_SIZE, true ), // ceiling
+    createRectangle( centerX, bottom + WALL_SIZE / 2, CANVAS_WIDTH, WALL_SIZE, true ), // floor
+    createRectangle( CANVAS_WIDTH + WALL_SIZE / 2, centerY, WALL_SIZE, bottom, true ), // right side
+    createRectangle( -WALL_SIZE / 2, centerY, WALL_SIZE, bottom, true ), // left side
+]);
+
+const ball = createBall( 100, centerY, BALL_SIZE );
+
+Matter.Composite.add( world, ball );
+// optionally create constraint so ball is dangling
+// Matter.Composite.add( world, Matter.Constraint.create({
+//     pointA: { x: centerX, y: 0 },
+//     bodyB: ball
+// }));
+Matter.Body.setVelocity( ball, { x: 10, y: 0 }); // launch ball into stack of rectangles
+
+// allow mouse drag of the ball
+const mouse = Matter.Mouse.create( canvasContainer ), mouseConstraint = Matter.MouseConstraint.create( engine, {
+    mouse: mouse,
+    constraint: {
+        stiffness: 0.2,
+    }
+});
+Matter.Composite.add( world, mouseConstraint );
 </script>
 </body>
 </html>

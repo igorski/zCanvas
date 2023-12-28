@@ -134,7 +134,7 @@ export default class Sprite extends DisplayObject<Sprite> {
             this.setResource( resourceId );
         }
 
-        if ( Array.isArray( sheet ) && sheet.length > 0 ) {
+        if ( sheet.length > 0 ) {
             if ( !resourceId ) {
                 throw new Error( "cannot use a spritesheet without a valid resource id" );
             }
@@ -803,7 +803,7 @@ export default class Sprite extends DisplayObject<Sprite> {
      */
     handleInteraction( x: number, y: number, event: MouseEvent | TouchEvent ): boolean {
         // first traverse the children of this sprite
-        let foundInteractionInChild = false, theChild;
+        let theChild: Sprite;
 
         const numChildren = this._children.length;
 
@@ -812,10 +812,8 @@ export default class Sprite extends DisplayObject<Sprite> {
             theChild = this._children[ numChildren - 1 ];
 
             while ( theChild ) {
-                foundInteractionInChild = theChild.handleInteraction( x, y, event );
-
-                // child is higher in DisplayList, takes precedence over this parent
-                if ( foundInteractionInChild ) {
+                if ( theChild.handleInteraction( x, y, event )) {
+                    // child is higher in DisplayList, thus takes precedence over this parent
                     return true;
                 }
                 theChild = theChild.last;
@@ -879,7 +877,7 @@ export default class Sprite extends DisplayObject<Sprite> {
                 }
                 this.handlePress( x, y, event );
 
-                // mousedown fires after touchstart on Android, block double handling
+                // mousedown fires after touchstart on touch devices, block double handling
                 if ( type === "touchstart" ) {
                     event.stopPropagation();
                     event.preventDefault();

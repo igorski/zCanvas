@@ -23,28 +23,6 @@ describe( "RendererImpl", () => {
         expect( canvas.getElement().getContext( "2d" )!.imageSmoothingEnabled ).toBe( false );
     });
 
-    describe( "when setting the device pixel ratio", () => {
-        it( "should not do anything when the ratio is 1", () => {
-            const scaleSpy = vi.spyOn( renderer, "scale" );
-            const saveSpy  = vi.spyOn( renderer, "save" );
-
-            renderer.setPixelRatio( 1 );
-
-            expect( scaleSpy ).not.toHaveBeenCalled();
-            expect( saveSpy ).not.toHaveBeenCalled();
-        });
-
-        it( "should not do anything when the ratio is 1", () => {
-            const scaleSpy = vi.spyOn( renderer, "scale" );
-            const saveSpy  = vi.spyOn( renderer, "save" );
-
-            renderer.setPixelRatio( 2.65 );
-
-            expect( scaleSpy ).toHaveBeenCalledWith( 1 );
-            expect( saveSpy ).toHaveBeenCalled();
-        });
-    });
-
     describe( "when scaling the Canvas context", () => {
         it( "should use the x value when y hasn't been provided", () => {
             const ctxScaleSpy = vi.spyOn( ctx, "scale" );
@@ -62,13 +40,13 @@ describe( "RendererImpl", () => {
             expect( ctxScaleSpy ).toHaveBeenCalledWith( 2, 3 );
         });
 
-        it( "should multiply the scale by the configured pixel ratio", () => {
+        it( "should not multiply the scale by the configured pixel ratio (as the Canvas dimensions make up for HDPI scaling)", () => {
             const ctxScaleSpy = vi.spyOn( ctx, "scale" );
 
             renderer.setPixelRatio( 2.5 );
             renderer.scale( 2, 3 );
 
-            expect( ctxScaleSpy ).toHaveBeenCalledWith( 5, 7.5 );
+            expect( ctxScaleSpy ).toHaveBeenCalledWith( 2, 3 );
         });
     });
 
@@ -133,7 +111,7 @@ describe( "RendererImpl", () => {
             expect( setBlendModeSpy ).toHaveBeenCalledWith( "destination-in" );
         });
 
-        it( "should transform the context state when a scale change is specified", () => {
+        it( "should transform the context state using setTransform() when a scale change is specified", () => {
             // @ts-expect-error snooping on protected property
             const resetCommand = renderer.prepare({
                 scale: 0.9,
@@ -145,6 +123,25 @@ describe( "RendererImpl", () => {
             expect( resetCommand ).toEqual( ResetCommand.TRANSFORM );
             expect( saveSpy ).not.toHaveBeenCalled();
             expect( setTransformSpy ).toHaveBeenCalled();
+        });
+
+        it( "should transform the context state using transform() when a scale change is specified and running on an HDPI screen", () => {
+            const transformSpy = vi.spyOn( ctx, "transform" );
+
+            renderer.setPixelRatio( 3 );
+
+            // @ts-expect-error snooping on protected property
+            const resetCommand = renderer.prepare({
+                scale: 0.9,
+                rotation: 0,
+                alpha: 1,
+                blendMode: undefined,
+            }, x, y, width, height );
+
+            expect( resetCommand ).toEqual( ResetCommand.TRANSFORM );
+            expect( saveSpy ).not.toHaveBeenCalled();
+            expect( setTransformSpy ).not.toHaveBeenCalled();
+            expect( transformSpy ).toHaveBeenCalled();
         });
 
         it( "should transform the context state when a rotation change is specified", () => {

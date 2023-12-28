@@ -27,7 +27,7 @@ Note these demos were written in vanilla JavaScript without the use of any libra
 
 ### Graphics manipulation demos
 
- * [Demo #3: Multi-layer pointer interactions](https://rawgithub.com/igorski/zcanvas/master/examples/demo3.html)
+ * [Demo #3: Layers and pointer interactions](https://rawgithub.com/igorski/zcanvas/master/examples/demo3.html)
  * [Demo #4: Integrating 3rd party animation library](https://rawgithub.com/igorski/zcanvas/master/examples/demo4.html)
   * [Demo #5: Integrating 3rd party physics library](https://rawgithub.com/igorski/zcanvas/master/examples/demo5.html)
  * [Demo #6: Local image manipulation](https://rawgithub.com/igorski/zcanvas/master/examples/demo6.html)
@@ -67,17 +67,18 @@ update at the same speed, regardless of the rendering (frames per second) capabi
 ## Works practically everywhere
 
 zCanvas has been written to work within a ES module structure, but comes prebuilt and transpiled to work
-in either a module, CommonJS or browser environment. zCanvas has been tested and verified to work on all half-decent, half-recent browsers.
+in either a module, CommonJS or a browser environment. zCanvas has been tested and verified to work on all half-decent, half-recent browsers.
 
-Should you however wish to support one of the ancient browsers listed below, zCanvas up to version 5.1.10
-can cater to these equally:
+Should you however wish to support one of the ancient browsers listed below, zCanvas up to version [5.1.10](https://github.com/igorski/zCanvas/releases/tag/5.1.10) can cater to the following:
 
- * Internet Explorer 9+ (note: requires polyfill for _requestAnimationFrame_ and _Promise_)
- * Chrome for Windows, OS X and Linux
+ * Internet Explorer 9+ (note: requires polyfill for `requestAnimationFrame`)
+ * Chrome 22+
  * Apple Safari 6+ (including Mobile Safari)
- * Firefox 3.6+
- * Android browser 4+
- * Chrome for Android 4+
+ * Firefox 4+
+ * Android browser 4.4+
+
+ _*Note IE9 and some other browsers might need a polyfill for `Promise` at the versions listed above, but it is
+ likely any of those are on auto update channels and at way higher versions in the wild._
 
 # The API / Documentation
 

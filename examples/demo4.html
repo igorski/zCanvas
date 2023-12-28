@@ -17,7 +17,7 @@
         <h1>zCanvas : Integrating 3rd party animation libraries</h1>
     </div>
     <div class="demo-canvas-container"><!-- x --></div>
-    <div class="demo-controls">
+    <div class="demo-controls demo--always-visible">
         <div>
             <label for="fps">Framerate (15 to 60 fps)</label>
             <input type="range" id="fps" min="15" max="60" value="60" step="1" />
@@ -57,140 +57,139 @@ addCanvasDemoControls( demoContainer, cvs );
 
 // register assets
 
-Promise.all([
+await Promise.all([
     cvs.loadResource( "background", IMAGE_BACKGROUND ),
     cvs.loadResource( "spritesheet", IMAGE_SPRITE_SHEET ),
     cvs.loadResource( "star", IMAGE_STAR ),
     cvs.loadResource( "logo", IMAGE_IGORSKI_LOGO ),
-]).then(() => {
+]);
 
-    const cvsCenterX = cvs.getWidth()  / 2;
-    const cvsCenterY = cvs.getHeight() / 2;
+const cvsCenterX = cvs.getWidth()  / 2;
+const cvsCenterY = cvs.getHeight() / 2;
 
-    // STEP 2 : ADDING THE SPRITES
-    // ---------------------------
+// STEP 2 : ADDING THE SPRITES
+// ---------------------------
 
-    // first sprite will act as a background
-    // (see included "assets.js"-file for the assetBackground-image data)
+// first sprite will act as a background
+// (see included "assets.js"-file for the assetBackground-image data)
 
-    const bgWidth  = 800;
-    const bgHeight = 1067;
-    const bgSprite = new Sprite({ width: bgWidth, height: bgHeight, resourceId: "background" });
+const bgWidth  = 800;
+const bgHeight = 1067;
+const bgSprite = new Sprite({ width: bgWidth, height: bgHeight, resourceId: "background" });
 
-    // 2.1 ANIMATING STAR
-    // a star-shaped Sprite that will act as a mask for underlying content
-    // (see included "images.js"-file for the assetStar-image data)
+// 2.1 ANIMATING STAR
+// a star-shaped Sprite that will act as a mask for underlying content
+// (see included "images.js"-file for the assetStar-image data)
 
-    const starSize = CANVAS_WIDTH / 3; // make the star a bit smaller than the canvas
-    const starMask = new Sprite({
-        x: cvsCenterX - starSize / 2,
-        y: cvsCenterY - starSize / 2,
-        width: starSize,
-        height: starSize,
-        resourceId: "star",
-        mask: true,
-    });
-
-    // 2.2 RUNNING MEGAMAN CHARACTER
-    // Megaman running across the screen using a Spritesheet for animation
-
-    const megaman = new Sprite({
-        x: 150,
-        y: 300,
-        width: 38,
-        height: 35,
-        resourceId: "spritesheet",
-        sheet: [
-            { row: 0, col: 0, fpt: 5, amount: 3 },  // standing still, facing left
-            { row: 1, col: 0, fpt: 5, amount: 3 },  // standing still, facing right
-            { row: 2, col: 0, fpt: 3, amount: 10 }, // running, facing left
-            { row: 3, col: 0, fpt: 3, amount: 10 }  // running facing right
-        ]
-    });
-    megaman.switchAnimation( 3 );
-
-    // 2.3 SCALING LOGOS
-    // Logos scaling with changing easing functions
-
-    const BLOCK_SIZE = 50;
-    const COLUMNS = Math.round( CANVAS_WIDTH / BLOCK_SIZE );
-    const blocks  = [];
-
-    for ( let i = 0; i < COLUMNS; ++i ) {
-        const block = new Sprite({
-            resourceId: "logo",
-            x: i * ( BLOCK_SIZE * 2 ),
-            y: cvs.getHeight() / 2,
-            width: BLOCK_SIZE,
-            height: BLOCK_SIZE
-        });
-        blocks.push( block );
-    }
-
-    // add the Sprites
-
-    cvs.addChild( bgSprite );
-    cvs.addChild( starMask );
-    blocks.forEach( block => cvs.addChild( block ));
-    cvs.addChild( megaman );
-
-    // STEP 3 : ANIMATION EXAMPLE (GreenSock Animation Platform)
-    // --------------------------------------------------------
-    // using GSAP's direction animation calls and timelines
-
-    const starTimeline  = new gsap.timeline({ repeat: 999 }); // timeline for the star
-    const starTransform = starMask.getTransforms(); // the Sprites transformation matrix
-    
-    const starAniDuration = 3;
-
-    starTimeline.to(
-        starTransform, starAniDuration, {
-            scale: 1.5,
-            rotation: 360,
-            ease: Elastic.easeInOut,
-        }
-    ).to( starTransform, starAniDuration, {
-        scale: 1,
-        rotation: 0,
-        ease: Power4.easeIn,
-    });
-
-    const blockAniDuration = 2;
-    for ( let i = 0, l = blocks.length; i < l; ++i ) {
-        const blockTransforms = blocks[ i ].getTransforms();
-        new gsap.timeline({ repeat: 999 })
-            .to( blockTransforms, blockAniDuration, {
-                scale: 2, ease: Power4.easeInOut, delay: ( i * .1 )
-            }).
-            to( blockTransforms, blockAniDuration, {
-                scale: 0.5,
-                ease: Elastic.easeIn,
-                delay: ( i * .1 )
-            }).to(
-                blockTransforms, blockAniDuration, {
-                    scale: 1,
-                    ease: Elastic.easeOut
-                }
-            );
-    }
-    
-    const megamanTimeline = new gsap.timeline({ repeat: 999 }); // timeline for Megaman
-
-    const movement = 400;
-    const megamanAniDuration = 5;
-
-    megamanTimeline.to( 
-        megaman.getBounds(), megamanAniDuration, { 
-            left: `+=${movement}`,
-            onComplete: () => megaman.switchAnimation( 2 ) // face the left
-        }
-    ).to(
-        megaman.getBounds(), megamanAniDuration, {
-            left: `-=${movement}`,
-            ease: Cubic.easeInOut,
-            onComplete: () => megaman.switchAnimation( 3 ) // fact the right
-        });
+const starSize = CANVAS_WIDTH / 3; // make the star a bit smaller than the canvas
+const starMask = new Sprite({
+    x: cvsCenterX - starSize / 2,
+    y: cvsCenterY - starSize / 2,
+    width: starSize,
+    height: starSize,
+    resourceId: "star",
+    mask: true,
 });
+
+// 2.2 RUNNING MEGAMAN CHARACTER
+// Megaman running across the screen using a Spritesheet for animation
+
+const megaman = new Sprite({
+    x: 150,
+    y: 300,
+    width: 38,
+    height: 35,
+    resourceId: "spritesheet",
+    sheet: [
+        { row: 0, col: 0, fpt: 5, amount: 3 },  // standing still, facing left
+        { row: 1, col: 0, fpt: 5, amount: 3 },  // standing still, facing right
+        { row: 2, col: 0, fpt: 3, amount: 10 }, // running, facing left
+        { row: 3, col: 0, fpt: 3, amount: 10 }  // running facing right
+    ]
+});
+megaman.switchAnimation( 3 );
+
+// 2.3 SCALING LOGOS
+// Logos scaling with changing easing functions
+
+const BLOCK_SIZE = 50;
+const COLUMNS = Math.round( CANVAS_WIDTH / BLOCK_SIZE );
+const blocks  = [];
+
+for ( let i = 0; i < COLUMNS; ++i ) {
+    const block = new Sprite({
+        resourceId: "logo",
+        x: i * ( BLOCK_SIZE * 2 ),
+        y: cvs.getHeight() / 2,
+        width: BLOCK_SIZE,
+        height: BLOCK_SIZE
+    });
+    blocks.push( block );
+}
+
+// add the Sprites
+
+cvs.addChild( bgSprite );
+cvs.addChild( starMask );
+blocks.forEach( block => cvs.addChild( block ));
+cvs.addChild( megaman );
+
+// STEP 3 : ANIMATION EXAMPLE (GreenSock Animation Platform)
+// --------------------------------------------------------
+// using GSAP's direction animation calls and timelines
+
+const starTimeline  = new gsap.timeline({ repeat: 999 }); // timeline for the star
+const starTransform = starMask.getTransforms(); // the Sprites transformation matrix
+
+const starAniDuration = 3;
+
+starTimeline.to(
+    starTransform, starAniDuration, {
+        scale: 1.5,
+        rotation: 360,
+        ease: Elastic.easeInOut,
+    }
+).to( starTransform, starAniDuration, {
+    scale: 1,
+    rotation: 0,
+    ease: Power4.easeIn,
+});
+
+const blockAniDuration = 2;
+for ( let i = 0, l = blocks.length; i < l; ++i ) {
+    const blockTransforms = blocks[ i ].getTransforms();
+    new gsap.timeline({ repeat: 999 })
+        .to( blockTransforms, blockAniDuration, {
+            scale: 2, ease: Power4.easeInOut, delay: ( i * .1 )
+        }).
+        to( blockTransforms, blockAniDuration, {
+            scale: 0.5,
+            ease: Elastic.easeIn,
+            delay: ( i * .1 )
+        }).to(
+            blockTransforms, blockAniDuration, {
+                scale: 1,
+                ease: Elastic.easeOut
+            }
+        );
+}
+
+const megamanTimeline = new gsap.timeline({ repeat: 999 }); // timeline for Megaman
+
+const movement = 400;
+const megamanAniDuration = 5;
+
+megamanTimeline.to( 
+    megaman.getBounds(), megamanAniDuration, { 
+        left: `+=${movement}`,
+        onComplete: () => megaman.switchAnimation( 2 ) // face the left
+    }
+).to(
+    megaman.getBounds(), megamanAniDuration, {
+        left: `-=${movement}`,
+        ease: Cubic.easeInOut,
+        onComplete: () => megaman.switchAnimation( 3 ) // fact the right
+    });
 </script>
 </body>
 </html>
