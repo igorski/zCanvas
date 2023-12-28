@@ -85,7 +85,7 @@ export default class Canvas extends DisplayObject<Canvas> {
     protected _viewport: Viewport | undefined;
     protected _smoothing = false;
     protected _stretchToFit = false;
-    protected _HDPIscaleRatio = 1;
+    protected _pxr = 1;
 
     protected _renderHandler: ( now: DOMHighResTimeStamp ) => void;
     protected _updateHandler?: ( now: DOMHighResTimeStamp, framesSinceLastRender: number ) => void;
@@ -168,7 +168,8 @@ export default class Canvas extends DisplayObject<Canvas> {
 
         // ensure all is crisp clear on HDPI screens
 
-        this._HDPIscaleRatio = window.devicePixelRatio || 1;
+        this._pxr = window.devicePixelRatio || 1;
+        this._renderer.setPixelRatio( this._pxr );
 
         this.setDimensions( width, height, true, true );
         if ( viewport ) {
@@ -183,7 +184,7 @@ export default class Canvas extends DisplayObject<Canvas> {
         if ( parentElement instanceof HTMLElement ) {
             this.insertInPage( parentElement );
         }
-        this.handleResize(); // calculates appropriate scale
+        requestAnimationFrame(() => this.handleResize()); // calculates appropriate scale
     }
 
     /* public methods */
@@ -401,7 +402,7 @@ export default class Canvas extends DisplayObject<Canvas> {
     }
 
     setAnimatable( value: boolean ): void {
-        this._lastRaf = window.performance?.now() || Date.now();
+        this._lastRaf = window.performance.now();
 
         if ( value && !this._renderPending ) {
             this.invalidate();
@@ -751,6 +752,17 @@ export default class Canvas extends DisplayObject<Canvas> {
         if ( addResizeListener ) {
             theHandler.add( window, "resize", this.handleResize.bind( this ));
         }
+        /*
+        // pause the renderer on window blur/focus
+        let wasAnimating = false;
+        theHandler.add( window, "blur", () => {
+            wasAnimating = this._animate;
+            // this.setAnimatable( false );
+        });
+        theHandler.add( window, "focus", () => {
+            this.setAnimatable( wasAnimating );
+            this._lastRender = this._lastRaf;
+        });*/
     }
 
     protected removeListeners(): void {
@@ -803,7 +815,7 @@ export default class Canvas extends DisplayObject<Canvas> {
     }
 
     protected updateCanvasSize(): void {
-        const scaleFactor = this._HDPIscaleRatio;
+        const scaleFactor = this._pxr;
 
         let width: number;
         let height: number;
@@ -849,7 +861,7 @@ export default class Canvas extends DisplayObject<Canvas> {
 
             this._resizeHandler?.( width, height );
         }
-        this._renderer.scale( scaleFactor, scaleFactor );
+        this._renderer.scale( scaleFactor );
     
         // non-smoothing must be re-applied when the canvas dimensions change...
     

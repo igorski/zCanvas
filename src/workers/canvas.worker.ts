@@ -70,8 +70,9 @@ onmessage = ( e: MessageEvent ): void => {
             postMessage({ cmd: "onrender" });
             break;
 
-        // IRenderer setup commands (directly executed)
+        // IRenderer setup commands (directly executed, declared outside of IRenderer interface)
         case "setDimensions":
+        case "setPixelRatio":
         case "setSmoothing":
         case "createPattern":
             // @ts-expect-error TS2556: A spread argument must either have a tuple type or be passed to a rest parameter.

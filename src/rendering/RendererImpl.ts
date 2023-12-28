@@ -35,6 +35,8 @@ const TRANSPARENT = "transparent";
 const DEG_TO_RAD = Math.PI / 180;
 const HALF = 0.5;
 
+let _pixelRatio = 1;
+let transformFn: "setTransform" | "transform" = "setTransform";
 let ctx: CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D;
 
 export default class RendererImpl implements IRenderer {
@@ -91,6 +93,21 @@ export default class RendererImpl implements IRenderer {
         });
     }
 
+    setPixelRatio( ratio: number ): void {
+        _pixelRatio = ratio;
+
+        // setTransform() is generally more performant, only use transform() when
+        // the canvas is scaled for HDPI screens (allows easier accumulation for scaling factors)
+        transformFn = _pixelRatio === 1 ? "setTransform" : "transform";
+
+        if ( ratio !== 1 ) {
+            // prescale the canvas and save it so subsequent drawing operations
+            // don't need to take HDPI scaling factors into account
+            this.scale( 1 );
+            this.save();
+        }
+    }
+
     /* IRenderer wrappers */
 
     save(): void {
@@ -114,7 +131,7 @@ export default class RendererImpl implements IRenderer {
     }
 
     scale( xScale: number, yScale = xScale ): void {
-        this._context.scale( xScale, yScale );
+        this._context.scale( xScale * _pixelRatio, yScale * _pixelRatio );
     }
 
     setBlendMode( mode: GlobalCompositeOperation ): void {
@@ -342,8 +359,6 @@ export default class RendererImpl implements IRenderer {
             return ResetCommand.NONE; // nothing to do
         }
 
-        // TODO : check result of scale without transform
-
         if ( mustTransform ) {
             const scale = props.scale ?? 1;
 
@@ -356,7 +371,7 @@ export default class RendererImpl implements IRenderer {
             const sin = Math.sin( rotation ) * scale;
 
             // Apply the combined transformation matrix using setTransform
-            this._context.setTransform( cos, sin, -sin, cos,
+            this._context[ transformFn ]( cos, sin, -sin, cos,
                 centerX - centerX * cos + centerY * sin,
                 centerY - centerX * sin - centerY * cos
             );
@@ -374,7 +389,7 @@ export default class RendererImpl implements IRenderer {
 
     protected applyReset( cmd: ResetCommand ): void {
         if ( cmd === ResetCommand.TRANSFORM ) {
-            this._context.resetTransform();
+            this._context.setTransform( _pixelRatio, 0, 0, _pixelRatio, 0, 0 );
         } else if ( cmd === ResetCommand.ALL ) {
             this.restore();
         }

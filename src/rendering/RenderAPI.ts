@@ -226,6 +226,10 @@ export default class RenderAPI implements IRenderer {
         this.getBackend( "setSmoothing", enabled );
     }
 
+    setPixelRatio( ratio: number ): void {
+        this.getBackend( "setPixelRatio", ratio );
+    }
+
     /* IRenderer interface - draw API */
 
     // @TODO can we maybe just Proxy this upfront to prevent duplicate calls ??
