@@ -22,10 +22,9 @@
  */
 import type { Point, Rectangle, Size } from "./definitions/types";
 import type RenderAPI from "./rendering/RenderAPI";
+import { fastRound } from "./utils/ImageMath";
 import { createCanvas, imageToCanvas } from "./utils/ImageUtil";
 import type Sprite from "./Sprite";
-
-const fastRound = ( num: number ): number => num > 0 ? ( num + .5 ) << 0 : num | 0;
 
 // keep strong references to mask values to minimise garbage collection hit
 const pixels1: number[] = [];

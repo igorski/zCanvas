@@ -22,10 +22,20 @@
  */
 import type { Rectangle, Size, BoundingBox, Viewport } from "../definitions/types";
 
+const { min, max } = Math;
+const HALF = 0.5;
+
 let left: number;
 let top: number;
 let width: number;
 let height: number;
+
+// multiplier to convert an angle in degrees to radians
+export const DEG_TO_RAD = Math.PI / 180;
+
+export function fastRound( num: number ): number {
+    return num > 0 ? ( num + .5 ) << 0 : num | 0;
+}
 
 /**
  * Determines whether provided Rectangle is visible within provided BoundingBox
@@ -61,14 +71,14 @@ export function calculateDrawRectangle( spriteBounds: Rectangle, viewport: Viewp
     // see unbounded render behaviour in Sprite.draw()
 
     if ( left > viewportX ) {
-        width = Math.min( width, viewportWidth - ( left - viewportX ));
+        width = min( width, viewportWidth - ( left - viewportX ));
     } else {
-        width = Math.min( viewportWidth, width - ( viewportX - left ));
+        width = min( viewportWidth, width - ( viewportX - left ));
     }
     if ( top > viewportY ) {
-        height = Math.min( height, viewportHeight - ( top - viewportY ));
+        height = min( height, viewportHeight - ( top - viewportY ));
     } else {
-        height = Math.min( viewportHeight, height - ( viewportY - top ));
+        height = min( viewportHeight, height - ( viewportY - top ));
     }
 
     return {
@@ -108,4 +118,66 @@ export function constrainAspectRatio( idealWidth: number, idealHeight: number, a
         width = idealHeight * screenAspectRatio;
     }
     return { width, height };
+}
+
+/**
+ * Transform given Rectangle by given angle and scale. Argument outRectangle
+ * can be a reference to a cached Rectangle to minimise garbage collector overhead.
+ */
+export function transformRectangle( rectangle: Rectangle, angleInDegrees: number, scale: number, outRectangle: Rectangle ): Rectangle {
+    if ( angleInDegrees === 0 && scale === 1 ) {
+        return scaleRectangle( rectangle, 1, outRectangle ); // aligns rectangle contents
+    }
+    const { left, top, width, height } = scaleRectangle( rectangle, scale, outRectangle );
+
+    if ( angleInDegrees !== 0 ) {
+
+        const x1 = -width  * HALF,
+              x2 = width   * HALF,
+              x3 = width   * HALF,
+              x4 = -width  * HALF,
+              y1 = height  * HALF,
+              y2 = height  * HALF,
+              y3 = -height * HALF,
+              y4 = -height * HALF;
+
+        const angleInRadians = angleInDegrees * DEG_TO_RAD;
+
+        const cos = Math.cos( angleInRadians );
+        const sin = Math.sin( angleInRadians );
+
+        const x11 = x1  * cos + y1 * sin,
+              y11 = -x1 * sin + y1 * cos,
+              x21 = x2  * cos + y2 * sin,
+              y21 = -x2 * sin + y2 * cos,
+              x31 = x3  * cos + y3 * sin,
+              y31 = -x3 * sin + y3 * cos,
+              x41 = x4  * cos + y4 * sin,
+              y41 = -x4 * sin + y4 * cos;
+
+        const xMin = min( x11, x21, x31, x41 ),
+              xMax = max( x11, x21, x31, x41 ),
+              yMin = min( y11, y21, y31, y41 ),
+              yMax = max( y11, y21, y31, y41 );
+
+        outRectangle.width  = xMax - xMin;
+        outRectangle.height = yMax - yMin;
+        outRectangle.left   = left - ( outRectangle.width  * HALF - width  * HALF );
+        outRectangle.top    = top  - ( outRectangle.height * HALF - height * HALF );
+    }
+    return outRectangle;
+}
+
+/**
+ * Scale given rectangle by provided factor and apply the values upon provided outRectangle
+ */
+function scaleRectangle( rectangle: Rectangle, factor: number, outRectangle: Rectangle ): Rectangle {
+    const { left, top, width, height } = rectangle;
+
+    outRectangle.width  = width  * factor;
+    outRectangle.height = height * factor;
+    outRectangle.left   = left - (( outRectangle.width  - width )  * HALF );
+    outRectangle.top    = top  - (( outRectangle.height - height ) * HALF );
+
+    return outRectangle;
 }

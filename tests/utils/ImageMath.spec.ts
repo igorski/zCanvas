@@ -1,5 +1,9 @@
-import { describe, it, expect } from "vitest";
-import { isInsideArea, calculateDrawRectangle, constrainAspectRatio } from "../../src/utils/ImageMath";
+import { describe, it, expect, beforeEach } from "vitest";
+import type { Rectangle } from "../../src/definitions/types";
+import {
+    isInsideArea, constrainAspectRatio,
+    calculateDrawRectangle, transformRectangle,
+} from "../../src/utils/ImageMath";
 
 describe( "Image math utilities", () => {
     const viewport = {
@@ -469,4 +473,68 @@ describe( "Image math utilities", () => {
             });
         });
     });
+
+    describe( "when transforming a Rectangle", () => {
+        const left   = 10;
+        const top    = 10;
+        const width  = 20;
+        const height = 10;
+
+        let input: Rectangle;
+        let output: Rectangle;
+
+        beforeEach(() => {
+            input  = { left, top, width, height };
+            output = { left: 0, top: 0, width: 0, height: 0 };
+        });
+
+        it( "should return the input unchanged when the scale and rotation are both neutral", () => {
+            const transformed = transformRectangle( input, 0, 1, output );
+
+            expect( transformed ).toEqual({ left, top, width, height });
+        });
+
+        it( "should keep the input unchanged and apply the changes to the provided output when scaling", () => {
+            const transformed = transformRectangle( input, 0, 1.5, output );
+
+            expect( transformed ).toEqual( output );
+            expect( input ).toEqual({ left, top, width, height });
+        });
+
+        it( "should keep the input unchanged and apply the changes to the provided output when rotating", () => {
+            const transformed = transformRectangle( input, 45, 1, output );
+
+            expect( transformed ).toEqual( output );
+            expect( input ).toEqual({ left, top, width, height });
+        });
+
+        it( "should transform the provided rectangle by the provided scale factor", () => {
+            const transformed = transformRectangle( input, 0, 1.5, output );
+
+            expect( transformed ).toEqual({
+                left: 5,
+                top: 7.5,
+                width: 30,
+                height: 15
+            });
+        });
+
+        it( "should transform the provided rectangle by the provided rotation factor", () => {
+            const transformed = transformRectangle( input, 90, 1, output );
+
+            expect( Math.round( transformed.left )).toEqual( 15 );
+            expect( Math.round( transformed.top )).toEqual( 5 );
+            expect( Math.round( transformed.width )).toEqual( 10 );
+            expect( Math.round( transformed.height )).toEqual( 20 );
+        });
+
+        it( "should transform the provided rectangle by both provided rotation and scale factors", () => {
+            const transformed = transformRectangle( input, 90, 2, output );
+
+            expect( Math.round( transformed.left )).toEqual( 10 );
+            expect( Math.round( transformed.top )).toEqual( -5 );
+            expect( Math.round( transformed.width )).toEqual( 20 );
+            expect( Math.round( transformed.height )).toEqual( 40 );
+        });
+    })
 });

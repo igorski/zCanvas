@@ -7,11 +7,14 @@ import type { IRenderer } from "../src/rendering/IRenderer";
 import { createMockRenderer } from "./__mocks";
 
 const mockMathFn = vi.fn();
-vi.mock('../src/utils/ImageMath', () => ({
-    isInsideViewport       : ( ...args ) => mockMathFn?.( "isInsideViewport", ...args ),
-    calculateDrawRectangle : ( ...args ) => mockMathFn?.( "calculateDrawRectangle", ...args ),
-    isInsideArea           : ( ...args ) => mockMathFn?.( "isInsideArea", ...args ),
-}));
+vi.mock('../src/utils/ImageMath', async () => {
+    const actual = await vi.importActual( "../src/utils/ImageMath" );
+    return {
+        ...actual,
+        calculateDrawRectangle : ( ...args ) => mockMathFn?.( "calculateDrawRectangle", ...args ),
+        isInsideArea           : ( ...args ) => mockMathFn?.( "isInsideArea", ...args ),
+    }
+});
 
 describe( "Sprite", () => {
 
@@ -65,6 +68,13 @@ describe( "Sprite", () => {
             }).not.toThrow();
         });
 
+        it( "should by default construct at a 0, 0 coordinate", () => {
+            const sprite = new Sprite({ width, height });
+
+            expect( sprite.getX() ).toEqual( 0 );
+            expect( sprite.getY() ).toEqual( 0 );
+        });
+
         it( "should construct accepting definitions for coordinates and dimensions", () => {
             const sprite = new Sprite({ x, y, width, height });
 
@@ -116,11 +126,11 @@ describe( "Sprite", () => {
             }).not.toThrow();
         });
 
-        it( "should by default construct at a 0, 0 coordinate", () => {
+        it( "should by default not have a cached transformed bounds object when no transformations were provided", () => {
             const sprite = new Sprite({ width, height });
 
-            expect( sprite.getX() ).toEqual( 0 );
-            expect( sprite.getY() ).toEqual( 0 );
+            // @ts-expect-error snooping on private property
+            expect( sprite._tfb ).toBeUndefined();
         });
     });
 
@@ -246,6 +256,12 @@ describe( "Sprite", () => {
     });
 
     describe( "when managing its rotation", () => {
+        it( "should by default return a neutral rotation when none has been provided yet", () => {
+            const sprite = new Sprite({ width, height });
+
+            expect( sprite.getRotation()).toEqual( 0 );
+        });
+
         it( "should be able to get and set its rotation", () => {
             const sprite = new Sprite({ width, height });
     
@@ -254,7 +270,7 @@ describe( "Sprite", () => {
             expect( sprite.getRotation() ).toEqual( 12 );
         });
 
-        it( "should invalidate the cached DrawProps", () => {
+        it( "should invalidate the DrawProps cache", () => {
             const sprite = new Sprite({ width, height });
 
             // @ts-expect-error snooping on protected property
@@ -262,29 +278,18 @@ describe( "Sprite", () => {
 
             sprite.setRotation( 12 );
 
-            expect( invalidateSpy ).toHaveBeenCalled();
+            expect( invalidateSpy ).toHaveBeenCalledWith({ rotation: 12 });
         });
 
-        it( "should set the provided value and onto the draw props", () => {
+        it( "should set the optional pivot point onto the DrawProps", () => {
             const sprite = new Sprite({ width, height });
 
-            sprite.setRotation( 12 );
-
-            // @ts-expect-error snooping on private property
-            expect( sprite._dp.rotation ).toEqual( 12 );
-            // @ts-expect-error snooping on private property
-            expect( sprite._dp.pivot ).toBeUndefined();
-        });
-
-        it( "should set the provided value and optional pivot point onto the draw props", () => {
-            const sprite = new Sprite({ width, height });
+            // @ts-expect-error snooping on protected property
+            const invalidateSpy = vi.spyOn( sprite, "invalidateDrawProps" );
 
             sprite.setRotation( 12, { x: 7, y: 8 });
 
-            // @ts-expect-error snooping on private property
-            expect( sprite._dp.rotation ).toEqual( 12 );
-            // @ts-expect-error snooping on private property
-            expect( sprite._dp.pivot ).toEqual({ x: 7, y: 8 });
+            expect( invalidateSpy ).toHaveBeenCalledWith({ rotation: 12, pivot: { x: 7, y: 8 } });
         });
 
         it( "should return the appropriate value using the getter, when the drawProps value changes from the outside", () => {
@@ -301,6 +306,12 @@ describe( "Sprite", () => {
     });
 
     describe( "when managing its scale", () => {
+        it( "should by default return a neutral scale when none has been provided yet", () => {
+            const sprite = new Sprite({ width, height });
+
+            expect( sprite.getScale()).toEqual( 1 );
+        });
+
         it( "should be able to get and set its scale", () => {
             const sprite = new Sprite({ width, height });
     
@@ -317,16 +328,7 @@ describe( "Sprite", () => {
 
             sprite.setScale( 7 );
 
-            expect( invalidateSpy ).toHaveBeenCalled();
-        });
-
-        it( "should set the provided value and onto the draw props", () => {
-            const sprite = new Sprite({ width, height });
-
-            sprite.setScale( 7 );
-
-            // @ts-expect-error snooping on private property
-            expect( sprite._dp.scale ).toEqual( 7 );
+            expect( invalidateSpy ).toHaveBeenCalledWith({ scale: 7 });
         });
 
         it( "should return the appropriate value using the getter, when the drawProps value changes from the outside", () => {
@@ -369,36 +371,46 @@ describe( "Sprite", () => {
         });
     });
 
-    it( "should call the invalidate() handler of the parent Canvas when invalidate() is called", () => {
-        const sprite = new Sprite({ width, height });
-        canvas.addChild( sprite );
-
-        const invalidateSpy = vi.spyOn( canvas, "invalidate" );
-
-        sprite.invalidate();
-
-        expect( invalidateSpy ).toHaveBeenCalled();
-    });
-
-    describe( "when managing its DrawProps for transformations and blending effects", () => {
-        it( "should by default not have a DrawProps instance", () => {
+    describe( "when managing its DrawProps cache for transformations and blending effects", () => {
+        it( "should by default not construct with a DrawProps instance", () => {
             const sprite = new Sprite({ width, height });
 
             // @ts-expect-error snooping on private property
             expect( sprite._dp ).toBeUndefined();
         });
 
-        it( "should have a DrawProps instance when a transformation was provided to the constructor", () => {
+        it( "should cache a DrawProps instance when a transformation was provided to the constructor", () => {
             const sprite = new Sprite({ width, height, rotation: 12 });
 
             // @ts-expect-error snooping on private property
-            expect( sprite._dp ).toBeDefined();
+            expect( sprite._dp ).toEqual({
+                alpha: 1,
+                scale: 1,
+                rotation: 12,
+                pivot: undefined,
+                blendMode: undefined,
+                safeMode: false,
+            });
+        });
+
+        it( "should cache a DrawProps object when masking was requested in the constructor", () => {
+            const sprite = new Sprite({ width, height, mask: true });
+
+            // @ts-expect-error snooping on private property
+            expect( sprite._dp ).toEqual({
+                alpha: 1,
+                scale: 1,
+                rotation: 0,
+                pivot: undefined,
+                blendMode: "destination-in",
+                safeMode: false,
+            });
         });
 
         it( "should allow internal access to the current DrawProps state via the protected getter", () => {
             const sprite = new Sprite({ width, height, rotation: 12 });
 
-            // @ts-expect-error snooping on private property
+            // @ts-expect-error snooping on protected property
             expect( sprite.getDrawProps()).toEqual( sprite._dp );
         });
 
@@ -406,108 +418,110 @@ describe( "Sprite", () => {
             const sprite = new Sprite({ width, height, rotation: 12 });
 
             const transform = sprite.getTransforms();
+
             transform.rotation = 33;
             transform.scale = 2.5;
             transform.alpha = 0.24;
 
             // @ts-expect-error snooping on private property
-            expect( sprite.getDrawProps()).toEqual({
-                rotation: 33,
-                scale: 2.5,
-                alpha: 0.24,
-                blendMode: undefined,
-                safeMode: false, 
-            });
+            const invalidateSpy = vi.spyOn( sprite, "invalidateDrawProps" );
+
+            // @ts-expect-error snooping on protected property
+            sprite.getDrawProps();
+
+            expect( invalidateSpy ).toHaveBeenCalledWith({ rotation: 33, scale: 2.5, alpha: 0.24 });
         });
 
-        describe( "and invalidating the DrawProps instance", () => {
-            it( "should not do anything when there are no transformations specified for the Sprite", () => {
+        it( "should not synchronise the values with the optionally existing setTransforms instance when they have not changed", () => {
+            const sprite = new Sprite({ width, height, rotation: 12 });
+            sprite.setScale( 2.5 );
+
+            const transform = sprite.getTransforms();
+
+            transform.rotation = 12;
+            transform.scale    = 2.5;
+
+            // @ts-expect-error snooping on private property
+            const invalidateSpy = vi.spyOn( sprite, "invalidateDrawProps" );
+
+            // @ts-expect-error snooping on protected property
+            sprite.getDrawProps();
+
+            expect( invalidateSpy ).not.toHaveBeenCalled();
+        });
+
+        describe( "and invalidating the DrawProps cache", () => {
+            it( "should lazily create a DrawProps cache object when non existed", () => {
                 const sprite = new Sprite({ width, height });
 
                 // @ts-expect-error snooping on protected property
-                sprite.invalidateDrawProps();
+                sprite.invalidateDrawProps({});
 
                 // @ts-expect-error snooping on private property
-                expect( sprite._dp ).toBeUndefined();
+                expect( sprite._dp ).not.toBeUndefined();
             });
 
-            it( "should create a DrawProps instance when the optional force flag was provided", () => {
+            it( "should keep the existing values when no properties were passed in the arguments", () => {
+                const sprite = new Sprite({ width, height, rotation: 12 });
+                sprite.setScale( 7 );
+
+                // @ts-expect-error snooping on protected property
+                sprite.invalidateDrawProps({});
+
+                // @ts-expect-error snooping on private property
+                expect( sprite._dp ).toEqual({
+                    scale: 7,
+                    rotation: 12,
+                    alpha: 1,
+                    safeMode: false,
+                });
+            });
+
+            it( "should update the existing values with the provided properties", () => {
+                const sprite = new Sprite({ width, height, rotation: 12 });
+                sprite.setScale( 7 );
+
+                // @ts-expect-error snooping on protected property
+                sprite.invalidateDrawProps({ rotation: 33, pivot: { x: 12, y: 20 }, alpha: 0.5, scale: 2.5 });
+
+                // @ts-expect-error snooping on private property
+                expect( sprite._dp ).toEqual({
+                    scale: 2.5,
+                    rotation: 33,
+                    pivot: { x: 12, y: 20 },
+                    alpha: 0.5,
+                    safeMode: false,
+                });
+            });
+
+            it( "should not cache a transformed bounds object when no transformations were provided", () => {
                 const sprite = new Sprite({ width, height });
 
                 // @ts-expect-error snooping on protected property
-                sprite.invalidateDrawProps( true );
+                sprite.invalidateDrawProps({ alpha: 0.5 });
 
                 // @ts-expect-error snooping on private property
-                expect( sprite._dp ).toEqual({
-                    alpha: 1,
-                    rotation: 0,
-                    pivot: undefined,
-                    blendMode: undefined,
-                    scale: 1,
-                    safeMode: false
-                });
+                expect( sprite._tfb ).toBeUndefined();
             });
 
-            it( "should create a DrawProps instance when rotation is specified for the Sprite", () => {
+            it( "should cache a transformed bounds object when a scale transformation was provided", () => {
                 const sprite = new Sprite({ width, height });
 
-                sprite.setRotation( 12 );
+                // @ts-expect-error snooping on protected property
+                sprite.invalidateDrawProps({ scale: 1.5 });
 
                 // @ts-expect-error snooping on private property
-                expect( sprite._dp ).toEqual({
-                    alpha: 1,
-                    rotation: 12,
-                    pivot: undefined,
-                    blendMode: undefined,
-                    scale: 1,
-                    safeMode: false
-                });
+                expect( sprite._tfb ).not.toBeUndefined();
             });
 
-            it( "should create a DrawProps instance when rotation is specified along with a Pivot point for the Sprite", () => {
+            it( "should cache a transformed bounds object when a rotation transformation was provided", () => {
                 const sprite = new Sprite({ width, height });
 
-                sprite.setRotation( 12, { x: 10, y: 15 });
+                // @ts-expect-error snooping on protected property
+                sprite.invalidateDrawProps({ rotation: 33 });
 
                 // @ts-expect-error snooping on private property
-                expect( sprite._dp ).toEqual({
-                    alpha: 1,
-                    rotation: 12,
-                    pivot: { x: 10, y: 15 },
-                    blendMode: undefined,
-                    scale: 1,
-                    safeMode: false
-                });
-            });
-
-            it( "should create a DrawProps instance when scale is specified for the Sprite", () => {
-                const sprite = new Sprite({ width, height });
-
-                sprite.setScale( 5 );
-
-                // @ts-expect-error snooping on private property
-                expect( sprite._dp ).toEqual({
-                    alpha: 1,
-                    rotation: 0,
-                    pivot: undefined,
-                    blendMode: undefined,
-                    scale: 5,
-                    safeMode: false
-                });
-            });
-
-            it( "should create a DrawProps instance when a mask is specified for the Sprite", () => {
-                const sprite = new Sprite({ width, height, mask: true });
-
-                // @ts-expect-error snooping on private property
-                expect( sprite._dp ).toEqual({
-                    alpha: 1,
-                    rotation: 0,
-                    pivot: undefined,
-                    blendMode: "destination-in",
-                    scale: 1,
-                    safeMode: false
-                });
+                expect( sprite._tfb ).not.toBeUndefined();
             });
         });
     });
@@ -541,6 +555,18 @@ describe( "Sprite", () => {
 
             expect( sprite.isVisible()).toBe( true );
             expect( mockMathFn ).toHaveBeenCalledWith( "isInsideArea", sprite.getBounds(), canvas.bbox );
+        });
+
+        it( "should check against the transformed bounds when the DrawProps cache contains transformation values", () => {
+            const canvas = new Canvas();
+            const sprite = new Sprite({ width, height, rotation: 10 });
+
+            canvas.addChild( sprite );
+
+            sprite.isVisible();
+
+            // @ts-expect-error snooping on protected property
+            expect( mockMathFn ).toHaveBeenCalledWith( "isInsideArea", sprite._tfb, canvas.bbox );
         });
     });
 
@@ -915,7 +941,7 @@ describe( "Sprite", () => {
         });
     });
 
-    describe( "when handling events", () => {
+    describe( "when handling interaction events", () => {
         let mockEvent, sprite;
         beforeEach(() => {
             mockEvent = {
@@ -1081,5 +1107,16 @@ describe( "Sprite", () => {
                 });
             });
         });
+    });
+
+    it( "should call the invalidate() handler of the parent Canvas when invalidate() is called", () => {
+        const sprite = new Sprite({ width, height });
+        canvas.addChild( sprite );
+
+        const invalidateSpy = vi.spyOn( canvas, "invalidate" );
+
+        sprite.invalidate();
+
+        expect( invalidateSpy ).toHaveBeenCalled();
     });
 });

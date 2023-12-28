@@ -24,7 +24,7 @@ import type Canvas from "./Canvas";
 import DisplayObject from "./DisplayObject";
 import type { Point, Rectangle, SpriteSheet, Viewport } from "./definitions/types";
 import type { IRenderer, DrawProps } from "./rendering/IRenderer";
-import { isInsideArea, calculateDrawRectangle } from "./utils/ImageMath";
+import { isInsideArea, calculateDrawRectangle, transformRectangle } from "./utils/ImageMath";
 
 const { min, max } = Math;
 const HALF = 0.5;
@@ -66,10 +66,8 @@ export default class Sprite extends DisplayObject<Sprite> {
     public last: Sprite | undefined;
     public next: Sprite | undefined;
 
-    protected _bounds: Rectangle; // bounding box relative to the Canvas
-    protected _rotation: number;
-    protected _pivot: Point | undefined; // optional pivot point for rotation (defaults to center)
-    protected _scale: number;
+    protected _bounds: Rectangle;  // bounding box relative to the Canvas
+    protected _tfb: Rectangle; // bounding box after optional transformations are applied
     protected _mask = false; // whether Sprite masks underlying Canvas content
     protected _interactive = false;
     protected _draggable = false;
@@ -120,15 +118,15 @@ export default class Sprite extends DisplayObject<Sprite> {
         this.collidable = collidable;
 
         this._mask   = mask;
-        this._scale  = 1;
-        this._bounds = { left: 0, top: 0, width, height };
+        this._bounds = { left: x, top: y, width, height };
 
-        /* initialization */
+        if ( mask ) {
+            this.gdp(); // create DrawProps cache
+        }
 
-        this.setX( x );
-        this.setY( y );
-        this.setRotation( rotation );
-        this.setInteractive( interactive );
+        if ( rotation !== 0 ) {
+            this.setRotation( rotation );
+        }
 
         if ( resourceId ) {
             this.setResource( resourceId );
@@ -140,6 +138,7 @@ export default class Sprite extends DisplayObject<Sprite> {
             }
             this.setSheet( sheet, sheetTileWidth, sheetTileHeight );
         }
+        this.setInteractive( interactive );
     }
 
     /* public methods */
@@ -348,22 +347,19 @@ export default class Sprite extends DisplayObject<Sprite> {
     }
     
     getRotation(): number {
-        return this._dp?.rotation ?? this._rotation; // get from DrawProps (when existing) as outside transforms can tween this value
+        return this._dp?.rotation ?? 0;
     }
 
-    setRotation( angleInDegrees: number, optPivot?: Point ): void {
-        this._rotation = ( angleInDegrees % 360 );
-        this._pivot = optPivot;
-        this.invalidateDrawProps();
+    setRotation( angleInDegrees: number, pivot?: Point ): void {
+        this.invalidateDrawProps({ rotation: angleInDegrees % 360, pivot });
     }
 
     getScale(): number {
-        return this._dp?.scale ?? this._scale; // get from DrawProps (when existing) as outside transforms can tween this value
+        return this._dp?.scale ?? 1;
     }
 
-    setScale( value: number ): void {
-        this._scale = value;
-        this.invalidateDrawProps();
+    setScale( scale: number ): void {
+        this.invalidateDrawProps({ scale });
     }
 
     /**
@@ -372,11 +368,8 @@ export default class Sprite extends DisplayObject<Sprite> {
      * enrich the Object which poses problems when passing the data to the renderer inside the Worker
      */
     getTransforms(): TransformProps {
-        if ( !this._dp ) {
-            this.invalidateDrawProps( true ); // lazily create draw props
-        }
         if ( !this._tf ) {
-            const { scale, rotation, alpha } = this._dp;
+            const { scale, rotation, alpha } = this.gdp(); // also lazily creates draw props
             this._tf = { scale, rotation, alpha };
         }
         return this._tf;
@@ -384,10 +377,10 @@ export default class Sprite extends DisplayObject<Sprite> {
 
     /**
      * Verifies whether this Sprite is currently visible
-     * within the current Viewport / screen offset
+     * within the current Viewport / screen offset. Takes transformations into account.
      */
     isVisible( viewport?: Viewport ): boolean {
-        return isInsideArea( this._bounds, viewport ? viewport : this.canvas.bbox );
+        return isInsideArea( this._tfb || this._bounds, viewport ? viewport : this.canvas.bbox );
     }
 
     /**
@@ -727,16 +720,17 @@ export default class Sprite extends DisplayObject<Sprite> {
     }
 
     /**
-     * Retrieve the latest state of the DrawProps object for the next render.
-     * In case an animation transformation is running, the values are synced.
+     * Retrieve the latest state of the DrawProps cache for the next render.
+     * In case an animation transformation is tweening, the values are now synced.
      */
     protected getDrawProps(): DrawProps | undefined {
         if ( this._tf ) {
             const { alpha, rotation, scale } = this._tf;
-
-            this._dp.alpha    = alpha;
-            this._dp.rotation = rotation;
-            this._dp.scale    = scale;
+            const hasChange = this._dp.rotation !== rotation || this._dp.alpha !== alpha || this._dp.scale !== scale;
+            
+            if ( hasChange ) {
+                this.invalidateDrawProps({ rotation, alpha, scale });
+            }
         }
         return this._dp;
     }
@@ -907,24 +901,19 @@ export default class Sprite extends DisplayObject<Sprite> {
 
     /* protected methods */
 
-    protected invalidateDrawProps( force = false ): void {
-        if ( force ||
-            ( this._rotation !== 0 || this._mask || this._scale !== 1 )) {
+    protected invalidateDrawProps({ alpha, scale, rotation, pivot }: { alpha?: number, scale?: number, rotation?: number, pivot?: Point }): void {
+        const dp = this.gdp(); // lazily creates DrawProps cache
+        
+        dp.alpha    = alpha ?? dp.alpha;
+        dp.scale    = scale ?? dp.scale;
+        dp.rotation = rotation ?? dp.rotation;
+        dp.pivot    = pivot ?? dp.pivot;
 
-            // pool Object instance
-            
-            this._dp = this._dp ?? {
-                alpha: 1,
-                rotation: 0,
-                scale: 1,
-                safeMode: false
-            };
-            const props = this._dp;
-            
-            props.rotation  = this._rotation;
-            props.pivot     = this._pivot;
-            props.blendMode = this._mask ? "destination-in" : undefined;
-            props.scale     = this._scale;
+        if ( rotation !== undefined || scale !== undefined ) {
+            if ( !this._tfb ) {
+                this._tfb = { ...this._bounds };
+            }
+            transformRectangle( this._bounds, dp.rotation, dp.scale, this._tfb );
         }
     }
 
@@ -954,5 +943,21 @@ export default class Sprite extends DisplayObject<Sprite> {
                 aniProps.onComplete( this );
             }
         }
+    }
+
+    /**
+     * Lazily create a DrawProps object which can be pooled throughout the Sprites lifetime.
+     * Private as this is internal and not part of extendible API. Should only be called when
+     * one of the DrawProps values is guaranteed (or about to) exist.
+     */
+    private gdp(): DrawProps {
+        this._dp = this._dp || {
+            alpha: 1,
+            blendMode: this._mask ? "destination-in" : undefined,
+            safeMode: false,
+            scale: 1,
+            rotation: 0,
+        };
+        return this._dp;
     }
 }

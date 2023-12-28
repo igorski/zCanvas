@@ -24,6 +24,7 @@ import type { IRenderer, DrawProps, StrokeProps, TextProps } from "./IRenderer";
 import type { Point } from "../definitions/types";
 import { renderMultiLineText, measureLines } from "./components/TextRenderer";
 import Cache from "../utils/Cache";
+import { DEG_TO_RAD } from "../utils/ImageMath";
 
 export enum ResetCommand {
     NONE = 0,
@@ -32,7 +33,6 @@ export enum ResetCommand {
 };
 
 const TRANSPARENT = "transparent";
-const DEG_TO_RAD = Math.PI / 180;
 const HALF = 0.5;
 
 let _pixelRatio = 1;
