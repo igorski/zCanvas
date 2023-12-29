@@ -438,12 +438,6 @@ declare module "src/Canvas" {
     }
     export default class Canvas extends DisplayObject<Canvas> {
         DEBUG: boolean;
-        benchmark: {
-            minElapsed: number;
-            maxElapsed: number;
-            minFps: number;
-            maxFps: number;
-        };
         collision: Collision;
         bbox: BoundingBox;
         protected _el: HTMLCanvasElement;

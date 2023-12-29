@@ -46,7 +46,7 @@ async function h(t2) {
   t2 instanceof Blob && (t2 = await async function(t3) {
     const e2 = await n(t3), { cvs: i2, ctx: h3 } = s(e2.width, e2.height);
     return h3.drawImage(e2, 0, 0), i2;
-  }(t2)), a(i(), t2);
+  }(t2)), o(i(), t2);
   const h2 = await createImageBitmap(i());
   return e.width = 1, e.height = 1, h2;
 }
@@ -63,11 +63,11 @@ function n(t2) {
     }, h2.src = e2;
   });
 }
-function a(t2, e2, s2, i2) {
+function o(t2, e2, s2, i2) {
   const h2 = t2.getContext("2d");
   s2 = s2 ?? e2.width, i2 = i2 ?? e2.height, t2.width = s2, t2.height = i2, h2.clearRect(0, 0, s2, i2), h2.drawImage(e2, 0, 0, s2, i2);
 }
-async function o(t2) {
+async function a(t2) {
   const e2 = new FileReader();
   return new Promise((s2, i2) => {
     e2.onload = (e3) => {
@@ -80,7 +80,7 @@ async function o(t2) {
 }
 const r = { loadImage: (e2) => new Promise(async (s2, i2) => {
   let h2;
-  if (e2 instanceof File ? h2 = await o(e2) : e2 instanceof Blob && (h2 = e2), void 0 !== h2) {
+  if (e2 instanceof File ? h2 = await a(e2) : e2 instanceof Blob && (h2 = e2), void 0 !== h2) {
     try {
       const t2 = await n(h2);
       r.onReady(t2).then(() => s2(d(t2)));
@@ -89,7 +89,7 @@ const r = { loadImage: (e2) => new Promise(async (s2, i2) => {
     }
     return;
   }
-  const a2 = function(t2) {
+  const o2 = function(t2) {
     const e3 = t2.substring(0, 5);
     return "data:" === e3 || "blob:" === e3;
   }(e2), l2 = new window.Image(), c2 = new t(), p2 = () => {
@@ -98,10 +98,10 @@ const r = { loadImage: (e2) => new Promise(async (s2, i2) => {
     c2.dispose(), r.onReady(l2).then(() => s2(d(l2))).catch(i2);
   };
   var m2;
-  a2 || (m2 = l2, function(t2) {
+  o2 || (m2 = l2, function(t2) {
     const { location: e3 } = window;
     return !(!t2.startsWith("./") && !t2.startsWith(`${e3.protocol}//${e3.host}`)) || !/^http[s]?:/.test(t2);
-  }(e2) || (m2.crossOrigin = "Anonymous"), c2.add(l2, "load", u2), c2.add(l2, "error", p2)), l2.src = e2, a2 && u2();
+  }(e2) || (m2.crossOrigin = "Anonymous"), c2.add(l2, "load", u2), c2.add(l2, "error", p2)), l2.src = e2, o2 && u2();
 }), async loadBitmap(t2) {
   const { image: e2 } = await r.loadImage(t2);
   return h(e2);
@@ -168,19 +168,19 @@ class c {
   }
 }
 const { min: p, max: u } = Math, m = 0.5;
-let b, _, g, w;
+let b, g, _, w;
 const f = Math.PI / 180;
 function G(t2) {
   return t2 > 0 ? t2 + 0.5 << 0 : 0 | t2;
 }
 function Z(t2, e2) {
-  ({ left: b, top: _, width: g, height: w } = t2);
+  ({ left: b, top: g, width: _, height: w } = t2);
   const { left: s2, top: i2, width: h2, height: n2 } = e2;
-  return g = b > s2 ? p(g, h2 - (b - s2)) : p(h2, g - (s2 - b)), w = _ > i2 ? p(w, n2 - (_ - i2)) : p(n2, w - (i2 - _)), { src: { left: b > s2 ? 0 : s2 - b, top: _ > i2 ? 0 : i2 - _, width: g, height: w }, dest: { left: b > s2 ? b - s2 : 0, top: _ > i2 ? _ - i2 : 0, width: g, height: w } };
+  return _ = b > s2 ? p(_, h2 - (b - s2)) : p(h2, _ - (s2 - b)), w = g > i2 ? p(w, n2 - (g - i2)) : p(n2, w - (i2 - g)), { src: { left: b > s2 ? 0 : s2 - b, top: g > i2 ? 0 : i2 - g, width: _, height: w }, dest: { left: b > s2 ? b - s2 : 0, top: g > i2 ? g - i2 : 0, width: _, height: w } };
 }
 function v(t2, e2, s2) {
-  const { left: i2, top: h2, width: n2, height: a2 } = t2;
-  return s2.width = n2 * e2, s2.height = a2 * e2, s2.left = i2 - (s2.width - n2) * m, s2.top = h2 - (s2.height - a2) * m, s2;
+  const { left: i2, top: h2, width: n2, height: o2 } = t2;
+  return s2.width = n2 * e2, s2.height = o2 * e2, s2.left = i2 - (s2.width - n2) * m, s2.top = h2 - (s2.height - o2) * m, s2;
 }
 const X = "transparent", x = 0.5;
 let R, C = 1, L = "setTransform";
@@ -248,64 +248,64 @@ class y {
     const n2 = h2 ? this.prepare(h2, t2, e2, s2, i2) : 0;
     this._context.clearRect(t2, e2, s2, i2), this.applyReset(n2);
   }
-  drawRect(t2, e2, s2, i2, h2 = X, n2, a2) {
-    const o2 = a2 ? this.prepare(a2, t2, e2, s2, i2) : 0;
-    R = this._context, h2 !== X && (R.fillStyle = h2, R.fillRect(t2, e2, s2, i2)), n2 && (R.lineWidth = n2.size, R.strokeStyle = n2.color, R.strokeRect(x + t2, x + e2, s2, i2)), this.applyReset(o2);
+  drawRect(t2, e2, s2, i2, h2 = X, n2, o2) {
+    const a2 = o2 ? this.prepare(o2, t2, e2, s2, i2) : 0;
+    R = this._context, h2 !== X && (R.fillStyle = h2, R.fillRect(t2, e2, s2, i2)), n2 && (R.lineWidth = n2.size, R.strokeStyle = n2.color, R.strokeRect(x + t2, x + e2, s2, i2)), this.applyReset(a2);
   }
-  drawRoundRect(t2, e2, s2, i2, h2, n2 = X, a2, o2) {
-    const r2 = o2 ? this.prepare(o2, t2, e2, s2, i2) : 0;
-    R = this._context, n2 !== X && (R.fillStyle = n2, R.fillRect(t2, e2, s2, i2)), a2 && (R.lineWidth = a2.size, R.strokeStyle = a2.color, R.beginPath(), R.roundRect(x + t2, x + e2, s2, i2, h2), R.stroke()), this.applyReset(r2);
+  drawRoundRect(t2, e2, s2, i2, h2, n2 = X, o2, a2) {
+    const r2 = a2 ? this.prepare(a2, t2, e2, s2, i2) : 0;
+    R = this._context, n2 !== X && (R.fillStyle = n2, R.fillRect(t2, e2, s2, i2)), o2 && (R.lineWidth = o2.size, R.strokeStyle = o2.color, R.beginPath(), R.roundRect(x + t2, x + e2, s2, i2, h2), R.stroke()), this.applyReset(r2);
   }
   drawCircle(t2, e2, s2, i2 = X, h2, n2) {
-    const a2 = n2 ? this.prepare(n2, t2, e2, 2 * s2, 2 * s2) : 0;
-    R = this._context, R.beginPath(), R.arc(t2 + s2, e2 + s2, s2, 0, 2 * Math.PI, false), i2 !== X && (R.fillStyle = i2, R.fill()), h2 && (R.lineWidth = h2.size, R.strokeStyle = h2.color, R.closePath(), R.stroke()), this.applyReset(a2);
+    const o2 = n2 ? this.prepare(n2, t2, e2, 2 * s2, 2 * s2) : 0;
+    R = this._context, R.beginPath(), R.arc(t2 + s2, e2 + s2, s2, 0, 2 * Math.PI, false), i2 !== X && (R.fillStyle = i2, R.fill()), h2 && (R.lineWidth = h2.size, R.strokeStyle = h2.color, R.closePath(), R.stroke()), this.applyReset(o2);
   }
   drawImage(t2, e2, s2, i2, h2, n2) {
     if (!this._bitmapCache.has(t2))
       return;
-    const a2 = n2 ? this.prepare(n2, e2, s2, i2, h2) : 0;
-    void 0 === i2 ? this._context.drawImage(this._bitmapCache.get(t2), e2, s2) : this._context.drawImage(this._bitmapCache.get(t2), e2, s2, i2, h2), this._debug && this.drawRect(e2, s2, i2, h2, X, { size: 1, color: "red" }), this.applyReset(a2);
+    const o2 = n2 ? this.prepare(n2, e2, s2, i2, h2) : 0;
+    void 0 === i2 ? this._context.drawImage(this._bitmapCache.get(t2), e2, s2) : this._context.drawImage(this._bitmapCache.get(t2), e2, s2, i2, h2), this._debug && this.drawRect(e2, s2, i2, h2, X, { size: 1, color: "red" }), this.applyReset(o2);
   }
-  drawImageCropped(t2, e2, s2, i2, h2, n2, a2, o2, r2, d2) {
+  drawImageCropped(t2, e2, s2, i2, h2, n2, o2, a2, r2, d2) {
     if (!this._bitmapCache.has(t2))
       return;
     if (d2 == null ? void 0 : d2.safeMode) {
-      if (o2 <= 0 || r2 <= 0)
+      if (a2 <= 0 || r2 <= 0)
         return;
-      const n3 = this._bitmapCache.get(t2), a3 = (o2 = Math.min(this._context.canvas.width, o2)) / i2, d3 = (r2 = Math.min(this._context.canvas.height, r2)) / h2;
-      e2 + i2 > n3.width && (o2 -= a3 * (e2 + i2 - n3.width), i2 -= e2 + i2 - n3.width), s2 + h2 > n3.height && (r2 -= d3 * (s2 + h2 - n3.height), h2 -= s2 + h2 - n3.height);
+      const n3 = this._bitmapCache.get(t2), o3 = (a2 = Math.min(this._context.canvas.width, a2)) / i2, d3 = (r2 = Math.min(this._context.canvas.height, r2)) / h2;
+      e2 + i2 > n3.width && (a2 -= o3 * (e2 + i2 - n3.width), i2 -= e2 + i2 - n3.width), s2 + h2 > n3.height && (r2 -= d3 * (s2 + h2 - n3.height), h2 -= s2 + h2 - n3.height);
     }
-    const l2 = d2 ? this.prepare(d2, n2, a2, o2, r2) : 0;
-    this._context.drawImage(this._bitmapCache.get(t2), x + e2 << 0, x + s2 << 0, x + i2 << 0, x + h2 << 0, x + n2 << 0, x + a2 << 0, x + o2 << 0, x + r2 << 0), this._debug && this.drawRect(n2, a2, o2, r2, X, { size: 1, color: "red" }), this.applyReset(l2);
+    const l2 = d2 ? this.prepare(d2, n2, o2, a2, r2) : 0;
+    this._context.drawImage(this._bitmapCache.get(t2), x + e2 << 0, x + s2 << 0, x + i2 << 0, x + h2 << 0, x + n2 << 0, x + o2 << 0, x + a2 << 0, x + r2 << 0), this._debug && this.drawRect(n2, o2, a2, r2, X, { size: 1, color: "red" }), this.applyReset(l2);
   }
   drawText(t2, e2, s2, i2) {
-    const { lines: h2, width: n2, height: a2 } = function(t3, e3) {
+    const { lines: h2, width: n2, height: o2 } = function(t3, e3) {
       l(t3, e3);
       const s3 = t3.text.split("\n"), i3 = [];
-      let h3, n3 = 0, a3 = 0, o3 = e3.measureText("Wq");
-      h3 = t3.lineHeight ? t3.lineHeight : o3.actualBoundingBoxAscent + o3.actualBoundingBoxDescent;
-      const r2 = o3.actualBoundingBoxAscent;
+      let h3, n3 = 0, o3 = 0, a3 = e3.measureText("Wq");
+      h3 = t3.lineHeight ? t3.lineHeight : a3.actualBoundingBoxAscent + a3.actualBoundingBoxDescent;
+      const r2 = a3.actualBoundingBoxAscent;
       let d2 = 0;
       return s3.forEach((s4, l2) => {
         if (d2 = Math.round(r2 + l2 * h3), t3.spacing) {
           const e4 = s4.split("");
           n3 = Math.max(n3, e4.length * t3.spacing);
         } else
-          o3 = e3.measureText(s4), n3 = Math.max(n3, o3.actualBoundingBoxRight);
-        i3.push({ line: s4, top: d2 }), a3 += h3;
-      }), { lines: i3, width: Math.ceil(n3), height: Math.ceil(a3) };
+          a3 = e3.measureText(s4), n3 = Math.max(n3, a3.actualBoundingBoxRight);
+        i3.push({ line: s4, top: d2 }), o3 += h3;
+      }), { lines: i3, width: Math.ceil(n3), height: Math.ceil(o3) };
     }(t2, this._context);
-    t2.center && (e2 -= n2 * x, s2 -= a2 * x);
-    const o2 = i2 ? this.prepare(i2, e2, s2, n2, a2) : 0;
+    t2.center && (e2 -= n2 * x, s2 -= o2 * x);
+    const a2 = i2 ? this.prepare(i2, e2, s2, n2, o2) : 0;
     !function(t3, e3, s3, i3, h3) {
       l(s3, t3);
       const n3 = s3.spacing ?? 1;
-      e3.forEach(({ line: e4, top: a3 }) => {
+      e3.forEach(({ line: e4, top: o3 }) => {
         s3.spacing ? e4.split("").forEach((e5, s4) => {
-          t3.fillText(e5, i3 + Math.round(s4 * n3), h3 + a3);
-        }) : t3.fillText(e4, i3, h3 + a3);
+          t3.fillText(e5, i3 + Math.round(s4 * n3), h3 + o3);
+        }) : t3.fillText(e4, i3, h3 + o3);
       });
-    }(this._context, h2, t2, e2, s2), this.applyReset(o2);
+    }(this._context, h2, t2, e2, s2), this.applyReset(a2);
   }
   createPattern(t2, e2) {
     this._bitmapCache.has(t2) && this._patternCache.set(t2, this._context.createPattern(this._bitmapCache.get(t2), e2));
@@ -318,16 +318,16 @@ class y {
   }
   prepare(t2, e2, s2, i2, h2) {
     var _a, _b;
-    const n2 = 1 !== t2.scale, a2 = 0 !== t2.rotation, o2 = 1 !== t2.alpha, r2 = void 0 !== t2.blendMode, d2 = o2 || r2, l2 = n2 || a2;
+    const n2 = 1 !== t2.scale, o2 = 0 !== t2.rotation, a2 = 1 !== t2.alpha, r2 = void 0 !== t2.blendMode, d2 = a2 || r2, l2 = n2 || o2;
     if (d2)
       this.save();
     else if (!l2)
       return 0;
     if (l2) {
-      const n3 = t2.scale ?? 1, a3 = ((_a = t2.pivot) == null ? void 0 : _a.x) ?? e2 + i2 * x, o3 = ((_b = t2.pivot) == null ? void 0 : _b.y) ?? s2 + h2 * x, r3 = t2.rotation * f, d3 = Math.cos(r3) * n3, l3 = Math.sin(r3) * n3;
-      this._context[L](d3, l3, -l3, d3, a3 - a3 * d3 + o3 * l3, o3 - a3 * l3 - o3 * d3);
+      const n3 = t2.scale ?? 1, o3 = ((_a = t2.pivot) == null ? void 0 : _a.x) ?? e2 + i2 * x, a3 = ((_b = t2.pivot) == null ? void 0 : _b.y) ?? s2 + h2 * x, r3 = t2.rotation * f, d3 = Math.cos(r3) * n3, l3 = Math.sin(r3) * n3;
+      this._context[L](d3, l3, -l3, d3, o3 - o3 * d3 + a3 * l3, a3 - o3 * l3 - a3 * d3);
     }
-    return r2 && this.setBlendMode(t2.blendMode), o2 && this.setAlpha(t2.alpha), d2 ? 1 : 2;
+    return r2 && this.setBlendMode(t2.blendMode), a2 && this.setAlpha(t2.alpha), d2 ? 1 : 2;
   }
   applyReset(t2) {
     2 === t2 ? this._context.setTransform(C, 0, 0, C, 0, 0) : 1 === t2 && this.restore();
@@ -370,7 +370,7 @@ class z {
           if (this._useW)
             this.wrappedWorkerLoad(t2, e2, s2, i2);
           else {
-            const h2 = await o(e2);
+            const h2 = await a(e2);
             this.wrappedLoad(t2, h2, s2, i2);
           }
         else
@@ -472,11 +472,11 @@ class z {
   clearRect(t2, e2, s2, i2, h2) {
     this.onDraw("clearRect", t2, e2, s2, i2, h2);
   }
-  drawRect(t2, e2, s2, i2, h2, n2, a2) {
-    this.onDraw("drawRect", t2, e2, s2, i2, h2, n2, a2);
+  drawRect(t2, e2, s2, i2, h2, n2, o2) {
+    this.onDraw("drawRect", t2, e2, s2, i2, h2, n2, o2);
   }
-  drawRoundRect(t2, e2, s2, i2, h2, n2, a2, o2) {
-    this.onDraw("drawRoundRect", t2, e2, s2, i2, h2, n2, a2, o2);
+  drawRoundRect(t2, e2, s2, i2, h2, n2, o2, a2) {
+    this.onDraw("drawRoundRect", t2, e2, s2, i2, h2, n2, o2, a2);
   }
   drawCircle(t2, e2, s2, i2 = "transparent", h2, n2) {
     this.onDraw("drawCircle", t2, e2, s2, i2, h2, n2);
@@ -484,8 +484,8 @@ class z {
   drawImage(t2, e2, s2, i2, h2, n2) {
     this.onDraw("drawImage", t2, e2, s2, i2, h2, n2);
   }
-  drawImageCropped(t2, e2, s2, i2, h2, n2, a2, o2, r2, d2) {
-    this.onDraw("drawImageCropped", t2, e2, s2, i2, h2, n2, a2, o2, r2, d2);
+  drawImageCropped(t2, e2, s2, i2, h2, n2, o2, a2, r2, d2) {
+    this.onDraw("drawImageCropped", t2, e2, s2, i2, h2, n2, o2, a2, r2, d2);
   }
   drawText(t2, e2, s2, i2) {
     this.onDraw("drawText", t2, e2, s2, i2);
@@ -506,11 +506,11 @@ class z {
     this._rdr[t2](...e2);
   }
 }
-const k = { x: 0, y: 0 };
-function H(t2, e2, s2, i2, h2) {
+const H = { x: 0, y: 0 };
+function k(t2, e2, s2, i2, h2) {
   return (t2 - e2) / (s2 - e2) * (h2 - i2) + i2;
 }
-const K = [], F = [], M = s(1, 1, true).cvs;
+const K = [], M = [], F = s(1, 1, true).cvs;
 class I {
   constructor(t2) {
     this._renderer = t2, this._cacheMap = /* @__PURE__ */ new Map();
@@ -519,22 +519,22 @@ class I {
     this._cacheMap.clear(), this._cacheMap = void 0;
   }
   getChildrenUnderPoint(t2, e2, s2, i2, h2, n2 = false) {
-    const a2 = [];
-    let o2, r2, d2, l2, c2, p2 = t2.length;
+    const o2 = [];
+    let a2, r2, d2, l2, c2, p2 = t2.length;
     for (; p2--; )
-      o2 = t2[p2], r2 = o2.getX(), d2 = o2.getY(), l2 = o2.getWidth(), c2 = o2.getHeight(), r2 < e2 + i2 && r2 + l2 > e2 && d2 < s2 + h2 && d2 + c2 > s2 && (!n2 || n2 && o2.collidable) && a2.push(o2);
-    return a2;
+      a2 = t2[p2], r2 = a2.getX(), d2 = a2.getY(), l2 = a2.getWidth(), c2 = a2.getHeight(), r2 < e2 + i2 && r2 + l2 > e2 && d2 < s2 + h2 && d2 + c2 > s2 && (!n2 || n2 && a2.collidable) && o2.push(a2);
+    return o2;
   }
   pixelCollision(t2, e2) {
     const s2 = t2.getIntersection(e2);
     if (void 0 === s2)
       return;
-    this.getPixelArray(t2, s2, K), this.getPixelArray(e2, s2, F);
+    this.getPixelArray(t2, s2, K), this.getPixelArray(e2, s2, M);
     const i2 = s2.width, h2 = s2.height;
     let n2 = 0;
     for (let t3 = 0; t3 < h2; ++t3)
       for (let e3 = 0; e3 < i2; ++e3) {
-        if (1 === K[n2] && 1 === F[n2])
+        if (1 === K[n2] && 1 === M[n2])
           return { x: e3, y: t3 };
         ++n2;
       }
@@ -545,14 +545,14 @@ class I {
       return false;
     const { width: s2, height: i2 } = e2;
     !function(t3, e3, s3, i3) {
-      a(t3, e3, s3, i3);
-    }(M, e2, s2, i2);
-    const { data: h2 } = M.getContext("2d").getImageData(0, 0, s2, i2), n2 = new Uint8Array(h2.length / 4);
+      o(t3, e3, s3, i3);
+    }(F, e2, s2, i2);
+    const { data: h2 } = F.getContext("2d").getImageData(0, 0, s2, i2), n2 = new Uint8Array(h2.length / 4);
     for (let t3 = 0, e3 = n2.length; t3 < e3; ++t3) {
       const e4 = h2[4 * t3 + 3];
       n2[t3] = e4 < 5 ? 0 : 1;
     }
-    return this._cacheMap.set(t2, { mask: n2, size: { width: s2, height: i2 } }), M.width = M.height = 1, true;
+    return this._cacheMap.set(t2, { mask: n2, size: { width: s2, height: i2 } }), F.width = F.height = 1, true;
   }
   clearCache(t2) {
     return !!this.hasCache(t2) && (this._cacheMap.delete(t2), true);
@@ -564,15 +564,15 @@ class I {
     const i2 = t2.getResourceId();
     if (!this.hasCache(i2))
       throw new Error(`Cannot get cached entry for resource "${i2}". Cache it first.`);
-    const h2 = t2.getBounds(), n2 = G(e2.left - h2.left), a2 = G(e2.top - h2.top), o2 = G(e2.width), r2 = G(e2.height), { mask: d2, size: l2 } = this._cacheMap.get(i2);
-    if (o2 <= 0 || r2 <= 0)
+    const h2 = t2.getBounds(), n2 = G(e2.left - h2.left), o2 = G(e2.top - h2.top), a2 = G(e2.width), r2 = G(e2.height), { mask: d2, size: l2 } = this._cacheMap.get(i2);
+    if (a2 <= 0 || r2 <= 0)
       return void (s2.length = 0);
-    s2.length = G(o2 * r2);
-    const c2 = l2.height, p2 = l2.width, u2 = n2 + o2, m2 = a2 + r2;
-    let b2 = -1, _2 = 0;
-    for (let t3 = a2; t3 < m2; ++t3)
+    s2.length = G(a2 * r2);
+    const c2 = l2.height, p2 = l2.width, u2 = n2 + a2, m2 = o2 + r2;
+    let b2 = -1, g2 = 0;
+    for (let t3 = o2; t3 < m2; ++t3)
       for (let e3 = n2; e3 < u2; ++e3)
-        _2 = e3 >= p2 || t3 >= c2 ? 0 : d2[t3 * p2 + e3], s2[++b2] = _2;
+        g2 = e3 >= p2 || t3 >= c2 ? 0 : d2[t3 * p2 + e3], s2[++b2] = g2;
   }
 }
 class N {
@@ -621,15 +621,15 @@ class N {
 }
 const { min: V, max: Q } = Math;
 class P extends N {
-  constructor({ width: t2 = 300, height: e2 = 300, fps: s2 = 60, backgroundColor: i2 = null, animate: h2 = false, smoothing: n2 = true, stretchToFit: a2 = false, autoSize: o2 = true, viewport: r2 = null, preventEventBubbling: d2 = false, parentElement: l2 = null, debug: c2 = false, optimize: p2 = "auto", viewportHandler: u2, onUpdate: m2, onResize: b2 } = {}) {
-    if (super(), this.DEBUG = false, this.benchmark = { minElapsed: 1 / 0, maxElapsed: -1 / 0, minFps: 1 / 0, maxFps: -1 / 0 }, this.bbox = { left: 0, top: 0, right: 0, bottom: 0 }, this._smooth = false, this._stretch = false, this._pxr = 1, this._prevDef = false, this._lastRender = 0, this._renderId = 0, this._renderPending = false, this._disposed = false, this._scale = { x: 1, y: 1 }, this._aTchs = [], this._animate = false, this._isFs = false, this._hasFsH = false, t2 <= 0 || e2 <= 0)
+  constructor({ width: t2 = 300, height: e2 = 300, fps: s2 = 60, backgroundColor: i2 = null, animate: h2 = false, smoothing: n2 = true, stretchToFit: o2 = false, autoSize: a2 = true, viewport: r2 = null, preventEventBubbling: d2 = false, parentElement: l2 = null, debug: c2 = false, optimize: p2 = "auto", viewportHandler: u2, onUpdate: m2, onResize: b2 } = {}) {
+    if (super(), this.DEBUG = false, this.bbox = { left: 0, top: 0, right: 0, bottom: 0 }, this._smooth = false, this._stretch = false, this._pxr = 1, this._prevDef = false, this._lastRender = 0, this._renderId = 0, this._renderPending = false, this._disposed = false, this._scale = { x: 1, y: 1 }, this._aTchs = [], this._animate = false, this._isFs = false, this._hasFsH = false, t2 <= 0 || e2 <= 0)
       throw new Error("cannot construct a zCanvas without valid dimensions");
     this.DEBUG = c2, this._el = document.createElement("canvas"), this._rdr = new z(this._el, function(t3) {
       if ("worker" === t3)
         return true;
       const { userAgent: e3 } = navigator, s3 = e3.includes("Safari") && !e3.includes("Chrome");
       return "auto" === t3 && !s3;
-    }(p2), c2), this.collision = new I(this._rdr), this._upHdlr = m2, this._renHdlr = this.render.bind(this), this._vpHdlr = u2, this._resHdrl = b2, this.setFrameRate(s2), this.setAnimatable(h2), i2 && this.setBackgroundColor(i2), this._pxr = window.devicePixelRatio || 1, this._rdr.setPixelRatio(this._pxr), this.setDimensions(t2, e2, true, true), r2 && this.setViewport(r2.width, r2.height), this._stretch = a2, this.setSmoothing(n2), this.preventEventBubbling(d2), this.addListeners(o2), l2 instanceof HTMLElement && this.insertInPage(l2), requestAnimationFrame(() => this.handleResize());
+    }(p2), c2), this.collision = new I(this._rdr), this._upHdlr = m2, this._renHdlr = this.render.bind(this), this._vpHdlr = u2, this._resHdrl = b2, this.setFrameRate(s2), this.setAnimatable(h2), i2 && this.setBackgroundColor(i2), this._pxr = window.devicePixelRatio || 1, this._rdr.setPixelRatio(this._pxr), this.setDimensions(t2, e2, true, true), r2 && this.setViewport(r2.width, r2.height), this._stretch = o2, this.setSmoothing(n2), this.preventEventBubbling(d2), this.addListeners(a2), l2 instanceof HTMLElement && this.insertInPage(l2), requestAnimationFrame(() => this.handleResize());
   }
   loadResource(t2, e2) {
     return this._rdr.loadResource(t2, e2);
@@ -749,13 +749,13 @@ class P extends N {
       switch (i2 = this._children[e2 - 1], t2.type) {
         default:
           let h2 = 0, n2 = 0;
-          const a2 = t2.changedTouches;
-          let o2 = 0, r2 = a2.length;
+          const o2 = t2.changedTouches;
+          let a2 = 0, r2 = o2.length;
           const d2 = 1 / this._scale.x, l2 = 1 / this._scale.y;
           if (r2 > 0) {
             let { x: c3, y: p3 } = this.getCoordinate();
-            for (s2 && (c3 -= s2.left, p3 -= s2.top), o2 = 0; o2 < r2; ++o2) {
-              const s3 = a2[o2], { identifier: r3 } = s3;
+            for (s2 && (c3 -= s2.left, p3 -= s2.top), a2 = 0; a2 < r2; ++a2) {
+              const s3 = o2[a2], { identifier: r3 } = s3;
               if (h2 = s3.pageX * d2 - c3, n2 = s3.pageY * l2 - p3, "touchstart" === t2.type) {
                 for (; i2; ) {
                   if (!this._aTchs.includes(i2) && i2.handleInteraction(h2, n2, t2)) {
@@ -776,8 +776,8 @@ class P extends N {
           let { offsetX: c2, offsetY: p2 } = t2;
           if (this._isFs) {
             const e3 = function(t3, e4, s3, i3, h3) {
-              const n3 = window.innerHeight / h3, a3 = 0.5 * (window.innerWidth - i3 * n3);
-              return k.x = H(t3.clientX - s3.left - a3, 0, i3 * n3, 0, e4.width), k.y = H(t3.clientY - s3.top, 0, h3 * n3, 0, e4.height), k;
+              const n3 = window.innerHeight / h3, o3 = 0.5 * (window.innerWidth - i3 * n3);
+              return H.x = k(t3.clientX - s3.left - o3, 0, i3 * n3, 0, e4.width), H.y = k(t3.clientY - s3.top, 0, h3 * n3, 0, e4.height), H;
             }(t2, this._el, this.getCoordinate(), this._width, this._height);
             c2 = e3.x, p2 = e3.y;
           }
@@ -785,8 +785,8 @@ class P extends N {
             i2 = i2.last;
           break;
         case "wheel":
-          const { deltaX: u2, deltaY: m2 } = t2, b2 = 20, _2 = 0 === u2 ? 0 : u2 > 0 ? b2 : -b2, g2 = 0 === m2 ? 0 : m2 > 0 ? b2 : -b2;
-          this.panViewport(s2.left + _2, s2.top + g2, true);
+          const { deltaX: u2, deltaY: m2 } = t2, b2 = 20, g2 = 0 === u2 ? 0 : u2 > 0 ? b2 : -b2, _2 = 0 === m2 ? 0 : m2 > 0 ? b2 : -b2;
+          this.panViewport(s2.left + g2, s2.top + _2, true);
       }
     this._prevDef && (t2.stopPropagation(), t2.preventDefault()), this._animate || this.invalidate();
   }
@@ -799,13 +799,10 @@ class P extends N {
     this._aFps = 1e3 / (t2 - this._lastRaf), s2 = this._fps > 60 ? this._fps / this._aFps : 60 === this._fps && this._aFps > 63 ? 1 : 1 / (this._fps / this._aFps), this._lastRaf = t2, this._lastRender = t2 - e2 % this._rIval, this._qSize && this.updateCanvasSize();
     const h2 = this._width, n2 = this._height;
     this._bgColor ? this._rdr.drawRect(0, 0, h2, n2, this._bgColor) : this._rdr.clearRect(0, 0, h2, n2);
-    const a2 = "function" == typeof this._upHdlr;
-    for (a2 && this._upHdlr(t2, s2), i2 = this._children[0]; i2; )
-      a2 || i2.update(t2, s2), i2.draw(this._rdr, this._vp), i2 = i2.next;
-    if (this._rdr.onCommandsReady(), !this._disposed && this._animate && (this._renderPending = true, this._renderId = window.requestAnimationFrame(this._renHdlr)), this.DEBUG && t2 > 2) {
-      const e3 = window.performance.now() - t2;
-      this.benchmark.minElapsed = V(this.benchmark.minElapsed, e3), this.benchmark.maxElapsed = Q(this.benchmark.maxElapsed, e3), this._aFps !== 1 / 0 && (this.benchmark.minFps = V(this.benchmark.minFps, this._aFps), this.benchmark.maxFps = Q(this.benchmark.maxFps, this._aFps));
-    }
+    const o2 = "function" == typeof this._upHdlr;
+    for (o2 && this._upHdlr(t2, s2), i2 = this._children[0]; i2; )
+      o2 || i2.update(t2, s2), i2.draw(this._rdr, this._vp), i2 = i2.next;
+    this._rdr.onCommandsReady(), !this._disposed && this._animate && (this._renderPending = true, this._renderId = window.requestAnimationFrame(this._renHdlr));
   }
   addListeners(e2 = false) {
     this._hdlr || (this._hdlr = new t());
@@ -824,12 +821,12 @@ class P extends N {
     const { innerWidth: t2, innerHeight: e2 } = window;
     let s2 = this._prefWidth, i2 = this._prefHeight, h2 = 1;
     if (!this._vp && this._stretch) {
-      const { width: n2, height: a2 } = function(t3, e3, s3, i3) {
+      const { width: n2, height: o2 } = function(t3, e3, s3, i3) {
         const h3 = s3 / i3;
-        let n3 = t3, a3 = e3;
-        return t3 / e3 > h3 ? a3 = t3 / h3 : n3 = e3 * h3, { width: n3, height: a3 };
+        let n3 = t3, o3 = e3;
+        return t3 / e3 > h3 ? o3 = t3 / h3 : n3 = e3 * h3, { width: n3, height: o3 };
       }(s2, i2, t2, e2);
-      h2 = t2 / n2, this.setDimensions(n2, a2, false, true);
+      h2 = t2 / n2, this.setDimensions(n2, o2, false, true);
     } else
       V(s2, t2), this.setDimensions(s2, i2, false), this._vp || s2 > t2 && (h2 = t2 / s2);
     this.scale(h2);
@@ -851,15 +848,15 @@ class P extends N {
 }
 const { min: J, max: U } = Math, j = 0.5;
 class B extends N {
-  constructor({ resourceId: t2, x: e2 = 0, y: s2 = 0, width: i2 = 0, height: h2 = 0, rotation: n2 = 0, collidable: a2 = false, interactive: o2 = false, mask: r2 = false, sheet: d2 = [], sheetTileWidth: l2 = 0, sheetTileHeight: c2 = 0 }) {
+  constructor({ resourceId: t2, x: e2 = 0, y: s2 = 0, width: i2 = 0, height: h2 = 0, rotation: n2 = 0, collidable: o2 = false, interactive: a2 = false, mask: r2 = false, sheet: d2 = [], sheetTileWidth: l2 = 0, sheetTileHeight: c2 = 0 }) {
     if (super(), this.hover = false, this.isDragging = false, this._mask = false, this._interactive = false, this._draggable = false, this._keepInBounds = false, this._pressed = false, i2 <= 0 || h2 <= 0)
       throw new Error("cannot construct a Sprite without valid dimensions");
-    if (this.collidable = a2, this._mask = r2, this._bounds = { left: e2, top: s2, width: i2, height: h2 }, r2 && this.gdp(), 0 !== n2 && this.setRotation(n2), t2 && this.setResource(t2), d2.length > 0) {
+    if (this.collidable = o2, this._mask = r2, this._bounds = { left: e2, top: s2, width: i2, height: h2 }, r2 && this.gdp(), 0 !== n2 && this.setRotation(n2), t2 && this.setResource(t2), d2.length > 0) {
       if (!t2)
         throw new Error("cannot use a spritesheet without a valid resource id");
       this.setSheet(d2, l2, c2);
     }
-    this.setInteractive(o2);
+    this.setInteractive(a2);
   }
   getDraggable() {
     return this._draggable;
@@ -917,12 +914,12 @@ class B extends N {
     this._cstrt && (t2 -= this._cstrt.left, e2 -= this._cstrt.top);
     let h2 = false;
     "number" == typeof s2 && (h2 = this._bounds.width !== s2, this._bounds.width = s2), "number" == typeof i2 && (h2 = h2 || this._bounds.height !== i2, this._bounds.height = i2);
-    const n2 = this._bounds.width, a2 = this._bounds.height, o2 = this._cstrt ? this._cstrt.width : this.canvas.getWidth(), r2 = this._cstrt ? this._cstrt.height : this.canvas.getHeight();
+    const n2 = this._bounds.width, o2 = this._bounds.height, a2 = this._cstrt ? this._cstrt.width : this.canvas.getWidth(), r2 = this._cstrt ? this._cstrt.height : this.canvas.getHeight();
     if (this._keepInBounds) {
-      const s3 = J(0, -(n2 - o2)), i3 = J(0, -(a2 - r2)), h3 = r2 - a2;
-      t2 = J(o2 - n2, U(t2, s3)), e2 = J(h3, U(e2, i3));
+      const s3 = J(0, -(n2 - a2)), i3 = J(0, -(o2 - r2)), h3 = r2 - o2;
+      t2 = J(a2 - n2, U(t2, s3)), e2 = J(h3, U(e2, i3));
     } else
-      t2 > o2 && (t2 += n2 * j), e2 > r2 && (e2 += a2 * j);
+      t2 > a2 && (t2 += n2 * j), e2 > r2 && (e2 += o2 * j);
     this.setX(t2), this.setY(e2), h2 && this.invalidate();
   }
   getBounds(t2 = false) {
@@ -950,7 +947,7 @@ class B extends N {
     return this._tf;
   }
   isVisible(t2) {
-    return !!this.canvas && (e2 = this._tfb || this._bounds, s2 = t2 ?? this.canvas.bbox, { left: b, top: _ } = e2, b + e2.width >= s2.left && b <= s2.right && _ + e2.height >= s2.top && _ <= s2.bottom);
+    return !!this.canvas && (e2 = this._tfb || this._bounds, s2 = t2 ?? this.canvas.bbox, { left: b, top: g } = e2, b + e2.width >= s2.left && b <= s2.right && g + e2.height >= s2.top && g <= s2.bottom);
     var e2, s2;
   }
   insideBounds(t2, e2) {
@@ -1029,15 +1026,15 @@ class B extends N {
     const s2 = this._bounds;
     if (!!this._resourceId && this.isVisible(e2)) {
       const i3 = this._animation;
-      let { left: h2, top: n2, width: a2, height: o2 } = s2;
+      let { left: h2, top: n2, width: o2, height: a2 } = s2;
       if (i3) {
-        const s3 = i3.tileWidth ? i3.tileWidth : j + a2 << 0, r2 = i3.tileHeight ? i3.tileHeight : j + o2 << 0;
-        e2 && (h2 -= e2.left, n2 -= e2.top), t2.drawImageCropped(this._resourceId, i3.col * s3, i3.type.row * r2, s3, r2, h2, n2, a2, o2, this.getDrawProps());
+        const s3 = i3.tileWidth ? i3.tileWidth : j + o2 << 0, r2 = i3.tileHeight ? i3.tileHeight : j + a2 << 0;
+        e2 && (h2 -= e2.left, n2 -= e2.top), t2.drawImageCropped(this._resourceId, i3.col * s3, i3.type.row * r2, s3, r2, h2, n2, o2, a2, this.getDrawProps());
       } else if (e2) {
         const { src: i4, dest: h3 } = Z(s2, e2);
         t2.drawImageCropped(this._resourceId, i4.left, i4.top, i4.width, i4.height, h3.left, h3.top, h3.width, h3.height, this.getDrawProps());
       } else
-        t2.drawImage(this._resourceId, h2, n2, a2, o2, this.getDrawProps());
+        t2.drawImage(this._resourceId, h2, n2, o2, a2, this.getDrawProps());
     }
     let i2 = this._children[0];
     for (; i2; )
@@ -1093,10 +1090,10 @@ class B extends N {
     h2.alpha = t2 ?? h2.alpha, h2.scale = e2 ?? h2.scale, h2.rotation = s2 ?? h2.rotation, h2.pivot = i2 ?? h2.pivot, void 0 === s2 && void 0 === e2 || (this._tfb || (this._tfb = { ...this._bounds }), function(t3, e3, s3, i3) {
       if (0 === e3 && 1 === s3)
         return v(t3, 1, i3);
-      const { left: h3, top: n2, width: a2, height: o2 } = v(t3, s3, i3);
+      const { left: h3, top: n2, width: o2, height: a2 } = v(t3, s3, i3);
       if (0 !== e3) {
-        const t4 = -a2 * m, s4 = a2 * m, r2 = a2 * m, d2 = -a2 * m, l2 = o2 * m, c2 = o2 * m, b2 = -o2 * m, _2 = -o2 * m, g2 = e3 * f, w2 = Math.cos(g2), G2 = Math.sin(g2), Z2 = t4 * w2 + l2 * G2, v2 = -t4 * G2 + l2 * w2, X2 = s4 * w2 + c2 * G2, x2 = -s4 * G2 + c2 * w2, R2 = r2 * w2 + b2 * G2, C2 = -r2 * G2 + b2 * w2, L2 = d2 * w2 + _2 * G2, y2 = -d2 * G2 + _2 * w2, W2 = p(Z2, X2, R2, L2), S2 = u(Z2, X2, R2, L2), Y2 = p(v2, x2, C2, y2), z2 = u(v2, x2, C2, y2);
-        i3.width = S2 - W2, i3.height = z2 - Y2, i3.left = h3 - (i3.width * m - a2 * m), i3.top = n2 - (i3.height * m - o2 * m);
+        const t4 = -o2 * m, s4 = o2 * m, r2 = o2 * m, d2 = -o2 * m, l2 = a2 * m, c2 = a2 * m, b2 = -a2 * m, g2 = -a2 * m, _2 = e3 * f, w2 = Math.cos(_2), G2 = Math.sin(_2), Z2 = t4 * w2 + l2 * G2, v2 = -t4 * G2 + l2 * w2, X2 = s4 * w2 + c2 * G2, x2 = -s4 * G2 + c2 * w2, R2 = r2 * w2 + b2 * G2, C2 = -r2 * G2 + b2 * w2, L2 = d2 * w2 + g2 * G2, y2 = -d2 * G2 + g2 * w2, W2 = p(Z2, X2, R2, L2), S2 = u(Z2, X2, R2, L2), Y2 = p(v2, x2, C2, y2), z2 = u(v2, x2, C2, y2);
+        i3.width = S2 - W2, i3.height = z2 - Y2, i3.left = h3 - (i3.width * m - o2 * m), i3.top = n2 - (i3.height * m - a2 * m);
       }
     }(this._bounds, h2.rotation, h2.scale, this._tfb));
   }

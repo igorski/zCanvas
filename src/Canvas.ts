@@ -72,12 +72,13 @@ interface CanvasProps {
  */
 export default class Canvas extends DisplayObject<Canvas> {
     public DEBUG = false;
+    /*
     public benchmark = {
         minElapsed: Infinity,
         maxElapsed: -Infinity,
         minFps: Infinity,
         maxFps: -Infinity,
-    };
+    };*/
     public collision: Collision;
     public bbox: BoundingBox = { left: 0, top: 0, right: 0, bottom: 0 }; // relative to Sprites, not DOM!
 
@@ -708,7 +709,7 @@ export default class Canvas extends DisplayObject<Canvas> {
             this._renderPending = true;
             this._renderId = window.requestAnimationFrame( this._renHdlr );
         }
-
+        /*
         if ( this.DEBUG && now > 2 ) {
             const elapsed = window.performance.now() - now;
 
@@ -719,7 +720,7 @@ export default class Canvas extends DisplayObject<Canvas> {
                 this.benchmark.minFps = min( this.benchmark.minFps, this._aFps );
                 this.benchmark.maxFps = max( this.benchmark.maxFps, this._aFps );
             }
-        }
+        }*/
     }
 
     /**
