@@ -56,19 +56,22 @@ const canvasContainer = document.querySelector( ".demo-canvas-container" );
 
 // 1.2 simulation variables
 
+const WORLD_WIDTH     = 400;
+const WORLD_HEIGHT    = 400;
+
 // maximum amount of pixels travelled per frame
 // this is scaled against the actual framerate in sprite.update() methods
 // to maintain a consistent movement at different frame rates
 
-const WORLD_WIDTH     = 400;
-const WORLD_HEIGHT    = 400;
-const MAX_SPEED       = 8; // maximum amount of pixels player can move per frame (e.g. "speed")
+const MAX_SPEED       = 8;
 const SPEED_INCREMENT = MAX_SPEED / IDEAL_FPS; // max speed increment per frame
 
 // STEP 2 : DEFINING CUSTOM SPRITE CLASSES
 // ---------------------------------------
 
 // 2.1 create a custom class for Actors (generic status Objects within this game)
+// it is recommended to separate Actors from renderers (e.g. Sprites) but we'll keep
+// this example concise.
 
 class Actor extends Sprite {
     constructor( x, y ) {
@@ -89,6 +92,7 @@ class Actor extends Sprite {
         // will be overridden in derived classes
     }
 
+    // overrides Sprite parent class
     update( timestamp, framesSinceLastUpdate ) {
         // on each update the Actors update their position according to their speed
         this.setX( this.getX() + ( this.xSpeed * framesSinceLastUpdate ));
@@ -107,8 +111,7 @@ class Bullet extends Actor {
         this.damage = ( typeof damage === "number" ) ? damage : 1;
     }
 
-    /* public methods */
-
+    // overrides Sprite parent class
     draw( renderer, viewport ) {
         if ( !this.isVisible( viewport )) {
             return;
@@ -304,8 +307,9 @@ let gameStarted = false;
 // STEP 4 : INITIALIZING THE CANVAS
 // --------------------------------
 
-// create a new canvas that renders at IDEAL_FPS fps
-// for each update prior to rendering we invoke a custom handler
+// create a new canvas that renders at IDEAL_FPS frame rate
+// we register a custom update handler to advance our game
+// prior to rendering each frame
 
 const cvs = new Canvas({
     width: WORLD_WIDTH,
@@ -324,7 +328,7 @@ const cvs = new Canvas({
     }
 });
 addCanvasDemoControls( demoContainer, cvs );
-window.cvs = cvs; // QQQ
+
 // 4.1 register assets
 
 await Promise.all([

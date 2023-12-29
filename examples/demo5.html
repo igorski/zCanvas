@@ -53,9 +53,10 @@ const cvs = new Canvas({
     preventEventBubbling: false, // we want to capture Mouse event on the canvasContainer (see Matter.Mouse usage)
     parentElement: canvasContainer,
     onUpdate( now, framesSinceLastRender ) {
+        // prior to rendering we first advance the MatterJS physics simulation
         const ticks = 1000 / ( Math.min( IDEAL_FPS, cvs.getActualFrameRate() ) * framesSinceLastRender );
         Matter.Engine.update( engine, ticks );
-        // as we have registered a custom update handler we must manually invoke the Sprites update method
+        // since we have registered this custom update handler we must manually invoke the Sprites update method
         for ( const sprite of cvs.getChildren()) {
             sprite.update( now, framesSinceLastRender );
         }
