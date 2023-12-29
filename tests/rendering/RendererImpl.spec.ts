@@ -12,7 +12,7 @@ describe( "RendererImpl", () => {
         canvas   = new Canvas();
         renderer = new RendererImpl( canvas.getElement() );
 
-        ctx = renderer._context as CanvasRenderingContext2D;
+        ctx = renderer._ctx as CanvasRenderingContext2D;
     });
 
     it( "should be able to render crisp pixel art when image smoothing is disabled", () => {

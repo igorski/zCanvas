@@ -67,7 +67,7 @@ export default class Sprite extends DisplayObject<Sprite> {
     public next: Sprite | undefined;
 
     protected _bounds: Rectangle;  // bounding box relative to the Canvas
-    protected _tfb: Rectangle; // bounding box after optional transformations are applied
+    protected _tfb: Rectangle | undefined; // bounding box after optional transformations are applied
     protected _mask = false; // whether Sprite masks underlying Canvas content
     protected _interactive = false;
     protected _draggable = false;
@@ -97,8 +97,8 @@ export default class Sprite extends DisplayObject<Sprite> {
         resourceId,
         x = 0,
         y = 0,
-        width = 0,
-        height = 0,
+        width = 10,
+        height = 10,
         rotation = 0,
         collidable = false,
         interactive = false,
@@ -260,6 +260,10 @@ export default class Sprite extends DisplayObject<Sprite> {
         if ( prevWidth !== 0 ) {
             this._bounds.left -= ( value * HALF - prevWidth * HALF );
         }
+
+        if ( this._tfb && ( this.getRotation() !== 0 || this.getScale() !== 1 )) {
+            this.invalidateDrawProps({ rotation: this.getRotation(), scale: this.getScale() });
+        }
         this.invalidate();
     }
 
@@ -279,6 +283,9 @@ export default class Sprite extends DisplayObject<Sprite> {
 
         if ( prevHeight !== 0 ) {
             this._bounds.top -= ( value * HALF - prevHeight * HALF );
+        }
+        if ( this._tfb && ( this.getRotation() !== 0 || this.getScale() !== 1 )) {
+            this.invalidateDrawProps({ rotation: this.getRotation(), scale: this.getScale() });
         }
         this.invalidate();
     }

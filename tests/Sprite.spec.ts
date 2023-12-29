@@ -52,10 +52,6 @@ describe( "Sprite", () => {
     describe( "constructor", () => {
         it( "should not construct without valid dimensions specified", () => {
             expect(() => {
-                new Sprite({});
-            }).toThrow( /cannot construct a Sprite without valid dimensions/ );
-
-            expect(() => {
                 new Sprite({ width: 0, height: 0 });
             }).toThrow( /cannot construct a Sprite without valid dimensions/ );
 
@@ -315,6 +311,40 @@ describe( "Sprite", () => {
             expect( sprite.getWidth() ).toEqual( newWidth );
         });
 
+        it( "should request an invalidation of the optionally existing transformed bounds object when there is a rotation set", () => {
+            const sprite = new Sprite({ x, y, width, height, rotation: 90 });
+
+            // @ts-expect-error snooping on protected property
+            const invalidateSpy = vi.spyOn( sprite, "invalidateDrawProps" );
+
+            sprite.setWidth( width + 10 );
+
+            expect( invalidateSpy ).toHaveBeenCalledWith({ rotation: 90, scale: 1 });
+        });
+
+        it( "should request an invalidation of the optionally existing transformed bounds object when there is a scale set", () => {
+            const sprite = new Sprite({ x, y, width, height });
+
+            // @ts-expect-error snooping on protected property
+            const invalidateSpy = vi.spyOn( sprite, "invalidateDrawProps" );
+
+            sprite.setScale( 2 );
+            sprite.setWidth( width + 10 );
+
+            expect( invalidateSpy ).toHaveBeenCalledWith({ rotation: 0, scale: 2 });
+        });
+
+        it( "should not request an invalidation of the optionally existing transformed bounds object when there is no transformation set", () => {
+            const sprite = new Sprite({ x, y, width, height });
+
+            // @ts-expect-error snooping on protected property
+            const invalidateSpy = vi.spyOn( sprite, "invalidateDrawProps" );
+
+            sprite.setWidth( width + 10 );
+
+            expect( invalidateSpy ).not.toHaveBeenCalled();
+        });
+
         it( "should invalidate the Canvas when setting a new width", () => {
             const sprite = new Sprite({ x, y, width, height, resourceId });
             const invalidateSpy = vi.spyOn( sprite, "invalidate" );
@@ -344,6 +374,40 @@ describe( "Sprite", () => {
             sprite.setHeight( newHeight );
 
             expect( sprite.getHeight() ).toEqual( newHeight );
+        });
+
+        it( "should request an invalidation of the optionally existing transformed bounds object when there is a rotation set", () => {
+            const sprite = new Sprite({ x, y, width, height, rotation: 90 });
+
+            // @ts-expect-error snooping on protected property
+            const invalidateSpy = vi.spyOn( sprite, "invalidateDrawProps" );
+
+            sprite.setHeight( height + 10 );
+
+            expect( invalidateSpy ).toHaveBeenCalledWith({ rotation: 90, scale: 1 });
+        });
+
+        it( "should request an invalidation of the optionally existing transformed bounds object when there is a scale set", () => {
+            const sprite = new Sprite({ x, y, width, height });
+
+            // @ts-expect-error snooping on protected property
+            const invalidateSpy = vi.spyOn( sprite, "invalidateDrawProps" );
+
+            sprite.setScale( 2 );
+            sprite.setHeight( height + 10 );
+
+            expect( invalidateSpy ).toHaveBeenCalledWith({ rotation: 0, scale: 2 });
+        });
+
+        it( "should not request an invalidation of the optionally existing transformed bounds object when there is no transformation set", () => {
+            const sprite = new Sprite({ x, y, width, height });
+
+            // @ts-expect-error snooping on protected property
+            const invalidateSpy = vi.spyOn( sprite, "invalidateDrawProps" );
+
+            sprite.setHeight( height + 10 );
+
+            expect( invalidateSpy ).not.toHaveBeenCalled();
         });
 
         it( "should invalidate the Canvas when setting a new height", () => {

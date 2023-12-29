@@ -67,7 +67,7 @@ addCanvasDemoControls( demoContainer, cvs );
 // create a Sprite to render a placeholder message
 class TextSprite extends Sprite {
     constructor( text, opts ) {
-        super({ width: 10, height: 10, ...opts }); // dimensions will be calculated on render
+        super( opts );
         this.textProps = { text, color: "#000", font: "Arial", size: 24, unit: "pt", center: true };
     }
     draw( renderer ) {
@@ -80,7 +80,7 @@ cvs.addChild( text );
 // create the Sprite that will represent the loaded image
 class CroppableImage extends Sprite {
     constructor( opts ) {
-        super({ interactive: true, width: 1, height: 1 }); // dimensions will be updated on file load
+        super({ interactive: true });
     }
 
     // override the setBounds method (invoked by the pointer event handlers) as
