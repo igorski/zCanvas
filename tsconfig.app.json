@@ -1,0 +1,22 @@
+{
+    "include": [ "env.d.ts", "src/**/*" ],
+    "exclude": [],
+    "compilerOptions": {
+        "target": "es2015",
+        "module": "commonjs",
+        "composite": true,
+        "baseUrl": ".",
+        "esModuleInterop": true,
+        "allowJs": true,
+        "declaration": true,
+        "noUnusedParameters": true,
+        "noImplicitAny": true,
+        "removeComments": true,
+        "paths": {
+            "@/*": [ "./src/*", "./tests/*" ]
+        }
+    },
+    "exclude": [
+        "**/node_modules"
+    ]
+}

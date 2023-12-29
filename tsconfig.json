@@ -1,11 +1,14 @@
 {
-    "include": ["zcanvas.js"],
+    "include": [ "zcanvas.ts" ],
     "compilerOptions": {
+        "target": "es2015",
         "allowJs": true,
         "declaration": true,
         "emitDeclarationOnly": true,
         "outFile": "dist/types/zcanvas.d.ts",
         "declarationMap": true,
         "removeComments": true,
+        "noUnusedParameters": true,
+        "noImplicitAny": true,
     }
 }

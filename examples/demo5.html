@@ -3,184 +3,207 @@
 <head>
     <meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable = no" name="viewport">
     <meta charset="utf-8" />
-    <title>zCanvas image manipulation example</title>
+    <title>zCanvas integrating third party animation libraries example</title>
+    <!-- load demo assets -->
     <link rel="stylesheet" href="./assets/styles.css">
     <script type="text/javascript" src="./assets/images.js"></script>
-    <!-- requestAnimationFrame and Promise polyfills for IE9 -->
-    <script src="http://www.edisonsecretlab.com/cdn/global/js/lib/rAF.js" type="text/javascript"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/promise-polyfill/8.1.3/polyfill.min.js" type="text/javascript"></script>
-    <!-- include RequireJS to resolve dependencies -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.1.14/require.min.js" type="text/javascript"></script>
+    <script type="text/javascript" src="./assets/utils.js"></script>
+    <!-- include MatterJS for physics -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/matter-js/0.19.0/matter.min.js"></script>
 </head>
 <body>
-    <div id="container">
-        <h1>zCanvas demo #5: Sprite Bitmap manipulation</h1>
-        <fieldset>
-            <label for="file">Select local image file</label>
-            <input type="file" id="file"
-                   accept="image/png,image/gif,image/jpeg"
-            />
-            <label for="scale">Zoom factor</label>
-            <input type="range" id="scale" min="1" max="4" value="1" step=".1" />
-            <button type="button" id="save">Save output</button>
-        </fieldset>
-        <div id="demo"><!-- x --></div>
-        <p>
-            Demo features : a simple utility that can load images which can be
-            panned and zoomed inside the browser, where the visual result can be saved to disk.
-        </p>
+<div class="demo-container">
+    <div class="demo-header">
+        <h1>zCanvas : Integrating 3rd party physics</h1>
     </div>
-    <script type="text/javascript">
+    <div class="demo-canvas-container"><!-- x --></div>
+    <div class="demo-controls">
+        <div>
+            <label for="fps">Framerate (15 to 60 fps)</label>
+            <input type="range" id="fps" min="15" max="60" value="60" step="1" />
+        </div>
+        <!-- <button type="button" id="fullscreen">Fullscreen</button> -->
+    </div>
+    <p class="demo-description">
+        Demo features : integration of the <a href="https://brm.io/matter-js/" title="MatterJS homepage" target="_blank">MatterJS</a> physics library, demonstrating the
+        classic Wrecking Ball simulation. You can drag and pick up the ball and rethrow it to cause more havoc.
+    </p>
+</div>
+<script type="module">
 
-        // resolve dependencies
+import { Canvas, Sprite } from "../dist/zcanvas.mjs";
 
-        requirejs.config({
-            baseUrl : "../dist/",
-            urlArgs : "bust=" + Date.now()
-        });
+// STEP 1 : SETUP
+// --------------------------------------
 
-        require( [ "zcanvas.amd" ], function( zCanvas ) {
+const demoContainer   = document.querySelector( ".demo-container" );
+const canvasContainer = document.querySelector( ".demo-canvas-container" );
 
-            // STEP 1 : SETUP
-            // --------------------------------------
+const CANVAS_WIDTH  = 800;
+const CANVAS_HEIGHT = 400;
 
-            var container = document.getElementById( "demo" );
+const engine = Matter.Engine.create(); // create MatterJS instance
 
-            // get window dimensions
+const cvs = new Canvas({
+    width: CANVAS_WIDTH,
+    height: CANVAS_HEIGHT,
+    animate: true,
+    fps: IDEAL_FPS,
+    stretchToFit: isMobile(), // in mobile view all DOM elements apart from canvas container are hidden, so essentially fullscreen
+    preventEventBubbling: false, // we want to capture Mouse event on the canvasContainer (see Matter.Mouse usage)
+    parentElement: canvasContainer,
+    onUpdate( now, framesSinceLastRender ) {
+        // prior to rendering we first advance the MatterJS physics simulation
+        const ticks = 1000 / ( Math.min( IDEAL_FPS, cvs.getActualFrameRate() ) * framesSinceLastRender );
+        Matter.Engine.update( engine, ticks );
+        // since we have registered this custom update handler we must manually invoke the Sprites update method
+        for ( const sprite of cvs.getChildren()) {
+            sprite.update( now, framesSinceLastRender );
+        }
+    },
+    onResize: ( width, height ) => {
+        // resize demo container to accomodate the canvas size
+        demoContainer.style.width = `${width}px`;
+    }
+});
+addCanvasDemoControls( demoContainer, cvs );
 
-            var w, h;
-            if ( window.outerHeight ) {
-                w = window.outerWidth;
-                h = window.outerHeight;
-            }
-            else {
-                w = document.documentElement.clientWidth;
-                h = document.documentElement.clientHeight;
-            }
+// register assets
 
-            // create a new canvas that renders at 60 fps
-            // keep it within the device / browser bounds
-            var cvsWidth  = ( w < 400 ) ? w * .93 : 400;
-            var cvsHeight = ( h < 300 ) ? h : 300;
+await Promise.all([
+    cvs.loadResource( "background", IMAGE_BACKGROUND ),
+    cvs.loadResource( "logo", IMAGE_IGORSKI_LOGO ),
+]);
 
-            var cvs = new zCanvas.canvas({
-                width: cvsWidth,
-                height: cvsHeight,
-                preventEventBubbling: true,
-                parentElement: container
-            });
+const cvsCenterX = cvs.getWidth()  / 2;
+const cvsCenterY = cvs.getHeight() / 2;
 
-            // create the sprite that will represent the loaded image
-            var CroppableImage = function( opts ) {
-                CroppableImage.super( this, "constructor", opts );
-            };
-            zCanvas.sprite.extend( CroppableImage );
-            var sprite = new CroppableImage({ interactive: true });
+// STEP 2 : ADDING THE SPRITES
+// ---------------------------
 
-            // enable in-bounds Sprite dragging
-            sprite.setDraggable( true, true );
-            cvs.addChild( sprite );
+// first sprite will act as a background
+// (see included "assets.js"-file for the assetBackground-image data)
 
-            // override the setBounds method (invoked by the pointer event handlers) as
-            // we want to constrain the movement to always keep the full Canvas occupied
-            // and not allowing dragging the image outside of visible bounds. As the
-            // image can be scaled, we override this method instead of customizing the setConstraint()
+const bgWidth  = 800;
+const bgHeight = 1067;
+const bgSprite = new Sprite({ width: bgWidth, height: bgHeight, resourceId: "background" });
 
-            sprite.setBounds = function( x, y, width, height ) {
-                // determine the max x and y positions at which the image will remain visible
-                var maxX = -( width  - cvs.getWidth() );
-                var maxY = -( height - cvs.getHeight() );
+cvs.addChild( bgSprite );
 
-                this.setWidth ( width );
-                this.setHeight( height );
-                this.setX( Math.min( 0, Math.max( maxX, x )));
-                this.setY( Math.min( 0, Math.max( maxY, y )));
-            };
+// 2.1 WRECKING BALL
 
-            // STEP 2 : ATTACH LISTENERS TO FORM ELEMENTS
-            // ------------------------------------------
+class CircleSprite extends Sprite {
+    constructor( matterBody ) {
+        const radius = matterBody.circleRadius;
+        super({ width: radius, height: radius });
 
-            var orgImageWidth  = 0;
-            var orgImageHeight = 0;
-            var minImageWidth  = 0;
-            var minImageHeight = 0;
+        this.body   = matterBody;
+        this.radius = radius;
+    }
+    update() {
+        // sync renderer with Matter body, note we subtract half its size as in MatterJS
+        // the mass of the body is calculated from its center
+        this.setX( this.body.position.x - this.radius );
+        this.setY( this.body.position.y - this.radius );
+    }
+    draw( renderer, viewport ) {
+        this.isVisible( viewport ) && renderer.drawCircle(
+            this.getX(), this.getY(), this.radius, "gray", { size: 5, color: "#FFF" }
+        );
+    }
+}
 
-            // read local file data into the Sprite Bitmap when the
-            // user has selected an image file
+// 2.2 BOXES
 
-            document.getElementById( "file" ).onchange = function( event ) {
-                var files = event.target.files;
-                // load file data into memory
-                if ( files && files.length > 0 ) {
-                    var file = files[ 0 ];
-                    var reader = new FileReader();
-                    reader.onload = function( event2 ) {
-                        // load the image contents using the zCanvas.loader
-                        // which will also provide the image dimensions
-                        zCanvas.loader.loadImage( reader.result ).then( function( imgObj ) {
-                            orgImageWidth  = imgObj.size.width;
-                            orgImageHeight = imgObj.size.height;
+class RectSprite extends Sprite {
+    constructor( width, height, matterBody, isWall ) {
+        super({ width, height });
+        this.body = matterBody;
+        this.setResource( isWall ? undefined : "logo" );
+    }
+    update() {
+        // sync renderer with Matter body, note we subtract half its size as in MatterJS
+        // the mass of the body is calculated from its center
+        this.setX( this.body.position.x - this.getWidth()  / 2 );
+        this.setY( this.body.position.y - this.getHeight() / 2 );
+        this.setRotation( this.body.angle * ( 180 / Math.PI )); // MatterJS radians to zCanvas degrees
+    }
+    draw( renderer, viewport ) {
+        if ( this._resourceId ) {
+            return super.draw( renderer, viewport ); // if there's a resourceId, we render an image as usual
+        }
+        this.isVisible( viewport ) && renderer.drawRect( // otherwise a grey rectangle it is
+            this.getX(), this.getY(), this.getWidth(), this.getHeight(), "grey", undefined, this.getDrawProps()
+        )
+    };
+}
 
-                            // image dimensions at the default (=lowest) zoom level should match canvas dimensions
+// STEP 3 2. PHYSICS LIBRARY EXAMPLE (MatterJS)
 
-                            var isLandscape = orgImageWidth >= orgImageHeight;
-                            if ( isLandscape ) {
-                                minImageWidth  = cvs.getWidth();
-                                minImageHeight = cvs.getWidth() * ( orgImageHeight / orgImageWidth );
-                            } else {
-                                minImageWidth  = cvs.getHeight() * ( orgImageWidth / orgImageHeight );
-                                minImageHeight = cvs.getHeight();
-                            }
+const centerX    = CANVAS_WIDTH / 2;
+const centerY    = CANVAS_HEIGHT / 2;
+const bottom     = CANVAS_HEIGHT;
+const BLOCK_SIZE = 50;
+const WALL_SIZE  = 250;
+const BALL_SIZE  = 50;
 
-                            // ensure the image is occupying the full canvas without empty space on the non-dominant side
-                            var ratio = 1;
-                            if ( minImageWidth < cvs.getWidth() ) {
-                                ratio = cvs.getWidth() / minImageWidth;
-                            } else if ( minImageHeight < cvs.getHeight() ) {
-                                ratio = cvs.getHeight() / minImageHeight;
-                            }
-                            minImageWidth  *= ratio;
-                            minImageHeight *= ratio;
+// convenience methods to create Matter Bodies with zCanvas Sprites to render
 
-                            // set the loaded image Bitmap as the Sprite image source using calculated dimensions
-                            sprite.setBitmap( imgObj.image, minImageWidth, minImageHeight );
-                        });
-                    };
-                    reader.readAsDataURL( file );
-                }
-            }
+function createRectangle( x, y, width, height, isWall = false ) {
+    const body   = Matter.Bodies.rectangle( x, y, width, height, { isStatic: isWall });
+    const sprite = new RectSprite( width, height, body, isWall );
+    cvs.addChild( sprite );
 
-            // scale the image when the scale slider changes value
+    return body;
+}
 
-            document.getElementById( "scale" ).oninput = function( event ) {
-                var scale        = event.target.value;
-                var scaledWidth  = minImageWidth  * scale;
-                var scaledHeight = minImageHeight * scale;
-                var oldBounds    = sprite.getBounds();
+function createBall( x, y, radius ) {
+    const ball = Matter.Bodies.circle( x, y, radius, { density: 0.04, frictionAir: 0.005 });
+    const ballSprite =  new CircleSprite( ball );
+    cvs.addChild( ballSprite );
 
-                // note we scale from the center of the image to maintain
-                // relative offset (the overridden setBounds() method will correct
-                // the offset if the image is scaled from any of the edges)
+    return ball;
+};
+const world = engine.world;
 
-                sprite.setBounds(
-                    oldBounds.left - ( scaledWidth  / 2 - oldBounds.width  / 2 ),
-                    oldBounds.top  - ( scaledHeight / 2 - oldBounds.height / 2 ),
-                    scaledWidth,
-                    scaledHeight
-                );
-            }
+const runner = Matter.Runner.create();
+Matter.Runner.run( runner, engine );
 
-            // download zCanvas contents as an image file
+// add bodies
+const COLUMNS = 5;
+const ROWS    = 10;
 
-            document.getElementById( "save" ).onclick = function() {
-                var snapshot = cvs.getElement().toDataURL( "image/png" );
-                var downloadLink = document.createElement( "a" );
-                downloadLink.setAttribute( "download", "demo5.png" );
-                downloadLink.setAttribute( "href", snapshot.replace(/^data:image\/png/, "data:application/octet-stream" ));
-                downloadLink.click();
-            }
-        });
+const stack = Matter.Composites.stack( centerX, bottom - 25 - BLOCK_SIZE * ROWS, COLUMNS, ROWS, 0, 0, ( x, y ) => {
+    return createRectangle( x, y, BLOCK_SIZE, BLOCK_SIZE );
+});
 
-    </script>
+Matter.Composite.add( world, [
+    stack,
+    // walls
+    createRectangle( centerX, -WALL_SIZE, CANVAS_WIDTH, WALL_SIZE, true ), // ceiling
+    createRectangle( centerX, bottom + WALL_SIZE / 2, CANVAS_WIDTH, WALL_SIZE, true ), // floor
+    createRectangle( CANVAS_WIDTH + WALL_SIZE / 2, centerY, WALL_SIZE, bottom, true ), // right side
+    createRectangle( -WALL_SIZE / 2, centerY, WALL_SIZE, bottom, true ), // left side
+]);
+
+const ball = createBall( 100, centerY, BALL_SIZE );
+
+Matter.Composite.add( world, ball );
+// optionally create constraint so ball is dangling
+// Matter.Composite.add( world, Matter.Constraint.create({
+//     pointA: { x: centerX, y: 0 },
+//     bodyB: ball
+// }));
+Matter.Body.setVelocity( ball, { x: 10, y: 0 }); // launch ball into stack of rectangles
+
+// allow mouse drag of the ball
+const mouse = Matter.Mouse.create( canvasContainer ), mouseConstraint = Matter.MouseConstraint.create( engine, {
+    mouse: mouse,
+    constraint: {
+        stiffness: 0.2,
+    }
+});
+Matter.Composite.add( world, mouseConstraint );
+</script>
 </body>
 </html>

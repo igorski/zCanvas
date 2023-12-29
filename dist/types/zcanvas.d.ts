@@ -1,260 +1,192 @@
-declare module "src/utils/event-handler" {
-    export default EventHandler;
-    function EventHandler(): void;
-    class EventHandler {
-        private _eventMappings;
+declare module "src/DisplayObject" {
+    import type Canvas from "src/Canvas";
+    import type Sprite from "src/Sprite";
+    export default class DisplayObject<T> {
+        protected _children: Sprite[];
         protected _disposed: boolean;
-        add(aElement: HTMLElement, aType: string, aCallback: Function): boolean;
-        has(aElement: HTMLElement, aType: string): boolean;
-        remove(aElement: HTMLElement, aType: string): boolean;
+        protected _parent: DisplayObject<Canvas | Sprite> | undefined;
+        constructor();
+        addChild(child: Sprite): DisplayObject<T>;
+        removeChild(child: Sprite): Sprite;
+        getChildAt(index: number): Sprite | undefined;
+        removeChildAt(index: number): Sprite | undefined;
+        numChildren(): number;
+        getChildren(): Sprite[];
+        contains(child: Sprite): boolean;
+        invalidate(): void;
         dispose(): void;
     }
 }
-declare module "src/utils/inheritance" {
-    export default Inheritance;
-    namespace Inheritance {
-        function extend(aSubClass: Function, aSuperClass: Function): void;
+declare module "src/rendering/IRenderer" {
+    import type { Point } from "src/definitions/types";
+    export interface IRenderer {
+        save(): void;
+        restore(): void;
+        translate(x: number, y: number): void;
+        rotate(angleInRadians: number): void;
+        transform(a: number, b: number, c: number, d: number, e: number, f: number): void;
+        scale(xScale: number, yScale?: number): void;
+        setBlendMode(type: GlobalCompositeOperation): void;
+        setAlpha(value: number): void;
+        drawPath(points: Point[], color?: ColorOrTransparent, stroke?: StrokeProps): void;
+        clearRect(x: number, y: number, width: number, height: number, props?: DrawProps): void;
+        drawRect(x: number, y: number, width: number, height: number, color?: ColorOrTransparent, stroke?: StrokeProps, props?: DrawProps): void;
+        drawRoundRect(x: number, y: number, width: number, height: number, radius: number, color?: ColorOrTransparent, stroke?: StrokeProps, props?: DrawProps): void;
+        drawCircle(x: number, y: number, radius: number, color?: string, stroke?: StrokeProps, props?: DrawProps): void;
+        drawImage(resourceId: string, x: number, y: number, width?: number, height?: number, props?: DrawProps): void;
+        drawImageCropped(resourceId: string, sourceX: number, sourceY: number, sourceWidth: number, sourceHeight: number, destinationX: number, destinationY: number, destinationWidth: number, destinationHeight: number, props?: DrawProps): void;
+        drawText(text: TextProps, x: number, y: number, props?: DrawProps): void;
+        createPattern(resourceId: string, repetition: "repeat" | "repeat-x" | "repeat-y" | "no-repeat"): void;
+        drawPattern(patternResourceId: string, x: number, y: number, width: number, height: number): void;
     }
+    export type StrokeProps = {
+        color: string;
+        size: number;
+    };
+    export type TextProps = {
+        text: string;
+        color: string;
+        font?: string;
+        size?: number;
+        unit?: string;
+        lineHeight?: number;
+        spacing?: number;
+        center?: boolean;
+    };
+    export type ColorOrTransparent = string | undefined;
+    export type DrawProps = {
+        scale: number;
+        rotation: number;
+        alpha: number;
+        blendMode?: GlobalCompositeOperation;
+        pivot?: Point;
+        safeMode?: boolean;
+    };
 }
-declare module "src/Canvas" {
-    export default Canvas;
-    function Canvas({ width, height, fps, scale, backgroundColor, animate, smoothing, stretchToFit, viewport, handler, preventEventBubbling, parentElement, debug, onUpdate }?: {
-        width?: number;
-        height?: number;
-        fps?: number;
-        scale?: number;
-        backgroundColor?: string;
-        animate?: boolean;
-        smoothing?: boolean;
-        stretchToFit?: boolean;
-        viewport?: Size;
-        handler?: Function;
-        preventEventBubbling?: boolean;
-        parentElement?: null;
-        onUpdate?: Function;
-        debug?: boolean;
-    }): void;
-    class Canvas {
-        constructor({ width, height, fps, scale, backgroundColor, animate, smoothing, stretchToFit, viewport, handler, preventEventBubbling, parentElement, debug, onUpdate }?: {
-            width?: number;
-            height?: number;
-            fps?: number;
-            scale?: number;
-            backgroundColor?: string;
-            animate?: boolean;
-            smoothing?: boolean;
-            stretchToFit?: boolean;
-            viewport?: Size;
-            handler?: Function;
-            preventEventBubbling?: boolean;
-            parentElement?: null;
-            onUpdate?: Function;
-            debug?: boolean;
-        });
-        public DEBUG: boolean;
-        protected _smoothing: boolean;
-        protected _updateHandler: Function;
-        protected _renderHandler: Function;
-        protected _lastRender: number;
-        protected _renderId: number;
-        protected _renderPending: boolean;
-        protected _disposed: boolean;
-        protected _scale: object;
-        protected _handler: Function;
-        protected _activeTouches: Array<Sprite>;
-        protected _children: Array<Sprite>;
-        protected _coords: DOMRect;
-        protected _width: number;
-        protected _height: number;
-        protected _element: HTMLCanvasElement;
-        protected _canvasContext: CanvasRenderingContext2D;
-        protected _HDPIscaleRatio: number;
-        public insertInPage(aContainer: HTMLElement): void;
-        public getElement(): HTMLCanvasElement;
-        public getCanvasContext(): CanvasRenderingContext2D;
-        public preventEventBubbling(value: boolean): void;
-        protected _preventDefaults: boolean;
-        public addChild(aChild: Sprite): Canvas;
-        public removeChild(aChild: Sprite): Sprite;
-        public getChildAt(index: number): Sprite;
-        public removeChildAt(index: number): Sprite;
-        public numChildren(): number;
-        public getChildren(): Array<Sprite>;
-        public contains(aChild: Sprite): boolean;
-        public invalidate(): void;
-        public getFrameRate(): number;
-        public setFrameRate(value: number): void;
-        protected _fps: number;
-        protected _aFps: number;
-        protected _renderInterval: number;
-        public getActualFrameRate(): number;
-        public getRenderInterval(): number;
-        public getSmoothing(): boolean;
-        public setSmoothing(enabled: boolean): void;
-        public getWidth(): number;
-        public getHeight(): number;
-        public setDimensions(width: number, height: number, setAsPreferredDimensions?: boolean | undefined, optImmediate?: boolean | undefined): void;
-        protected _enqueuedSize: Size;
-        protected _preferredWidth: number;
-        protected _preferredHeight: number;
-        public getViewport(): Viewport;
-        public setViewport(width: number, height: number): void;
-        protected _viewport: Viewport;
-        public panViewport(x: number, y: number, broadcast?: boolean | undefined): void;
-        public setBackgroundColor(color: string): void;
-        protected _bgColor: string;
-        public setAnimatable(value: boolean): void;
-        protected _animate: boolean;
-        protected _lastRaf: DOMHighResTimeStamp;
-        public isAnimatable(): boolean;
-        public drawImage(aSource: HTMLImageElement | HTMLCanvasElement, destX: number, destY: number, destWidth: number, destHeight: number, aOptSourceX?: number | undefined, aOptSourceY?: number | undefined, aOptSourceWidth?: number | undefined, aOptSourceHeight?: number | undefined): void;
-        public scale(x: number, y?: number | undefined): void;
-        public stretchToFit(value?: boolean | undefined): void;
-        protected _stretchToFit: boolean;
-        public dispose(): void;
-        protected handleInteraction(event: Event): void;
-        protected render(now?: DOMHighResTimeStamp): void;
-        protected addListeners(): void;
-        protected _eventHandler: EventHandler;
-        protected removeListeners(): void;
-        protected getCoordinate(): DOMRect;
-    }
-    namespace Canvas {
-        function extend(extendingFunction: Function): Canvas;
-    }
-    import EventHandler from "src/utils/event-handler";
-}
-declare module "src/Loader" {
-    export default Loader;
-    namespace Loader {
-        function loadImage(aSource: string, aOptImage?: HTMLImageElement): Promise<SizedImage>;
-        function isReady(aImage: HTMLImageElement): boolean;
-        function onReady(aImage: HTMLImageElement): Promise<void>;
-    }
-}
-declare module "src/utils/image-math" {
-    export function isInsideViewport(spriteBounds: Rectangle, viewport: Viewport): boolean;
-    export function calculateDrawRectangle(spriteBounds: Rectangle, viewport: Viewport): TransformedDrawBounds;
+declare module "src/utils/ImageMath" {
+    import type { Rectangle, Size, BoundingBox, Viewport } from "src/definitions/types";
+    export const DEG_TO_RAD: number;
+    export function fastRound(num: number): number;
+    export function isInsideArea(rect: Rectangle, area: BoundingBox): boolean;
+    export function calculateDrawRectangle(spriteBounds: Rectangle, viewport: Viewport): {
+        src: Rectangle;
+        dest: Rectangle;
+    };
+    export function constrainAspectRatio(idealWidth: number, idealHeight: number, availableWidth: number, availableHeight: number): Size;
+    export function transformRectangle(rectangle: Rectangle, angleInDegrees: number, scale: number, outRectangle: Rectangle): Rectangle;
 }
 declare module "src/Sprite" {
-    export default Sprite;
-    function Sprite({ width, height, x, y, bitmap, collidable, interactive, mask, sheet, sheetTileWidth, sheetTileHeight }?: {
+    import type Canvas from "src/Canvas";
+    import DisplayObject from "src/DisplayObject";
+    import type { Point, Rectangle, SpriteSheet, Viewport } from "src/definitions/types";
+    import type { IRenderer, DrawProps } from "src/rendering/IRenderer";
+    interface SpriteProps {
         width: number;
         height: number;
         x?: number;
         y?: number;
-        bitmap?: (new (width?: number, height?: number) => HTMLImageElement) | HTMLCanvasElement | string;
+        rotation?: number;
+        resourceId?: string;
         collidable?: boolean;
         interactive?: boolean;
         mask?: boolean;
-        sheet?: Array<SpriteSheet>;
-        sheetTileWidth?: number;
-        sheetTileHeight?: number;
-    }): void;
-    class Sprite {
-        constructor({ width, height, x, y, bitmap, collidable, interactive, mask, sheet, sheetTileWidth, sheetTileHeight }?: {
-            width: number;
-            height: number;
-            x?: number;
-            y?: number;
-            bitmap?: (new (width?: number, height?: number) => HTMLImageElement) | HTMLCanvasElement | string;
-            collidable?: boolean;
-            interactive?: boolean;
-            mask?: boolean;
-            sheet?: Array<SpriteSheet>;
-            sheetTileWidth?: number;
-            sheetTileHeight?: number;
-        });
-        protected _children: Array<Sprite>;
-        protected _disposed: boolean;
-        public collidable: boolean;
-        public hover: boolean;
-        protected _mask: boolean;
+        sheet?: SpriteSheet[];
+    }
+    type TransformProps = {
+        scale: number;
+        rotation: number;
+        alpha: number;
+    };
+    export default class Sprite extends DisplayObject<Sprite> {
+        collidable: boolean;
+        hover: boolean;
+        isDragging: boolean;
+        canvas: Canvas | undefined;
+        last: Sprite | undefined;
+        next: Sprite | undefined;
         protected _bounds: Rectangle;
-        protected _parent: Sprite | canvas;
-        public last: Sprite;
-        public next: Sprite;
-        public canvas: Canvas;
-        protected _bitmap: HTMLImageElement | HTMLCanvasElement;
-        protected _bitmapReady: boolean;
+        protected _tfb: Rectangle | undefined;
+        protected _mask: boolean;
+        protected _interactive: boolean;
         protected _draggable: boolean;
         protected _keepInBounds: boolean;
-        public isDragging: boolean;
-        public getDraggable(): boolean;
-        public setDraggable(aValue: boolean, aKeepInBounds?: boolean | undefined): void;
-        public getX(): number;
-        public setX(aValue: number): void;
-        public getY(): number;
-        public setY(aValue: number): void;
-        public getWidth(): number;
-        public setWidth(aValue: number): void;
-        public getHeight(): number;
-        public setHeight(aValue: number): void;
-        public setBounds(left: number, top: number, width?: number | undefined, height?: number | undefined): void;
-        public getBounds(): Rectangle;
-        public getInteractive(): boolean;
-        public setInteractive(aValue: boolean): void;
-        protected _interactive: boolean;
-        public update(now: DOMHighResTimeStamp, framesSinceLastUpdate: number): void;
-        public draw(canvasContext: CanvasRenderingContext2D, viewport?: Viewport | null): void;
-        public insideBounds(x: number, y: number): boolean;
-        public collidesWith(aSprite: Sprite): boolean;
-        public getIntersection(aSprite: Sprite): Rectangle | null;
-        public collidesWithEdge(aSprite: Sprite, aEdge: number): boolean;
-        public getBitmap(): HTMLImageElement | HTMLCanvasElement | string;
-        public setBitmap(aImage?: (HTMLImageElement | HTMLCanvasElement | string | null) | undefined, aOptWidth?: number | undefined, aOptHeight?: number | undefined): Promise<void>;
-        protected _bitmapWidth: number;
-        protected _bitmapHeight: number;
-        public setSheet(sheet: Array<SpriteSheet>, width?: number | undefined, height?: number | undefined): void;
-        protected _sheet: Array<SpriteSheet>;
-        _animation: {
-            type: string | null;
+        protected _cstrt: Rectangle | undefined;
+        protected _sheet: SpriteSheet[] | undefined;
+        protected _animation: {
+            type?: SpriteSheet;
             col: number;
             maxCol: number;
             fpt: number;
             counter: number;
-        };
-        public switchAnimation(sheetIndex: number): void;
-        public setParent(aParent: Sprite | Canvas): void;
-        public getParent(): Sprite | Canvas;
-        public setCanvas(canvas: Canvas): void;
-        public setConstraint(left: number, top: number, width: number, height: number): Rectangle;
-        protected _constraint: Rectangle;
-        public getConstraint(): Rectangle;
-        public addChild(aChild: Sprite): Sprite;
-        public removeChild(aChild: Sprite): Sprite;
-        public getChildAt(index: number): Sprite;
-        public removeChildAt(index: number): Sprite;
-        public numChildren(): number;
-        public getChildren(): Array<Sprite>;
-        public contains(aChild: Sprite): boolean;
-        public dispose(): void;
+            tileWidth: number;
+            tileHeight: number;
+            onComplete?: (sprite: Sprite) => void;
+        } | undefined;
+        protected _resourceId: string;
+        private _dp;
+        private _tf;
+        protected _pTime: number;
+        protected _pressed: boolean;
+        protected _dro: Point;
+        protected _drc: Point;
+        constructor({ resourceId, x, y, width, height, rotation, collidable, interactive, mask, sheet, }: SpriteProps);
+        getDraggable(): boolean;
+        setDraggable(draggable: boolean, keepInBounds?: boolean): void;
+        getInteractive(): boolean;
+        setInteractive(value: boolean): void;
+        getX(): number;
+        setX(value: number): void;
+        getY(): number;
+        setY(value: number): void;
+        getWidth(): number;
+        setWidth(value: number): void;
+        getHeight(): number;
+        setHeight(value: number): void;
+        setBounds(left: number, top: number, width?: number, height?: number): void;
+        getBounds(getTransformed?: boolean): Rectangle;
+        getRotation(): number;
+        setRotation(angleInDegrees: number, pivot?: Point): void;
+        getScale(): number;
+        setScale(scaleFactor: number): void;
+        getTransforms(): TransformProps;
+        isVisible(viewport?: Viewport): boolean;
+        insideBounds(x: number, y: number): boolean;
+        collidesWith(sprite: Sprite): boolean;
+        getIntersection(sprite: Sprite): Rectangle | undefined;
+        collidesWithEdge(sprite: Sprite, edge: 0 | 1 | 2 | 3): boolean;
+        setResource(resourceId: string | null, width?: number, height?: number): void;
+        getResourceId(): string | undefined;
+        setSheet(sheet: SpriteSheet[], width?: number, height?: number): void;
+        switchAnimation(sheetIndex: number): void;
+        setParent(parent: DisplayObject<Canvas | Sprite> | undefined): void;
+        getParent(): DisplayObject<Canvas | Sprite> | undefined;
+        setCanvas(canvas: Canvas): void;
+        setConstraint(left: number, top: number, width: number, height: number): Rectangle;
+        getConstraint(): Rectangle;
+        addChild(child: Sprite): DisplayObject<Sprite>;
+        update(now: DOMHighResTimeStamp, framesSinceLastUpdate: number): void;
+        draw(renderer: IRenderer, viewport?: Viewport): void;
+        dispose(): void;
+        protected getDrawProps(): DrawProps | undefined;
         protected handlePress(x: number, y: number, event: Event): void;
         protected handleRelease(x: number, y: number, event: Event): void;
         protected handleClick(): void;
         protected handleMove(x: number, y: number, event: Event): void;
-        public handleInteraction(x: number, y: number, event: Event): boolean;
-        _pressed: boolean;
-        protected _pressTime: number;
-        protected _dragStartOffset: Point;
-        protected _dragStartEventCoordinates: Point;
-        public invalidate(): void;
-        protected updateAnimation(framesSinceLastRender?: number | undefined): void;
-        protected drawOutline(canvasContext: CanvasRenderingContext2D): void;
-    }
-    namespace Sprite {
-        function extend(extendingFunction: Function): Sprite;
+        handleInteraction(x: number, y: number, event: MouseEvent | TouchEvent): boolean;
+        invalidate(): void;
+        protected invalidateDrawProps({ alpha, scale, rotation, pivot }: {
+            alpha?: number;
+            scale?: number;
+            rotation?: number;
+            pivot?: Point;
+        }): void;
+        protected updateAnimation(framesSinceLastRender?: number): void;
+        private gdp;
     }
 }
-declare module "src/Collision" {
-    export function pixelCollision(sprite1: Sprite, sprite2: Sprite, optReturnAsCoordinate?: boolean | undefined): boolean | Point;
-    export function getPixelArray(sprite: Sprite, rect: Rectangle, pixels: Array<number>): number;
-    export function getChildrenUnderPoint(aSpriteList: Array<Sprite>, aX: number, aY: number, aWidth: number, aHeight: number, aOnlyCollidables?: boolean | undefined): Array<Sprite>;
-    export function cache(bitmap: HTMLCanvasElement | HTMLImageElement): Promise<boolean>;
-    export function clearCache(bitmap: HTMLCanvasElement | HTMLImageElement): boolean;
-    export function hasCache(bitmap: HTMLCanvasElement | HTMLImageElement): boolean;
-}
-declare module "zcanvas" {
+declare module "src/definitions/types" {
+    import type Sprite from "src/Sprite";
+    export type { IRenderer, ColorOrTransparent, DrawProps, StrokeProps, TextProps } from "src/rendering/IRenderer";
     export type Size = {
         width: number;
         height: number;
@@ -269,46 +201,320 @@ declare module "zcanvas" {
         width: number;
         height: number;
     };
+    export type BoundingBox = {
+        left: number;
+        top: number;
+        right: number;
+        bottom: number;
+    };
+    export type Viewport = BoundingBox & Size;
+    export type ImageSource = HTMLImageElement | HTMLCanvasElement | File | Blob | ImageData | ImageBitmap | string;
     export type SizedImage = {
         size: Size;
         image: HTMLImageElement;
-    };
-    export type Viewport = {
-        left: number;
-        top: number;
-        width: number;
-        height: number;
-        right: number;
-        bottom: number;
     };
     export type SpriteSheet = {
         row: number;
         col: number;
         amount: number;
-        fpt: 5;
-        onComplete?: () => void;
+        fpt: number;
+        onComplete?: (sprite: Sprite) => void;
     };
-    export type TransformedDrawBounds = {
-        src: Rectangle;
-        dest: Rectangle;
-    };
-    import canvas from "src/Canvas";
-    import sprite from "src/Sprite";
-    import loader from "src/Loader";
-    export namespace collision {
-        export { pixelCollision };
-        export { getChildrenUnderPoint };
-        export { cache };
-        export { hasCache };
-        export { clearCache };
-        export { isInsideViewport };
+}
+declare module "src/utils/EventHandler" {
+    export default class EventHandler {
+        private _eventMap;
+        protected _disposed: boolean;
+        constructor();
+        add(target: EventTarget, type: string, listener: EventListenerOrEventListenerObject): boolean;
+        has(target: EventTarget, type: string): boolean;
+        remove(target: EventTarget, type: string): boolean;
+        dispose(): void;
     }
-    import { pixelCollision } from "src/Collision";
-    import { getChildrenUnderPoint } from "src/Collision";
-    import { cache } from "src/Collision";
-    import { hasCache } from "src/Collision";
-    import { clearCache } from "src/Collision";
-    import { isInsideViewport } from "src/utils/image-math";
-    export { canvas, sprite, loader };
+}
+declare module "src/utils/ImageUtil" {
+    import type { SizedImage } from "src/definitions/types";
+    export function createCanvas(width?: number, height?: number, optimizedReads?: boolean): {
+        cvs: HTMLCanvasElement;
+        ctx: CanvasRenderingContext2D;
+    };
+    export function getTempCanvas(): HTMLCanvasElement;
+    export function clearTempCanvas(): void;
+    export function resizeImage(sizedImage: SizedImage, width: number, height: number): Promise<ImageBitmap>;
+    export function cloneCanvas(canvasToClone: HTMLCanvasElement): HTMLCanvasElement;
+    export function imageToCanvas(cvs: HTMLCanvasElement, image: HTMLImageElement | ImageBitmap, width: number, height: number): void;
+    export function imageToBitmap(image: HTMLImageElement | HTMLCanvasElement | Blob): Promise<ImageBitmap>;
+    export function blobToImage(blob: Blob): Promise<HTMLImageElement>;
+}
+declare module "src/utils/FileUtil" {
+    export function readFile(file: File): Promise<Blob>;
+}
+declare module "src/Loader" {
+    import type { SizedImage } from "src/definitions/types";
+    const Loader: {
+        loadImage(source: string | Blob | File): Promise<SizedImage>;
+        loadBitmap(source: string | Blob | File): Promise<ImageBitmap>;
+        isReady(image: HTMLImageElement): boolean;
+        onReady(image: HTMLImageElement): Promise<void>;
+    };
+    export default Loader;
+}
+declare module "src/rendering/components/TextRenderer" {
+    import type { TextProps } from "src/rendering/IRenderer";
+    type MeasuredLineDef = {
+        line: string;
+        top: number;
+    };
+    export function renderMultiLineText(ctx: CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D, lines: MeasuredLineDef[], props: TextProps, x: number, y: number): void;
+    export function measureLines(props: TextProps, ctx: CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D): {
+        lines: MeasuredLineDef[];
+        width: number;
+        height: number;
+    };
+}
+declare module "src/utils/Cache" {
+    export default class Cache<T> {
+        private _map;
+        private _createFn;
+        private _destroyFn;
+        private _index;
+        constructor(createFn?: () => T, destroyFn?: (entity: T) => void);
+        dispose(): void;
+        get(key: string): T | undefined;
+        set(key: string, entity: T): void;
+        has(key: string): boolean;
+        remove(key: string): boolean;
+        next(): T | undefined;
+        fill(amount: number): void;
+        reset(): void;
+    }
+}
+declare module "src/rendering/RendererImpl" {
+    import type { IRenderer, DrawProps, StrokeProps, TextProps } from "src/rendering/IRenderer";
+    import type { Point } from "src/definitions/types";
+    import Cache from "src/utils/Cache";
+    export enum ResetCommand {
+        NONE = 0,
+        ALL = 1,
+        TRANSFORM = 2
+    }
+    export default class RendererImpl implements IRenderer {
+        private _debug;
+        _cvs: HTMLCanvasElement | OffscreenCanvas;
+        _ctx: CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D;
+        _bmp: Cache<ImageBitmap>;
+        _ptn: Cache<CanvasPattern>;
+        constructor(canvas: HTMLCanvasElement | OffscreenCanvas, _debug?: boolean);
+        dispose(): void;
+        cacheResource(id: string, bitmap: ImageBitmap): void;
+        getResource(id: string): ImageBitmap | undefined;
+        disposeResource(id: string): void;
+        setDimensions(width: number, height: number): void;
+        setSmoothing(enabled: boolean): void;
+        setPixelRatio(ratio: number): void;
+        save(): void;
+        restore(): void;
+        translate(x: number, y: number): void;
+        rotate(angleInRadians: number): void;
+        transform(a: number, b: number, c: number, d: number, e: number, f: number): void;
+        scale(xScale: number, yScale?: number): void;
+        setBlendMode(mode: GlobalCompositeOperation): void;
+        setAlpha(value: number): void;
+        drawPath(points: Point[], color?: string, stroke?: StrokeProps): void;
+        clearRect(x: number, y: number, width: number, height: number, props?: DrawProps): void;
+        drawRect(x: number, y: number, width: number, height: number, color?: string, stroke?: StrokeProps, props?: DrawProps): void;
+        drawRoundRect(x: number, y: number, width: number, height: number, radius: number, color?: string, stroke?: StrokeProps, props?: DrawProps): void;
+        drawCircle(x: number, y: number, radius: number, fillColor?: string, stroke?: StrokeProps, props?: DrawProps): void;
+        drawImage(resourceId: string, x: number, y: number, width?: number, height?: number, props?: DrawProps): void;
+        drawImageCropped(resourceId: string, sourceX: number, sourceY: number, sourceWidth: number, sourceHeight: number, destinationX: number, destinationY: number, destinationWidth: number, destinationHeight: number, props?: DrawProps): void;
+        drawText(text: TextProps, x: number, y: number, props?: DrawProps): void;
+        createPattern(resourceId: string, repetition: "repeat" | "repeat-x" | "repeat-y" | "no-repeat"): void;
+        drawPattern(patternResourceId: string, x: number, y: number, width: number, height: number): void;
+        protected prepare(props: DrawProps, x: number, y: number, width: number, height: number): ResetCommand;
+        protected applyReset(cmd: ResetCommand): void;
+    }
+}
+declare module "src/rendering/RenderAPI" {
+    import type { ImageSource, Point, Size } from "src/definitions/types";
+    import type { IRenderer, ColorOrTransparent, DrawProps, StrokeProps, TextProps } from "src/rendering/IRenderer";
+    export default class RenderAPI implements IRenderer {
+        private _el;
+        private _rdr;
+        private _wkr;
+        private _useW;
+        private _pl;
+        private _cmds;
+        private _cbs;
+        constructor(canvas: HTMLCanvasElement, useOffscreen?: boolean, debug?: boolean);
+        loadResource(id: string, source: ImageSource): Promise<Size>;
+        getResource(id: string): Promise<ImageBitmap | undefined>;
+        disposeResource(id: string): void;
+        onCommandsReady(): void;
+        dispose(): void;
+        protected handleMessage(message: MessageEvent): void;
+        private wrappedWorkerLoad;
+        private wrappedLoad;
+        setDimensions(width: number, height: number): void;
+        createPattern(resourceId: string, repetition: "repeat" | "repeat-x" | "repeat-y" | "no-repeat"): void;
+        setSmoothing(enabled: boolean): void;
+        setPixelRatio(ratio: number): void;
+        save(): void;
+        restore(): void;
+        translate(x: number, y: number): void;
+        rotate(angleInRadians: number): void;
+        transform(a: number, b: number, c: number, d: number, e: number, f: number): void;
+        scale(xScale: number, yScale?: number): void;
+        setBlendMode(type: GlobalCompositeOperation): void;
+        setAlpha(value: number): void;
+        drawPath(points: Point[], color?: ColorOrTransparent, stroke?: StrokeProps): void;
+        clearRect(x: number, y: number, width: number, height: number, props?: DrawProps): void;
+        drawRect(x: number, y: number, width: number, height: number, color?: ColorOrTransparent, stroke?: StrokeProps, props?: DrawProps): void;
+        drawRoundRect(x: number, y: number, width: number, height: number, radius: number, color?: ColorOrTransparent, stroke?: StrokeProps, props?: DrawProps): void;
+        drawCircle(x: number, y: number, radius: number, fillColor?: string, stroke?: StrokeProps, props?: DrawProps): void;
+        drawImage(resourceId: string, x: number, y: number, width: number, height: number, props?: DrawProps): void;
+        drawImageCropped(resourceId: string, sourceX: number, sourceY: number, sourceWidth: number, sourceHeight: number, destinationX: number, destinationY: number, destinationWidth: number, destinationHeight: number, props?: DrawProps): void;
+        drawText(text: TextProps, x: number, y: number, props?: DrawProps): void;
+        drawPattern(patternResourceId: string, x: number, y: number, width: number, height: number): void;
+        protected onDraw(cmd: string, ...args: any[]): void;
+        protected getBackend(cmd: string, ...args: any[]): void;
+    }
+}
+declare module "src/utils/Fullscreen" {
+    import type { Point } from "src/definitions/types";
+    export function toggleFullScreen(element: HTMLElement): void;
+    export function transformPointer(event: MouseEvent, element: HTMLCanvasElement, rect: DOMRect, canvasWidth: number, canvasHeight: number): Point;
+}
+declare module "src/utils/Optimization" {
+    export function useWorker(optimize: "auto" | "worker" | "none"): boolean;
+}
+declare module "src/Collision" {
+    import type { Point, Rectangle } from "src/definitions/types";
+    import type RenderAPI from "src/rendering/RenderAPI";
+    import type Sprite from "src/Sprite";
+    export default class Collision {
+        private _renderer;
+        private _cacheMap;
+        constructor(_renderer: RenderAPI);
+        dispose(): void;
+        getChildrenInArea(sprites: Sprite[], x: number, y: number, width: number, height: number, collidablesOnly?: boolean): Sprite[];
+        pixelCollision(sprite1: Sprite, sprite2: Sprite): Point | undefined;
+        cache(resourceId: string): Promise<boolean>;
+        clearCache(resourceId: string): boolean;
+        hasCache(resourceId: string): boolean;
+        protected getPixelArray(sprite: Sprite, rect: Rectangle, pixels: number[]): void;
+    }
+}
+declare module "src/Canvas" {
+    import type { Size, Point, BoundingBox, Viewport, ImageSource } from "src/definitions/types";
+    import { IRenderer } from "src/rendering/IRenderer";
+    import RenderAPI from "src/rendering/RenderAPI";
+    import EventHandler from "src/utils/EventHandler";
+    import Collision from "src/Collision";
+    import DisplayObject from "src/DisplayObject";
+    import type Sprite from "src/Sprite";
+    interface CanvasProps {
+        width?: number;
+        height?: number;
+        fps?: number;
+        backgroundColor?: string;
+        animate?: boolean;
+        smoothing?: boolean;
+        stretchToFit?: boolean;
+        autoSize?: boolean;
+        viewport?: Size;
+        viewportHandler?: ({}: {
+            type: "panned";
+            value: Viewport;
+        }) => void;
+        preventEventBubbling?: boolean;
+        optimize?: "auto" | "worker" | "none";
+        parentElement?: HTMLElement;
+        onUpdate?: (now: DOMHighResTimeStamp, framesSinceLastRender: number) => void;
+        onResize?: (width: number, height: number) => void;
+        debug?: boolean;
+    }
+    export default class Canvas extends DisplayObject<Canvas> {
+        DEBUG: boolean;
+        collision: Collision;
+        bbox: BoundingBox;
+        protected _el: HTMLCanvasElement;
+        protected _rdr: RenderAPI;
+        protected _vp: Viewport | undefined;
+        protected _smooth: boolean;
+        protected _stretch: boolean;
+        protected _pxr: number;
+        protected _renHdlr: (now: DOMHighResTimeStamp) => void;
+        protected _upHdlr?: (now: DOMHighResTimeStamp, framesSinceLastRender: number) => void;
+        protected _resHdrl?: (width: number, height: number) => void;
+        protected _vpHdlr?: ({}: {
+            type: "panned";
+            value: Viewport;
+        }) => void;
+        protected _hdlr: EventHandler;
+        protected _prevDef: boolean;
+        protected _lastRender: number;
+        protected _renderId: number;
+        protected _renderPending: boolean;
+        protected _disposed: boolean;
+        protected _scale: Point;
+        protected _aTchs: Sprite[];
+        protected _coords: DOMRect | undefined;
+        protected _width: number;
+        protected _height: number;
+        protected _prefWidth: number;
+        protected _prefHeight: number;
+        protected _qSize: Size | undefined;
+        protected _animate: boolean;
+        protected _lastRaf: DOMHighResTimeStamp;
+        protected _fps: number;
+        protected _aFps: number;
+        protected _rIval: number;
+        protected _bgColor: string | undefined;
+        protected _isFs: boolean;
+        protected _hasFsH: boolean;
+        constructor({ width, height, fps, backgroundColor, animate, smoothing, stretchToFit, autoSize, viewport, preventEventBubbling, parentElement, debug, optimize, viewportHandler, onUpdate, onResize, }?: CanvasProps);
+        loadResource(id: string, source: ImageSource): Promise<Size>;
+        getResource(id: string): Promise<ImageBitmap | undefined>;
+        disposeResource(id: string): void;
+        getRenderer(): IRenderer;
+        insertInPage(container: HTMLElement): void;
+        getElement(): HTMLCanvasElement;
+        preventEventBubbling(value: boolean): void;
+        addChild(child: Sprite): DisplayObject<Canvas>;
+        invalidate(): void;
+        getFrameRate(): number;
+        setFrameRate(value: number): void;
+        getActualFrameRate(): number;
+        getRenderInterval(): number;
+        getSmoothing(): boolean;
+        setSmoothing(enabled: boolean): void;
+        getWidth(): number;
+        getHeight(): number;
+        setDimensions(width: number, height: number, setAsPreferredDimensions?: boolean, immediate?: boolean): void;
+        getViewport(): Viewport | undefined;
+        setViewport(width: number, height: number): void;
+        panViewport(x: number, y: number, broadcast?: boolean): void;
+        setBackgroundColor(color: string): void;
+        setAnimatable(value: boolean): void;
+        isAnimatable(): boolean;
+        scale(x: number, y?: number): void;
+        stretchToFit(value: boolean): void;
+        setFullScreen(value: boolean, stretchToFit?: boolean): void;
+        getCoordinate(): DOMRect;
+        dispose(): void;
+        protected handleInteraction(event: MouseEvent | TouchEvent | WheelEvent): void;
+        protected render(now?: DOMHighResTimeStamp): void;
+        protected addListeners(addResizeListener?: boolean): void;
+        protected removeListeners(): void;
+        protected handleResize(): void;
+        protected updateCanvasSize(): void;
+    }
+}
+declare module "zcanvas" {
+    import Canvas from "src/Canvas";
+    import Loader from "src/Loader";
+    import Sprite from "src/Sprite";
+    export * from "src/definitions/types";
+    export { Canvas, Loader, Sprite };
 }
 //# sourceMappingURL=zcanvas.d.ts.map

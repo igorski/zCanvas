@@ -1,40 +1,65 @@
+body, html {
+    height: 100%;
+
+}
 body {
     padding: 0;
     margin: 0;
     font-family: Arial, sans-serif;
-    line-height: 1.5em;
+    line-height: 1.5;
+    background-color: #F5F5F5;
 }
 
 h1 {
     font-size: 150%;
+    margin-top: 0;
 }
 
-#container {
-    padding: 1em;
-    max-width: 800px;
-    margin: 0 auto;
+.demo-container {
+    background-color: #FFF;
+    min-height: 100%;
 }
 
-#demo {
+.demo-header {
+
+}
+
+.demo-canvas-container {
     position: relative;
 }
 
-#left-btn, #right-btn, #action-btn {
+.demo-controls {
+    border-bottom: 1px solid #000;
+    padding: 8px 0 16px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+button {
+    cursor: pointer;
+    border: 2px solid #b6b6b6;
+    border-radius: 16px;
+    padding: 8px 16px;
+}
+
+    button:hover {
+        background-color: #fff;
+    }
+
+#left-btn,
+#right-btn,
+#action-btn {
     position: absolute;
-    bottom: 1em;
+    bottom: 16px;
     width: 50px;
     height: 50px;
     font-weight: bold;
-    border-radius: 20%;
+    /* border-radius: 20%; */
     color: #FFF;
     background-color: rgba(255,0,128,.85);
+    border: none;
     border-bottom: 5px solid #FF0099;
-    -webkit-touch-callout: none;
-      -webkit-user-select: none;
-       -khtml-user-select: none;
-         -moz-user-select: none;
-          -ms-user-select: none;
-              user-select: none;
 }
 
 #left-btn {
@@ -61,7 +86,7 @@ h1 {
 
 #action-btn {
     right: 10px;
-    border-radius: 50%;
+    /* border-radius: 50%; */
 }
 
     #action-btn:after {
@@ -70,3 +95,86 @@ h1 {
         top: 15px;
         position: absolute;
     }
+
+button,
+.demo-controls {
+  -webkit-touch-callout: none;
+    -webkit-user-select: none;
+     -khtml-user-select: none;
+       -moz-user-select: none;
+        -ms-user-select: none;
+            user-select: none;
+}
+
+/* everything above mobile size */
+
+@media screen and (min-width: 680px) and (min-height: 600px) {
+    .demo-container {
+        display: flex;
+        flex-direction: column;
+        margin: 0 auto;
+        padding: 16px 0;
+        border-left: 1px dashed #666;
+        border-right: 1px dashed #666;
+    }
+
+        .demo-container--wide .demo-controls {
+            border: none;
+        }
+
+        .demo-container--wide {
+            max-width: 800px;
+        }
+
+        .demo-container__columns {
+            display: flex;
+            flex-direction: row;
+        }
+
+            .demo-container__columns-column {
+                border-bottom: 1px dotted #666;
+            }
+
+            .demo-container__columns .demo-description {
+                margin-top: 0;
+                padding: 16px 32px;
+                border-top: 1px dotted #666;
+            }
+
+    .demo-header,
+    .demo-controls,
+    .demo-description {
+        padding-left: 24px;
+        padding-right: 24px;
+    }
+}
+
+/* mobile phones */
+
+/* also see utils.js#isMobile() */
+@media (orientation: portrait) and (max-width: 480px), (orientation: landscape) and (max-height: 480px) {
+    body {
+        overflow: hidden;
+    }
+    .demo-header {
+        padding-left: 16px;
+        padding-right: 16px;
+    }
+    /* hide the demo UI on mobile to maximize Canvas presentation */
+    .demo-header,
+    .demo-controls,
+    .demo-description {
+        display: none;
+    }
+        /* unless this force override is specified for certain demos */
+        .demo--always-visible {
+            display: flex;
+            padding: 8px 16px;
+        }
+
+    #left-btn,
+    #right-btn,
+    #action-btn {
+        position: fixed;
+    }
+}

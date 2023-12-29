@@ -1,6 +1,5 @@
-*.iml
-.idea/
 *.log
 .DS_Store
 node_modules
 temp/
+*.tsbuildinfo

@@ -4,356 +4,604 @@
     <meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable = no" name="viewport">
     <meta charset="utf-8" />
     <title>zCanvas animated spritesheet example</title>
+    <!-- load demo assets -->
     <link rel="stylesheet" href="./assets/styles.css">
     <script type="text/javascript" src="./assets/images.js"></script>
-    <!-- requestAnimationFrame and Promise polyfills for IE9 -->
-    <script src="http://www.edisonsecretlab.com/cdn/global/js/lib/rAF.js" type="text/javascript"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/promise-polyfill/8.1.3/polyfill.min.js" type="text/javascript"></script>
-    <!-- include RequireJS to resolve dependencies -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.1.14/require.min.js" type="text/javascript"></script>
+    <script type="text/javascript" src="./assets/utils.js"></script>
+    <script type="text/javascript" src="./assets/demo2_images.js"></script>
 </head>
 <body>
-    <div id="container">
-        <h1>zCanvas demo #1: Spritesheets and collisions</h1>
-        <div id="demo"><!-- x --></div>
-        <p>
-            Demo features : a keyboard / touchscreen-controllable spritesheet character that uses the pixel-accurate (and slightly heavier) collision
-            detection-variant (see API docs) to resolve collisions with the environment. The simulation speed is locked to the configured canvas framerate.
-            Use arrow keys and spacebar to jump.
-        </p>
+<div class="demo-container demo-container--wide">
+    <div class="demo-header">
+        <h1>zCanvas : Shoot 'em up with fast collision detection</h1>
     </div>
-    <script type="text/javascript">
+    <div class="demo-container__columns">
+    <div class="demo-container__columns-column">
+        <div class="demo-canvas-container"><!-- x --></div>
+        <div class="demo-controls">
+            <div>
+                <label for="fps">Framerate (15 to 60 fps)</label>
+                <input type="range" id="fps" min="15" max="60" value="60" step="1" />
+            </div>
+            <button type="button" id="fullscreen">Fullscreen</button>
+        </div>
+    </div>
+    <div class="demo-container__columns-column">
+        <div class="demo-description">
+            <p>
+                Demo features : multiple layers of parallax scrolling, endless waves of enemies, spritesheet explosions
+                and tons of bullets using the high performing collision detection routine (less precise but more than adequate
+                in this context).
+            </p>
+            <p>
+                Furthermore, framerate is adjustable at runtime while game speed is maintained.
+                Use the arrow keys and spacebar to shoot (or the on-screen controls).
+            </p>
+            <p>
+                A complete game based on this demo, written using zCanvas
+                can be found <a href="https://github.com/igorski/weltkriegsimulator">here</a>.
+            </p>
+        </div>
+    </div>
+</div>
+</div>
+<script type="module">
+import { Canvas, Sprite } from "../dist/zcanvas.mjs";
 
-        // resolve dependencies
+// STEP 1 : SETUP
+// --------------
 
-        requirejs.config({
-            baseUrl : "../dist/",
-            urlArgs : "bust=" + Date.now()
-        });
+const demoContainer   = document.querySelector( ".demo-container" );
+const canvasContainer = document.querySelector( ".demo-canvas-container" );
 
-        require( [ "zcanvas.amd" ], function( zCanvas ) {
+// 1.2 simulation variables
 
-            // STEP 1 : SETUP
-            // --------------------------------------
+const WORLD_WIDTH     = 400;
+const WORLD_HEIGHT    = 400;
 
-            var container = document.getElementById( "demo" );
+// maximum amount of pixels travelled per frame
+// this is scaled against the actual framerate in sprite.update() methods
+// to maintain a consistent movement at different frame rates
 
-            // get window dimensions
+const MAX_SPEED       = 8;
+const SPEED_INCREMENT = MAX_SPEED / IDEAL_FPS; // max speed increment per frame
 
-            var w, h;
-            if ( window.outerHeight ) {
-                w = window.outerWidth;
-                h = window.outerHeight;
+// STEP 2 : DEFINING CUSTOM SPRITE CLASSES
+// ---------------------------------------
+
+// 2.1 create a custom class for Actors (generic status Objects within this game)
+// it is recommended to separate Actors from renderers (e.g. Sprites) but we'll keep
+// this example concise.
+
+class Actor extends Sprite {
+    constructor( x, y ) {
+        // call Sprite prototype, by default Actors are 5 x 5 in size
+        super({ x, y, width: 5, height: 5 });
+
+        /* instance properties */
+
+        this.maxSpeed = MAX_SPEED;
+
+        this.xSpeed = 0; // current horizontal movement speed
+        this.ySpeed = 0; // current vertical movement speed
+    }
+
+    /* public methods */
+
+    hit( actor ) {
+        // will be overridden in derived classes
+    }
+
+    // overrides Sprite parent class
+    update( timestamp, framesSinceLastUpdate ) {
+        // on each update the Actors update their position according to their speed
+        this.setX( this.getX() + ( this.xSpeed * framesSinceLastUpdate ));
+        this.setY( this.getY() + ( this.ySpeed * framesSinceLastUpdate ));
+    }
+};
+
+// 2.2 custom class for Bullets, which inherits properties and actions from Actor
+
+class Bullet extends Actor {
+    damage; // the damage this Bullet deals
+
+    constructor( damage ) {
+        super( 0, 0, 0, 0 ); // call Actor prototype (no coordinates and speed during construction here)
+
+        this.damage = ( typeof damage === "number" ) ? damage : 1;
+    }
+
+    // overrides Sprite parent class
+    draw( renderer, viewport ) {
+        if ( !this.isVisible( viewport )) {
+            return;
+        }
+        // override draw()-method from Sprite-prototype to draw custom graphics
+        const { left, top, width, height } = this.getBounds();
+        renderer.drawRect( left, top, width, height, "#FF0000" );
+    }
+};
+
+// 2.3 custom class for Ships, which inherits properties and actions from Actor
+
+class Ship extends Actor {
+    constructor( x, y, energy ) {
+        // call Actor prototype (no speed during construction here)
+        super( x, y );
+        // set custom Bitmap for the Ship
+        this.setResource( "spritesheet", 64, 64 ); // each tile is 64x64 pixels
+        this.setSheet([
+            { row: 0, col: 0, fpt: 1, amount: 1 },  // Player ship, facing up
+            { row: 1, col: 0, fpt: 1, amount: 1 },  // Enemy ship, facing down
+            { row: 2, col: 0, fpt: IDEAL_FPS / 16 * 2, amount: 16, onComplete: disposeActor } // Explosion animation
+        ]);
+        this.energy = ( typeof energy === "number" ) ? energy : 1; // the energy (power bar) this actor has
+    }
+
+
+    hit( actor ) {
+        if ( actor instanceof Bullet ) {
+            disposeActor( actor ); // bullets are disposed after a hit
+        }
+
+        if ( this.energy <= 0 || actor.energy <= 0 ) {
+            return; // one of the Actors is already dead
+        }
+        this.energy -= (( typeof actor.damage === "number" ) ? actor.damage : 1 );
+
+        if ( this.energy <= 0 ) {
+            this.switchAnimation( 2 ); // all energy depleted, start explosion animation
+        }
+    }
+
+    // set vertical thrusters (0 == idle, 1 == going left, 2 == going right)
+    setHorizontalThrust( thrusterState ) {
+        this.horizontalThrust = thrusterState;
+    }
+
+    // set vertical thrusters (0 == idle, 1 == going up, 2 == going down)
+    setVerticalThrust( thrusterState ) {
+        this.verticalThrust = thrusterState;
+    }
+
+    /* overridden methods */
+
+    update( timestamp, framesSinceLastUpdate ) {
+        switch ( this.horizontalThrust ) {
+            default:
+            case 0: // no thrust, decrease speed
+                if ( this.xSpeed < 0 )
+                    this.xSpeed += SPEED_INCREMENT;
+                else if ( this.xSpeed > 0 )
+                    this.xSpeed -= SPEED_INCREMENT;
+                // until we come to an eventual stand-still
+                if ( Math.abs( this.xSpeed ) < 0.01 ) this.xSpeed = 0;
+                break;
+            case 1: // thrusting to move left
+                if ( this.xSpeed > -this.maxSpeed ) this.xSpeed -= SPEED_INCREMENT;
+                break;
+            case 2: // thrusting to move right
+                if ( this.xSpeed < this.maxSpeed ) this.xSpeed += SPEED_INCREMENT;
+                break;
+        }
+        switch( this.verticalThrust ) {
+            default:
+            case 0: // no thrust, decrease speed
+                if ( this.ySpeed < 0 )
+                    this.ySpeed += SPEED_INCREMENT;
+                else if ( this.ySpeed > 0 )
+                    this.ySpeed -= SPEED_INCREMENT;
+                // until we come to an eventual stand-still
+                if ( Math.abs( this.ySpeed ) < 0.01 ) this.ySpeed = 0;
+                break;
+            case 1: // thrusting to move up
+                if ( this.ySpeed > -this.maxSpeed ) this.ySpeed -= SPEED_INCREMENT;
+                break;
+            case 2: // thrusting to move down
+                if ( this.ySpeed < this.maxSpeed ) this.ySpeed += SPEED_INCREMENT;
+                break;
+        }
+
+        this.setX( this.getX() + ( this.xSpeed * framesSinceLastUpdate ));
+        this.setY( this.getY() + ( this.ySpeed * framesSinceLastUpdate ));
+        
+        this.updateAnimation( framesSinceLastUpdate ); // update spritesheet animation
+    }
+};
+
+const FIRE_INTERVAL = 200; // in milliseconds
+class Player extends Ship {
+    isFiring = false;
+    lastFire = 0;
+
+    setFiringState( isFiring ) {
+        this.isFiring = isFiring;
+    }
+
+    reset() {
+        this.energy   = 25;
+        this.isFiring = false;
+        this.lastFire = 0;
+        
+        this.switchAnimation( 0 );
+    }
+
+    update( timestamp, framesSinceLastUpdate ) {
+        super.update( timestamp, framesSinceLastUpdate );
+
+        if ( this.isFiring && ( timestamp - this.lastFire ) > FIRE_INTERVAL ) {
+            createBulletForActor( this );
+            
+            this.lastFire = timestamp;
+        }
+
+        // the player will be kept inside the visible Canvas bounds
+
+        const halfWidth  = this.getWidth()  / 2;
+        const halfHeight = this.getHeight() / 2;
+
+        this.setX( Math.max( -halfWidth,  Math.min( cvs.getWidth()  - halfWidth,  this.getX() )));
+        this.setY( Math.max( -halfHeight, Math.min( cvs.getHeight() - halfHeight, this.getY() )));
+    }
+};
+
+// create some scenic clouds
+class CloudRenderer extends Sprite {
+    constructor() {
+        super({
+            x: Math.random() * WORLD_WIDTH,
+            y: -100,
+            width: 300,
+            height: 508,
+            resourceId: "cloud",
+        })
+    }
+
+    update( timestamp, framesSinceLastUpdate ) {
+        // cloud moves slowly out of the screen and then resets its position to the top
+        this.setY( this.getY() + framesSinceLastUpdate );
+        if ( this.getY() > cvs.getHeight() ) {
+            this.setY( -this.getHeight() );
+            this.setX( Math.random() * cvs.getWidth() );
+        }
+    }
+};
+
+// STEP 3 : CREATING A POOL FOR HEAVILY REUSED OBJECTS
+// ---------------------------------------------------
+
+const bulletPool = new Array( 100 ); // Array size defines the maximum amount of bullets existing simultaneously
+for ( let i = 0, total = bulletPool.length; i < total; ++i ) {
+    bulletPool[ i ] = new Bullet( 1 );
+}
+
+const enemyPool = new Array( 5 );
+for ( let i = 0, total = enemyPool.length; i < total; ++i ) {
+    enemyPool[ i ] = new Ship( 0, 0, 1 );
+}
+
+// helper function to calculate x, y coordinate within a circular shape
+
+function calcPosition( originX, originY, radius, angle ) {
+    return {
+        x: originX + radius * Math.cos( angle * Math.PI / 180 ),
+        y: originY + radius * Math.sin( angle * Math.PI / 180 )
+    }
+}
+
+// helper function to retrieve an Actor from the pool and apply given properties onto it
+
+function getActorFromPool( pool, x, y, xSpeed, ySpeed ) {
+    const actor = pool.shift(); // get first Actor from the pool (can be null if all pool Actors are in the game)
+    if ( actor ) {
+        actor.setX( x );
+        actor.setY( y );
+        actor.xSpeed = xSpeed;
+        actor.ySpeed = ySpeed;
+    }
+    return actor;
+}
+
+let gameStarted = false;
+
+// STEP 4 : INITIALIZING THE CANVAS
+// --------------------------------
+
+// create a new canvas that renders at IDEAL_FPS frame rate
+// we register a custom update handler to advance our game
+// prior to rendering each frame
+
+const cvs = new Canvas({
+    width: WORLD_WIDTH,
+    height: WORLD_HEIGHT,
+    animate: true,
+    smoothing: false, // pixel art ahoy
+    fps: IDEAL_FPS,
+    stretchToFit: isMobile(), // in mobile view all DOM elements apart from canvas container are hidden, so essentially fullscreen
+    backgroundColor: "#000099", // "blue sky"
+    preventEventBubbling: true,
+    parentElement: canvasContainer,
+    onUpdate: handleGameLoop, // see below
+    onResize: ( width, height ) => {
+        // resize demo container to accommodate the canvas size
+        canvasContainer.style.width = `${width}px`;
+    }
+});
+addCanvasDemoControls( demoContainer, cvs );
+
+// 4.1 register assets
+
+await Promise.all([
+    cvs.loadResource( "spritesheet", IMAGE_SHIP_SHEET ),
+    cvs.loadResource( "cloud", IMAGE_CLOUD )
+]);
+
+// STEP 4 : INITIALIZING THE GAME ENVIRONMENT
+// ------------------------------------------
+
+const player = new Player( cvs.getWidth() / 2, cvs.getHeight() - 100, 5 );
+const cloud  = new CloudRenderer();
+const actors = []; // all actors currently in the game (this excludes the player!)
+
+// add game actors to the display list
+
+cvs.addChild( player );
+for ( let i = 0, total = enemyPool.length; i < total; ++i ) {
+    createEnemyFromPool();
+}
+cvs.addChild( cloud );
+gameStarted = true;
+
+// STEP 6 : CREATING A CUSTOM UPDATE HANDLER FOR UPDATING THE GAME ENVIRONMENT
+// ---------------------------------------------------------------------------
+
+function handleGameLoop( timestamp, framesSinceLastUpdate ) {
+    if ( !gameStarted ) {
+        return;
+    }
+    player.update( timestamp, framesSinceLastUpdate );
+    cloud.update( timestamp, framesSinceLastUpdate );
+
+    let i = actors.length;
+
+    const cvsWidth  = cvs.getWidth();
+    const cvsHeight = cvs.getHeight();
+    
+    while ( i-- ) {
+        const actor = actors[ i ];
+        if ( !actor ) {
+            continue; // can be removed during game loop
+        }
+        actor.update( timestamp, framesSinceLastUpdate );
+
+        const actorBounds = actor.getBounds(),
+                actorX      = actorBounds.left,
+                actorY      = actorBounds.top,
+                actorWidth  = actorBounds.width,
+                actorHeight = actorBounds.height;
+
+        // if Actor exceeds world bounds, remove it from the Actors list
+        // note: Bullets are also removed when they are out of the top vertical bounds
+
+        if (( actor instanceof Bullet && actorY < 0 ) ||
+                actorY > cvsHeight || actorX + actorWidth  < 0 || actorX > cvsWidth ) {
+            disposeActor( actor );
+            continue;
+        }
+
+        // resolve collisions with other Actors in its vicinity
+
+        const others = cvs.collision.getChildrenInArea( actors, actorX, actorY, actorWidth, actorHeight );
+        if ( others.length > 0 ) {
+            for ( let j = 0, l = others.length; j <l; ++j ) {
+                const other = others[ j ];
+                if ( actor.collidesWith( other )) {
+                    other.hit( actor );
+                    actor.hit( other );
+                }
             }
-            else {
-                w = document.documentElement.clientWidth;
-                h = document.documentElement.clientHeight;
+        }
+
+        // ...and with the Player
+
+        if ( actor.collidesWith( player )) {
+            player.hit( actor );
+            actor.hit( player );
+        }
+    }
+}
+
+function createEnemyFromPool() {
+    const enemy = enemyPool.shift();
+    actors.push( enemy ); // add enemy to Actors list
+    enemy.setX( Math.random() * cvs.getWidth() );
+    enemy.setY(( Math.random() * -cvs.getHeight() ) - 300 );
+    enemy.setVerticalThrust( 2 );
+    enemy.switchAnimation( 1 ); // switch to Enemy tile
+    enemy.maxSpeed = MAX_SPEED / 2;
+    enemy.energy = 1;
+    cvs.addChild( enemy );
+}
+
+function createBulletForActor( actor ) {
+    actor.weapon = 1;
+    const bullets = []
+    let bullet;
+    
+    switch ( actor.weapon ) {
+
+        default:
+        case 0:
+            // single Bullet fire
+            bullet = getActorFromPool(
+                bulletPool,
+                actor.getX() + actor.getWidth() / 2,
+                actor.getY() - 10,
+                0,
+                ( actor === player ) ? -5 : 5 // Player shoots up, enemies shoot down
+            );
+            if ( bullet ) {
+                bullets.push( bullet );
             }
-
-            // create a new canvas that renders at 60 fps
-            // keep it within the device / browser bounds
-            var cvsWidth  = ( w < 800 ) ? w * .93 : 800;
-            var cvsHeight = ( h < 350 ) ? h : 350;
-            container.style.width = cvsWidth + "px";
-
-            var cvs = new zCanvas.canvas({
-                width: cvsWidth,
-                height: cvsHeight,
-                animate: true,
-                smoothing: false, // pixel art ahoy
-                fps: 60,
-                preventEventBubbling: true,
-                parentElement: container
-            });
-
-            // STEP 2 : SELF ANIMATING IMAGE EXAMPLE
-            // --------------------------------------
-
-            // first sprite will act as a background
-            // (see included "assets.js"-file for the assetBackground-image data)
-
-            var bgWidth  = 800, bgHeight = 1067;
-            var bgSprite = new zCanvas.sprite({
-                width: bgWidth,
-                height: bgHeight,
-                bitmap: IMAGE_BACKGROUND
-            });
-
-            // add the sprite onto the canvas so we can see it
-            cvs.addChild( bgSprite );
-
-            // STEP 3 : NEW SUBCLASS / SPRITESHEET EXAMPLE
-            // -------------------------------------------
-            // when writing your application using OOP-paradigms, it makes
-            // more sense to create new "classes" for custom sprite Objects, like such:
-
-            var Hero = function( opts ) {
-
-                Hero.super( this, "constructor", opts ); // construct as a sprite
-
-                /* Hero instance properties */
-
-                this.direction       = 0;     // 0 = left, 1 = right
-                this.running         = false; // is the hero running ?
-                this.jumping         = false; // is the hero jumping ?
-                this.falling         = true;  // is the hero falling ? (set to true for gravity)
-                this.xSpeed          = 0;     // horizontal speed (i.e. walking)
-                this.MAX_X_SPEED     = 5;     // maximum horizontal speed in pixels per frame
-                this.SPEED_INCREMENT = 0.125; // the value with which we will increment the speed until it reaches MAX
-                this.GRAVITY         = 7;     // the vertical "pull" exerted on the Hero
-                this.ySpeed          = 0;     // vertical speed (i.e. jumping/falling)
-                this._jumpCount      = 0;     // internal : countdown for determining max jump height reached
-
-                /* public methods */
-
-                // makes the hero jump
-
-                this.jump = function() {
-
-                    if ( this.jumping )
-                        return;
-
-                    this.ySpeed     = 5;
-                    this._jumpCount = 10;
-                    this.jumping    = true;
-                    this.falling    = false;
-                };
-
-                // makes the hero run left (0) or right (1) at incremental speed
-
-                this.run = function( direction ) {
-
-                    this.direction = direction;
-                    this.running   = true;
-                    // switch spritesheet animation now we're starting to run
-                    this.switchAnimation(
-                        ( this.direction === 0 ) ? 2 : 3
-                    );
-                };
-
-                // stops the hero (will slowly move to a halt)
-
-                this.stop = function() {
-
-                    this.running = false;
-                    // switch spritesheet animation now we're stopping the running
-                    this.switchAnimation(
-                        ( this.direction === 0 ) ? 0 : 1
-                    );
-                };
-
-                // methods overriden from zCanvas.sprite prototype for custom behaviour
-                // --------------------------------------------------------------------
-
-                this.update = function( timestamp, framesSinceLastUpdate ) {
-
-                    // animation update operations (i.e. switch tile in sheet)
-
-                    this.updateAnimation( framesSinceLastUpdate );
-
-                    // movement
-
-                    if ( this.running ) {
-                        if ( this.direction === 0 ) { // moving left
-                            if ( hero.xSpeed > -hero.MAX_X_SPEED )
-                                hero.xSpeed -= this.SPEED_INCREMENT;
-                        }
-                        else if ( this.direction === 1 ) { // moving right
-                            if ( hero.xSpeed < hero.MAX_X_SPEED )
-                                hero.xSpeed += this.SPEED_INCREMENT;
-                        }
-                    }
-
-                    var prevX = this.getX(), prevY = this.getY();
-                    var targetX = this.getX(), targetY = this.getY();
-                    var thisWidth = this.getWidth(), thisHeight = this.getHeight();
-
-                    // are we moving horizontally ?
-
-                    if ( this.xSpeed !== 0 ) {
-
-                        targetX += this.xSpeed;
-
-                        // keep in bounds (exiting screen on left/right result in appearing on right/left)
-
-                        if ( targetX > ( cvsWidth + thisWidth )) {
-                            targetX = -thisWidth;
-                        }
-                        if ( targetX < -thisWidth ) {
-                            targetX = cvsWidth + thisWidth - 1;
-                        }
-                    }
-
-                    // are we moving vertically ? (e.g. falling or jumping)
-
-                    if ( !this.falling && this.jumping )
-                        targetY -= this.ySpeed;
-                    else
-                        targetY += this.GRAVITY;
-
-                    // constrain Hero within the vertical bounds of the canvas
-                    if ( targetY > this.canvas.getHeight() + thisHeight ) {
-                        targetY = -thisHeight;
-                    }
-                    var movingLeft = ( targetX < prevX );
-
-                    // collision detection with the wall/floor Sprite
-                    var horizontalCollision, verticalCollision;
-
-                    this.setX( targetX );
-                    if ( horizontalCollision = zCanvas.collision.pixelCollision( this, wallSprite, true )) {
-                        // horizontal collision, e.g. touched wall
-                        // link to wall by taking the current position plus the
-                        // x-index of the collision minus the total width of the sprite
-                        targetX = this.getX() + horizontalCollision.x - this.getWidth();
-                        this.setX( movingLeft ? prevX : targetX );
-                        // horizontal collision during any kind of y displacement implies
-                        // Hero is jumping/falling against a wall
-                        if ( this.ySpeed !== 0 ) {
-                            this.setX( movingLeft ? prevX + 1 : prevX - 1 );
-                        }
-                    }
-
-                    this.setY( targetY );
-                    if ( verticalCollision = zCanvas.collision.pixelCollision( this, wallSprite, true )) {
-                        // vertical collision, e.g. touched ground
-                        // link to ground by taking the current position plus the
-                        // y-index of the collision minus the total height of the sprite
-                        if ( verticalCollision.y === 0 ) {
-                            this.setY( prevY );
-                        } else {
-                            this.setY( this.getY() + verticalCollision.y - this.getHeight());
-                        }
-                        this.jumping = false;
-                    }
-
-                    // in case the user has stopped moving the hero, we
-                    // slowly reduce the heros speed so he doesn't stop at once
-
-                    if ( !this.running ) {
-                        if ( this.xSpeed < 0 ) {
-                            this.xSpeed += .25;
-                        } else if ( this.xSpeed > 0 ) {
-                            this.xSpeed -= .25;
-                        }
-                    }
-
-                    // in case the user has stopped holding the jump button down, we
-                    // slowly reduce the heros speed so he falls back down
-
-                    if ( this.jumping && !this.falling && --this._jumpCount <= 0 ) {
-                        this.falling = true;
-                    }
-                }
-            };
-            zCanvas.sprite.extend( Hero ); // Hero extends sprite
-
-            // create a new Hero instance and add it to the stage
-            // our spritesheet is 380 x 70 pixels with each individual tile
-            // in the sheet being 38 x 35 pixels. There is one row for each animation, there
-            // are four rows in total. (see included "images.js"-file for the assetSpriteSheet-image data)
-
-            var tileWidth = 38, tileHeight = 35; // height of a single tile
-            var hero = new Hero({
-                x: 100,
-                y: 0, // fall from the sky
-                width: tileWidth,
-                height: tileHeight,
-                bitmap: IMAGE_SPRITE_SHEET,
-                sheet: [
-                    { row: 0, col: 0, fpt: 5, amount: 3 },  // standing still, facing left
-                    { row: 1, col: 0, fpt: 5, amount: 3 },  // standing still, facing right
-                    { row: 2, col: 0, fpt: 3, amount: 10 }, // running, facing left
-                    { row: 3, col: 0, fpt: 3, amount: 10 }  // running facing right
-                ]
-            });
-            cvs.addChild( hero );
-
-            // STEP 4 : ADD SOME WALLS AND FLOORS
-            // ----------------------------------
-
-            var wallImageWidth = 660, wallImageHeight = 261;
-            var levelBitmap = new Image();
-            levelBitmap.src = IMAGE_LEVEL;
-            var wallSprite = new zCanvas.sprite({
-                x: cvsWidth / 2 - wallImageWidth / 2,
-                y: 50,
-                width  : wallImageWidth,
-                height : wallImageHeight,
-                bitmap : levelBitmap
-            });
-            // cache the levelBitmap to speed up pixel based collision detection
-            zCanvas.collision.cache( levelBitmap );
-            cvs.addChild( wallSprite );
-
-            // STEP 5 : ADDING KEYBOARD AND TOUCH INTERACTION
-            // ----------------------------------------------
-
-            // we add on-screen controls buttons for touch screens
-
-            var leftBtn = document.createElement( "div" );
-            leftBtn.id  = "left-btn";
-
-            var rightBtn = document.createElement( "div" );
-            rightBtn.id  = "right-btn";
-
-            var jumpBtn = document.createElement( "div" );
-            jumpBtn.id  = "action-btn";
-
-            container.appendChild( leftBtn );
-            container.appendChild( rightBtn );
-            container.appendChild( jumpBtn );
-
-            var cancelHandler = function( e ) {
-                hero.stop();
-            };
-
-            leftBtn.addEventListener ( "touchstart",  function( e ) { hero.run( 0 ); });
-            rightBtn.addEventListener( "touchstart",  function( e ) { hero.run( 1 ); });
-            jumpBtn.addEventListener ( "touchstart",  function( e ) { hero.jump(); });
-            leftBtn.addEventListener ( "touchcancel", cancelHandler );
-            leftBtn.addEventListener ( "touchcancel", cancelHandler );
-            leftBtn.addEventListener ( "touchend",    cancelHandler );
-            rightBtn.addEventListener( "touchend",    cancelHandler );
-
-            // keyboard control for desktop devices
-
-            var blockedCodes = [ 32, 38, 40, 37, 39 ]; // keycodes to block default behaviour of
-
-            window.addEventListener( "keydown", function( e ) {
-                switch ( e.keyCode ) {
-
-                    // move up (jump)
-                    case 38:
-                        hero.jump();
-                        break;
-
-                    // move hero to the right
-                    case 39:
-                        if ( !hero.running )
-                            hero.run( 1 );
-                        break;
-
-                    // move hero to the left
-                    case 37:
-                        if ( !hero.running )
-                            hero.run( 0 );
-                        break;
-                }
-                if ( blockedCodes.indexOf( e.keyCode ) > -1 )
-                    e.preventDefault(); // prevents document panning (if Canvas doesn't fit entirely)
-            });
-
-            // add a listener for key up (release) so we can tell the hero to stop running
-
-            window.addEventListener( "keyup", function( e ) {
-
-                if ( e.keyCode == 39 || e.keyCode == 37 ) {
-                    hero.stop();
-                }
-            });
-        });
-
-    </script>
+            break;
+
+        case 1:
+            const actorBounds = actor.getBounds();
+            let angle, startPos, targetPos;
+            
+            // spray Bullets
+            for ( let i = 0, total = 16; i < total; ++i ) {
+                angle = ( 360 / total ) * i;
+                startPos = calcPosition(
+                    actorBounds.left + actorBounds.width / 2,
+                    actorBounds.top  + actorBounds.height / 2,
+                    actorBounds.width, angle
+                );
+                bullet = getActorFromPool( bulletPool, startPos.x, startPos.y, 0, 0 );
+
+                if ( !bullet )
+                    break; // ran out of available bullets :(
+
+                bullets.push( bullet );
+
+                targetPos = calcPosition(
+                    actorBounds.left + actorBounds.width,
+                    actorBounds.top + actorBounds.height,
+                    cvs.getWidth(), angle
+                );
+                // bullets move from their original to target position (out of screen) over the course of a single second
+                bullet.xSpeed = ( targetPos.x - startPos.x ) / cvs.getFrameRate();
+                bullet.ySpeed = ( targetPos.y - startPos.y ) / cvs.getFrameRate();
+            }
+            break;
+    }
+    // add Bullet(s) into the active Actors list and onto the Display List
+    for ( let i = 0, total = bullets.length; i < total; ++i ) {
+        bullet = bullets.shift();
+        actors.push( bullet );
+        cvs.addChild( bullet );
+    }
+}
+
+function disposeActor( actor ) {
+    cvs.removeChild( actor ); // removes Actor from display list
+
+    const actorIndex = actors.indexOf( actor );
+    if ( actorIndex !== -1 ) {
+        actors.splice( actorIndex, 1 ); // remove Actor from active Actors list
+    }
+
+    // return Actor to the pool so it can be reused
+    if ( actor instanceof Bullet ) {
+        bulletPool.push( actor );
+    } else if ( actor instanceof Player ) {
+        // show "game over" and reset player state
+        alert( "PLAYER DIED!" );
+        player.reset();
+        cvs.addChild( player );
+    } else if ( actor !== player ) {
+        enemyPool.push( actor ); // Actor isn't a Bullet nor the player, so it's an enemy
+        setTimeout( createEnemyFromPool, 1000 ); // reintroduce enemy after a short period
+    }
+}
+
+// STEP 7 : ADDING KEYBOARD AND TOUCH INTERACTION
+// ----------------------------------------------
+
+let playerXmovement = false;
+let playerYmovement = false;
+
+// we add on-screen controls buttons for touch screens
+
+createJoypad(
+    canvasContainer,
+    // left button down and release handler
+    handleLeft, horizontalEnd,
+    // right button down and release handler
+    handleRight, horizontalEnd,
+    // action button down and release handler
+    () => player.setFiringState( true ), () => player.setFiringState( false )
+);
+
+// keyboard control for desktop devices
+
+const blockedCodes = [ 32, 38, 40, 37, 39 ]; // keycodes to block default behaviour of
+
+window.addEventListener( "keydown", e => {
+    switch ( e.keyCode ) {
+        case 32: // spacebar
+            player.setFiringState( true );
+            break;
+
+        case 38: // up
+            if ( !playerYmovement ) {
+                player.setVerticalThrust( 1 );
+                playerYmovement = true;
+            }
+            break;
+
+        case 40: // down
+            if ( !playerYmovement ) {
+                player.setVerticalThrust( 2 );
+                playerYmovement = true;
+            }
+            break;
+
+        case 37: // left
+            handleLeft();
+            break;
+
+        case 39: // right
+            handleRight();
+            break;
+    }
+    if ( blockedCodes.indexOf( e.keyCode ) > -1 ) {
+        e.preventDefault(); // prevents document panning (if Canvas doesn't fit entirely)
+    }
+});
+
+window.addEventListener( "keyup", e => {
+    switch ( e.keyCode ) {
+        case 32:
+            player.setFiringState( false );
+            break;
+        case 38:
+        case 40:
+            verticalEnd();
+            break;
+        case 37:
+        case 39:
+            horizontalEnd();
+            break;
+
+    }
+});
+
+function handleLeft() {
+    if ( !playerXmovement ) {
+        player.setHorizontalThrust( 1 );
+        playerXmovement = true;
+    }
+}
+
+function handleRight() {
+    if ( !playerXmovement ) {
+        player.setHorizontalThrust( 2 );
+        playerXmovement = true;
+    }
+}
+
+// these handlers ensure we unset the thrust of the spaceship when we release the keys
+
+function verticalEnd() {
+    playerYmovement = false;
+    player.setVerticalThrust( 0 ); // idle vertical thrust
+}
+
+function horizontalEnd() {
+    playerXmovement = false;
+    player.setHorizontalThrust( 0 ); // idle horizontal thrust
+}
+</script>
 </body>
 </html>

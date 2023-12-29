@@ -20,7 +20,10 @@
  * IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-import EventHandler from "./utils/event-handler.js";
+import type { SizedImage, Size } from "./definitions/types";
+import EventHandler from "./utils/EventHandler";
+import { imageToBitmap, blobToImage } from "./utils/ImageUtil";
+import { readFile } from "./utils/FileUtil";
 
 /**
  * loader provides an interface that allows the loading of Images
@@ -36,28 +39,40 @@ const Loader = {
      *
      * if an Error has occurred the second argument will be the Error
      *
-     * @param {string}    aSource either base64 encoded bitmap data or (web)path
-     *                    to an image file
-     * @param {HTMLImageElement=} aOptImage optional HTMLImageElement to load the aSource
-     *                    into, in case we'd like to re-use an existing Element
-     *                    (will not work in Firefox repeatedly as load handlers
-     *                    will only fire once)
+     * @param {string | Blob | File} source when string, can be base64 or URL to file / blob URL
      * @return {Promise<SizedImage>}
      */
-    loadImage( aSource, aOptImage = null ) {
-        return new Promise(( resolve, reject ) => {
-            const out       = aOptImage || new window.Image();
-            const isDataURL = isDataSource( aSource );
+    loadImage( source: string | Blob | File ): Promise<SizedImage> {
+        return new Promise( async ( resolve, reject ) => {
+            // first check whether source is binary data
+            let blob: Blob;
+            if ( source instanceof File ) {
+                blob = await readFile( source as File );
+            } else if ( source instanceof Blob ) {
+                blob = source as Blob;
+            }
 
+            if ( blob !== undefined ) {
+                try {
+                    const image = await blobToImage( blob );
+                    Loader.onReady( image ).then(() => resolve( wrapOutput( image )));
+                } catch ( e: any ) {
+                    reject( e );
+                }
+                return;
+            }
+            // source is String
+            const isDataURL = isDataSource( source as string );
+            const out = new window.Image();
             const handler = new EventHandler();
 
-            const errorHandler = ( aError ) => {
+            const errorHandler = (): void => {
                 handler.dispose();
-                reject( aError );
+                reject();
             };
-            const loadHandler = () => {
+            const loadHandler = (): void => {
                 handler.dispose();
-                Loader.onReady( out ).then( result => resolve( wrapOutput( out ))).catch( reject );
+                Loader.onReady( out ).then(() => resolve( wrapOutput( out ))).catch( reject );
             };
 
             if ( !isDataURL ) {
@@ -67,57 +82,46 @@ const Loader = {
                 // of the remainder of this function body! we only supply it for
                 // src attributes that AREN'T local data strings
 
-                applyOrigin( aSource, out );
+                applyOrigin( source as string, out );
 
                 handler.add( out, "load",  loadHandler );
                 handler.add( out, "error", errorHandler );
             }
 
             // load the image
-            out.src = aSource;
+            out.src = source as string;
 
             // invoke callback immediately for data strings when no load is required
 
-            let instantCallback = isDataURL;
-            if ( process.env.NODE_ENV !== "production" ) {
-                // and also when unit testing using jsdom (as jsdom won't fire onload event)
-                if ( window.navigator.userAgent.includes( "jsdom" )) {
-                    instantCallback = true;
-                }
-            }
-
-            if ( instantCallback ) {
-                Loader.onReady( out ).then( result => resolve( wrapOutput( out ))).catch( reject );
+            if ( isDataURL ) {
+                loadHandler();
             }
         });
     },
 
+    async loadBitmap( source: string | Blob | File ): Promise<ImageBitmap> {
+        const { image } = await Loader.loadImage( source );
+        return imageToBitmap( image );
+    },
+
     /**
-     * a quick query to check whether the Image is ready for rendering
-     *
-     * @public
-     * @param {HTMLImageElement} aImage
-     * @return {boolean}
+     * a quick query to check whether given Image is ready for rendering on Canvas
      */
-    isReady( aImage ) {
+    isReady( image: HTMLImageElement ): boolean {
         // first check : load status
-        if ( aImage.complete !== true ) {
+        if ( image.complete !== true ) {
             return false;
         }
         // second check : validity of source (can be 0 until bitmap has been fully parsed by browser)
-        return typeof aImage.naturalWidth === "number" && aImage.naturalWidth > 0;
+        return typeof image.naturalWidth === "number" && image.naturalWidth > 0;
     },
 
     /**
      * Executes given callback when given Image is actually ready for rendering
      * If the image was ready when this function was called, execution is synchronous
      * if not it will be made asynchronous via RAF delegation
-     *
-     * @public
-     * @param {HTMLImageElement} aImage
-     * @return {Promise<void>}
      */
-    onReady( aImage ) {
+    onReady( image: HTMLImageElement ): Promise<void> {
         return new Promise(( resolve, reject ) => {
             // if this didn't resolve in a full second, we presume the Image is corrupt
 
@@ -125,7 +129,7 @@ const Loader = {
             let iterations = 0;
 
             function readyCheck() {
-                if ( Loader.isReady( aImage )) {
+                if ( Loader.isReady( image )) {
                     resolve();
                 } else if ( ++iterations === MAX_ITERATIONS ) {
                     reject( new Error( "Image could not be resolved. This shouldn't occur." ));
@@ -146,38 +150,28 @@ export default Loader;
 /**
  * Firefox and Safari will NOT accept images with erroneous crossOrigin attributes !
  * this method applies the correct value accordingly
- *
- * @param {string} aImageURL
- * @param {HTMLImageElement} aImage
  */
-function applyOrigin( aImageURL, aImage ) {
-    if ( !isLocalURL( aImageURL )) {
-        aImage.crossOrigin = "Anonymous";
+function applyOrigin( imageURL: string, image: HTMLImageElement ): void {
+    if ( !isLocalURL( imageURL )) {
+        image.crossOrigin = "Anonymous";
     }
 }
 
 /**
- * checks whether the contents of an Image are either a base64 encoded string
- * or a Blob
- *
- * @param {Image|string} image when string, it is the src attribute of an Image
- * @return {boolean}
+ * checks whether the contents of an Image are either a base64 encoded string or a Blob
  */
-function isDataSource( image ) {
+function isDataSource( src: string ): boolean {
 
-    const source = ( typeof image === "string" ? image : image.src ).substr( 0, 5 );
+    const source = src.substring( 0, 5 );
 
     // base64 string contains data-attribute, the MIME type and then the content, e.g. :
     // e.g. "data:image/png;base64," for a typical PNG, Blob string contains no MIME, e.g.:
     // blob:http://localhost:9001/46cc7e56-cf2a-7540-b515-1d99dfcb2ad6
+
     return source === "data:" || source === "blob:";
 }
 
-/**
- * @param {HTMLImageElement} image
- * @return {Size}
- */
-function getSize( image ) {
+function getSize( image: HTMLImageElement ): Size {
     return {
         width  : image.width  || image.naturalWidth,
         height : image.height || image.naturalHeight
@@ -188,22 +182,19 @@ function getSize( image ) {
  * checks whether given aURL is a URL to a remote resource (e.g. not on the
  * same server/origin as this application) or whether it is local (e.g. a URL
  * to a file on the same server or a data URL)
- *
- * @param {string=} aURL
- * @return {boolean}
  */
-function isLocalURL( aURL ) {
+function isLocalURL( url: string ): boolean {
 
     // check if the URL belongs to an asset on the same domain the application is running on
 
     const { location } = window;
-    if ( aURL.startsWith( "./" ) || aURL.startsWith( `${location.protocol}//${location.host}` )) {
+    if ( url.startsWith( "./" ) || url.startsWith( `${location.protocol}//${location.host}` )) {
         return true;
     }
 
     // check if given URL is a http(s) URL, if so we know it is not local
 
-    if ( /^http[s]?:/.test( aURL )) {
+    if ( /^http[s]?:/.test( url )) {
         return false;
     }
 
@@ -212,10 +203,10 @@ function isLocalURL( aURL ) {
     return true;
 }
 
-function wrapOutput( image ) {
+function wrapOutput( image: HTMLImageElement ): SizedImage {
     const out = {
         image: image,
-        size: null
+        size: { width: 0, height: 0 }
     };
     if ( image instanceof window.HTMLImageElement ) {
         out.size = getSize( image );
