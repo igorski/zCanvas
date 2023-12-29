@@ -232,9 +232,6 @@ export default class Collision {
         let i = -1;
         let value = TRANSPARENT;
 
-        // TODO if we exceed the available range, the OTHER array should probably also be limited ?
-        // or only constrain for the "other" object ?
-
         for ( let y = top; y < bottom; ++y ) {
             for ( let x = left; x < right; ++x ) {
                 if ( x >= mapWidth || y >= mapHeight ) {
