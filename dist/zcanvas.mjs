@@ -168,15 +168,15 @@ class c {
   }
 }
 const { min: p, max: u } = Math, m = 0.5;
-let b, g, _, w;
+let b, _, g, w;
 const f = Math.PI / 180;
 function G(t2) {
   return t2 > 0 ? t2 + 0.5 << 0 : 0 | t2;
 }
 function Z(t2, e2) {
-  ({ left: b, top: g, width: _, height: w } = t2);
+  ({ left: b, top: _, width: g, height: w } = t2);
   const { left: s2, top: i2, width: h2, height: n2 } = e2;
-  return _ = b > s2 ? p(_, h2 - (b - s2)) : p(h2, _ - (s2 - b)), w = g > i2 ? p(w, n2 - (g - i2)) : p(n2, w - (i2 - g)), { src: { left: b > s2 ? 0 : s2 - b, top: g > i2 ? 0 : i2 - g, width: _, height: w }, dest: { left: b > s2 ? b - s2 : 0, top: g > i2 ? g - i2 : 0, width: _, height: w } };
+  return g = b > s2 ? p(g, h2 - (b - s2)) : p(h2, g - (s2 - b)), w = _ > i2 ? p(w, n2 - (_ - i2)) : p(n2, w - (i2 - _)), { src: { left: b > s2 ? 0 : s2 - b, top: _ > i2 ? 0 : i2 - _, width: g, height: w }, dest: { left: b > s2 ? b - s2 : 0, top: _ > i2 ? _ - i2 : 0, width: g, height: w } };
 }
 function v(t2, e2, s2) {
   const { left: i2, top: h2, width: n2, height: o2 } = t2;
@@ -569,10 +569,10 @@ class I {
       return void (s2.length = 0);
     s2.length = G(a2 * r2);
     const c2 = l2.height, p2 = l2.width, u2 = n2 + a2, m2 = o2 + r2;
-    let b2 = -1, g2 = 0;
+    let b2 = -1, _2 = 0;
     for (let t3 = o2; t3 < m2; ++t3)
       for (let e3 = n2; e3 < u2; ++e3)
-        g2 = e3 >= p2 || t3 >= c2 ? 0 : d2[t3 * p2 + e3], s2[++b2] = g2;
+        _2 = e3 >= p2 || t3 >= c2 ? 0 : d2[t3 * p2 + e3], s2[++b2] = _2;
   }
 }
 class N {
@@ -779,14 +779,14 @@ class P extends N {
               const n3 = window.innerHeight / h3, o3 = 0.5 * (window.innerWidth - i3 * n3);
               return H.x = k(t3.clientX - s3.left - o3, 0, i3 * n3, 0, e4.width), H.y = k(t3.clientY - s3.top, 0, h3 * n3, 0, e4.height), H;
             }(t2, this._el, this.getCoordinate(), this._width, this._height);
-            c2 = e3.x, p2 = e3.y;
+            c2 = e3.x / this._pxr, p2 = e3.y / this._pxr;
           }
           for (s2 && (c2 += s2.left, p2 += s2.top); i2 && !i2.handleInteraction(c2, p2, t2); )
             i2 = i2.last;
           break;
         case "wheel":
-          const { deltaX: u2, deltaY: m2 } = t2, b2 = 20, g2 = 0 === u2 ? 0 : u2 > 0 ? b2 : -b2, _2 = 0 === m2 ? 0 : m2 > 0 ? b2 : -b2;
-          this.panViewport(s2.left + g2, s2.top + _2, true);
+          const { deltaX: u2, deltaY: m2 } = t2, b2 = 20, _2 = 0 === u2 ? 0 : u2 > 0 ? b2 : -b2, g2 = 0 === m2 ? 0 : m2 > 0 ? b2 : -b2;
+          this.panViewport(s2.left + _2, s2.top + g2, true);
       }
     this._prevDef && (t2.stopPropagation(), t2.preventDefault()), this._animate || this.invalidate();
   }
@@ -947,7 +947,7 @@ class B extends N {
     return this._tf;
   }
   isVisible(t2) {
-    return !!this.canvas && (e2 = this._tfb || this._bounds, s2 = t2 ?? this.canvas.bbox, { left: b, top: g } = e2, b + e2.width >= s2.left && b <= s2.right && g + e2.height >= s2.top && g <= s2.bottom);
+    return !!this.canvas && (e2 = this._tfb || this._bounds, s2 = t2 ?? this.canvas.bbox, { left: b, top: _ } = e2, b + e2.width >= s2.left && b <= s2.right && _ + e2.height >= s2.top && _ <= s2.bottom);
     var e2, s2;
   }
   insideBounds(t2, e2) {
@@ -1092,7 +1092,7 @@ class B extends N {
         return v(t3, 1, i3);
       const { left: h3, top: n2, width: o2, height: a2 } = v(t3, s3, i3);
       if (0 !== e3) {
-        const t4 = -o2 * m, s4 = o2 * m, r2 = o2 * m, d2 = -o2 * m, l2 = a2 * m, c2 = a2 * m, b2 = -a2 * m, g2 = -a2 * m, _2 = e3 * f, w2 = Math.cos(_2), G2 = Math.sin(_2), Z2 = t4 * w2 + l2 * G2, v2 = -t4 * G2 + l2 * w2, X2 = s4 * w2 + c2 * G2, x2 = -s4 * G2 + c2 * w2, R2 = r2 * w2 + b2 * G2, C2 = -r2 * G2 + b2 * w2, L2 = d2 * w2 + g2 * G2, y2 = -d2 * G2 + g2 * w2, W2 = p(Z2, X2, R2, L2), S2 = u(Z2, X2, R2, L2), Y2 = p(v2, x2, C2, y2), z2 = u(v2, x2, C2, y2);
+        const t4 = -o2 * m, s4 = o2 * m, r2 = o2 * m, d2 = -o2 * m, l2 = a2 * m, c2 = a2 * m, b2 = -a2 * m, _2 = -a2 * m, g2 = e3 * f, w2 = Math.cos(g2), G2 = Math.sin(g2), Z2 = t4 * w2 + l2 * G2, v2 = -t4 * G2 + l2 * w2, X2 = s4 * w2 + c2 * G2, x2 = -s4 * G2 + c2 * w2, R2 = r2 * w2 + b2 * G2, C2 = -r2 * G2 + b2 * w2, L2 = d2 * w2 + _2 * G2, y2 = -d2 * G2 + _2 * w2, W2 = p(Z2, X2, R2, L2), S2 = u(Z2, X2, R2, L2), Y2 = p(v2, x2, C2, y2), z2 = u(v2, x2, C2, y2);
         i3.width = S2 - W2, i3.height = z2 - Y2, i3.left = h3 - (i3.width * m - o2 * m), i3.top = n2 - (i3.height * m - a2 * m);
       }
     }(this._bounds, h2.rotation, h2.scale, this._tfb));

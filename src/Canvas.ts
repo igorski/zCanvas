@@ -579,9 +579,13 @@ export default class Canvas extends DisplayObject<Canvas> {
                 case "mouseup":
                     let { offsetX, offsetY } = ( event as MouseEvent );
                     if ( this._isFs ) {
-                        const transformed = transformPointer( event as MouseEvent, this._el, this.getCoordinate(), this._width, this._height );
-                        offsetX = transformed.x;
-                        offsetY = transformed.y;
+                        const transformed = transformPointer(
+                            event as MouseEvent, this._el, this.getCoordinate(),
+                            this._width, this._height
+                        );
+                        // note we also need to take HDPI scale into account
+                        offsetX = transformed.x / this._pxr;
+                        offsetY = transformed.y / this._pxr;
                     }
                     if ( viewport ) {
                         offsetX += viewport.left;
