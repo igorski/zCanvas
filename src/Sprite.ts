@@ -502,7 +502,7 @@ export default class Sprite extends DisplayObject<Sprite> {
 
         // update dimensions, when provided
 
-        if ( typeof width  === "number" ) {
+        if ( typeof width === "number" ) {
             this.setWidth( width );
         }
 

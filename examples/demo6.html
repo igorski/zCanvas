@@ -67,7 +67,7 @@ addCanvasDemoControls( demoContainer, cvs );
 // create a Sprite to render a placeholder message
 class TextSprite extends Sprite {
     constructor( text, opts ) {
-        super( opts );
+        super({ width: 10, height: 10, ...opts }); // dimensions will be calculated on render
         this.textProps = { text, color: "#000", font: "Arial", size: 24, unit: "pt", center: true };
     }
     draw( renderer ) {
@@ -80,7 +80,7 @@ cvs.addChild( text );
 // create the Sprite that will represent the loaded image
 class CroppableImage extends Sprite {
     constructor( opts ) {
-        super( opts );
+        super({ interactive: true, width: 1, height: 1 }); // dimensions will be updated on file load
     }
 
     // override the setBounds method (invoked by the pointer event handlers) as
@@ -100,7 +100,7 @@ class CroppableImage extends Sprite {
         this.setY( Math.min( 0, Math.max( maxY, y )));
     }
 };
-const sprite = new CroppableImage({ interactive: true });
+const sprite = new CroppableImage();
 
 // enable in-bounds Sprite dragging
 sprite.setDraggable( true, true );
@@ -109,8 +109,8 @@ cvs.addChild( sprite );
 // STEP 2 : ATTACH LISTENERS TO FORM ELEMENTS
 // ------------------------------------------
 
-let orgImageWidth  = 0;
-let orgImageHeight = 0;
+let width  = 0;
+let height = 0;
 let minImageWidth  = 0;
 let minImageHeight = 0;
 
@@ -139,21 +139,18 @@ document.getElementById( "file" ).onchange = event => {
 
     const file = files[ 0 ];
     cvs.disposeResource( "loadedFile" ); // unload any previously registered resource under the same name
-    cvs.loadResource( "loadedFile", file ).then( imgSize => {
-        orgImageWidth  = imgSize.width;
-        orgImageHeight = imgSize.height;
-
+    cvs.loadResource( "loadedFile", file ).then(({ width, height }) => {
         const canvasWidth  = cvs.getWidth();
         const canvasHeight = cvs.getHeight();
 
         // image dimensions at the default (=lowest) zoom level should match canvas dimensions
 
-        const isLandscape = orgImageWidth >= orgImageHeight;
+        const isLandscape = width >= height;
         if ( isLandscape ) {
             minImageWidth  = canvasWidth;
-            minImageHeight = canvasWidth * ( orgImageHeight / orgImageWidth );
+            minImageHeight = canvasWidth * ( height / width );
         } else {
-            minImageWidth  = canvasHeight * ( orgImageWidth / orgImageHeight );
+            minImageWidth  = canvasHeight * ( width / height );
             minImageHeight = canvasHeight;
         }
 
@@ -169,6 +166,7 @@ document.getElementById( "file" ).onchange = event => {
 
         // set the loaded image Bitmap as the Sprite image source using calculated dimensions
         sprite.setResource( "loadedFile", minImageWidth, minImageHeight );
+        sprite.setBounds( 0, 0, minImageWidth, minImageHeight );
 
         cvs.removeChild( text ); // remove the placeholder text
     }).catch(() => {
@@ -196,7 +194,7 @@ document.getElementById( "scale" ).oninput = event => {
     );
 };
 
-// download zCanvas contents as an image file
+// download zCanvas on-screen content as an image file
 
 document.getElementById( "save" ).onclick = () => {
     const snapshot = cvs.getElement().toDataURL( "image/png" );
