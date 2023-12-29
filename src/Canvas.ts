@@ -49,7 +49,6 @@ interface CanvasProps {
     width?: number;
     height?: number;
     fps?: number;
-    scale?: number;
     backgroundColor?: string;
     animate?: boolean;
     smoothing?: boolean;

@@ -112,7 +112,7 @@ describe( "Sprite", () => {
             expect( sprite._mask ).toBe( true );
         });
 
-        it( "should not construct with a spritesheet when no resourceId was provided", () => {
+        it( "should not construct with a sprite sheet when no resourceId was provided", () => {
             expect(() => {
                 new Sprite({ width, height, sheet: [ {} ] });
             }).toThrow( /cannot use a spritesheet without a valid resource id/ );
@@ -978,16 +978,17 @@ describe( "Sprite", () => {
         expect( child.canvas ).toEqual( canvas );
     });
 
-    it( "should accept alternative dimensions for the spritesheet tiles", () => {
+    it( "should accept alternative dimensions for the sprite sheet tiles", () => {
+        const sprite = new Sprite({ width, height });
+
         const sheet = [
             { row: 0, col: 0, amount: 5, fpt: 5 }
         ];
         const tileWidth  = Math.round( Math.random() * 100 );
         const tileHeight = Math.round( Math.random() * 100 );
-        const sprite = new Sprite({
-            width, height, sheet, resourceId,
-            sheetTileWidth: tileWidth, sheetTileHeight: tileHeight
-        });
+      
+        sprite.setSheet( sheet, tileWidth, tileHeight )
+
         // @ts-expect-error snooping on protected property
         const animation = sprite._animation!;
 
@@ -1020,7 +1021,7 @@ describe( "Sprite", () => {
             expect( child2updateSpy ).toHaveBeenCalledWith( now, elapsedFrames );
         });
 
-        describe( "and the Sprite has a spritesheet animation", () => {
+        describe( "and the Sprite has a sprite sheet animation", () => {
             it( "should render its Bitmap in tiles", () => {
                 const sheet = [
                     { row: 0, col: 0, amount: 5, fpt: 5 }

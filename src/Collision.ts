@@ -46,10 +46,10 @@ export default class Collision {
     }
     
     /**
-     * retrieve all children in given Sprite list that are currently residing at
-     * a given coordinate and rectangle, can be used in conjunction with sprite
-     * "collidesWith"-method to query only the objects that are in its vicinity, greatly
-     * freeing up CPU resources by not checking against out of bounds objects
+     * Retrieves all children in given Sprite list that are currently residing at
+     * given rectangle. Can be used in conjunction with the "collidesWith"-method of
+     * the Sprite class to query only the objects that are in its vicinity, greatly
+     * freeing up CPU resources by not checking against out of bounds objects.
      *
      * @param {Sprite[]} sprites
      * @param {number} x x-coordinate
@@ -59,7 +59,7 @@ export default class Collision {
      * @param {boolean=} collidablesOnly optionally only return children that are collidable. defaults to false
      * @return {Sprite[]}
      */
-    getChildrenUnderPoint( sprites: Sprite[], x: number, y: number, width: number, height: number, collidablesOnly = false ): Sprite[] {
+    getChildrenInArea( sprites: Sprite[], x: number, y: number, width: number, height: number, collidablesOnly = false ): Sprite[] {
         const out: Sprite[] = [];
 
         let i = sprites.length;
@@ -195,7 +195,7 @@ export default class Collision {
      * @param {Rectangle} rect
      * @param {number[]} pixels Array to write pixels into
      */
-    getPixelArray( sprite: Sprite, rect: Rectangle, pixels: number[] ): void {
+    protected getPixelArray( sprite: Sprite, rect: Rectangle, pixels: number[] ): void {
         const resourceId = sprite.getResourceId();
 
         if ( !this.hasCache( resourceId ) ) {

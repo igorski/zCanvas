@@ -391,7 +391,7 @@ function handleGameLoop( timestamp, framesSinceLastUpdate ) {
 
         // resolve collisions with other Actors in its vicinity
 
-        const others = cvs.collision.getChildrenUnderPoint( actors, actorX, actorY, actorWidth, actorHeight );
+        const others = cvs.collision.getChildrenInArea( actors, actorX, actorY, actorWidth, actorHeight );
         if ( others.length > 0 ) {
             for ( let j = 0, l = others.length; j <l; ++j ) {
                 const other = others[ j ];

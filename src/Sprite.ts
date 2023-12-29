@@ -30,18 +30,16 @@ const { min, max } = Math;
 const HALF = 0.5;
 
 interface SpriteProps {
-    width: number,
-    height: number,
-    x?: number,
-    y?: number,
-    rotation?: number,
-    resourceId?: string,
-    collidable?: boolean,
-    interactive?: boolean,
-    mask?: boolean,
-    sheet?: SpriteSheet[],
-    sheetTileWidth?: number,
-    sheetTileHeight?: number,
+    width: number;
+    height: number;
+    x?: number;
+    y?: number;
+    rotation?: number;
+    resourceId?: string;
+    collidable?: boolean;
+    interactive?: boolean;
+    mask?: boolean;
+    sheet?: SpriteSheet[];
 }
 
 type TransformProps = { scale: number, rotation: number, alpha: number };
@@ -103,9 +101,7 @@ export default class Sprite extends DisplayObject<Sprite> {
         collidable = false,
         interactive = false,
         mask = false,
-        sheet = [],
-        sheetTileWidth = 0,
-        sheetTileHeight = 0
+        sheet,
     }: SpriteProps ) {
         super();
 
@@ -132,11 +128,11 @@ export default class Sprite extends DisplayObject<Sprite> {
             this.setResource( resourceId );
         }
 
-        if ( sheet.length > 0 ) {
+        if ( sheet ) {
             if ( !resourceId ) {
                 throw new Error( "cannot use a spritesheet without a valid resource id" );
             }
-            this.setSheet( sheet, sheetTileWidth, sheetTileHeight );
+            this.setSheet( sheet, width, height );
         }
         this.setInteractive( interactive );
     }
@@ -381,8 +377,8 @@ export default class Sprite extends DisplayObject<Sprite> {
         return this._dp?.scale ?? 1;
     }
 
-    setScale( scale: number ): void {
-        this.invalidateDrawProps({ scale });
+    setScale( scaleFactor: number ): void {
+        this.invalidateDrawProps({ scale: scaleFactor });
     }
 
     /**
@@ -429,7 +425,8 @@ export default class Sprite extends DisplayObject<Sprite> {
         if ( sprite === this ) {
             return false;
         }
-        const self = this._bounds, compare = sprite.getBounds();
+        const self = this.getBounds( true );
+        const compare = sprite.getBounds( true );
 
         return !(
             (( self.top + self.height ) < ( compare.top )) ||
@@ -445,7 +442,8 @@ export default class Sprite extends DisplayObject<Sprite> {
      */
     getIntersection( sprite: Sprite ): Rectangle | undefined {
         if ( this.collidesWith( sprite )) {
-            const self = this._bounds, compare = sprite.getBounds();
+            const self = this._bounds;
+            const compare = sprite.getBounds();
 
             const x = max( self.left, compare.left );
             const y = max( self.top,  compare.top );
@@ -462,7 +460,7 @@ export default class Sprite extends DisplayObject<Sprite> {
      * with the edges of this sprite, this can be used as a fast method to detect whether
      * movement should be impaired on either side of this sprite (for instance wall collision detection)
      *
-     * NOTE : ONLY query against results of canvas' "getChildrenUnderPoint"-method as for brevity (and speeds)
+     * NOTE : ONLY query against results of Collisions "getChildrenInArea"-method as for brevity (and speeds)
      * sake, we only check the desired plane, and not against the other axis.
      *
      * @public
@@ -544,16 +542,9 @@ export default class Sprite extends DisplayObject<Sprite> {
             maxCol     : 0, // the maximum horizontal index that is allowed before the animation should loop
             fpt        : 0, // "frames per tile" what is the max number of count before we switch tile
             counter    : 0, // the frame counter that is increased on each frame render
-            tileWidth  : this.getWidth(),
-            tileHeight : this.getHeight(),
+            tileWidth  : width  ?? this.getWidth(),
+            tileHeight : height ?? this.getHeight(),
         };
-
-        if ( typeof width  === "number" ) {
-            this._animation.tileWidth = width;
-        }
-        if ( typeof height === "number" ) {
-            this._animation.tileHeight = height;
-        }
         this.switchAnimation( 0 ); // by default select first animation from list
     }
 

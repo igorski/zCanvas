@@ -518,7 +518,7 @@ class F {
   dispose() {
     this._cacheMap.clear(), this._cacheMap = void 0;
   }
-  getChildrenUnderPoint(t2, e2, s2, i2, h2, n2 = false) {
+  getChildrenInArea(t2, e2, s2, i2, h2, n2 = false) {
     const o2 = [];
     let a2, r2, d2, l2, c2, p2 = t2.length;
     for (; p2--; )
@@ -848,13 +848,13 @@ class Q extends P {
 }
 const { min: J, max: B } = Math, U = 0.5;
 class T extends P {
-  constructor({ resourceId: t2, x: e2 = 0, y: s2 = 0, width: i2 = 10, height: h2 = 10, rotation: n2 = 0, collidable: o2 = false, interactive: a2 = false, mask: r2 = false, sheet: d2 = [], sheetTileWidth: l2 = 0, sheetTileHeight: c2 = 0 }) {
+  constructor({ resourceId: t2, x: e2 = 0, y: s2 = 0, width: i2 = 10, height: h2 = 10, rotation: n2 = 0, collidable: o2 = false, interactive: a2 = false, mask: r2 = false, sheet: d2 }) {
     if (super(), this.hover = false, this.isDragging = false, this._mask = false, this._interactive = false, this._draggable = false, this._keepInBounds = false, this._pressed = false, i2 <= 0 || h2 <= 0)
       throw new Error("cannot construct a Sprite without valid dimensions");
-    if (this.collidable = o2, this._mask = r2, this._bounds = { left: e2, top: s2, width: i2, height: h2 }, r2 && this.gdp(), 0 !== n2 && this.setRotation(n2), t2 && this.setResource(t2), d2.length > 0) {
+    if (this.collidable = o2, this._mask = r2, this._bounds = { left: e2, top: s2, width: i2, height: h2 }, r2 && this.gdp(), 0 !== n2 && this.setRotation(n2), t2 && this.setResource(t2), d2) {
       if (!t2)
         throw new Error("cannot use a spritesheet without a valid resource id");
-      this.setSheet(d2, l2, c2);
+      this.setSheet(d2, i2, h2);
     }
     this.setInteractive(a2);
   }
@@ -957,7 +957,7 @@ class T extends P {
   collidesWith(t2) {
     if (t2 === this)
       return false;
-    const e2 = this._bounds, s2 = t2.getBounds();
+    const e2 = this.getBounds(true), s2 = t2.getBounds(true);
     return !(e2.top + e2.height < s2.top || e2.top > s2.top + s2.height || e2.left + e2.width < s2.left || e2.left > s2.left + s2.width);
   }
   getIntersection(t2) {
@@ -990,7 +990,7 @@ class T extends P {
     return this._resourceId;
   }
   setSheet(t2, e2, s2) {
-    this._sheet = t2, t2 ? (this._animation = { type: null, col: 0, maxCol: 0, fpt: 0, counter: 0, tileWidth: this.getWidth(), tileHeight: this.getHeight() }, "number" == typeof e2 && (this._animation.tileWidth = e2), "number" == typeof s2 && (this._animation.tileHeight = s2), this.switchAnimation(0)) : this._animation = void 0;
+    this._sheet = t2, t2 ? (this._animation = { type: null, col: 0, maxCol: 0, fpt: 0, counter: 0, tileWidth: e2 ?? this.getWidth(), tileHeight: s2 ?? this.getHeight() }, this.switchAnimation(0)) : this._animation = void 0;
   }
   switchAnimation(t2) {
     const e2 = this._animation, s2 = this._sheet[t2];

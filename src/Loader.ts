@@ -99,7 +99,7 @@ const Loader = {
         });
     },
 
-    async loadBitmap( source: string ): Promise<ImageBitmap> {
+    async loadBitmap( source: string | Blob | File ): Promise<ImageBitmap> {
         const { image } = await Loader.loadImage( source );
         return imageToBitmap( image );
     },
