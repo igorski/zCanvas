@@ -212,7 +212,7 @@ export default class Collision {
 
         const { mask: data, size } = this._cacheMap.get( resourceId );
 
-        if ( width === 0 || height === 0 ) {
+        if ( width <= 0 || height <= 0 ) {
             pixels.length = 0;
             return;
         }

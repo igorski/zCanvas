@@ -11,11 +11,11 @@ describe( "Collision", () => {
     let renderer: RenderAPI;
 
     beforeEach(() => {
-        renderer = new RenderAPI( document.createElement( "canvas" ));
+        renderer  = new RenderAPI( document.createElement( "canvas" ));
         collision = new Collision( renderer );
         
         vi.spyOn( renderer, "loadResource" ).mockImplementation( function( id: string, source: ImageSource ): Promise<Size> {
-            this._renderer.cacheResource( id, document.createElement( "canvas" ));
+            this._rdr.cacheResource( id, document.createElement( "canvas" ));
             return Promise.resolve({ width: 640, height: 320 })
         });
     });

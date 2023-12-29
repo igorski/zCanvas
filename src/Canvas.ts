@@ -81,19 +81,19 @@ export default class Canvas extends DisplayObject<Canvas> {
     public collision: Collision;
     public bbox: BoundingBox = { left: 0, top: 0, right: 0, bottom: 0 }; // relative to Sprites, not DOM!
 
-    protected _element: HTMLCanvasElement;
-    protected _renderer: RenderAPI;
-    protected _viewport: Viewport | undefined;
-    protected _smoothing = false;
-    protected _stretchToFit = false;
+    protected _el: HTMLCanvasElement; // the HTMLCanvasElement managed by this zCanvas
+    protected _rdr: RenderAPI;        // the RenderAPI used for drawing on the canvas
+    protected _vp: Viewport | undefined; // optional Viewport
+    protected _smooth = false;
+    protected _stretch = false;
     protected _pxr = 1;
 
-    protected _renderHandler: ( now: DOMHighResTimeStamp ) => void;
-    protected _updateHandler?: ( now: DOMHighResTimeStamp, framesSinceLastRender: number ) => void;
-    protected _resizeHandler?: ( width: number, height: number ) => void;
-    protected _viewportHandler?: ({}: { type: "panned", value: Viewport }) => void;
-    protected _eventHandler: EventHandler;
-    protected _preventDefaults = false;
+    protected _renHdlr: ( now: DOMHighResTimeStamp ) => void;
+    protected _upHdlr?: ( now: DOMHighResTimeStamp, framesSinceLastRender: number ) => void;
+    protected _resHdrl?: ( width: number, height: number ) => void;
+    protected _vpHdlr?: ({}: { type: "panned", value: Viewport }) => void;
+    protected _hdlr: EventHandler; // event handler map
+    protected _prevDef = false;    // whether to prevent Event defaults
   
     protected _lastRender = 0;
     protected _renderId = 0;
@@ -101,24 +101,24 @@ export default class Canvas extends DisplayObject<Canvas> {
   
     protected _disposed = false;
     protected _scale: Point = { x: 1, y: 1 };
-    protected _activeTouches: Sprite[] = [];
+    protected _aTchs: Sprite[] = []; // Sprites that are currently mapped to touch pointers
     protected _coords: DOMRect | undefined;
     protected _width: number;
     protected _height: number;
-    protected _enqueuedSize: Size | undefined;
-    protected _preferredWidth: number;
-    protected _preferredHeight: number;
-
+    protected _prefWidth: number;
+    protected _prefHeight: number;
+    protected _qSize: Size | undefined; // size enqueued to be set on next render cycle
+    
     protected _animate = false;
     protected _lastRaf: DOMHighResTimeStamp;
-    protected _fps: number; // intended framerate
-    protected _aFps: number; // actual framerate (calculated at runtime)
-    protected _renderInterval: number;
+    protected _fps: number;   // intended framerate
+    protected _aFps: number;  // actual framerate (calculated at runtime)
+    protected _rIval: number; // the render interval
     protected _bgColor: string | undefined;
 
-    protected _hasFsHandler = false;
-    protected _isFullScreen = false;
-
+    protected _isFs = false;   // whether zCanvas is currently fullscreen
+    protected _hasFsH = false; // whether a fullscreen handler is registered
+    
     constructor({
         width = 300,
         height = 300,
@@ -145,14 +145,14 @@ export default class Canvas extends DisplayObject<Canvas> {
 
         this.DEBUG = debug;
 
-        this._element  = document.createElement( "canvas" );
-        this._renderer = new RenderAPI( this._element, useWorker( optimize ), debug );
-        this.collision = new Collision( this._renderer );
+        this._el  = document.createElement( "canvas" );
+        this._rdr = new RenderAPI( this._el, useWorker( optimize ), debug );
+        this.collision = new Collision( this._rdr );
 
-        this._updateHandler   = onUpdate;
-        this._renderHandler   = this.render.bind( this );
-        this._viewportHandler = viewportHandler;
-        this._resizeHandler   = onResize;
+        this._upHdlr   = onUpdate;
+        this._renHdlr   = this.render.bind( this );
+        this._vpHdlr = viewportHandler;
+        this._resHdrl   = onResize;
 
         this.setFrameRate( fps );
         this.setAnimatable( animate );
@@ -164,13 +164,13 @@ export default class Canvas extends DisplayObject<Canvas> {
         // ensure all is crisp clear on HDPI screens
 
         this._pxr = window.devicePixelRatio || 1;
-        this._renderer.setPixelRatio( this._pxr );
+        this._rdr.setPixelRatio( this._pxr );
 
         this.setDimensions( width, height, true, true );
         if ( viewport ) {
             this.setViewport( viewport.width, viewport.height );
         }
-        this._stretchToFit = stretchToFit;
+        this._stretch = stretchToFit;
 
         this.setSmoothing( smoothing );
         this.preventEventBubbling( preventEventBubbling );
@@ -185,19 +185,19 @@ export default class Canvas extends DisplayObject<Canvas> {
     /* public methods */
 
     loadResource( id: string, source: ImageSource ): Promise<Size> {
-        return this._renderer.loadResource( id, source );
+        return this._rdr.loadResource( id, source );
     }
 
     getResource( id: string ): Promise<ImageBitmap | undefined> {
-        return this._renderer.getResource( id );
+        return this._rdr.getResource( id );
     }
 
     disposeResource( id: string ): void {
-        return this._renderer.disposeResource( id );
+        return this._rdr.disposeResource( id );
     }
 
     getRenderer(): IRenderer {
-        return this._renderer;
+        return this._rdr;
     }
 
     /**
@@ -207,10 +207,10 @@ export default class Canvas extends DisplayObject<Canvas> {
      * @param {HTMLElement} container DOM node to append the Canvas to
      */
     insertInPage( container: HTMLElement ): void {
-        if ( this._element.parentNode ) {
+        if ( this._el.parentNode ) {
             throw new Error( "Canvas already present in DOM" );
         }
-        container.appendChild( this._element );
+        container.appendChild( this._el );
     }
 
     /**
@@ -218,7 +218,7 @@ export default class Canvas extends DisplayObject<Canvas> {
      * to render this Canvas' contents
      */
     getElement(): HTMLCanvasElement {
-        return this._element;
+        return this._el;
     }
 
     /**
@@ -228,7 +228,7 @@ export default class Canvas extends DisplayObject<Canvas> {
      * and prevent their default behaviour
      */
     preventEventBubbling( value: boolean ): void {
-        this._preventDefaults = value;
+        this._prevDef = value;
     }
 
     override addChild( child: Sprite ): DisplayObject<Canvas> {
@@ -249,7 +249,7 @@ export default class Canvas extends DisplayObject<Canvas> {
     override invalidate(): void {
         if ( !this._animate && !this._renderPending ) {
             this._renderPending = true;
-            this._renderId = window.requestAnimationFrame( this._renderHandler );
+            this._renderId = window.requestAnimationFrame( this._renHdlr );
         }
     }
 
@@ -264,7 +264,7 @@ export default class Canvas extends DisplayObject<Canvas> {
     setFrameRate( value: number ): void {
         this._fps = value;
         this._aFps = value;
-        this._renderInterval = 1000 / value;
+        this._rIval = 1000 / value;
     }
 
     /**
@@ -280,11 +280,11 @@ export default class Canvas extends DisplayObject<Canvas> {
      * render at the current framerate
      */
     getRenderInterval(): number {
-        return this._renderInterval;
+        return this._rIval;
     }
 
     getSmoothing(): boolean {
-        return this._smoothing;
+        return this._smooth;
     }
 
     /**
@@ -294,28 +294,28 @@ export default class Canvas extends DisplayObject<Canvas> {
      */
     setSmoothing( enabled: boolean ): void {
         // 1. update context
-        this._renderer.setSmoothing( enabled );
+        this._rdr.setSmoothing( enabled );
         // 2. update Canvas Element in DOM
         if ( enabled ) {
             // @ts-expect-error TS7015: Element implicitly has an 'any' type because index expression is not of type 'number'.
-            this._element.style[ "image-rendering" ] = "";
+            this._el.style[ "image-rendering" ] = "";
         } else {
             [ "-moz-crisp-edges", "-webkit-crisp-edges", "pixelated", "crisp-edges" ]
             .forEach( style => {
                 // @ts-expect-error TS7015: Element implicitly has an 'any' type because index expression is not of type 'number'.
-                this._element.style[ "image-rendering" ] = style;
+                this._el.style[ "image-rendering" ] = style;
             });
         }
-        this._smoothing = enabled;
+        this._smooth = enabled;
         this.invalidate();
     }
 
     getWidth(): number {
-        return ( this._enqueuedSize ) ? this._enqueuedSize.width : this._width;
+        return ( this._qSize ) ? this._qSize.width : this._width;
     }
 
     getHeight(): number {
-        return ( this._enqueuedSize ) ? this._enqueuedSize.height : this._height;
+        return ( this._qSize ) ? this._qSize.height : this._height;
     }
 
     /**
@@ -331,11 +331,11 @@ export default class Canvas extends DisplayObject<Canvas> {
      *        to prevent flickering of existing screen contents during repeated resize
      */
     setDimensions( width: number, height: number, setAsPreferredDimensions = true, immediate = false ): void {
-        this._enqueuedSize = { width, height };
+        this._qSize = { width, height };
 
         if ( setAsPreferredDimensions ) {
-            this._preferredWidth  = width;
-            this._preferredHeight = height;
+            this._prefWidth  = width;
+            this._prefHeight = height;
         }
 
         if ( immediate ) {
@@ -345,7 +345,7 @@ export default class Canvas extends DisplayObject<Canvas> {
     }
 
     getViewport(): Viewport | undefined {
-        return this._viewport;
+        return this._vp;
     }
 
     /**
@@ -355,10 +355,10 @@ export default class Canvas extends DisplayObject<Canvas> {
      * performance on large Canvas instances by only rendering the visible area.
      */
     setViewport( width: number, height: number ): void {
-        if ( !this._viewport ) {
-            this._viewport = { width, height, left: 0, top: 0, right: width, bottom: height };
+        if ( !this._vp ) {
+            this._vp = { width, height, left: 0, top: 0, right: width, bottom: height };
         }
-        const vp = this._viewport;
+        const vp = this._vp;
 
         vp.width  = width;
         vp.height = height;
@@ -374,7 +374,7 @@ export default class Canvas extends DisplayObject<Canvas> {
      * @param {boolean=} broadcast optionally broadcast change to registered handler
      */
     panViewport( x: number, y: number, broadcast = false ): void {
-        const vp  = this._viewport;
+        const vp  = this._vp;
 
         vp.left   = max( 0, min( x, this._width - vp.width ));
         vp.right  = vp.left + vp.width;
@@ -384,7 +384,7 @@ export default class Canvas extends DisplayObject<Canvas> {
         this.invalidate();
 
         if ( broadcast ) {
-            this._viewportHandler?.({ type: "panned", value: vp });
+            this._vpHdlr?.({ type: "panned", value: vp });
         }
     }
 
@@ -421,7 +421,7 @@ export default class Canvas extends DisplayObject<Canvas> {
         this._scale = { x, y };
 
         const scaleStyle = x === 1 && y === 1 ? "" : `scale(${x}, ${y})`;
-        const { style }  = this._element;
+        const { style }  = this._el;
 
         // @ts-expect-error TS7015: Element implicitly has an 'any' type because index expression is not of type 'number'.
         style[ "-webkit-transform-origin" ] = style[ "transform-origin" ] = "0 0";
@@ -433,33 +433,33 @@ export default class Canvas extends DisplayObject<Canvas> {
     }
     
     stretchToFit( value: boolean ): void {
-        this._stretchToFit = value;
+        this._stretch = value;
         this.handleResize();
     }
 
     setFullScreen( value: boolean, stretchToFit = false ): void {
         if ( !stretchToFit ) {
-            stretchToFit = this._stretchToFit; // take configured value in case it was defined
+            stretchToFit = this._stretch; // take configured value in case it was defined
         }
-        if ( !this._hasFsHandler ) {
-            this._hasFsHandler = true;
+        if ( !this._hasFsH ) {
+            this._hasFsH = true;
             const d = document;
 
             const handleFullScreenChange = (): void => {
                 // @ts-expect-error TS2551 vendor prefixes
-                this._isFullScreen = ( d.webkitIsFullScreen || d.mozFullScreen || d.msFullscreenElement === true );
+                this._isFs = ( d.webkitIsFullScreen || d.mozFullScreen || d.msFullscreenElement === true );
                 if ( stretchToFit ) {
-                    this._stretchToFit = this._isFullScreen;
+                    this._stretch = this._isFs;
                 }
             };
 
             [ "webkitfullscreenchange", "mozfullscreenchange", "fullscreenchange", "MSFullscreenChange" ]
                 .forEach( event => {
-                    this._eventHandler.add( d, event, handleFullScreenChange );
+                    this._hdlr.add( d, event, handleFullScreenChange );
                 });
         }
-        if ( value !== this._isFullScreen ) {
-            toggleFullScreen( this._element );
+        if ( value !== this._isFs ) {
+            toggleFullScreen( this._el );
         }
     }
 
@@ -470,7 +470,7 @@ export default class Canvas extends DisplayObject<Canvas> {
         if ( this._coords === undefined ) {
             // to prevent expensive repeated calls to this method
             // coords should be nulled upon canvas resize or DOM layout changes
-            this._coords = this._element.getBoundingClientRect();
+            this._coords = this._el.getBoundingClientRect();
         }
         return this._coords;
     }
@@ -487,14 +487,14 @@ export default class Canvas extends DisplayObject<Canvas> {
 
         super.dispose();
 
-        if ( this._element.parentNode ) {
-            this._element.parentNode.removeChild( this._element );
+        if ( this._el.parentNode ) {
+            this._el.parentNode.removeChild( this._el );
         }
         
         // debounce disposing the renderer to not conflict with running render cycle
         requestAnimationFrame(() => {
-            this._renderer.dispose();
-            this._renderer = undefined;
+            this._rdr.dispose();
+            this._rdr = undefined;
             this.collision.dispose();
             this.collision = undefined;
         });
@@ -505,7 +505,7 @@ export default class Canvas extends DisplayObject<Canvas> {
 
     protected handleInteraction( event: MouseEvent | TouchEvent | WheelEvent ): void {
         const numChildren = this._children.length;
-        const viewport    = this._viewport;
+        const viewport    = this._vp;
         let theChild;
 
         if ( numChildren > 0 )
@@ -547,8 +547,8 @@ export default class Canvas extends DisplayObject<Canvas> {
                                 // map the touch identifier to this Sprite
                                 case "touchstart":
                                     while ( theChild ) {
-                                        if ( !this._activeTouches.includes( theChild ) && theChild.handleInteraction( eventOffsetX, eventOffsetY, event )) {
-                                            this._activeTouches[ identifier ] = theChild;
+                                        if ( !this._aTchs.includes( theChild ) && theChild.handleInteraction( eventOffsetX, eventOffsetY, event )) {
+                                            this._aTchs[ identifier ] = theChild;
                                             break;
                                         }
                                         theChild = theChild.last;
@@ -558,11 +558,11 @@ export default class Canvas extends DisplayObject<Canvas> {
                                 // on all remaining touch events we retrieve the Sprite associated
                                 // with the event pointer directly
                                 default:
-                                    theChild = this._activeTouches[ identifier ];
+                                    theChild = this._aTchs[ identifier ];
                                     if ( theChild?.handleInteraction( eventOffsetX, eventOffsetY, event )) {
                                         // all events other than touchmove should be treated as a release
                                         if ( event.type !== "touchmove" ) {
-                                            this._activeTouches[ identifier ] = null;
+                                            this._aTchs[ identifier ] = null;
                                         }
                                     }
                                     break;
@@ -577,8 +577,8 @@ export default class Canvas extends DisplayObject<Canvas> {
                 case "mousemove":
                 case "mouseup":
                     let { offsetX, offsetY } = ( event as MouseEvent );
-                    if ( this._isFullScreen ) {
-                        const transformed = transformPointer( event as MouseEvent, this._element, this.getCoordinate(), this._width, this._height );
+                    if ( this._isFs ) {
+                        const transformed = transformPointer( event as MouseEvent, this._el, this.getCoordinate(), this._width, this._height );
                         offsetX = transformed.x;
                         offsetY = transformed.y;
                     }
@@ -604,7 +604,7 @@ export default class Canvas extends DisplayObject<Canvas> {
                     break;
             }
         }
-        if ( this._preventDefaults ) {
+        if ( this._prevDef ) {
             event.stopPropagation();
             event.preventDefault();
         }
@@ -632,8 +632,8 @@ export default class Canvas extends DisplayObject<Canvas> {
         // configured framerate of the canvas (this for instance prevents
         // 120 Hz Apple M1 rendering things too fast when you were expecting 60 fps)
        
-        if ( this._animate && ( delta / this._renderInterval ) < 0.999 ) {
-            this._renderId = window.requestAnimationFrame( this._renderHandler );
+        if ( this._animate && ( delta / this._rIval ) < 0.999 ) {
+            this._renderId = window.requestAnimationFrame( this._renHdlr );
             this._lastRaf = now;
             return;
         }
@@ -658,12 +658,12 @@ export default class Canvas extends DisplayObject<Canvas> {
         }
 
         this._lastRaf    = now;
-        this._lastRender = now - ( delta % this._renderInterval );
+        this._lastRender = now - ( delta % this._rIval );
 
         // in case a resize was requested execute it now as we will
         // immediately draw new contents onto the screen
 
-        if ( this._enqueuedSize ) {
+        if ( this._qSize ) {
             this.updateCanvasSize();
         }
 
@@ -676,15 +676,15 @@ export default class Canvas extends DisplayObject<Canvas> {
         // with the optional background colour, or by clearing all pixel content
 
         if ( this._bgColor ) {
-            this._renderer.drawRect( 0, 0, width, height, this._bgColor );
+            this._rdr.drawRect( 0, 0, width, height, this._bgColor );
         } else {
-            this._renderer.clearRect( 0, 0, width, height );
+            this._rdr.clearRect( 0, 0, width, height );
         }
 
-        const useExternalUpdateHandler = typeof this._updateHandler === "function";
+        const useExternalUpdateHandler = typeof this._upHdlr === "function";
 
         if ( useExternalUpdateHandler ) {
-            this._updateHandler( now, framesSinceLastRender );
+            this._upHdlr( now, framesSinceLastRender );
         }
 
         // draw the children onto the canvas
@@ -696,17 +696,17 @@ export default class Canvas extends DisplayObject<Canvas> {
             if ( !useExternalUpdateHandler ) {
                 theSprite.update( now, framesSinceLastRender );
             }
-            theSprite.draw( this._renderer, this._viewport );
+            theSprite.draw( this._rdr, this._vp );
             theSprite = theSprite.next;
         }
 
-        this._renderer.onCommandsReady();
+        this._rdr.onCommandsReady();
 
         // keep render loop going while Canvas is animatable
 
         if ( !this._disposed && this._animate ) {
             this._renderPending = true;
-            this._renderId = window.requestAnimationFrame( this._renderHandler );
+            this._renderId = window.requestAnimationFrame( this._renHdlr );
         }
 
         if ( this.DEBUG && now > 2 ) {
@@ -728,12 +728,12 @@ export default class Canvas extends DisplayObject<Canvas> {
      * the "children" of the canvas' Display List
      */
     protected addListeners( addResizeListener = false ): void {
-        if ( !this._eventHandler ) {
-            this._eventHandler = new EventHandler();
+        if ( !this._hdlr ) {
+            this._hdlr = new EventHandler();
         }
-        const theHandler  = this._eventHandler;
+        const theHandler  = this._hdlr;
         const theListener = this.handleInteraction.bind( this );
-        const element     = this._element;
+        const element     = this._el;
 
         // use touch events ?
         if ( !!( "ontouchstart" in window )) {
@@ -746,7 +746,7 @@ export default class Canvas extends DisplayObject<Canvas> {
         });
         theHandler.add( window, "mouseup", theListener ); // note: different element in listener
 
-        if ( this._viewport ) {
+        if ( this._vp ) {
             theHandler.add( element, "wheel", theListener );
         }
         if ( addResizeListener ) {
@@ -766,20 +766,20 @@ export default class Canvas extends DisplayObject<Canvas> {
     }
 
     protected removeListeners(): void {
-        this._eventHandler?.dispose();
-        this._eventHandler = undefined;
+        this._hdlr?.dispose();
+        this._hdlr = undefined;
     }
 
     protected handleResize(): void {
         // const { clientWidth, clientHeight } = document.documentElement;
         const { innerWidth, innerHeight } = window;
 
-        let idealWidth  = this._preferredWidth;
-        let idealHeight = this._preferredHeight;
+        let idealWidth  = this._prefWidth;
+        let idealHeight = this._prefHeight;
 
         let scale = 1;
 
-        const stretchToFit = !this._viewport && this._stretchToFit;//( this._stretchToFit || innerWidth < idealWidth || innerHeight < idealHeight );
+        const stretchToFit = !this._vp && this._stretch;//( this._stretchToFit || innerWidth < idealWidth || innerHeight < idealHeight );
 
         if ( stretchToFit ) {
 
@@ -808,7 +808,7 @@ export default class Canvas extends DisplayObject<Canvas> {
             }*/
 
             // when the ideal dimensions exceed the available bounds, scale the Canvas down
-            if ( !this._viewport ) {
+            if ( !this._vp ) {
                 if ( idealWidth > innerWidth ) {
                     scale = innerWidth / idealWidth;
                 }
@@ -823,14 +823,14 @@ export default class Canvas extends DisplayObject<Canvas> {
 
     protected updateCanvasSize(): void {
         // when smoothing is disabled, there's no need to scale to correct for HDPI screen
-        const scaleFactor = this._smoothing ? this._pxr : 1;
+        const scaleFactor = this._smooth ? this._pxr : 1;
 
         let width: number;
         let height: number;
     
-        if ( this._enqueuedSize !== undefined ) {
-            ({ width, height } = this._enqueuedSize );
-            this._enqueuedSize = undefined;
+        if ( this._qSize !== undefined ) {
+            ({ width, height } = this._qSize );
+            this._qSize = undefined;
             this._width  = width;
             this._height = height;
 
@@ -838,12 +838,12 @@ export default class Canvas extends DisplayObject<Canvas> {
             this.bbox.bottom = height;
         }
     
-        if ( this._viewport ) {
+        if ( this._vp ) {
             const cvsWidth  = this._width;
             const cvsHeight = this._height;
     
-            width  = min( this._viewport.width,  cvsWidth );
-            height = min( this._viewport.height, cvsHeight );
+            width  = min( this._vp.width,  cvsWidth );
+            height = min( this._vp.height, cvsHeight );
     
             // in case viewport was panned beyond the new canvas dimensions
             // reset pan to center.
@@ -862,18 +862,18 @@ export default class Canvas extends DisplayObject<Canvas> {
         if ( width && height ) {
             const element = this.getElement();
     
-            this._renderer.setDimensions( width * scaleFactor, height * scaleFactor );
+            this._rdr.setDimensions( width * scaleFactor, height * scaleFactor );
     
             element.style.width  = `${width}px`;
             element.style.height = `${height}px`;
 
-            this._resizeHandler?.( width, height );
+            this._resHdrl?.( width, height );
         }
-        this._renderer.scale( scaleFactor );
+        this._rdr.scale( scaleFactor );
     
         // non-smoothing must be re-applied when the canvas dimensions change...
     
-        this.setSmoothing( this._smoothing );
+        this.setSmoothing( this._smooth );
         this._coords = undefined; // invalidate cached bounding box
     }    
 }

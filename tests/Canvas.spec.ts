@@ -128,7 +128,7 @@ describe( "Canvas", () => {
             const canvas = new Canvas();
 
             // @ts-expect-error snooping on a protected property
-            const spy = vi.spyOn( canvas._renderer, "loadResource" );
+            const spy = vi.spyOn( canvas._rdr, "loadResource" );
             
             const bitmap = createMockImageBitmap();
             canvas.loadResource( "foo", bitmap );
@@ -142,7 +142,7 @@ describe( "Canvas", () => {
             const canvas = new Canvas();
 
             // @ts-expect-error snooping on a protected property
-            const spy = vi.spyOn( canvas._renderer, "getResource" );
+            const spy = vi.spyOn( canvas._rdr, "getResource" );
             
             canvas.getResource( "foo" );
 
@@ -155,7 +155,7 @@ describe( "Canvas", () => {
             const canvas = new Canvas();
 
             // @ts-expect-error snooping on a protected property
-            const spy = vi.spyOn( canvas._renderer, "disposeResource" );
+            const spy = vi.spyOn( canvas._rdr, "disposeResource" );
             
             canvas.disposeResource( "foo" );
 
@@ -864,13 +864,13 @@ describe( "Canvas", () => {
                 canvas.addChild( sprite2 );
 
                 // @ts-expect-error snooping on protected property
-                expect( canvas._activeTouches ).toHaveLength( 0 );
+                expect( canvas._aTchs ).toHaveLength( 0 );
 
                 // @ts-expect-error snooping on protected property
                 canvas.handleInteraction( mockEvent );
 
                 // expect two sprites in the active touch list
-                expect( canvas._activeTouches ).toEqual([ sprite1, sprite2 ]);
+                expect( canvas._aTchs ).toEqual([ sprite1, sprite2 ]);
 
                 mockEvent.type = "touchmove";
                 mockEvent.changedTouches = [
@@ -881,7 +881,7 @@ describe( "Canvas", () => {
                 canvas.handleInteraction( mockEvent );
 
                 // expect touch list to remain unchanged on touch move event
-                expect( canvas._activeTouches ).toEqual([ sprite1, sprite2 ]);
+                expect( canvas._aTchs ).toEqual([ sprite1, sprite2 ]);
 
                 mockEvent.type = "touchend";
                 mockEvent.changedTouches = [
@@ -891,7 +891,7 @@ describe( "Canvas", () => {
                 canvas.handleInteraction( mockEvent );
 
                 // expect touch list to no longer contain sprite associated with removed pointer
-                expect( canvas._activeTouches ).toEqual([ sprite1, null ]);
+                expect( canvas._aTchs ).toEqual([ sprite1, null ]);
 
                 mockEvent.type = "touchstart";
                 mockEvent.changedTouches = [
@@ -901,7 +901,7 @@ describe( "Canvas", () => {
                 canvas.handleInteraction( mockEvent );
 
                 // expect touch list to have added sprite associated with added pointer
-                expect( canvas._activeTouches ).toEqual([ sprite1, sprite2 ]);
+                expect( canvas._aTchs ).toEqual([ sprite1, sprite2 ]);
 
                 mockEvent.type = "touchend";
                 mockEvent.changedTouches = [
@@ -912,7 +912,7 @@ describe( "Canvas", () => {
                 canvas.handleInteraction( mockEvent );
 
                 // expect touch list to no longer contain any mapped sprites
-                expect( canvas._activeTouches ).toEqual([ null, null ]);
+                expect( canvas._aTchs ).toEqual([ null, null ]);
             });
 
             it( "should not trigger a result when the position is out of event bounds", () => {
@@ -964,7 +964,7 @@ describe( "Canvas", () => {
             const canvas = new Canvas();
 
             // @ts-expect-error snooping on a protected property
-            const removeSpy = vi.spyOn( canvas._eventHandler, "dispose" );
+            const removeSpy = vi.spyOn( canvas._hdlr, "dispose" );
 
             canvas.dispose();
 

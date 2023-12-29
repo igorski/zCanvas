@@ -199,8 +199,6 @@ class Ship extends Actor {
                 break;
         }
 
-        // update position, but stay inside Canvas bounds
-
         this.setX( this.getX() + ( this.xSpeed * framesSinceLastUpdate ));
         this.setY( this.getY() + ( this.ySpeed * framesSinceLastUpdate ));
         
@@ -235,6 +233,7 @@ class Player extends Ship {
         }
 
         // the player will be kept inside the visible Canvas bounds
+
         const halfWidth  = this.getWidth()  / 2;
         const halfHeight = this.getHeight() / 2;
 
@@ -347,7 +346,6 @@ for ( let i = 0, total = enemyPool.length; i < total; ++i ) {
     createEnemyFromPool();
 }
 cvs.addChild( cloud );
-
 gameStarted = true;
 
 // STEP 6 : CREATING A CUSTOM UPDATE HANDLER FOR UPDATING THE GAME ENVIRONMENT

@@ -72,7 +72,7 @@ export default class Sprite extends DisplayObject<Sprite> {
     protected _interactive = false;
     protected _draggable = false;
     protected _keepInBounds = false;
-    protected _constraint: Rectangle | undefined;
+    protected _cstrt: Rectangle | undefined; // optional constraint that restricts this Sprites drag movement
     protected _sheet: SpriteSheet[] | undefined;
     protected _animation: {
         type?: SpriteSheet;
@@ -88,17 +88,17 @@ export default class Sprite extends DisplayObject<Sprite> {
     private _dp: DrawProps | undefined; // derived classes should use the protected getter getDrawProps()
     private _tf: TransformProps; // // derived classes should use the protected getter getTransforms()
     
-    protected _pressTime: number;
+    protected _pTime: number; // timestamp at which point the pointer pressed down on this Sprite
     protected _pressed = false;
-    protected _dragStartOffset: Point; // coordinates of this Sprite at the moment drag was started
-    protected _dragStartEventCoordinates: Point; // coordinates of the event at the moment drag was started
+    protected _dro: Point; // coordinates of this Sprite (offset on zCanvas stage) at the moment drag was started
+    protected _drc: Point; // coordinates of the Event (relative to document) at the moment drag was started
 
     constructor({
-        width,
-        height,
         resourceId,
         x = 0,
         y = 0,
+        width = 0,
+        height = 0,
         rotation = 0,
         collidable = false,
         interactive = false,
@@ -106,7 +106,7 @@ export default class Sprite extends DisplayObject<Sprite> {
         sheet = [],
         sheetTileWidth = 0,
         sheetTileHeight = 0
-    }: SpriteProps = { width: 0, height: 0 } ) {
+    }: SpriteProps ) {
         super();
 
         /* assertions */
@@ -160,7 +160,7 @@ export default class Sprite extends DisplayObject<Sprite> {
      */
     setDraggable( draggable: boolean, keepInBounds = false ): void {
         this._draggable    = draggable;
-        this._keepInBounds = this._constraint ? true : keepInBounds;
+        this._keepInBounds = this._cstrt ? true : keepInBounds;
 
         // if we want to drag this Sprite and it isn't interactive, set it as interactive
         // otherwise it will not receive any interaction events from the canvas
@@ -192,8 +192,15 @@ export default class Sprite extends DisplayObject<Sprite> {
     }
 
     setX( value: number ): void {
-        const delta       = value - this._bounds.left;
-        this._bounds.left = this._constraint ? value + this._constraint.left : value;
+        const delta = value - this._bounds.left;
+        if ( delta === 0 ) {
+            return;
+        }
+        this._bounds.left = this._cstrt ? value + this._cstrt.left : value;
+
+        if ( this._tfb ) {
+            this._tfb.left += delta;
+        }
 
         // as the offsets of the children are drawn relative to the Canvas, we
         // must update their offsets by the delta value too
@@ -205,6 +212,7 @@ export default class Sprite extends DisplayObject<Sprite> {
             }
             theChild = theChild.next;
         }
+        this.invalidate();
     }
 
     getY(): number {
@@ -212,8 +220,15 @@ export default class Sprite extends DisplayObject<Sprite> {
     }
 
     setY( value: number ): void {
-        const delta        = value - this._bounds.top;
-        this._bounds.top = this._constraint ? value + this._constraint.top : value;
+        const delta = value - this._bounds.top;
+        if ( delta === 0 ) {
+            return;
+        }
+        this._bounds.top = this._cstrt ? value + this._cstrt.top : value;
+
+        if ( this._tfb ) {
+            this._tfb.top += delta;
+        }
 
         // as the offsets of the children are drawn relative to the Canvas, we
         // must update their offsets by the delta value too
@@ -225,6 +240,7 @@ export default class Sprite extends DisplayObject<Sprite> {
             }
             theChild = theChild.next;
         }
+        this.invalidate();
     }
 
     getWidth(): number {
@@ -232,7 +248,7 @@ export default class Sprite extends DisplayObject<Sprite> {
     }
 
     setWidth( value: number ): void {
-        const prevWidth = this._bounds.width || 0;
+        const prevWidth = this._bounds.width;
         if ( prevWidth === value ) {
             return;
         }
@@ -252,7 +268,7 @@ export default class Sprite extends DisplayObject<Sprite> {
     }
 
     setHeight( value: number ): void {
-        const prevHeight = this._bounds.height || 0;
+        const prevHeight = this._bounds.height;
         if ( prevHeight === value ) {
             return;
         }
@@ -274,18 +290,14 @@ export default class Sprite extends DisplayObject<Sprite> {
      *
      * @param {number} left desired x-coordinate
      * @param {number} top desired y-coordinate
-     * @param {number=} width optionally desired width, defaults to current size
-     * @param {number=} height optionally desired width, defaults to current size
+     * @param {number=} width optionally desired width, defaults to current width
+     * @param {number=} height optionally desired width, defaults to current height
      */
     setBounds( left: number, top: number, width?: number, height?: number ): void {
-        if ( this._constraint ) {
-            left -= this._constraint.left;
-            top  -= this._constraint.top;
+        if ( this._cstrt ) {
+            left -= this._cstrt.left;
+            top  -= this._cstrt.top;
         }
-        else if ( !this.canvas ) {
-            throw new Error( "cannot update position of a Sprite that has no constraint or is not added to a canvas" );
-        }
-
         let invalidateSize = false;
 
         if ( typeof width === "number" ) {
@@ -300,8 +312,8 @@ export default class Sprite extends DisplayObject<Sprite> {
 
         const thisWidth   = this._bounds.width;
         const thisHeight  = this._bounds.height;
-        const stageWidth  = this._constraint ? this._constraint.width  : this.canvas.getWidth();
-        const stageHeight = this._constraint ? this._constraint.height : this.canvas.getHeight();
+        const stageWidth  = this._cstrt ? this._cstrt.width  : this.canvas.getWidth();
+        const stageHeight = this._cstrt ? this._cstrt.height : this.canvas.getHeight();
 
         // keep within bounds ?
 
@@ -310,27 +322,20 @@ export default class Sprite extends DisplayObject<Sprite> {
             // There is a very small chance that the bounds width/height compared to stage width/height
             // is only very slightly different, which will produce a positive numeric result very close to,
             // but not quite zero. To play it safe, we will limit it to a maximum of 0.
+
             const minX = min( 0, -( thisWidth  - stageWidth  ));
             const minY = min( 0, -( thisHeight - stageHeight ));
             const maxX = stageWidth  - thisWidth;
             const maxY = stageHeight - thisHeight;
 
             left = min( maxX, max( left, minX ));
-            top  = min( maxY, max( top, minY ));
+            top  = min( maxY, max( top,  minY ));
         }
         else {
-
-            /*if ( aXPosition < 0 ) {
-            aXPosition = aXPosition - ( thisWidth  * HALF );
-            }
-            else*/ if ( left > stageWidth ) {
+            if ( left > stageWidth ) {
                 left = left + ( thisWidth  * HALF );
             }
-
-            /*if ( aYPosition < 0 ) {
-            aYPosition = aYPosition - ( thisHeight * HALF );
-            }
-            else*/ if ( top > stageHeight ) {
+            if ( top > stageHeight ) {
                 top = top + ( thisHeight * HALF );
             }
         }
@@ -342,7 +347,18 @@ export default class Sprite extends DisplayObject<Sprite> {
         }
     }
 
-    getBounds(): Rectangle {
+    /**
+     * Get the bounding box of this Sprite.
+     * When updating Sprite position you can work directly with this bounds Object, the transformed coordinates
+     * (in case the Sprite is scaled or rotated) are applied internally.
+     * 
+     * In case you do wish to know the Sprite's fully transformed bounding box, you can pass
+     * boolean true to this function.
+     */
+    getBounds( getTransformed = false ): Rectangle {
+        if ( getTransformed && this._tfb ) {
+            return this._tfb;
+        }
         return this._bounds;
     }
     
@@ -380,7 +396,10 @@ export default class Sprite extends DisplayObject<Sprite> {
      * within the current Viewport / screen offset. Takes transformations into account.
      */
     isVisible( viewport?: Viewport ): boolean {
-        return isInsideArea( this._tfb || this._bounds, viewport ? viewport : this.canvas.bbox );
+        if ( !this.canvas ) {
+            return false;
+        }
+        return isInsideArea( this._tfb || this._bounds, viewport ?? this.canvas.bbox );
     }
 
     /**
@@ -579,7 +598,7 @@ export default class Sprite extends DisplayObject<Sprite> {
      * but this method can be invoked to override it to a custom Rectangle
      */
     setConstraint( left: number, top: number, width: number, height: number ): Rectangle {
-        this._constraint = { left, top, width, height };
+        this._cstrt = { left, top, width, height };
 
         this._bounds.left = max( left, this._bounds.left );
         this._bounds.top  = max( top,  this._bounds.top );
@@ -590,7 +609,7 @@ export default class Sprite extends DisplayObject<Sprite> {
     }
 
     getConstraint(): Rectangle {
-        return this._constraint;
+        return this._cstrt;
     }
 
     override addChild( child: Sprite ): DisplayObject<Sprite> {
@@ -726,7 +745,7 @@ export default class Sprite extends DisplayObject<Sprite> {
     protected getDrawProps(): DrawProps | undefined {
         if ( this._tf ) {
             const { alpha, rotation, scale } = this._tf;
-            const hasChange = this._dp.rotation !== rotation || this._dp.alpha !== alpha || this._dp.scale !== scale;
+            const hasChange = this._dp.alpha !== alpha || this._dp.rotation !== rotation || this._dp.scale !== scale;
             
             if ( hasChange ) {
                 this.invalidateDrawProps({ rotation, alpha, scale });
@@ -776,8 +795,8 @@ export default class Sprite extends DisplayObject<Sprite> {
      */
     // @ts-expect-error TS6133 unused parameters. They are here to provide a clear API for overrides in subclasses
     protected handleMove( x: number, y: number, event: Event ): void {
-        const theX = this._dragStartOffset.x + ( x - this._dragStartEventCoordinates.x );
-        const theY = this._dragStartOffset.y + ( y - this._dragStartEventCoordinates.y );
+        const theX = this._dro.x + ( x - this._drc.x );
+        const theY = this._dro.y + ( y - this._drc.y );
 
         this.setBounds( theX, theY, this._bounds.width, this._bounds.height );
     }
@@ -834,7 +853,7 @@ export default class Sprite extends DisplayObject<Sprite> {
             // in case we only handled this object for a short
             // period (250 ms), we assume it was clicked / tapped
 
-            if (( window.performance.now() - this._pressTime ) < 250 ) {
+            if (( window.performance.now() - this._pTime ) < 250 ) {
                 this.handleClick();
             }
             this.handleRelease( x, y, event );
@@ -858,16 +877,16 @@ export default class Sprite extends DisplayObject<Sprite> {
                  * timestamp of the moment the interaction down handler was triggered, used for
                  * determining on release whether interaction was actually a tap/click
                  */
-                this._pressTime = window.performance.now();
+                this._pTime = window.performance.now();
                 this._pressed = true;
 
                 if ( this._draggable ) {
                     this.isDragging = true;
-                    this._dragStartOffset = {
+                    this._dro = {
                         x: this._bounds.left,
                         y: this._bounds.top
                     };
-                    this._dragStartEventCoordinates = { x, y };
+                    this._drc = { x, y };
                 }
                 this.handlePress( x, y, event );
 
@@ -893,10 +912,7 @@ export default class Sprite extends DisplayObject<Sprite> {
     }
 
     override invalidate() {
-        if ( !this.canvas ) { 
-            return;
-        }
-        this.canvas.invalidate();
+        this.canvas?.invalidate();
     }
 
     /* protected methods */

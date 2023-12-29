@@ -37,52 +37,52 @@ type DrawCommand = ( string | number | DrawProps )[];
  * it to a Worker (when using OffscreenCanvas) or run it inline.
  */
 export default class RenderAPI implements IRenderer {
-    private _element: HTMLCanvasElement;
-    private _renderer: RendererImpl;
+    private _el: HTMLCanvasElement; // reference to the HTMLCanvasElement managed by zCanvas
+    private _rdr: RendererImpl;     // the IRenderer implementation
 
     // when using Workers, we use a post messaging interface which requires a callback system
     // additionally, we send draw commands in batches to minimise overhead of structured cloning
     // command lists and command items are pooled in a Cache to prevent garbage collector hit
 
-    private _worker: Worker;
-    private _useWorker = false;
-    private _pool: Cache<DrawCommand>;
-    private _commands: DrawCommand[];
-    private _callbacks: Map<string, { resolve: ( data?: any ) => void, reject: ( error: Error ) => void }>;
+    private _wkr: Worker;
+    private _useW = false; // whether to use the Worker
+    private _pl: Cache<DrawCommand>; // pool to hold reusable DrawCommands
+    private _cmds: DrawCommand[]; // DrawCommands to be executed on next render
+    private _cbs: Map<string, { resolve: ( data?: any ) => void, reject: ( error: Error ) => void }>;
 
     constructor( canvas: HTMLCanvasElement, useOffscreen = false, debug = false ) {
-        this._element = canvas;
+        this._el = canvas;
 
-        if ( useOffscreen && typeof this._element[ "transferControlToOffscreen" ] === "function" ) {
-            this._useWorker = true;
-            this._callbacks = new Map();
-            this._pool = new Cache(() => ([]), ( cmd: DrawCommand ) => {
+        if ( useOffscreen && typeof this._el[ "transferControlToOffscreen" ] === "function" ) {
+            this._useW = true;
+            this._cbs = new Map();
+            this._pl = new Cache(() => ([]), ( cmd: DrawCommand ) => {
                 cmd.length = 0;
             });
-            this._pool.fill( 1000 ); // allocate memory to hold at least this amount of commands
-            this._commands = [];
+            this._pl.fill( 1000 ); // allocate memory to hold at least this amount of commands
+            this._cmds = [];
             
             const offscreenCanvas = canvas.transferControlToOffscreen();
-            this._worker = new CanvasWorker();
+            this._wkr = new CanvasWorker();
 
-            this._worker.postMessage({
+            this._wkr.postMessage({
                 cmd: "init",
                 canvas: offscreenCanvas,
                 debug,
             }, [ offscreenCanvas ]);
-            this._worker.onmessage = this.handleMessage.bind( this );
+            this._wkr.onmessage = this.handleMessage.bind( this );
         } else {
-            this._renderer = new RendererImpl( this._element, debug );
+            this._rdr = new RendererImpl( this._el, debug );
         }
     }
 
     loadResource( id: string, source: ImageSource ): Promise<Size> {
         return new Promise( async ( resolve, reject ) => {
             if ( source instanceof ImageBitmap ) {
-                if ( this._useWorker ) {
+                if ( this._useW ) {
                     this.wrappedWorkerLoad( id, source as ImageBitmap, resolve, reject, true );
                 } else {
-                    this._renderer.cacheResource( id, source );
+                    this._rdr.cacheResource( id, source );
                     resolve({ width: source.width, height: source.height });
                 }
                 return;
@@ -91,7 +91,7 @@ export default class RenderAPI implements IRenderer {
             if ( typeof source === "string" ) {
                 // relative paths need to be converted to absolute paths or the Worker won't be able to fetch()
                 source = source.startsWith( "./" ) ? new URL( source, document.baseURI ).href : source;
-                if ( this._useWorker ) {
+                if ( this._useW ) {
                     this.wrappedWorkerLoad( id, source as string, resolve, reject );
                 } else {
                     const image = await Loader.loadImage( source );
@@ -106,7 +106,7 @@ export default class RenderAPI implements IRenderer {
             }
             
             if ( source instanceof File ) {
-                if ( this._useWorker ) {
+                if ( this._useW ) {
                     this.wrappedWorkerLoad( id, source as File, resolve, reject );
                 } else {
                     const blob = await readFile( source as File );
@@ -114,7 +114,7 @@ export default class RenderAPI implements IRenderer {
                 }
                 return;
             } else if ( source instanceof Blob ) {
-                if ( this._useWorker ) {
+                if ( this._useW ) {
                     this.wrappedWorkerLoad( id, source as Blob, resolve, reject );
                 } else {
                     this.wrappedLoad( id, source as Blob, resolve, reject );
@@ -127,14 +127,14 @@ export default class RenderAPI implements IRenderer {
 
     getResource( id: string ): Promise<ImageBitmap | undefined> {
         return new Promise(( resolve, reject ) => {
-            if ( this._useWorker ) {
-                this._callbacks.set( id, { resolve, reject });
-                this._worker.postMessage({
+            if ( this._useW ) {
+                this._cbs.set( id, { resolve, reject });
+                this._wkr.postMessage({
                     cmd: "getResource",
                     id,
                 });
             } else {
-                resolve( this._renderer.getResource( id ));
+                resolve( this._rdr.getResource( id ));
             }
         });
     }
@@ -144,24 +144,24 @@ export default class RenderAPI implements IRenderer {
     }
 
     onCommandsReady(): void {
-        if ( !this._useWorker ) {
+        if ( !this._useW ) {
             return; // commands have been executed synchronously in non-Worker version
         }
-        this._worker.postMessage({
+        this._wkr.postMessage({
             cmd: "render",
-            commands: this._commands,
+            commands: this._cmds,
         });
-        this._commands.length = 0; // commands have been sent to Worker using structured cloning
-        this._pool.reset(); // reset Pool for next render cycle
+        this._cmds.length = 0; // commands have been sent to Worker using structured cloning
+        this._pl.reset(); // reset Pool for next render cycle
     }
 
     dispose(): void {
         this.getBackend( "dispose" );
 
         setTimeout(() => {
-            this._worker?.terminate();
-            this._worker = undefined; 
-            this._callbacks?.clear();
+            this._wkr?.terminate();
+            this._wkr = undefined; 
+            this._cbs?.clear();
         }, 50 );
     }
 
@@ -171,31 +171,31 @@ export default class RenderAPI implements IRenderer {
             default:
                 break;
             case "onload":
-                if ( !this._callbacks.has( id )) {
+                if ( !this._cbs.has( id )) {
                     return;
                 }
-                this._callbacks.get( id ).resolve( message.data.size );
-                this._callbacks.delete( id );
+                this._cbs.get( id ).resolve( message.data.size );
+                this._cbs.delete( id );
                 break;
 
             case "onerror":
-                if ( !this._callbacks.has( id )) {
+                if ( !this._cbs.has( id )) {
                     return;
                 }
-                this._callbacks.get( id ).reject( new Error( message.data.error ));
-                this._callbacks.delete( id );
+                this._cbs.get( id ).reject( new Error( message.data.error ));
+                this._cbs.delete( id );
                 break;
 
             case "onresource":
-                this._callbacks.get( id ).resolve( message.data.bitmap );
-                this._callbacks.delete( id );
+                this._cbs.get( id ).resolve( message.data.bitmap );
+                this._cbs.delete( id );
                 break;
         }
     }
 
     private wrappedWorkerLoad( id: string, source: File | Blob | ImageBitmap | string, resolve: ( size: Size ) => void, reject: ( e?: Error ) => void, transferable = false ): void {
-        this._callbacks.set( id, { resolve, reject });
-        this._worker.postMessage({
+        this._cbs.set( id, { resolve, reject });
+        this._wkr.postMessage({
             cmd: "loadResource",
             source, id,
         }, transferable ? [ source as Transferable ]: []);
@@ -204,7 +204,7 @@ export default class RenderAPI implements IRenderer {
     private async wrappedLoad( id: string, image: HTMLImageElement | HTMLCanvasElement | Blob, resolve: ( size: Size ) => void, reject: ( e?: Error ) => void ): Promise<void> {
         try {
             const bitmap = await imageToBitmap( image );
-            this._renderer.cacheResource( id, bitmap );
+            this._rdr.cacheResource( id, bitmap );
 
             resolve({ width: bitmap.width, height: bitmap.height });
         } catch ( e: any ) {
@@ -321,25 +321,25 @@ export default class RenderAPI implements IRenderer {
 
     protected onDraw( cmd: string, ...args: any[] ): void {
         // Worker receives all its commands in a single batch
-        if ( this._useWorker ) {
-            const command = this._pool.next();
+        if ( this._useW ) {
+            const command = this._pl.next();
             command.length = 0;
             command.push( cmd, ...args );
-            this._commands.push( command );
+            this._cmds.push( command );
             return;
         }
         // @ts-expect-error TS2556: A spread argument must either have a tuple type or be passed to a rest parameter.
-        this._renderer[ cmd as keyof IRenderer ]( ...args );
+        this._rdr[ cmd as keyof IRenderer ]( ...args );
     }
 
     protected getBackend( cmd: string, ...args: any[] ): void {
-        if ( this._useWorker ) {
-            return this._worker.postMessage({
+        if ( this._useW ) {
+            return this._wkr.postMessage({
                 cmd,
                 args: [ ...args ],
             });
         }
         // @ts-expect-error TS2556: A spread argument must either have a tuple type or be passed to a rest parameter.
-        this._renderer[ cmd as keyof IRenderer ]( ...args );
+        this._rdr[ cmd as keyof IRenderer ]( ...args );
     }
 }

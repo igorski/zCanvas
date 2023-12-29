@@ -52,7 +52,7 @@ describe( "Sprite", () => {
     describe( "constructor", () => {
         it( "should not construct without valid dimensions specified", () => {
             expect(() => {
-                new Sprite();
+                new Sprite({});
             }).toThrow( /cannot construct a Sprite without valid dimensions/ );
 
             expect(() => {
@@ -165,94 +165,248 @@ describe( "Sprite", () => {
         expect( sprite.getInteractive() ).toBe( false );
     });
 
-    it( "should be able to update its coordinates", () => {
-        const sprite = new Sprite({ x, y, width, height });
+    describe( "when updating the X position", () => {
+        it( "should be able to update its position", () => {
+            const sprite = new Sprite({ x, y, width, height });
 
-        const newX = x + 10;
-        const newY = y + 15;
+            const newX = x + 10;
 
-        sprite.setX( newX );
-        sprite.setY( newY );
+            sprite.setX( newX );
 
-        expect( sprite.getX() ).toEqual( newX );
-        expect( sprite.getY() ).toEqual( newY );
-    });
-
-    it( "should be able to update its coordinates and its child coordinates recursively", () => {
-        const sprite = new Sprite({ x, y, width, height });
-
-        const child1X = x + 10;
-        const child1Y = y + 15;
-        const child2X = x + 20;
-        const child2Y = y + 30;
-
-        const child1  = new Sprite({
-            x: child1X,
-            y: child1Y,
-            width, height
+            expect( sprite.getX() ).toEqual( newX );
         });
 
-        const child2 = new Sprite({
-            x: child2X,
-            y: child2Y,
-            width, height
+        it( "should be able to update its child coordinates recursively", () => {
+            const sprite = new Sprite({ x, y, width, height });
+
+            const child1x = x + 10;
+            const child2x = x + 20;
+
+            const child1 = new Sprite({ x: child1x, width, height });
+            const child2 = new Sprite({ x: child2x, width, height });
+
+            // add child1 onto parent, add child2 onto child1
+            sprite.addChild( child1 );
+            child1.addChild( child2 );
+
+            const newX            = x + 30;
+            const expectedChild1X = child1x + ( newX - sprite.getX() );
+            const expectedChild2X = child2x + ( expectedChild1X - child1.getX() );
+
+            // update coordinate
+            sprite.setX( newX );
+
+            // evaluate child1 coordinates
+
+            expect( child1.getX() ).toEqual( expectedChild1X );
+            expect( child2.getX() ).toEqual( expectedChild2X );
         });
 
-        // add child1 onto parent, add child2 onto child1
-        sprite.addChild( child1 );
-        child1.addChild( child2 );
+        it( "should be able to update the offset of the optionally existing transformed bounds object", () => {
+            const sprite = new Sprite({ x, y, width, height, rotation: 90 });
 
-        const newX            = Math.round( Math.random() * 100 ) + 10;
-        const newY            = Math.round( Math.random() * 100 ) + 10;
-        const expectedChild1X = child1X + ( newX - sprite.getX() );
-        const expectedChild1Y = child1Y + ( newY - sprite.getY() );
-        const expectedChild2X = child2X + ( expectedChild1X - child1.getX() );
-        const expectedChild2Y = child2Y + ( expectedChild1Y - child1.getY() );
+            // @ts-expect-error snooping on private property
+            const existingTransformedLeft = sprite._tfb.left;
 
-        // update coordinates
-        sprite.setX( newX );
-        sprite.setY( newY );
+            sprite.setX( x + 10 );
 
-        // evaluate child1 coordinates
+            // @ts-expect-error snooping on private property
+            expect( sprite._tfb.left ).toEqual( existingTransformedLeft + 10 );
+        });
 
-        expect( child1.getX() ).toEqual( expectedChild1X );
-        expect( child1.getY() ).toEqual( expectedChild1Y );
-        expect( child2.getX() ).toEqual( expectedChild2X );
-        expect( child2.getY() ).toEqual( expectedChild2Y );
+        it( "should invalidate the Canvas when setting a new X position", () => {
+            const sprite = new Sprite({ width, height });
+
+            const invalidateSpy = vi.spyOn( sprite, "invalidate" );
+
+            sprite.setX( sprite.getX() + 10 );
+
+            expect( invalidateSpy ).toHaveBeenCalled();
+        });
+
+        it( "should not do anything when the position hasn't changed", () => {
+            const sprite = new Sprite({ width, height });
+
+            const invalidateSpy = vi.spyOn( sprite, "invalidate" );
+
+            sprite.setX( sprite.getX() );
+
+            expect( invalidateSpy ).not.toHaveBeenCalled();
+        });
     });
 
-    it( "should be able to update its width", () => {
-        const sprite = new Sprite({ x, y, width, height, resourceId });
-        let newWidth = width;
+    describe( "when updating the Y position", () => {
+        it( "should be able to update its position", () => {
+            const sprite = new Sprite({ x, y, width, height });
 
-        while ( width === newWidth ) {
-            newWidth = Math.round( Math.random() * 1000 );
-        }
-        sprite.setWidth( newWidth );
+            const newY = y + 10;
 
-        expect( sprite.getWidth() ).toEqual( newWidth );
+            sprite.setY( newY );
+
+            expect( sprite.getY() ).toEqual( newY );
+        });
+
+        it( "should be able to update its child coordinates recursively", () => {
+            const sprite = new Sprite({ x, y, width, height });
+
+            const child1y = y + 10;
+            const child2y = y + 20;
+
+            const child1 = new Sprite({ y: child1y, width, height });
+            const child2 = new Sprite({ y: child2y, width, height });
+
+            // add child1 onto parent, add child2 onto child1
+            sprite.addChild( child1 );
+            child1.addChild( child2 );
+
+            const newY            = y + 30;
+            const expectedChild1y = child1y + ( newY - sprite.getY() );
+            const expectedChild2y = child2y + ( expectedChild1y - child1.getY() );
+
+            // update coordinate
+            sprite.setY( newY );
+
+            // evaluate child1 coordinates
+
+            expect( child1.getY() ).toEqual( expectedChild1y );
+            expect( child2.getY() ).toEqual( expectedChild2y );
+        });
+
+        it( "should be able to update the offset of the optionally existing transformed bounds object", () => {
+            const sprite = new Sprite({ x, y, width, height, rotation: 90 });
+
+            // @ts-expect-error snooping on private property
+            const existingTransformdTop = sprite._tfb.top;
+
+            sprite.setY( y - 10 );
+
+            // @ts-expect-error snooping on private property
+            expect( sprite._tfb.top ).toEqual( existingTransformdTop - 10 );
+        });
+
+        it( "should invalidate the Canvas when setting a new Y position", () => {
+            const sprite = new Sprite({ width, height });
+
+            const invalidateSpy = vi.spyOn( sprite, "invalidate" );
+
+            sprite.setY( sprite.getY() + 10 );
+
+            expect( invalidateSpy ).toHaveBeenCalled();
+        });
+
+        it( "should not do anything when the position hasn't changed", () => {
+            const sprite = new Sprite({ width, height });
+
+            const invalidateSpy = vi.spyOn( sprite, "invalidate" );
+
+            sprite.setY( sprite.getY() );
+
+            expect( invalidateSpy ).not.toHaveBeenCalled();
+        });
     });
 
-    it( "should be able to update its height", () => {
-        const sprite = new Sprite({ x, y, width, height, resourceId });
-        let newHeight = height;
+    describe( "when updating its width", () => {
+        it( "should be able to update its width", () => {
+            const sprite = new Sprite({ x, y, width, height, resourceId });
+            const newWidth = width + 10;
 
-        while ( height === newHeight ) {
-            newHeight = Math.round( Math.random() * 1000 );
-        }
-        sprite.setHeight( newHeight );
+            sprite.setWidth( newWidth );
 
-        expect( sprite.getHeight() ).toEqual( newHeight );
+            expect( sprite.getWidth() ).toEqual( newWidth );
+        });
+
+        it( "should invalidate the Canvas when setting a new width", () => {
+            const sprite = new Sprite({ x, y, width, height, resourceId });
+            const invalidateSpy = vi.spyOn( sprite, "invalidate" );
+
+            const newWidth = width + 10;
+
+            sprite.setWidth( newWidth );
+
+            expect( invalidateSpy ).toHaveBeenCalled();
+        });
+
+        it( "should not do anything when the width hasn't changed", () => {
+            const sprite = new Sprite({ x, y, width, height, resourceId });
+            const invalidateSpy = vi.spyOn( sprite, "invalidate" );
+
+            sprite.setWidth( width );
+
+            expect( invalidateSpy ).not.toHaveBeenCalled();
+        });
     });
 
-    it( "should have a bounds rectangle describing its offset and dimensions", () => {
-        const sprite = new Sprite({ x, y, width, height });
-        const bounds = sprite.getBounds();
+    describe( "when updating its height", () => {
+        it( "should be able to update its height", () => {
+            const sprite = new Sprite({ x, y, width, height, resourceId });
+            const newHeight = height + 10;
 
-        expect( bounds.left ).toEqual( x );
-        expect( bounds.top ).toEqual( y );
-        expect( bounds.width ).toEqual( width );
-        expect( bounds.height ).toEqual( height );
+            sprite.setHeight( newHeight );
+
+            expect( sprite.getHeight() ).toEqual( newHeight );
+        });
+
+        it( "should invalidate the Canvas when setting a new height", () => {
+            const sprite = new Sprite({ x, y, width, height, resourceId });
+            const invalidateSpy = vi.spyOn( sprite, "invalidate" );
+
+            const newHeight = height + 10;
+
+            sprite.setHeight( newHeight );
+
+            expect( invalidateSpy ).toHaveBeenCalled();
+        });
+
+        it( "should not do anything when the height hasn't changed", () => {
+            const sprite = new Sprite({ x, y, width, height, resourceId });
+            const invalidateSpy = vi.spyOn( sprite, "invalidate" );
+
+            sprite.setHeight( height );
+
+            expect( invalidateSpy ).not.toHaveBeenCalled();
+        });
+    });
+
+    describe( "when getting the Sprite bounds", () => {
+        beforeEach(() => {
+            x = 10;
+            y = 20;
+            width = 40;
+            height = 30;
+        });
+
+        it( "should return the bounds rectangle describing its offset and dimensions", () => {
+            const sprite = new Sprite({ x, y, width, height });
+            const bounds = sprite.getBounds();
+    
+            expect( bounds.left ).toEqual( x );
+            expect( bounds.top ).toEqual( y );
+            expect( bounds.width ).toEqual( width );
+            expect( bounds.height ).toEqual( height );
+        });
+
+        it( "should return the transformed rectangle when requesting the transformed bounds (and transformations are set)", () => {
+            const sprite = new Sprite({ x, y, width, height, rotation: 90 });
+
+            const bounds = sprite.getBounds( true );
+    
+            // note we rotated sideways
+            expect( Math.round( bounds.left )).toEqual( 15 );
+            expect( Math.round( bounds.top )).toEqual( 15 );
+            expect( Math.round( bounds.width )).toEqual( 30 );
+            expect( Math.round( bounds.height )).toEqual( 40 );
+        });
+
+        it( "should return the untransformed rectangle when requesting the transformed bounds (and no transformations are set)", () => {
+            const sprite = new Sprite({ x, y, width, height });
+            
+            const bounds = sprite.getBounds( true );
+    
+            expect( bounds.left ).toEqual( x );
+            expect( bounds.top ).toEqual( y );
+            expect( bounds.width ).toEqual( width );
+            expect( bounds.height ).toEqual( height );
+        });
     });
 
     describe( "when managing its rotation", () => {
@@ -1047,9 +1201,9 @@ describe( "Sprite", () => {
                     sprite.isDragging = true;
 
                     // @ts-expect-error snooping on protected property
-                    sprite._dragStartOffset = { x: sprite.getX(), y: sprite.getY() };
+                    sprite._dro = { x: sprite.getX(), y: sprite.getY() };
                     // @ts-expect-error snooping on protected property
-                    sprite._dragStartEventCoordinates = { x: mockEvent.offsetX, y: mockEvent.offsetY };
+                    sprite._drc = { x: mockEvent.offsetX, y: mockEvent.offsetY };
                     const handled = sprite.handleInteraction( mockEvent.offsetX, mockEvent.offsetY, mockEvent );
                     
                     expect( moveSpy ).toHaveBeenCalledWith( mockEvent.offsetX, mockEvent.offsetY, mockEvent );
@@ -1069,7 +1223,7 @@ describe( "Sprite", () => {
                 });
 
                 it( "should call its handleClick handler if the elapsed time between press and release was below 250 ms, along with handleRelease", () => {
-                    sprite._pressTime = window.performance.now() - 249;
+                    sprite._pTime = window.performance.now() - 249;
 
                     const clickSpy   = vi.spyOn( sprite, "handleClick" );
                     const releaseSpy = vi.spyOn( sprite, "handleRelease" );
@@ -1082,7 +1236,7 @@ describe( "Sprite", () => {
                 });
 
                 it( "should only call its handleRelease handler if the elapsed time between press and release was over 250 ms", () => {
-                    sprite._pressTime = window.performance.now() - 250;
+                    sprite._pTime = window.performance.now() - 250;
                     
                     const clickSpy   = vi.spyOn( sprite, "handleClick" );
                     const releaseSpy = vi.spyOn( sprite, "handleRelease" );
@@ -1095,13 +1249,11 @@ describe( "Sprite", () => {
                 });
 
                 it( "should unset the dragging state for draggable Sprites", () => {
-                    // set draggable sprite variables
-                    sprite._dragStartOffset = { x: sprite.getX(), y: sprite.getY() };
-                    sprite._dragStartEventCoordinates = { x: mockEvent.offsetX, y: mockEvent.offsetY };
-
                     sprite.setDraggable( true );
                     sprite.isDragging = true;
+                   
                     const handled = sprite.handleInteraction( mockEvent.offsetX, mockEvent.offsetY, mockEvent );
+                   
                     expect( sprite.isDragging ).toBe( false );
                     expect( handled ).toBe( true );
                 });
