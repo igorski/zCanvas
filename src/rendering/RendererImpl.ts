@@ -189,15 +189,16 @@ export default class RendererImpl implements IRenderer {
         const prep = props ? this.prepare( props, x, y, width, height ) : ResetCommand.NONE;
 
         ctx = this._ctx;
-
+        ctx.beginPath();
+   
         if ( color !== TRANSPARENT ) {
             ctx.fillStyle = color;
-            ctx.fillRect( x, y, width, height );
+            ctx.roundRect( x, y, width, height, radius );
+            ctx.fill();
         }
         if ( stroke ) {
             ctx.lineWidth   = stroke.size;
             ctx.strokeStyle = stroke.color;
-            ctx.beginPath();
             ctx.roundRect( HALF + x, HALF + y, width, height, radius );
             ctx.stroke();
         }

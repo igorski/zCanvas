@@ -182,8 +182,8 @@ function y(t2, e2, s2) {
   const { left: i2, top: h2, width: n2, height: o2 } = t2;
   return s2.width = n2 * e2, s2.height = o2 * e2, s2.left = i2 - (s2.width - n2) * g, s2.top = h2 - (s2.height - o2) * g, s2;
 }
-const v = "transparent", x = 0.5;
-let R, X = 1, W = "setTransform";
+const v = "transparent", R = 0.5;
+let x, X = 1, W = "setTransform";
 class C {
   constructor(t2, e2 = false) {
     this._debug = e2, this._cvs = t2, this._ctx = t2.getContext("2d"), this._bmp = new c(void 0, (t3) => {
@@ -239,10 +239,10 @@ class C {
     this._ctx.globalAlpha = t2;
   }
   drawPath(t2, e2 = v, s2) {
-    R.beginPath(), R.moveTo(t2[0].x, t2[0].y);
+    x.beginPath(), x.moveTo(t2[0].x, t2[0].y);
     for (const e3 of t2)
-      R.lineTo(e3.x, e3.y);
-    e2 !== v && R.fill(), s2 && (R.lineWidth = s2.size, R.strokeStyle = s2.color, R.stroke()), R.closePath();
+      x.lineTo(e3.x, e3.y);
+    e2 !== v && x.fill(), s2 && (x.lineWidth = s2.size, x.strokeStyle = s2.color, x.stroke()), x.closePath();
   }
   clearRect(t2, e2, s2, i2, h2) {
     const n2 = h2 ? this.prepare(h2, t2, e2, s2, i2) : 0;
@@ -250,15 +250,15 @@ class C {
   }
   drawRect(t2, e2, s2, i2, h2 = v, n2, o2) {
     const a2 = o2 ? this.prepare(o2, t2, e2, s2, i2) : 0;
-    R = this._ctx, h2 !== v && (R.fillStyle = h2, R.fillRect(t2, e2, s2, i2)), n2 && (R.lineWidth = n2.size, R.strokeStyle = n2.color, R.strokeRect(x + t2, x + e2, s2, i2)), this.applyReset(a2);
+    x = this._ctx, h2 !== v && (x.fillStyle = h2, x.fillRect(t2, e2, s2, i2)), n2 && (x.lineWidth = n2.size, x.strokeStyle = n2.color, x.strokeRect(R + t2, R + e2, s2, i2)), this.applyReset(a2);
   }
   drawRoundRect(t2, e2, s2, i2, h2, n2 = v, o2, a2) {
     const r2 = a2 ? this.prepare(a2, t2, e2, s2, i2) : 0;
-    R = this._ctx, n2 !== v && (R.fillStyle = n2, R.fillRect(t2, e2, s2, i2)), o2 && (R.lineWidth = o2.size, R.strokeStyle = o2.color, R.beginPath(), R.roundRect(x + t2, x + e2, s2, i2, h2), R.stroke()), this.applyReset(r2);
+    x = this._ctx, x.beginPath(), n2 !== v && (x.fillStyle = n2, x.roundRect(t2, e2, s2, i2, h2), x.fill()), o2 && (x.lineWidth = o2.size, x.strokeStyle = o2.color, x.roundRect(R + t2, R + e2, s2, i2, h2), x.stroke()), this.applyReset(r2);
   }
   drawCircle(t2, e2, s2, i2 = v, h2, n2) {
     const o2 = n2 ? this.prepare(n2, t2, e2, 2 * s2, 2 * s2) : 0;
-    R = this._ctx, R.beginPath(), R.arc(t2 + s2, e2 + s2, s2, 0, 2 * Math.PI, false), i2 !== v && (R.fillStyle = i2, R.fill()), h2 && (R.lineWidth = h2.size, R.strokeStyle = h2.color, R.closePath(), R.stroke()), this.applyReset(o2);
+    x = this._ctx, x.beginPath(), x.arc(t2 + s2, e2 + s2, s2, 0, 2 * Math.PI, false), i2 !== v && (x.fillStyle = i2, x.fill()), h2 && (x.lineWidth = h2.size, x.strokeStyle = h2.color, x.closePath(), x.stroke()), this.applyReset(o2);
   }
   drawImage(t2, e2, s2, i2, h2, n2) {
     if (!this._bmp.has(t2))
@@ -276,7 +276,7 @@ class C {
       e2 + i2 > n3.width && (a2 -= o3 * (e2 + i2 - n3.width), i2 -= e2 + i2 - n3.width), s2 + h2 > n3.height && (r2 -= d3 * (s2 + h2 - n3.height), h2 -= s2 + h2 - n3.height);
     }
     const l2 = d2 ? this.prepare(d2, n2, o2, a2, r2) : 0;
-    this._ctx.drawImage(this._bmp.get(t2), x + e2 << 0, x + s2 << 0, x + i2 << 0, x + h2 << 0, x + n2 << 0, x + o2 << 0, x + a2 << 0, x + r2 << 0), this._debug && this.drawRect(n2, o2, a2, r2, v, { size: 1, color: "red" }), this.applyReset(l2);
+    this._ctx.drawImage(this._bmp.get(t2), R + e2 << 0, R + s2 << 0, R + i2 << 0, R + h2 << 0, R + n2 << 0, R + o2 << 0, R + a2 << 0, R + r2 << 0), this._debug && this.drawRect(n2, o2, a2, r2, v, { size: 1, color: "red" }), this.applyReset(l2);
   }
   drawText(t2, e2, s2, i2) {
     const { lines: h2, width: n2, height: o2 } = function(t3, e3) {
@@ -295,7 +295,7 @@ class C {
         i3.push({ line: s4, top: d2 }), o3 += h3;
       }), { lines: i3, width: Math.ceil(n3), height: Math.ceil(o3) };
     }(t2, this._ctx);
-    t2.center && (e2 -= n2 * x, s2 -= o2 * x);
+    t2.center && (e2 -= n2 * R, s2 -= o2 * R);
     const a2 = i2 ? this.prepare(i2, e2, s2, n2, o2) : 0;
     !function(t3, e3, s3, i3, h3) {
       l(s3, t3);
@@ -324,7 +324,7 @@ class C {
     else if (!l2)
       return 0;
     if (l2) {
-      const n3 = t2.scale ?? 1, o3 = ((_a = t2.pivot) == null ? void 0 : _a.x) ?? e2 + i2 * x, a3 = ((_b = t2.pivot) == null ? void 0 : _b.y) ?? s2 + h2 * x, r3 = t2.rotation * f, d3 = Math.cos(r3) * n3, l3 = Math.sin(r3) * n3;
+      const n3 = t2.scale ?? 1, o3 = ((_a = t2.pivot) == null ? void 0 : _a.x) ?? e2 + i2 * R, a3 = ((_b = t2.pivot) == null ? void 0 : _b.y) ?? s2 + h2 * R, r3 = t2.rotation * f, d3 = Math.cos(r3) * n3, l3 = Math.sin(r3) * n3;
       this._ctx[W](d3, l3, -l3, d3, o3 - o3 * d3 + a3 * l3, a3 - o3 * l3 - a3 * d3);
     }
     return r2 && this.setBlendMode(t2.blendMode), a2 && this.setAlpha(t2.alpha), d2 ? 1 : 2;
@@ -333,7 +333,7 @@ class C {
     2 === t2 ? this._ctx.setTransform(X, 0, 0, X, 0, 0) : 1 === t2 && this.restore();
   }
 }
-const L = "IWZ1bmN0aW9uKCl7InVzZSBzdHJpY3QiO2Z1bmN0aW9uIHQodCxlKXtlLmZvbnQ9YCR7dC5zaXplfSR7dC51bml0fSAiJHt0LmZvbnR9ImAsZS5maWxsU3R5bGU9dC5jb2xvcn1jbGFzcyBle2NvbnN0cnVjdG9yKHQsZSl7dGhpcy5faW5kZXg9MCx0aGlzLl9tYXA9bmV3IE1hcCx0aGlzLl9jcmVhdGVGbj10LHRoaXMuX2Rlc3Ryb3lGbj1lfWRpc3Bvc2UoKXtjb25zdCB0PVsuLi50aGlzLl9tYXBdLm1hcCgoKFt0XSk9PnQpKTtmb3IoO3QubGVuZ3RoPjA7KXRoaXMucmVtb3ZlKHQuc2hpZnQoKSk7dGhpcy5fbWFwPXZvaWQgMH1nZXQodCl7cmV0dXJuIHRoaXMuX21hcC5nZXQodCl9c2V0KHQsZSl7aWYodGhpcy5oYXModCkpe2lmKHRoaXMuZ2V0KHQpPT09ZSlyZXR1cm47dGhpcy5yZW1vdmUodCl9dGhpcy5fbWFwLnNldCh0LGUpfWhhcyh0KXtyZXR1cm4gdGhpcy5fbWFwLmhhcyh0KX1yZW1vdmUodCl7dmFyIGU7aWYoIXRoaXMuaGFzKHQpKXJldHVybiExO2NvbnN0IHM9dGhpcy5nZXQodCk7cmV0dXJuIG51bGw9PShlPXRoaXMuX2Rlc3Ryb3lGbil8fGUuY2FsbCh0aGlzLHMpLHRoaXMuX21hcC5kZWxldGUodCl9bmV4dCgpe2xldCB0O2NvbnN0IGU9dGhpcy5faW5kZXgudG9TdHJpbmcoKTtyZXR1cm4gdGhpcy5oYXMoZSk/dD10aGlzLmdldChlKTp0aGlzLl9jcmVhdGVGbiYmKHQ9dGhpcy5fY3JlYXRlRm4oKSx0aGlzLnNldChlLHQpKSwrK3RoaXMuX2luZGV4LHR9ZmlsbCh0KXtjb25zdCBlPXRoaXMuX2luZGV4O2ZvcihsZXQgcz0wO3M8dDsrK3MpdGhpcy5uZXh0KCk7dGhpcy5faW5kZXg9ZX1yZXNldCgpe3RoaXMuX2luZGV4PTB9fWNvbnN0IHM9TWF0aC5QSS8xODAsaT0idHJhbnNwYXJlbnQiLGE9LjU7bGV0IG8scixuLGg9MSxjPSJzZXRUcmFuc2Zvcm0iO2NsYXNzIGx7Y29uc3RydWN0b3IodCxzPSExKXt0aGlzLl9kZWJ1Zz1zLHRoaXMuX2N2cz10LHRoaXMuX2N0eD10LmdldENvbnRleHQoIjJkIiksdGhpcy5fYm1wPW5ldyBlKHZvaWQgMCwodD0+e3QuY2xvc2UoKX0pKSx0aGlzLl9wdG49bmV3IGV9ZGlzcG9zZSgpe3RoaXMuX2JtcC5kaXNwb3NlKCksdGhpcy5fcHRuLmRpc3Bvc2UoKSx0aGlzLl9jdnM9dm9pZCAwfWNhY2hlUmVzb3VyY2UodCxlKXt0aGlzLl9ibXAuc2V0KHQsZSl9Z2V0UmVzb3VyY2UodCl7cmV0dXJuIHRoaXMuX2JtcC5nZXQodCl9ZGlzcG9zZVJlc291cmNlKHQpe3RoaXMuX2JtcC5yZW1vdmUodCl9c2V0RGltZW5zaW9ucyh0LGUpe3RoaXMuX2N2cy53aWR0aD10LHRoaXMuX2N2cy5oZWlnaHQ9ZX1zZXRTbW9vdGhpbmcodCl7Y29uc3QgZT10aGlzLl9jdHg7WyJpbWFnZVNtb290aGluZ0VuYWJsZWQiLCJtb3pJbWFnZVNtb290aGluZ0VuYWJsZWQiLCJvSW1hZ2VTbW9vdGhpbmdFbmFibGVkIiwid2Via2l0SW1hZ2VTbW9vdGhpbmdFbmFibGVkIl0uZm9yRWFjaCgocz0+e3ZvaWQgMCE9PWVbc10mJihlW3NdPXQpfSkpfXNldFBpeGVsUmF0aW8odCl7aD10LGM9MT09PWg/InNldFRyYW5zZm9ybSI6InRyYW5zZm9ybSJ9c2F2ZSgpe3RoaXMuX2N0eC5zYXZlKCl9cmVzdG9yZSgpe3RoaXMuX2N0eC5yZXN0b3JlKCl9dHJhbnNsYXRlKHQsZSl7dGhpcy5fY3R4LnRyYW5zbGF0ZSh0LGUpfXJvdGF0ZSh0KXt0aGlzLl9jdHgucm90YXRlKHQpfXRyYW5zZm9ybSh0LGUscyxpLGEsbyl7dGhpcy5fY3R4LnRyYW5zZm9ybSh0LGUscyxpLGEsbyl9c2NhbGUodCxlPXQpe3RoaXMuX2N0eC5zY2FsZSh0LGUpfXNldEJsZW5kTW9kZSh0KXt0aGlzLl9jdHguZ2xvYmFsQ29tcG9zaXRlT3BlcmF0aW9uPXR9c2V0QWxwaGEodCl7dGhpcy5fY3R4Lmdsb2JhbEFscGhhPXR9ZHJhd1BhdGgodCxlPWkscyl7by5iZWdpblBhdGgoKSxvLm1vdmVUbyh0WzBdLngsdFswXS55KTtmb3IoY29uc3QgaSBvZiB0KW8ubGluZVRvKGkueCxpLnkpO2UhPT1pJiZvLmZpbGwoKSxzJiYoby5saW5lV2lkdGg9cy5zaXplLG8uc3Ryb2tlU3R5bGU9cy5jb2xvcixvLnN0cm9rZSgpKSxvLmNsb3NlUGF0aCgpfWNsZWFyUmVjdCh0LGUscyxpLGEpe2NvbnN0IG89YT90aGlzLnByZXBhcmUoYSx0LGUscyxpKTowO3RoaXMuX2N0eC5jbGVhclJlY3QodCxlLHMsaSksdGhpcy5hcHBseVJlc2V0KG8pfWRyYXdSZWN0KHQsZSxzLHIsbj1pLGgsYyl7Y29uc3QgbD1jP3RoaXMucHJlcGFyZShjLHQsZSxzLHIpOjA7bz10aGlzLl9jdHgsbiE9PWkmJihvLmZpbGxTdHlsZT1uLG8uZmlsbFJlY3QodCxlLHMscikpLGgmJihvLmxpbmVXaWR0aD1oLnNpemUsby5zdHJva2VTdHlsZT1oLmNvbG9yLG8uc3Ryb2tlUmVjdChhK3QsYStlLHMscikpLHRoaXMuYXBwbHlSZXNldChsKX1kcmF3Um91bmRSZWN0KHQsZSxzLHIsbixoPWksYyxsKXtjb25zdCBkPWw/dGhpcy5wcmVwYXJlKGwsdCxlLHMscik6MDtvPXRoaXMuX2N0eCxoIT09aSYmKG8uZmlsbFN0eWxlPWgsby5maWxsUmVjdCh0LGUscyxyKSksYyYmKG8ubGluZVdpZHRoPWMuc2l6ZSxvLnN0cm9rZVN0eWxlPWMuY29sb3Isby5iZWdpblBhdGgoKSxvLnJvdW5kUmVjdChhK3QsYStlLHMscixuKSxvLnN0cm9rZSgpKSx0aGlzLmFwcGx5UmVzZXQoZCl9ZHJhd0NpcmNsZSh0LGUscyxhPWkscixuKXtjb25zdCBoPW4/dGhpcy5wcmVwYXJlKG4sdCxlLDIqcywyKnMpOjA7bz10aGlzLl9jdHgsby5iZWdpblBhdGgoKSxvLmFyYyh0K3MsZStzLHMsMCwyKk1hdGguUEksITEpLGEhPT1pJiYoby5maWxsU3R5bGU9YSxvLmZpbGwoKSksciYmKG8ubGluZVdpZHRoPXIuc2l6ZSxvLnN0cm9rZVN0eWxlPXIuY29sb3Isby5jbG9zZVBhdGgoKSxvLnN0cm9rZSgpKSx0aGlzLmFwcGx5UmVzZXQoaCl9ZHJhd0ltYWdlKHQsZSxzLGEsbyxyKXtpZighdGhpcy5fYm1wLmhhcyh0KSlyZXR1cm47Y29uc3Qgbj1yP3RoaXMucHJlcGFyZShyLGUscyxhLG8pOjA7dm9pZCAwPT09YT90aGlzLl9jdHguZHJhd0ltYWdlKHRoaXMuX2JtcC5nZXQodCksZSxzKTp0aGlzLl9jdHguZHJhd0ltYWdlKHRoaXMuX2JtcC5nZXQodCksZSxzLGEsbyksdGhpcy5fZGVidWcmJnRoaXMuZHJhd1JlY3QoZSxzLGEsbyxpLHtzaXplOjEsY29sb3I6InJlZCJ9KSx0aGlzLmFwcGx5UmVzZXQobil9ZHJhd0ltYWdlQ3JvcHBlZCh0LGUscyxvLHIsbixoLGMsbCxkKXtpZighdGhpcy5fYm1wLmhhcyh0KSlyZXR1cm47aWYobnVsbD09ZD92b2lkIDA6ZC5zYWZlTW9kZSl7aWYoYzw9MHx8bDw9MClyZXR1cm47Y29uc3QgaT10aGlzLl9ibXAuZ2V0KHQpLGE9KGM9TWF0aC5taW4odGhpcy5fY3R4LmNhbnZhcy53aWR0aCxjKSkvbyxuPShsPU1hdGgubWluKHRoaXMuX2N0eC5jYW52YXMuaGVpZ2h0LGwpKS9yO2Urbz5pLndpZHRoJiYoYy09YSooZStvLWkud2lkdGgpLG8tPWUrby1pLndpZHRoKSxzK3I+aS5oZWlnaHQmJihsLT1uKihzK3ItaS5oZWlnaHQpLHItPXMrci1pLmhlaWdodCl9Y29uc3QgcD1kP3RoaXMucHJlcGFyZShkLG4saCxjLGwpOjA7dGhpcy5fY3R4LmRyYXdJbWFnZSh0aGlzLl9ibXAuZ2V0KHQpLGErZTw8MCxhK3M8PDAsYStvPDwwLGErcjw8MCxhK248PDAsYStoPDwwLGErYzw8MCxhK2w8PDApLHRoaXMuX2RlYnVnJiZ0aGlzLmRyYXdSZWN0KG4saCxjLGwsaSx7c2l6ZToxLGNvbG9yOiJyZWQifSksdGhpcy5hcHBseVJlc2V0KHApfWRyYXdUZXh0KGUscyxpLG8pe2NvbnN0e2xpbmVzOnIsd2lkdGg6bixoZWlnaHQ6aH09ZnVuY3Rpb24oZSxzKXt0KGUscyk7Y29uc3QgaT1lLnRleHQuc3BsaXQoIlxuIiksYT1bXTtsZXQgbyxyPTAsbj0wLGg9cy5tZWFzdXJlVGV4dCgiV3EiKTtvPWUubGluZUhlaWdodD9lLmxpbmVIZWlnaHQ6aC5hY3R1YWxCb3VuZGluZ0JveEFzY2VudCtoLmFjdHVhbEJvdW5kaW5nQm94RGVzY2VudDtjb25zdCBjPWguYWN0dWFsQm91bmRpbmdCb3hBc2NlbnQ7bGV0IGw9MDtyZXR1cm4gaS5mb3JFYWNoKCgodCxpKT0+e2lmKGw9TWF0aC5yb3VuZChjK2kqbyksZS5zcGFjaW5nKXtjb25zdCBzPXQuc3BsaXQoIiIpO3I9TWF0aC5tYXgocixzLmxlbmd0aCplLnNwYWNpbmcpfWVsc2UgaD1zLm1lYXN1cmVUZXh0KHQpLHI9TWF0aC5tYXgocixoLmFjdHVhbEJvdW5kaW5nQm94UmlnaHQpO2EucHVzaCh7bGluZTp0LHRvcDpsfSksbis9b30pKSx7bGluZXM6YSx3aWR0aDpNYXRoLmNlaWwociksaGVpZ2h0Ok1hdGguY2VpbChuKX19KGUsdGhpcy5fY3R4KTtlLmNlbnRlciYmKHMtPW4qYSxpLT1oKmEpO2NvbnN0IGM9bz90aGlzLnByZXBhcmUobyxzLGksbixoKTowOyFmdW5jdGlvbihlLHMsaSxhLG8pe3QoaSxlKTtjb25zdCByPWkuc3BhY2luZz8/MTtzLmZvckVhY2goKCh7bGluZTp0LHRvcDpzfSk9PntpLnNwYWNpbmc/dC5zcGxpdCgiIikuZm9yRWFjaCgoKHQsaSk9PntlLmZpbGxUZXh0KHQsYStNYXRoLnJvdW5kKGkqciksbytzKX0pKTplLmZpbGxUZXh0KHQsYSxvK3MpfSkpfSh0aGlzLl9jdHgscixlLHMsaSksdGhpcy5hcHBseVJlc2V0KGMpfWNyZWF0ZVBhdHRlcm4odCxlKXt0aGlzLl9ibXAuaGFzKHQpJiZ0aGlzLl9wdG4uc2V0KHQsdGhpcy5fY3R4LmNyZWF0ZVBhdHRlcm4odGhpcy5fYm1wLmdldCh0KSxlKSl9ZHJhd1BhdHRlcm4odCxlLHMsaSxhKXtpZighdGhpcy5fcHRuLmhhcyh0KSlyZXR1cm47Y29uc3Qgbz10aGlzLl9wdG4uZ2V0KHQpO3RoaXMuX2N0eC5maWxsU3R5bGU9byx0aGlzLl9jdHguZmlsbFJlY3QoZSxzLGksYSl9cHJlcGFyZSh0LGUsaSxvLHIpe3ZhciBuLGg7Y29uc3QgbD0xIT09dC5zY2FsZSxkPTAhPT10LnJvdGF0aW9uLHA9MSE9PXQuYWxwaGEsbT12b2lkIDAhPT10LmJsZW5kTW9kZSxnPXB8fG0sdT1sfHxkO2lmKGcpdGhpcy5zYXZlKCk7ZWxzZSBpZighdSlyZXR1cm4gMDtpZih1KXtjb25zdCBsPXQuc2NhbGU/PzEsZD0obnVsbD09KG49dC5waXZvdCk/dm9pZCAwOm4ueCk/P2UrbyphLHA9KG51bGw9PShoPXQucGl2b3QpP3ZvaWQgMDpoLnkpPz9pK3IqYSxtPXQucm90YXRpb24qcyxnPU1hdGguY29zKG0pKmwsdT1NYXRoLnNpbihtKSpsO3RoaXMuX2N0eFtjXShnLHUsLXUsZyxkLWQqZytwKnUscC1kKnUtcCpnKX1yZXR1cm4gbSYmdGhpcy5zZXRCbGVuZE1vZGUodC5ibGVuZE1vZGUpLHAmJnRoaXMuc2V0QWxwaGEodC5hbHBoYSksZz8xOjJ9YXBwbHlSZXNldCh0KXsyPT09dD90aGlzLl9jdHguc2V0VHJhbnNmb3JtKGgsMCwwLGgsMCwwKToxPT09dCYmdGhpcy5yZXN0b3JlKCl9fW9ubWVzc2FnZT10PT57c3dpdGNoKHQuZGF0YS5jbWQpe2RlZmF1bHQ6YnJlYWs7Y2FzZSJpbml0IjpuPXQuZGF0YS5jYW52YXMscj1uZXcgbChuLHQuZGF0YS5kZWJ1Zyk7YnJlYWs7Y2FzZSJsb2FkUmVzb3VyY2UiOiFhc3luYyBmdW5jdGlvbih0LGUpe3RyeXtsZXQgcztpZihlIGluc3RhbmNlb2YgRmlsZSl7Y29uc3QgdD1hd2FpdCBhc3luYyBmdW5jdGlvbih0KXtjb25zdCBlPW5ldyBGaWxlUmVhZGVyO3JldHVybiBuZXcgUHJvbWlzZSgoKHMsaSk9PntlLm9ubG9hZD1lPT57dmFyIGE7aWYoIShudWxsPT0oYT1udWxsPT1lP3ZvaWQgMDplLnRhcmdldCk/dm9pZCAwOmEucmVzdWx0KSlyZXR1cm4gaSgpO3MobmV3IEJsb2IoW2UudGFyZ2V0LnJlc3VsdF0se3R5cGU6dC50eXBlfSkpfSxlLm9uZXJyb3I9dD0+aSh0KSxlLnJlYWRBc0FycmF5QnVmZmVyKHQpfSkpfShlKTtzPWF3YWl0IGNyZWF0ZUltYWdlQml0bWFwKHQpfWVsc2UgaWYoZSBpbnN0YW5jZW9mIEJsb2Ipcz1hd2FpdCBjcmVhdGVJbWFnZUJpdG1hcChlKTtlbHNlIGlmKCJzdHJpbmciPT10eXBlb2YgZSl7Y29uc3QgdD1hd2FpdCBmZXRjaChlKSxpPWF3YWl0IHQuYmxvYigpO3M9YXdhaXQgY3JlYXRlSW1hZ2VCaXRtYXAoaSl9ZWxzZSBlIGluc3RhbmNlb2YgSW1hZ2VCaXRtYXAmJihzPWUpO251bGw9PXJ8fHIuY2FjaGVSZXNvdXJjZSh0LHMpLHBvc3RNZXNzYWdlKHtjbWQ6Im9ubG9hZCIsaWQ6dCxzaXplOnt3aWR0aDpzLndpZHRoLGhlaWdodDpzLmhlaWdodH19KX1jYXRjaChzKXtwb3N0TWVzc2FnZSh7Y21kOiJvbmVycm9yIixpZDp0LGVycm9yOihudWxsPT1zP3ZvaWQgMDpzLm1lc3NhZ2UpPz9zfSl9fSh0LmRhdGEuaWQsdC5kYXRhLnNvdXJjZSk7YnJlYWs7Y2FzZSJnZXRSZXNvdXJjZSI6Y29uc3QgZT1udWxsPT1yP3ZvaWQgMDpyLmdldFJlc291cmNlKHQuZGF0YS5pZCk7cG9zdE1lc3NhZ2Uoe2NtZDoib25yZXNvdXJjZSIsaWQ6dC5kYXRhLmlkLGJpdG1hcDplfSk7YnJlYWs7Y2FzZSJkaXNwb3NlUmVzb3VyY2UiOm51bGw9PXJ8fHIuZGlzcG9zZVJlc291cmNlKC4uLnQuZGF0YS5hcmdzKTticmVhaztjYXNlImRpc3Bvc2UiOm51bGw9PXJ8fHIuZGlzcG9zZSgpLG49dm9pZCAwLHI9dm9pZCAwO2JyZWFrO2Nhc2UicmVuZGVyIjppZighcnx8IXQuZGF0YS5jb21tYW5kcylyZXR1cm47Zm9yKGNvbnN0IHMgb2YgdC5kYXRhLmNvbW1hbmRzKXtjb25zdCB0PXMuc2hpZnQoKTtyW3RdKC4uLnMpfXBvc3RNZXNzYWdlKHtjbWQ6Im9ucmVuZGVyIn0pO2JyZWFrO2Nhc2Uic2V0RGltZW5zaW9ucyI6Y2FzZSJzZXRQaXhlbFJhdGlvIjpjYXNlInNldFNtb290aGluZyI6Y2FzZSJjcmVhdGVQYXR0ZXJuIjpyW3QuZGF0YS5jbWRdKC4uLnQuZGF0YS5hcmdzKX19fSgpOwo=", S = "undefined" != typeof window && window.Blob && new Blob([atob(L)], { type: "text/javascript;charset=utf-8" });
+const L = "IWZ1bmN0aW9uKCl7InVzZSBzdHJpY3QiO2Z1bmN0aW9uIHQodCxlKXtlLmZvbnQ9YCR7dC5zaXplfSR7dC51bml0fSAiJHt0LmZvbnR9ImAsZS5maWxsU3R5bGU9dC5jb2xvcn1jbGFzcyBle2NvbnN0cnVjdG9yKHQsZSl7dGhpcy5faW5kZXg9MCx0aGlzLl9tYXA9bmV3IE1hcCx0aGlzLl9jcmVhdGVGbj10LHRoaXMuX2Rlc3Ryb3lGbj1lfWRpc3Bvc2UoKXtjb25zdCB0PVsuLi50aGlzLl9tYXBdLm1hcCgoKFt0XSk9PnQpKTtmb3IoO3QubGVuZ3RoPjA7KXRoaXMucmVtb3ZlKHQuc2hpZnQoKSk7dGhpcy5fbWFwPXZvaWQgMH1nZXQodCl7cmV0dXJuIHRoaXMuX21hcC5nZXQodCl9c2V0KHQsZSl7aWYodGhpcy5oYXModCkpe2lmKHRoaXMuZ2V0KHQpPT09ZSlyZXR1cm47dGhpcy5yZW1vdmUodCl9dGhpcy5fbWFwLnNldCh0LGUpfWhhcyh0KXtyZXR1cm4gdGhpcy5fbWFwLmhhcyh0KX1yZW1vdmUodCl7dmFyIGU7aWYoIXRoaXMuaGFzKHQpKXJldHVybiExO2NvbnN0IHM9dGhpcy5nZXQodCk7cmV0dXJuIG51bGw9PShlPXRoaXMuX2Rlc3Ryb3lGbil8fGUuY2FsbCh0aGlzLHMpLHRoaXMuX21hcC5kZWxldGUodCl9bmV4dCgpe2xldCB0O2NvbnN0IGU9dGhpcy5faW5kZXgudG9TdHJpbmcoKTtyZXR1cm4gdGhpcy5oYXMoZSk/dD10aGlzLmdldChlKTp0aGlzLl9jcmVhdGVGbiYmKHQ9dGhpcy5fY3JlYXRlRm4oKSx0aGlzLnNldChlLHQpKSwrK3RoaXMuX2luZGV4LHR9ZmlsbCh0KXtjb25zdCBlPXRoaXMuX2luZGV4O2ZvcihsZXQgcz0wO3M8dDsrK3MpdGhpcy5uZXh0KCk7dGhpcy5faW5kZXg9ZX1yZXNldCgpe3RoaXMuX2luZGV4PTB9fWNvbnN0IHM9TWF0aC5QSS8xODAsaT0idHJhbnNwYXJlbnQiLGE9LjU7bGV0IG8scixuLGg9MSxjPSJzZXRUcmFuc2Zvcm0iO2NsYXNzIGx7Y29uc3RydWN0b3IodCxzPSExKXt0aGlzLl9kZWJ1Zz1zLHRoaXMuX2N2cz10LHRoaXMuX2N0eD10LmdldENvbnRleHQoIjJkIiksdGhpcy5fYm1wPW5ldyBlKHZvaWQgMCwodD0+e3QuY2xvc2UoKX0pKSx0aGlzLl9wdG49bmV3IGV9ZGlzcG9zZSgpe3RoaXMuX2JtcC5kaXNwb3NlKCksdGhpcy5fcHRuLmRpc3Bvc2UoKSx0aGlzLl9jdnM9dm9pZCAwfWNhY2hlUmVzb3VyY2UodCxlKXt0aGlzLl9ibXAuc2V0KHQsZSl9Z2V0UmVzb3VyY2UodCl7cmV0dXJuIHRoaXMuX2JtcC5nZXQodCl9ZGlzcG9zZVJlc291cmNlKHQpe3RoaXMuX2JtcC5yZW1vdmUodCl9c2V0RGltZW5zaW9ucyh0LGUpe3RoaXMuX2N2cy53aWR0aD10LHRoaXMuX2N2cy5oZWlnaHQ9ZX1zZXRTbW9vdGhpbmcodCl7Y29uc3QgZT10aGlzLl9jdHg7WyJpbWFnZVNtb290aGluZ0VuYWJsZWQiLCJtb3pJbWFnZVNtb290aGluZ0VuYWJsZWQiLCJvSW1hZ2VTbW9vdGhpbmdFbmFibGVkIiwid2Via2l0SW1hZ2VTbW9vdGhpbmdFbmFibGVkIl0uZm9yRWFjaCgocz0+e3ZvaWQgMCE9PWVbc10mJihlW3NdPXQpfSkpfXNldFBpeGVsUmF0aW8odCl7aD10LGM9MT09PWg/InNldFRyYW5zZm9ybSI6InRyYW5zZm9ybSJ9c2F2ZSgpe3RoaXMuX2N0eC5zYXZlKCl9cmVzdG9yZSgpe3RoaXMuX2N0eC5yZXN0b3JlKCl9dHJhbnNsYXRlKHQsZSl7dGhpcy5fY3R4LnRyYW5zbGF0ZSh0LGUpfXJvdGF0ZSh0KXt0aGlzLl9jdHgucm90YXRlKHQpfXRyYW5zZm9ybSh0LGUscyxpLGEsbyl7dGhpcy5fY3R4LnRyYW5zZm9ybSh0LGUscyxpLGEsbyl9c2NhbGUodCxlPXQpe3RoaXMuX2N0eC5zY2FsZSh0LGUpfXNldEJsZW5kTW9kZSh0KXt0aGlzLl9jdHguZ2xvYmFsQ29tcG9zaXRlT3BlcmF0aW9uPXR9c2V0QWxwaGEodCl7dGhpcy5fY3R4Lmdsb2JhbEFscGhhPXR9ZHJhd1BhdGgodCxlPWkscyl7by5iZWdpblBhdGgoKSxvLm1vdmVUbyh0WzBdLngsdFswXS55KTtmb3IoY29uc3QgaSBvZiB0KW8ubGluZVRvKGkueCxpLnkpO2UhPT1pJiZvLmZpbGwoKSxzJiYoby5saW5lV2lkdGg9cy5zaXplLG8uc3Ryb2tlU3R5bGU9cy5jb2xvcixvLnN0cm9rZSgpKSxvLmNsb3NlUGF0aCgpfWNsZWFyUmVjdCh0LGUscyxpLGEpe2NvbnN0IG89YT90aGlzLnByZXBhcmUoYSx0LGUscyxpKTowO3RoaXMuX2N0eC5jbGVhclJlY3QodCxlLHMsaSksdGhpcy5hcHBseVJlc2V0KG8pfWRyYXdSZWN0KHQsZSxzLHIsbj1pLGgsYyl7Y29uc3QgbD1jP3RoaXMucHJlcGFyZShjLHQsZSxzLHIpOjA7bz10aGlzLl9jdHgsbiE9PWkmJihvLmZpbGxTdHlsZT1uLG8uZmlsbFJlY3QodCxlLHMscikpLGgmJihvLmxpbmVXaWR0aD1oLnNpemUsby5zdHJva2VTdHlsZT1oLmNvbG9yLG8uc3Ryb2tlUmVjdChhK3QsYStlLHMscikpLHRoaXMuYXBwbHlSZXNldChsKX1kcmF3Um91bmRSZWN0KHQsZSxzLHIsbixoPWksYyxsKXtjb25zdCBkPWw/dGhpcy5wcmVwYXJlKGwsdCxlLHMscik6MDtvPXRoaXMuX2N0eCxvLmJlZ2luUGF0aCgpLGghPT1pJiYoby5maWxsU3R5bGU9aCxvLnJvdW5kUmVjdCh0LGUscyxyLG4pLG8uZmlsbCgpKSxjJiYoby5saW5lV2lkdGg9Yy5zaXplLG8uc3Ryb2tlU3R5bGU9Yy5jb2xvcixvLnJvdW5kUmVjdChhK3QsYStlLHMscixuKSxvLnN0cm9rZSgpKSx0aGlzLmFwcGx5UmVzZXQoZCl9ZHJhd0NpcmNsZSh0LGUscyxhPWkscixuKXtjb25zdCBoPW4/dGhpcy5wcmVwYXJlKG4sdCxlLDIqcywyKnMpOjA7bz10aGlzLl9jdHgsby5iZWdpblBhdGgoKSxvLmFyYyh0K3MsZStzLHMsMCwyKk1hdGguUEksITEpLGEhPT1pJiYoby5maWxsU3R5bGU9YSxvLmZpbGwoKSksciYmKG8ubGluZVdpZHRoPXIuc2l6ZSxvLnN0cm9rZVN0eWxlPXIuY29sb3Isby5jbG9zZVBhdGgoKSxvLnN0cm9rZSgpKSx0aGlzLmFwcGx5UmVzZXQoaCl9ZHJhd0ltYWdlKHQsZSxzLGEsbyxyKXtpZighdGhpcy5fYm1wLmhhcyh0KSlyZXR1cm47Y29uc3Qgbj1yP3RoaXMucHJlcGFyZShyLGUscyxhLG8pOjA7dm9pZCAwPT09YT90aGlzLl9jdHguZHJhd0ltYWdlKHRoaXMuX2JtcC5nZXQodCksZSxzKTp0aGlzLl9jdHguZHJhd0ltYWdlKHRoaXMuX2JtcC5nZXQodCksZSxzLGEsbyksdGhpcy5fZGVidWcmJnRoaXMuZHJhd1JlY3QoZSxzLGEsbyxpLHtzaXplOjEsY29sb3I6InJlZCJ9KSx0aGlzLmFwcGx5UmVzZXQobil9ZHJhd0ltYWdlQ3JvcHBlZCh0LGUscyxvLHIsbixoLGMsbCxkKXtpZighdGhpcy5fYm1wLmhhcyh0KSlyZXR1cm47aWYobnVsbD09ZD92b2lkIDA6ZC5zYWZlTW9kZSl7aWYoYzw9MHx8bDw9MClyZXR1cm47Y29uc3QgaT10aGlzLl9ibXAuZ2V0KHQpLGE9KGM9TWF0aC5taW4odGhpcy5fY3R4LmNhbnZhcy53aWR0aCxjKSkvbyxuPShsPU1hdGgubWluKHRoaXMuX2N0eC5jYW52YXMuaGVpZ2h0LGwpKS9yO2Urbz5pLndpZHRoJiYoYy09YSooZStvLWkud2lkdGgpLG8tPWUrby1pLndpZHRoKSxzK3I+aS5oZWlnaHQmJihsLT1uKihzK3ItaS5oZWlnaHQpLHItPXMrci1pLmhlaWdodCl9Y29uc3QgcD1kP3RoaXMucHJlcGFyZShkLG4saCxjLGwpOjA7dGhpcy5fY3R4LmRyYXdJbWFnZSh0aGlzLl9ibXAuZ2V0KHQpLGErZTw8MCxhK3M8PDAsYStvPDwwLGErcjw8MCxhK248PDAsYStoPDwwLGErYzw8MCxhK2w8PDApLHRoaXMuX2RlYnVnJiZ0aGlzLmRyYXdSZWN0KG4saCxjLGwsaSx7c2l6ZToxLGNvbG9yOiJyZWQifSksdGhpcy5hcHBseVJlc2V0KHApfWRyYXdUZXh0KGUscyxpLG8pe2NvbnN0e2xpbmVzOnIsd2lkdGg6bixoZWlnaHQ6aH09ZnVuY3Rpb24oZSxzKXt0KGUscyk7Y29uc3QgaT1lLnRleHQuc3BsaXQoIlxuIiksYT1bXTtsZXQgbyxyPTAsbj0wLGg9cy5tZWFzdXJlVGV4dCgiV3EiKTtvPWUubGluZUhlaWdodD9lLmxpbmVIZWlnaHQ6aC5hY3R1YWxCb3VuZGluZ0JveEFzY2VudCtoLmFjdHVhbEJvdW5kaW5nQm94RGVzY2VudDtjb25zdCBjPWguYWN0dWFsQm91bmRpbmdCb3hBc2NlbnQ7bGV0IGw9MDtyZXR1cm4gaS5mb3JFYWNoKCgodCxpKT0+e2lmKGw9TWF0aC5yb3VuZChjK2kqbyksZS5zcGFjaW5nKXtjb25zdCBzPXQuc3BsaXQoIiIpO3I9TWF0aC5tYXgocixzLmxlbmd0aCplLnNwYWNpbmcpfWVsc2UgaD1zLm1lYXN1cmVUZXh0KHQpLHI9TWF0aC5tYXgocixoLmFjdHVhbEJvdW5kaW5nQm94UmlnaHQpO2EucHVzaCh7bGluZTp0LHRvcDpsfSksbis9b30pKSx7bGluZXM6YSx3aWR0aDpNYXRoLmNlaWwociksaGVpZ2h0Ok1hdGguY2VpbChuKX19KGUsdGhpcy5fY3R4KTtlLmNlbnRlciYmKHMtPW4qYSxpLT1oKmEpO2NvbnN0IGM9bz90aGlzLnByZXBhcmUobyxzLGksbixoKTowOyFmdW5jdGlvbihlLHMsaSxhLG8pe3QoaSxlKTtjb25zdCByPWkuc3BhY2luZz8/MTtzLmZvckVhY2goKCh7bGluZTp0LHRvcDpzfSk9PntpLnNwYWNpbmc/dC5zcGxpdCgiIikuZm9yRWFjaCgoKHQsaSk9PntlLmZpbGxUZXh0KHQsYStNYXRoLnJvdW5kKGkqciksbytzKX0pKTplLmZpbGxUZXh0KHQsYSxvK3MpfSkpfSh0aGlzLl9jdHgscixlLHMsaSksdGhpcy5hcHBseVJlc2V0KGMpfWNyZWF0ZVBhdHRlcm4odCxlKXt0aGlzLl9ibXAuaGFzKHQpJiZ0aGlzLl9wdG4uc2V0KHQsdGhpcy5fY3R4LmNyZWF0ZVBhdHRlcm4odGhpcy5fYm1wLmdldCh0KSxlKSl9ZHJhd1BhdHRlcm4odCxlLHMsaSxhKXtpZighdGhpcy5fcHRuLmhhcyh0KSlyZXR1cm47Y29uc3Qgbz10aGlzLl9wdG4uZ2V0KHQpO3RoaXMuX2N0eC5maWxsU3R5bGU9byx0aGlzLl9jdHguZmlsbFJlY3QoZSxzLGksYSl9cHJlcGFyZSh0LGUsaSxvLHIpe3ZhciBuLGg7Y29uc3QgbD0xIT09dC5zY2FsZSxkPTAhPT10LnJvdGF0aW9uLHA9MSE9PXQuYWxwaGEsbT12b2lkIDAhPT10LmJsZW5kTW9kZSxnPXB8fG0sdT1sfHxkO2lmKGcpdGhpcy5zYXZlKCk7ZWxzZSBpZighdSlyZXR1cm4gMDtpZih1KXtjb25zdCBsPXQuc2NhbGU/PzEsZD0obnVsbD09KG49dC5waXZvdCk/dm9pZCAwOm4ueCk/P2UrbyphLHA9KG51bGw9PShoPXQucGl2b3QpP3ZvaWQgMDpoLnkpPz9pK3IqYSxtPXQucm90YXRpb24qcyxnPU1hdGguY29zKG0pKmwsdT1NYXRoLnNpbihtKSpsO3RoaXMuX2N0eFtjXShnLHUsLXUsZyxkLWQqZytwKnUscC1kKnUtcCpnKX1yZXR1cm4gbSYmdGhpcy5zZXRCbGVuZE1vZGUodC5ibGVuZE1vZGUpLHAmJnRoaXMuc2V0QWxwaGEodC5hbHBoYSksZz8xOjJ9YXBwbHlSZXNldCh0KXsyPT09dD90aGlzLl9jdHguc2V0VHJhbnNmb3JtKGgsMCwwLGgsMCwwKToxPT09dCYmdGhpcy5yZXN0b3JlKCl9fW9ubWVzc2FnZT10PT57c3dpdGNoKHQuZGF0YS5jbWQpe2RlZmF1bHQ6YnJlYWs7Y2FzZSJpbml0IjpuPXQuZGF0YS5jYW52YXMscj1uZXcgbChuLHQuZGF0YS5kZWJ1Zyk7YnJlYWs7Y2FzZSJsb2FkUmVzb3VyY2UiOiFhc3luYyBmdW5jdGlvbih0LGUpe3RyeXtsZXQgcztpZihlIGluc3RhbmNlb2YgRmlsZSl7Y29uc3QgdD1hd2FpdCBhc3luYyBmdW5jdGlvbih0KXtjb25zdCBlPW5ldyBGaWxlUmVhZGVyO3JldHVybiBuZXcgUHJvbWlzZSgoKHMsaSk9PntlLm9ubG9hZD1lPT57dmFyIGE7aWYoIShudWxsPT0oYT1udWxsPT1lP3ZvaWQgMDplLnRhcmdldCk/dm9pZCAwOmEucmVzdWx0KSlyZXR1cm4gaSgpO3MobmV3IEJsb2IoW2UudGFyZ2V0LnJlc3VsdF0se3R5cGU6dC50eXBlfSkpfSxlLm9uZXJyb3I9dD0+aSh0KSxlLnJlYWRBc0FycmF5QnVmZmVyKHQpfSkpfShlKTtzPWF3YWl0IGNyZWF0ZUltYWdlQml0bWFwKHQpfWVsc2UgaWYoZSBpbnN0YW5jZW9mIEJsb2Ipcz1hd2FpdCBjcmVhdGVJbWFnZUJpdG1hcChlKTtlbHNlIGlmKCJzdHJpbmciPT10eXBlb2YgZSl7Y29uc3QgdD1hd2FpdCBmZXRjaChlKSxpPWF3YWl0IHQuYmxvYigpO3M9YXdhaXQgY3JlYXRlSW1hZ2VCaXRtYXAoaSl9ZWxzZSBlIGluc3RhbmNlb2YgSW1hZ2VCaXRtYXAmJihzPWUpO251bGw9PXJ8fHIuY2FjaGVSZXNvdXJjZSh0LHMpLHBvc3RNZXNzYWdlKHtjbWQ6Im9ubG9hZCIsaWQ6dCxzaXplOnt3aWR0aDpzLndpZHRoLGhlaWdodDpzLmhlaWdodH19KX1jYXRjaChzKXtwb3N0TWVzc2FnZSh7Y21kOiJvbmVycm9yIixpZDp0LGVycm9yOihudWxsPT1zP3ZvaWQgMDpzLm1lc3NhZ2UpPz9zfSl9fSh0LmRhdGEuaWQsdC5kYXRhLnNvdXJjZSk7YnJlYWs7Y2FzZSJnZXRSZXNvdXJjZSI6Y29uc3QgZT1udWxsPT1yP3ZvaWQgMDpyLmdldFJlc291cmNlKHQuZGF0YS5pZCk7cG9zdE1lc3NhZ2Uoe2NtZDoib25yZXNvdXJjZSIsaWQ6dC5kYXRhLmlkLGJpdG1hcDplfSk7YnJlYWs7Y2FzZSJkaXNwb3NlUmVzb3VyY2UiOm51bGw9PXJ8fHIuZGlzcG9zZVJlc291cmNlKC4uLnQuZGF0YS5hcmdzKTticmVhaztjYXNlImRpc3Bvc2UiOm51bGw9PXJ8fHIuZGlzcG9zZSgpLG49dm9pZCAwLHI9dm9pZCAwO2JyZWFrO2Nhc2UicmVuZGVyIjppZighcnx8IXQuZGF0YS5jb21tYW5kcylyZXR1cm47Zm9yKGNvbnN0IHMgb2YgdC5kYXRhLmNvbW1hbmRzKXtjb25zdCB0PXMuc2hpZnQoKTtyW3RdKC4uLnMpfXBvc3RNZXNzYWdlKHtjbWQ6Im9ucmVuZGVyIn0pO2JyZWFrO2Nhc2Uic2V0RGltZW5zaW9ucyI6Y2FzZSJzZXRQaXhlbFJhdGlvIjpjYXNlInNldFNtb290aGluZyI6Y2FzZSJjcmVhdGVQYXR0ZXJuIjpyW3QuZGF0YS5jbWRdKC4uLnQuZGF0YS5hcmdzKX19fSgpOwo=", S = "undefined" != typeof window && window.Blob && new Blob([atob(L)], { type: "text/javascript;charset=utf-8" });
 function Y() {
   let t2;
   try {
@@ -507,10 +507,10 @@ class z {
   }
 }
 const H = { x: 0, y: 0 };
-function K(t2, e2, s2, i2, h2) {
+function k(t2, e2, s2, i2, h2) {
   return (t2 - e2) / (s2 - e2) * (h2 - i2) + i2;
 }
-const k = [], I = [], M = s(1, 1, true).cvs;
+const K = [], I = [], M = s(1, 1, true).cvs;
 class F {
   constructor(t2) {
     this._renderer = t2, this._cacheMap = /* @__PURE__ */ new Map();
@@ -529,12 +529,12 @@ class F {
     const s2 = t2.getIntersection(e2);
     if (void 0 === s2)
       return;
-    this.getPixelArray(t2, s2, k), this.getPixelArray(e2, s2, I);
+    this.getPixelArray(t2, s2, K), this.getPixelArray(e2, s2, I);
     const i2 = s2.width, h2 = s2.height;
     let n2 = 0;
     for (let t3 = 0; t3 < h2; ++t3)
       for (let e3 = 0; e3 < i2; ++e3) {
-        if (1 === k[n2] && 1 === I[n2])
+        if (1 === K[n2] && 1 === I[n2])
           return { x: e3, y: t3 };
         ++n2;
       }
@@ -619,7 +619,7 @@ class P {
     this._children = [];
   }
 }
-const { min: V, max: N } = Math;
+const { min: V, max: J } = Math;
 class Q extends P {
   constructor({ width: t2 = 300, height: e2 = 300, fps: s2 = 60, backgroundColor: i2 = null, animate: h2 = false, smoothing: n2 = true, stretchToFit: o2 = false, autoSize: a2 = true, viewport: r2 = null, preventEventBubbling: d2 = false, parentElement: l2 = null, debug: c2 = false, optimize: p2 = "auto", viewportHandler: u2, onUpdate: g2, onResize: m2 } = {}) {
     if (super(), this.DEBUG = false, this.bbox = { left: 0, top: 0, right: 0, bottom: 0 }, this._smooth = false, this._stretch = false, this._pxr = 1, this._prevDef = false, this._lastRender = 0, this._renderId = 0, this._renderPending = false, this._disposed = false, this._scale = { x: 1, y: 1 }, this._aTchs = [], this._animate = false, this._isFs = false, this._hasFsH = false, t2 <= 0 || e2 <= 0)
@@ -700,7 +700,7 @@ class Q extends P {
   panViewport(t2, e2, s2 = false) {
     var _a;
     const i2 = this._vp;
-    i2.left = N(0, V(t2, this._width - i2.width)), i2.right = i2.left + i2.width, i2.top = N(0, V(e2, this._height - i2.height)), i2.bottom = i2.top + i2.height, this.invalidate(), s2 && ((_a = this._vpHdlr) == null ? void 0 : _a.call(this, { type: "panned", value: i2 }));
+    i2.left = J(0, V(t2, this._width - i2.width)), i2.right = i2.left + i2.width, i2.top = J(0, V(e2, this._height - i2.height)), i2.bottom = i2.top + i2.height, this.invalidate(), s2 && ((_a = this._vpHdlr) == null ? void 0 : _a.call(this, { type: "panned", value: i2 }));
   }
   setBackgroundColor(t2) {
     this._bgColor = t2;
@@ -777,7 +777,7 @@ class Q extends P {
           if (this._isFs) {
             const e3 = function(t3, e4, s3, i3, h3) {
               const n3 = window.innerHeight / h3, o3 = 0.5 * (window.innerWidth - i3 * n3);
-              return H.x = K(t3.clientX - s3.left - o3, 0, i3 * n3, 0, e4.width), H.y = K(t3.clientY - s3.top, 0, h3 * n3, 0, e4.height), H;
+              return H.x = k(t3.clientX - s3.left - o3, 0, i3 * n3, 0, e4.width), H.y = k(t3.clientY - s3.top, 0, h3 * n3, 0, e4.height), H;
             }(t2, this._el, this.getCoordinate(), this._width, this._height);
             c2 = e3.x / this._pxr, p2 = e3.y / this._pxr;
           }
@@ -846,7 +846,7 @@ class Q extends P {
     this._rdr.scale(t2), this.setSmoothing(this._smooth), this._coords = void 0;
   }
 }
-const { min: J, max: B } = Math, U = 0.5;
+const { min: N, max: U } = Math, B = 0.5;
 class T extends P {
   constructor({ resourceId: t2, x: e2 = 0, y: s2 = 0, width: i2 = 10, height: h2 = 10, rotation: n2 = 0, collidable: o2 = false, interactive: a2 = false, mask: r2 = false, sheet: d2 }) {
     if (super(), this.hover = false, this.isDragging = false, this._mask = false, this._interactive = false, this._draggable = false, this._keepInBounds = false, this._pressed = false, i2 <= 0 || h2 <= 0)
@@ -901,14 +901,14 @@ class T extends P {
   }
   setWidth(t2) {
     const e2 = this._bounds.width;
-    e2 !== t2 && (this._bounds.width = t2, 0 !== e2 && (this._bounds.left -= t2 * U - e2 * U), !this._tfb || 0 === this.getRotation() && 1 === this.getScale() || this.invalidateDrawProps({ rotation: this.getRotation(), scale: this.getScale() }), this.invalidate());
+    e2 !== t2 && (this._bounds.width = t2, 0 !== e2 && (this._bounds.left -= t2 * B - e2 * B), !this._tfb || 0 === this.getRotation() && 1 === this.getScale() || this.invalidateDrawProps({ rotation: this.getRotation(), scale: this.getScale() }), this.invalidate());
   }
   getHeight() {
     return this._bounds.height;
   }
   setHeight(t2) {
     const e2 = this._bounds.height;
-    e2 !== t2 && (this._bounds.height = t2, 0 !== e2 && (this._bounds.top -= t2 * U - e2 * U), !this._tfb || 0 === this.getRotation() && 1 === this.getScale() || this.invalidateDrawProps({ rotation: this.getRotation(), scale: this.getScale() }), this.invalidate());
+    e2 !== t2 && (this._bounds.height = t2, 0 !== e2 && (this._bounds.top -= t2 * B - e2 * B), !this._tfb || 0 === this.getRotation() && 1 === this.getScale() || this.invalidateDrawProps({ rotation: this.getRotation(), scale: this.getScale() }), this.invalidate());
   }
   setBounds(t2, e2, s2, i2) {
     this._cstrt && (t2 -= this._cstrt.left, e2 -= this._cstrt.top);
@@ -916,10 +916,10 @@ class T extends P {
     "number" == typeof s2 && (h2 = this._bounds.width !== s2, this._bounds.width = s2), "number" == typeof i2 && (h2 = h2 || this._bounds.height !== i2, this._bounds.height = i2);
     const n2 = this._bounds.width, o2 = this._bounds.height, a2 = this._cstrt ? this._cstrt.width : this.canvas.getWidth(), r2 = this._cstrt ? this._cstrt.height : this.canvas.getHeight();
     if (this._keepInBounds) {
-      const s3 = J(0, -(n2 - a2)), i3 = J(0, -(o2 - r2)), h3 = r2 - o2;
-      t2 = J(a2 - n2, B(t2, s3)), e2 = J(h3, B(e2, i3));
+      const s3 = N(0, -(n2 - a2)), i3 = N(0, -(o2 - r2)), h3 = r2 - o2;
+      t2 = N(a2 - n2, U(t2, s3)), e2 = N(h3, U(e2, i3));
     } else
-      t2 > a2 && (t2 += n2 * U), e2 > r2 && (e2 += o2 * U);
+      t2 > a2 && (t2 += n2 * B), e2 > r2 && (e2 += o2 * B);
     this.setX(t2), this.setY(e2), h2 && this.invalidate();
   }
   getBounds(t2 = false) {
@@ -962,8 +962,8 @@ class T extends P {
   }
   getIntersection(t2) {
     if (this.collidesWith(t2)) {
-      const e2 = this._bounds, s2 = t2.getBounds(), i2 = B(e2.left, s2.left), h2 = B(e2.top, s2.top);
-      return { left: i2, top: h2, width: J(e2.left + e2.width, s2.width + s2.height) - i2, height: J(e2.top + e2.height, s2.top + s2.height) - h2 };
+      const e2 = this._bounds, s2 = t2.getBounds(), i2 = U(e2.left, s2.left), h2 = U(e2.top, s2.top);
+      return { left: i2, top: h2, width: N(e2.left + e2.width, s2.width + s2.height) - i2, height: N(e2.top + e2.height, s2.top + s2.height) - h2 };
     }
   }
   collidesWithEdge(t2, e2) {
@@ -1008,7 +1008,7 @@ class T extends P {
       e2.setCanvas(t2);
   }
   setConstraint(t2, e2, s2, i2) {
-    return this._cstrt = { left: t2, top: e2, width: s2, height: i2 }, this._bounds.left = B(t2, this._bounds.left), this._bounds.top = B(e2, this._bounds.top), this._keepInBounds = true, this.getConstraint();
+    return this._cstrt = { left: t2, top: e2, width: s2, height: i2 }, this._bounds.left = U(t2, this._bounds.left), this._bounds.top = U(e2, this._bounds.top), this._keepInBounds = true, this.getConstraint();
   }
   getConstraint() {
     return this._cstrt;
@@ -1028,7 +1028,7 @@ class T extends P {
       const i3 = this._animation;
       let { left: h2, top: n2, width: o2, height: a2 } = s2;
       if (i3) {
-        const s3 = i3.tileWidth ? i3.tileWidth : U + o2 << 0, r2 = i3.tileHeight ? i3.tileHeight : U + a2 << 0;
+        const s3 = i3.tileWidth ? i3.tileWidth : B + o2 << 0, r2 = i3.tileHeight ? i3.tileHeight : B + a2 << 0;
         e2 && (h2 -= e2.left, n2 -= e2.top), t2.drawImageCropped(this._resourceId, i3.col * s3, i3.type.row * r2, s3, r2, h2, n2, o2, a2, this.getDrawProps());
       } else if (e2) {
         const { src: i4, dest: h3 } = G(s2, e2);
@@ -1092,7 +1092,7 @@ class T extends P {
         return y(t3, 1, i3);
       const { left: h3, top: n2, width: o2, height: a2 } = y(t3, s3, i3);
       if (0 !== e3) {
-        const t4 = -o2 * g, s4 = o2 * g, r2 = o2 * g, d2 = -o2 * g, l2 = a2 * g, c2 = a2 * g, m2 = -a2 * g, _2 = -a2 * g, b2 = e3 * f, w2 = Math.cos(b2), Z2 = Math.sin(b2), G2 = t4 * w2 + l2 * Z2, y2 = -t4 * Z2 + l2 * w2, v2 = s4 * w2 + c2 * Z2, x2 = -s4 * Z2 + c2 * w2, R2 = r2 * w2 + m2 * Z2, X2 = -r2 * Z2 + m2 * w2, W2 = d2 * w2 + _2 * Z2, C2 = -d2 * Z2 + _2 * w2, L2 = p(G2, v2, R2, W2), S2 = u(G2, v2, R2, W2), Y2 = p(y2, x2, X2, C2), z2 = u(y2, x2, X2, C2);
+        const t4 = -o2 * g, s4 = o2 * g, r2 = o2 * g, d2 = -o2 * g, l2 = a2 * g, c2 = a2 * g, m2 = -a2 * g, _2 = -a2 * g, b2 = e3 * f, w2 = Math.cos(b2), Z2 = Math.sin(b2), G2 = t4 * w2 + l2 * Z2, y2 = -t4 * Z2 + l2 * w2, v2 = s4 * w2 + c2 * Z2, R2 = -s4 * Z2 + c2 * w2, x2 = r2 * w2 + m2 * Z2, X2 = -r2 * Z2 + m2 * w2, W2 = d2 * w2 + _2 * Z2, C2 = -d2 * Z2 + _2 * w2, L2 = p(G2, v2, x2, W2), S2 = u(G2, v2, x2, W2), Y2 = p(y2, R2, X2, C2), z2 = u(y2, R2, X2, C2);
         i3.width = S2 - L2, i3.height = z2 - Y2, i3.left = h3 - (i3.width * g - o2 * g), i3.top = n2 - (i3.height * g - a2 * g);
       }
     }(this._bounds, h2.rotation, h2.scale, this._tfb));
