@@ -51,11 +51,6 @@ export type Viewport = BoundingBox & Size;
 
 export type ImageSource = HTMLImageElement | HTMLCanvasElement | File | Blob | ImageData | ImageBitmap | string;
 
-export type SizedImage = {
-    size: Size;
-    image: HTMLImageElement;
-};
-
 export type SpriteSheet = {
     row: number;
     col: number;

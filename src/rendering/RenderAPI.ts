@@ -21,7 +21,7 @@
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 import type { ImageSource, Point, Size } from "../definitions/types";
-import Loader from "../Loader";
+import Loader from "../utils/Loader";
 import { readFile } from "../utils/FileUtil";
 import { imageToBitmap } from "../utils/ImageUtil";
 import RendererImpl from "./RendererImpl";

@@ -20,8 +20,6 @@
  * IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-import type { SizedImage } from "../definitions/types";
-import Loader from "../Loader";
 
 /* lazily create a pooled canvas for pixel retrieval operations */
 
@@ -62,11 +60,11 @@ export function clearTempCanvas(): void {
     _tempCanvas.height = 1;
 }
 
-export async function resizeImage( sizedImage: SizedImage, width: number, height: number ): Promise<ImageBitmap> {
-    if ( sizedImage.size.width === width || sizedImage.size.height === height ) {
-        return imageToBitmap( sizedImage.image );
+export async function resizeImage( image: HTMLImageElement | HTMLCanvasElement | ImageBitmap, width: number, height: number ): Promise<ImageBitmap> {
+    if ( image.width === width || image.height === height ) {
+        return image instanceof ImageBitmap ? image : imageToBitmap( image );
     }
-    imageToCanvas( getTempCanvas(), sizedImage.image, width, height );
+    imageToCanvas( getTempCanvas(), image, width, height );
     const clonedCanvas = cloneCanvas( getTempCanvas() );
 
     clearTempCanvas();
@@ -80,7 +78,7 @@ export function cloneCanvas( canvasToClone: HTMLCanvasElement ): HTMLCanvasEleme
     return cvs;
 }
 
-export function imageToCanvas( cvs: HTMLCanvasElement, image: HTMLImageElement | ImageBitmap, width: number, height: number ): void {
+export function imageToCanvas( cvs: HTMLCanvasElement, image: HTMLImageElement | HTMLCanvasElement | ImageBitmap, width: number, height: number ): void {
     drawImageOnCanvas( cvs, image, width, height );
 }
 

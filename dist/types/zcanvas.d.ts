@@ -209,10 +209,6 @@ declare module "src/definitions/types" {
     };
     export type Viewport = BoundingBox & Size;
     export type ImageSource = HTMLImageElement | HTMLCanvasElement | File | Blob | ImageData | ImageBitmap | string;
-    export type SizedImage = {
-        size: Size;
-        image: HTMLImageElement;
-    };
     export type SpriteSheet = {
         row: number;
         col: number;
@@ -233,24 +229,27 @@ declare module "src/utils/EventHandler" {
     }
 }
 declare module "src/utils/ImageUtil" {
-    import type { SizedImage } from "src/definitions/types";
     export function createCanvas(width?: number, height?: number, optimizedReads?: boolean): {
         cvs: HTMLCanvasElement;
         ctx: CanvasRenderingContext2D;
     };
     export function getTempCanvas(): HTMLCanvasElement;
     export function clearTempCanvas(): void;
-    export function resizeImage(sizedImage: SizedImage, width: number, height: number): Promise<ImageBitmap>;
+    export function resizeImage(image: HTMLImageElement | HTMLCanvasElement | ImageBitmap, width: number, height: number): Promise<ImageBitmap>;
     export function cloneCanvas(canvasToClone: HTMLCanvasElement): HTMLCanvasElement;
-    export function imageToCanvas(cvs: HTMLCanvasElement, image: HTMLImageElement | ImageBitmap, width: number, height: number): void;
+    export function imageToCanvas(cvs: HTMLCanvasElement, image: HTMLImageElement | HTMLCanvasElement | ImageBitmap, width: number, height: number): void;
     export function imageToBitmap(image: HTMLImageElement | HTMLCanvasElement | Blob): Promise<ImageBitmap>;
     export function blobToImage(blob: Blob): Promise<HTMLImageElement>;
 }
 declare module "src/utils/FileUtil" {
     export function readFile(file: File): Promise<Blob>;
 }
-declare module "src/Loader" {
-    import type { SizedImage } from "src/definitions/types";
+declare module "src/utils/Loader" {
+    import type { Size } from "src/definitions/types";
+    type SizedImage = {
+        size: Size;
+        image: HTMLImageElement;
+    };
     const Loader: {
         loadImage(source: string | Blob | File): Promise<SizedImage>;
         loadBitmap(source: string | Blob | File): Promise<ImageBitmap>;
@@ -512,9 +511,9 @@ declare module "src/Canvas" {
 }
 declare module "zcanvas" {
     import Canvas from "src/Canvas";
-    import Loader from "src/Loader";
     import Sprite from "src/Sprite";
+    import Loader from "src/utils/Loader";
     export * from "src/definitions/types";
-    export { Canvas, Loader, Sprite };
+    export { Canvas, Sprite, Loader };
 }
 //# sourceMappingURL=zcanvas.d.ts.map

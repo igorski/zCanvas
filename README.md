@@ -6,11 +6,11 @@ zCanvas is written in TypeScript, has no dependencies and works independently fr
 
 ### Why use zCanvas ?
 
-zCanvas sure isn't the first JS Canvas rendering library, so let's sum:
+zCanvas sure isn't the first JS Canvas rendering library, so to summarize:
 
  * it weighs a mere `15K gZipped`
  * uses Worker based rendering to free up CPU for your application on the main thread
- * loads image files in File / Blob / string (URL, Blob URL, base64 encoding) / HTMLImageElement|HTMLCanvasElement|ImageBitmap formats
+ * loads image files from File / Blob / string (URL, Blob URL, base64 encoding) / HTMLImageElement / HTMLCanvasElement / ImageData / ImageBitmap sources
  * takes care of HDPI scaling and distortion-free stretching to present well on mobile screens
  * provides an abstraction layer close to - but with in-built optimizations for handling - _CanvasRenderingContext2D_ API draw calls.
 

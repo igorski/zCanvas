@@ -109,7 +109,7 @@ const r = { loadImage: (e2) => new Promise(async (s2, i2) => {
   const i2 = 60;
   let h2 = 0;
   !function n2() {
-    r.isReady(t2) ? e2() : ++h2 === i2 ? s2(new Error("Image could not be resolved. This shouldn't occur.")) : window.requestAnimationFrame(n2);
+    r.isReady(t2) ? e2() : ++h2 === i2 ? s2(new Error("Image could not be resolved.")) : requestAnimationFrame(n2);
   }();
 }) };
 function d(t2) {

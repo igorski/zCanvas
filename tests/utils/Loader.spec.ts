@@ -1,15 +1,10 @@
 import { describe, expect, it, beforeEach, afterEach, vi } from "vitest";
 import "vitest-canvas-mock";
-import Loader from "../src/Loader";
+import Loader from "../../src/utils/Loader";
 
 const mockReadFile = vi.fn();
-vi.mock( "../src/utils/FileUtil", () => ({
+vi.mock( "../../src/utils/FileUtil", () => ({
     readFile: vi.fn(( ...args ) => mockReadFile( ...args )),
-}));
-
-vi.mock( "./utils/ImageUtil", () => ({
-    imageToBitmap: vi.fn(),
-    blobToImage: vi.fn(() => new Image()),
 }));
 
 describe( "Loader", () => {

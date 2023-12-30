@@ -20,15 +20,24 @@
  * IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-import type { SizedImage, Size } from "./definitions/types";
-import EventHandler from "./utils/EventHandler";
-import { imageToBitmap, blobToImage } from "./utils/ImageUtil";
-import { readFile } from "./utils/FileUtil";
+import type { Size } from "../definitions/types";
+import EventHandler from "./EventHandler";
+import { imageToBitmap, blobToImage } from "./ImageUtil";
+import { readFile } from "./FileUtil";
+
+type SizedImage = {
+    size: Size;
+    image: HTMLImageElement;
+};
 
 /**
- * loader provides an interface that allows the loading of Images
+ * Loader provides an interface that allows the loading of HTMLImageElements
  * regardless of their source type (e.g. path to (cross origin) image, Blob URL)
- * and always ensures Image content is actually ready for rendering
+ * and always ensures Image content is actually ready for rendering.
+ * 
+ * It is recommended to use Canvas loadResource() method instead when loading assets
+ * for rendering. Loader can however be used to retrieve images used for intermediate
+ * drawing operations outside of zCanvas.
  */
 const Loader = {
 
@@ -132,11 +141,11 @@ const Loader = {
                 if ( Loader.isReady( image )) {
                     resolve();
                 } else if ( ++iterations === MAX_ITERATIONS ) {
-                    reject( new Error( "Image could not be resolved. This shouldn't occur." ));
+                    reject( new Error( "Image could not be resolved." ));
                 } else {
                     // requestAnimationFrame preferred over a timeout as
                     // browsers will fire this when the DOM is actually ready (e.g. Image is rendered)
-                    window.requestAnimationFrame( readyCheck );
+                    requestAnimationFrame( readyCheck );
                 }
             }
             readyCheck();
