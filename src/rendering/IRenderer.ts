@@ -34,12 +34,12 @@ export interface IRenderer {
     save(): void
     restore(): void
     translate( x: number, y: number ): void
+    scale( xScale: number, yScale?: number ): void
     rotate( angleInRadians: number ): void;
     transform( a: number, b: number, c: number, d: number, e: number, f: number ): void;
 
     // E.O. compatibility section
 
-    scale( xScale: number, yScale?: number ): void
     setBlendMode( type: GlobalCompositeOperation ): void
     setAlpha( value: number ): void
 
