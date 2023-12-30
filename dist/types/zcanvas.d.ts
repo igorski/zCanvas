@@ -28,21 +28,23 @@ declare module "src/rendering/IRenderer" {
         transform(a: number, b: number, c: number, d: number, e: number, f: number): void;
         setBlendMode(type: GlobalCompositeOperation): void;
         setAlpha(value: number): void;
+        createPattern(resourceId: string, repetition: "repeat" | "repeat-x" | "repeat-y" | "no-repeat"): void;
         drawPath(points: Point[], color?: ColorOrTransparent, stroke?: StrokeProps): void;
         clearRect(x: number, y: number, width: number, height: number, props?: DrawProps): void;
         drawRect(x: number, y: number, width: number, height: number, color?: ColorOrTransparent, stroke?: StrokeProps, props?: DrawProps): void;
         drawRoundRect(x: number, y: number, width: number, height: number, radius: number, color?: ColorOrTransparent, stroke?: StrokeProps, props?: DrawProps): void;
         drawCircle(x: number, y: number, radius: number, color?: string, stroke?: StrokeProps, props?: DrawProps): void;
+        drawEllipse(x: number, y: number, xRadius: number, yRadius: number, color?: string, stroke?: StrokeProps, props?: DrawProps): void;
         drawImage(resourceId: string, x: number, y: number, width?: number, height?: number, props?: DrawProps): void;
         drawImageCropped(resourceId: string, sourceX: number, sourceY: number, sourceWidth: number, sourceHeight: number, destinationX: number, destinationY: number, destinationWidth: number, destinationHeight: number, props?: DrawProps): void;
         drawText(text: TextProps, x: number, y: number, props?: DrawProps): void;
-        createPattern(resourceId: string, repetition: "repeat" | "repeat-x" | "repeat-y" | "no-repeat"): void;
         drawPattern(patternResourceId: string, x: number, y: number, width: number, height: number): void;
     }
     export type StrokeProps = {
         color: string;
         size: number;
         dash?: number[];
+        cap?: "butt" | "round" | "square";
     };
     export type TextProps = {
         text: string;
@@ -320,15 +322,16 @@ declare module "src/rendering/RendererImpl" {
         transform(a: number, b: number, c: number, d: number, e: number, f: number): void;
         setBlendMode(mode: GlobalCompositeOperation): void;
         setAlpha(value: number): void;
+        createPattern(resourceId: string, repetition: "repeat" | "repeat-x" | "repeat-y" | "no-repeat"): void;
         drawPath(points: Point[], color?: string, stroke?: StrokeProps): void;
         clearRect(x: number, y: number, width: number, height: number, props?: DrawProps): void;
         drawRect(x: number, y: number, width: number, height: number, color?: string, stroke?: StrokeProps, props?: DrawProps): void;
         drawRoundRect(x: number, y: number, width: number, height: number, radius: number, color?: string, stroke?: StrokeProps, props?: DrawProps): void;
         drawCircle(x: number, y: number, radius: number, fillColor?: string, stroke?: StrokeProps, props?: DrawProps): void;
+        drawEllipse(x: number, y: number, xRadius: number, yRadius: number, fillColor?: string, stroke?: StrokeProps, props?: DrawProps): void;
         drawImage(resourceId: string, x: number, y: number, width?: number, height?: number, props?: DrawProps): void;
         drawImageCropped(resourceId: string, sourceX: number, sourceY: number, sourceWidth: number, sourceHeight: number, destinationX: number, destinationY: number, destinationWidth: number, destinationHeight: number, props?: DrawProps): void;
         drawText(text: TextProps, x: number, y: number, props?: DrawProps): void;
-        createPattern(resourceId: string, repetition: "repeat" | "repeat-x" | "repeat-y" | "no-repeat"): void;
         drawPattern(patternResourceId: string, x: number, y: number, width: number, height: number): void;
         protected prepare(props: DrawProps, x: number, y: number, width: number, height: number): ResetCommand;
         protected applyReset(cmd: ResetCommand): void;
@@ -371,11 +374,12 @@ declare module "src/rendering/RenderAPI" {
         drawRect(x: number, y: number, width: number, height: number, color?: ColorOrTransparent, stroke?: StrokeProps, props?: DrawProps): void;
         drawRoundRect(x: number, y: number, width: number, height: number, radius: number, color?: ColorOrTransparent, stroke?: StrokeProps, props?: DrawProps): void;
         drawCircle(x: number, y: number, radius: number, fillColor?: string, stroke?: StrokeProps, props?: DrawProps): void;
+        drawEllipse(x: number, y: number, xRadius: number, yRadius: number, color?: string, stroke?: StrokeProps, props?: DrawProps): void;
         drawImage(resourceId: string, x: number, y: number, width: number, height: number, props?: DrawProps): void;
         drawImageCropped(resourceId: string, sourceX: number, sourceY: number, sourceWidth: number, sourceHeight: number, destinationX: number, destinationY: number, destinationWidth: number, destinationHeight: number, props?: DrawProps): void;
         drawText(text: TextProps, x: number, y: number, props?: DrawProps): void;
         drawPattern(patternResourceId: string, x: number, y: number, width: number, height: number): void;
-        protected onDraw(cmd: string, ...args: any[]): void;
+        protected onDraw(cmd: keyof IRenderer, ...args: any[]): void;
         protected getBackend(cmd: string, ...args: any[]): void;
     }
 }

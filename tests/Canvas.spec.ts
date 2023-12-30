@@ -163,6 +163,45 @@ describe( "Canvas", () => {
         });
     });
 
+    describe( "when providing a way to get the currently visible content", () => {
+        beforeEach(() => {
+            vi.spyOn( CanvasRenderingContext2D.prototype, "drawImage" ).mockImplementation(() => vi.fn() );
+        });
+
+        it( "should by default clone the contents of the full size Canvas when no resourceId was provided", async () => {
+            const canvas = new Canvas({ width: 1024, height: 768 });
+
+            const getResourceSpy = vi.spyOn( RenderAPI.prototype, "getResource" );
+            
+            const content = await canvas.getContent();
+
+            expect( content ).not.toEqual( canvas.getElement() );
+            expect( getResourceSpy ).not.toHaveBeenCalled();
+        });
+
+        it( "should by default return a clone as big as itself", async () => {
+            const canvas = new Canvas({ width: 1024, height: 768 });
+
+            const content = await canvas.getContent();
+
+            expect( content.width ).toEqual( 1024 );
+            expect( content.height ).toEqual( 768 );
+        });
+
+        it( "should by return a Canvas as big as the requested resource when a sourceId was provided", async () => {
+            const canvas = new Canvas({ width: 1024, height: 768 });
+
+            vi.spyOn( RenderAPI.prototype, "getResource" ).mockImplementation(() => Promise.resolve(createMockImageBitmap( 100, 50 )));
+            
+            const content = await canvas.getContent( "foo" );
+
+            expect( content ).toBeInstanceOf( HTMLCanvasElement );
+            
+            expect( content.width ).toEqual( 100 );
+            expect( content.height ).toEqual( 50 );
+        });
+    });
+
     it( "should be able to insert itself into the DOM at runtime", () => {
         const canvas  = new Canvas();
         const element = global.document.createElement( "div" );

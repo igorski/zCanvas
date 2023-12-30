@@ -173,21 +173,21 @@ class p {
 const { min: u, max: m } = Math, g = 0.5;
 let _, b, w, f;
 const G = Math.PI / 180;
-function v(t2) {
+function x(t2) {
   return t2 > 0 ? t2 + 0.5 << 0 : 0 | t2;
 }
-function X(t2, e2) {
+function Z(t2, e2) {
   ({ left: _, top: b, width: w, height: f } = t2);
   const { left: s2, top: i2, width: h2, height: n2 } = e2;
   return w = _ > s2 ? u(w, h2 - (_ - s2)) : u(h2, w - (s2 - _)), f = b > i2 ? u(f, n2 - (b - i2)) : u(n2, f - (i2 - b)), { src: { left: _ > s2 ? 0 : s2 - _, top: b > i2 ? 0 : i2 - b, width: w, height: f }, dest: { left: _ > s2 ? _ - s2 : 0, top: b > i2 ? b - i2 : 0, width: w, height: f } };
 }
-function Z(t2, e2, s2) {
+function v(t2, e2, s2) {
   const { left: i2, top: h2, width: n2, height: o2 } = t2;
   return s2.width = n2 * e2, s2.height = o2 * e2, s2.left = i2 - (s2.width - n2) * g, s2.top = h2 - (s2.height - o2) * g, s2;
 }
-const R = "transparent", x = 0.5;
-let y, C = 1, W = "setTransform";
-class L {
+const X = "transparent", C = 2 * Math.PI, R = 0.5;
+let y = 1, L = "setTransform";
+class W {
   constructor(t2, e2 = false) {
     this._debug = e2, this._cvs = t2, this._ctx = t2.getContext("2d"), this._bmp = new p(void 0, (t3) => {
       t3.close();
@@ -215,7 +215,7 @@ class L {
     });
   }
   setPixelRatio(t2) {
-    C = t2, W = 1 === C ? "setTransform" : "transform";
+    y = t2, L = 1 === y ? "setTransform" : "transform";
   }
   save() {
     this._ctx.save();
@@ -241,34 +241,41 @@ class L {
   setAlpha(t2) {
     this._ctx.globalAlpha = t2;
   }
-  drawPath(t2, e2 = R, s2) {
+  createPattern(t2, e2) {
+    this._bmp.has(t2) && this._ptn.set(t2, this._ctx.createPattern(this._bmp.get(t2), e2));
+  }
+  drawPath(t2, e2 = X, s2) {
     let i2;
-    y = this._ctx, y.beginPath(), y.moveTo(t2[0].x, t2[0].y);
+    this._ctx.beginPath(), this._ctx.moveTo(t2[0].x, t2[0].y);
     for (let e3 = 1, s3 = t2.length; e3 < s3; ++e3)
-      y.lineTo(i2.x, i2.y);
-    e2 !== R && y.fill(), s2 && (S(y, s2), y.stroke()), y.closePath();
+      i2 = t2[e3], this._ctx.lineTo(i2.x, i2.y);
+    e2 !== X && this._ctx.fill(), s2 && (H(this._ctx, s2), this._ctx.stroke());
   }
   clearRect(t2, e2, s2, i2, h2) {
     const n2 = h2 ? this.prepare(h2, t2, e2, s2, i2) : 0;
     this._ctx.clearRect(t2, e2, s2, i2), this.applyReset(n2);
   }
-  drawRect(t2, e2, s2, i2, h2 = R, n2, o2) {
+  drawRect(t2, e2, s2, i2, h2 = X, n2, o2) {
     const a2 = o2 ? this.prepare(o2, t2, e2, s2, i2) : 0;
-    y = this._ctx, h2 !== R && (y.fillStyle = h2, y.fillRect(t2, e2, s2, i2)), n2 && (S(y, n2), y.strokeRect(x + t2, x + e2, s2, i2)), this.applyReset(a2);
+    h2 !== X && (this._ctx.fillStyle = h2, this._ctx.fillRect(t2, e2, s2, i2)), n2 && (H(this._ctx, n2), this._ctx.strokeRect(R + t2, R + e2, s2, i2)), this.applyReset(a2);
   }
-  drawRoundRect(t2, e2, s2, i2, h2, n2 = R, o2, a2) {
+  drawRoundRect(t2, e2, s2, i2, h2, n2 = X, o2, a2) {
     const r2 = a2 ? this.prepare(a2, t2, e2, s2, i2) : 0;
-    y = this._ctx, y.beginPath(), n2 !== R && (y.fillStyle = n2, y.roundRect(t2, e2, s2, i2, h2), y.fill()), o2 && (S(y, o2), y.roundRect(x + t2, x + e2, s2, i2, h2), y.stroke()), this.applyReset(r2);
+    this._ctx.beginPath(), n2 !== X && (this._ctx.fillStyle = n2, this._ctx.roundRect(t2, e2, s2, i2, h2), this._ctx.fill()), o2 && (H(this._ctx, o2), this._ctx.roundRect(R + t2, R + e2, s2, i2, h2), this._ctx.stroke()), this.applyReset(r2);
   }
-  drawCircle(t2, e2, s2, i2 = R, h2, n2) {
+  drawCircle(t2, e2, s2, i2 = X, h2, n2) {
     const o2 = n2 ? this.prepare(n2, t2, e2, 2 * s2, 2 * s2) : 0;
-    y = this._ctx, y.beginPath(), y.arc(t2 + s2, e2 + s2, s2, 0, 2 * Math.PI, false), i2 !== R && (y.fillStyle = i2, y.fill()), h2 && (S(y, h2), y.closePath(), y.stroke()), this.applyReset(o2);
+    this._ctx.beginPath(), this._ctx.arc(t2 + s2, e2 + s2, s2, 0, C, false), i2 !== X && (this._ctx.fillStyle = i2, this._ctx.fill()), h2 && (H(this._ctx, h2), this._ctx.stroke()), this.applyReset(o2);
+  }
+  drawEllipse(t2, e2, s2, i2, h2 = X, n2, o2) {
+    const a2 = o2 ? this.prepare(o2, t2, e2, 2 * s2, 2 * i2) : 0;
+    this._ctx.beginPath(), this._ctx.ellipse(t2, e2, s2, i2, 0, 0, C, false), h2 !== X && (this._ctx.fillStyle = h2, this._ctx.fill()), n2 && (H(this._ctx, n2), this._ctx.stroke()), this.applyReset(a2);
   }
   drawImage(t2, e2, s2, i2, h2, n2) {
     if (!this._bmp.has(t2))
       return;
     const o2 = n2 ? this.prepare(n2, e2, s2, i2, h2) : 0;
-    void 0 === i2 ? this._ctx.drawImage(this._bmp.get(t2), e2, s2) : this._ctx.drawImage(this._bmp.get(t2), e2, s2, i2, h2), this._debug && this.drawRect(e2, s2, i2, h2, R, { size: 1, color: "red" }), this.applyReset(o2);
+    void 0 === i2 ? this._ctx.drawImage(this._bmp.get(t2), e2, s2) : this._ctx.drawImage(this._bmp.get(t2), e2, s2, i2, h2), this._debug && this.drawRect(e2, s2, i2, h2, X, { size: 1, color: "red" }), this.applyReset(o2);
   }
   drawImageCropped(t2, e2, s2, i2, h2, n2, o2, a2, r2, d2) {
     if (!this._bmp.has(t2))
@@ -280,7 +287,7 @@ class L {
       e2 + i2 > n3.width && (a2 -= o3 * (e2 + i2 - n3.width), i2 -= e2 + i2 - n3.width), s2 + h2 > n3.height && (r2 -= d3 * (s2 + h2 - n3.height), h2 -= s2 + h2 - n3.height);
     }
     const l2 = d2 ? this.prepare(d2, n2, o2, a2, r2) : 0;
-    this._ctx.drawImage(this._bmp.get(t2), x + e2 << 0, x + s2 << 0, x + i2 << 0, x + h2 << 0, x + n2 << 0, x + o2 << 0, x + a2 << 0, x + r2 << 0), this._debug && this.drawRect(n2, o2, a2, r2, R, { size: 1, color: "red" }), this.applyReset(l2);
+    this._ctx.drawImage(this._bmp.get(t2), R + e2 << 0, R + s2 << 0, R + i2 << 0, R + h2 << 0, R + n2 << 0, R + o2 << 0, R + a2 << 0, R + r2 << 0), this._debug && this.drawRect(n2, o2, a2, r2, X, { size: 1, color: "red" }), this.applyReset(l2);
   }
   drawText(t2, e2, s2, i2) {
     const { lines: h2, width: n2, height: o2 } = function(t3, e3) {
@@ -299,7 +306,7 @@ class L {
         i3.push({ line: s4, top: d2 }), o3 += h3;
       }), { lines: i3, width: Math.ceil(n3), height: Math.ceil(o3) };
     }(t2, this._ctx);
-    t2.center && (e2 -= n2 * x, s2 -= o2 * x);
+    t2.center && (e2 -= n2 * R, s2 -= o2 * R);
     const a2 = i2 ? this.prepare(i2, e2, s2, n2, o2) : 0;
     !function(t3, e3, s3, i3, h3) {
       c(s3, t3);
@@ -310,9 +317,6 @@ class L {
         }) : t3.fillText(e4, i3, h3 + o3);
       });
     }(this._ctx, h2, t2, e2, s2), this.applyReset(a2);
-  }
-  createPattern(t2, e2) {
-    this._bmp.has(t2) && this._ptn.set(t2, this._ctx.createPattern(this._bmp.get(t2), e2));
   }
   drawPattern(t2, e2, s2, i2, h2) {
     if (!this._ptn.has(t2))
@@ -328,41 +332,41 @@ class L {
     else if (!l2)
       return 0;
     if (l2) {
-      const n3 = t2.scale ?? 1, o3 = ((_a = t2.pivot) == null ? void 0 : _a.x) ?? e2 + i2 * x, a3 = ((_b = t2.pivot) == null ? void 0 : _b.y) ?? s2 + h2 * x, r3 = t2.rotation * G, d3 = Math.cos(r3) * n3, l3 = Math.sin(r3) * n3;
-      this._ctx[W](d3, l3, -l3, d3, o3 - o3 * d3 + a3 * l3, a3 - o3 * l3 - a3 * d3);
+      const n3 = t2.scale ?? 1, o3 = ((_a = t2.pivot) == null ? void 0 : _a.x) ?? e2 + i2 * R, a3 = ((_b = t2.pivot) == null ? void 0 : _b.y) ?? s2 + h2 * R, r3 = t2.rotation * G, d3 = Math.cos(r3) * n3, l3 = Math.sin(r3) * n3;
+      this._ctx[L](d3, l3, -l3, d3, o3 - o3 * d3 + a3 * l3, a3 - o3 * l3 - a3 * d3);
     }
     return r2 && this.setBlendMode(t2.blendMode), a2 && this.setAlpha(t2.alpha), d2 ? 1 : 2;
   }
   applyReset(t2) {
-    2 === t2 ? this._ctx.setTransform(C, 0, 0, C, 0, 0) : 1 === t2 && this.restore();
+    2 === t2 ? this._ctx.setTransform(y, 0, 0, y, 0, 0) : 1 === t2 && this.restore();
   }
 }
-function S(t2, e2) {
-  t2.lineWidth = e2.size, t2.strokeStyle = e2.color, e2.dash && t2.setLineDash(e2.dash);
+function H(t2, e2) {
+  t2.lineWidth = e2.size, t2.strokeStyle = e2.color, e2.cap && (t2.lineCap = e2.cap), e2.dash && t2.setLineDash(e2.dash);
 }
-const Y = "IWZ1bmN0aW9uKCl7InVzZSBzdHJpY3QiO2Z1bmN0aW9uIHQodCxlKXtlLmZvbnQ9YCR7dC5zaXplfSR7dC51bml0fSAiJHt0LmZvbnR9ImAsZS5maWxsU3R5bGU9dC5jb2xvcn1jbGFzcyBle2NvbnN0cnVjdG9yKHQsZSl7dGhpcy5faW5kZXg9MCx0aGlzLl9tYXA9bmV3IE1hcCx0aGlzLl9jcmVhdGVGbj10LHRoaXMuX2Rlc3Ryb3lGbj1lfWRpc3Bvc2UoKXtjb25zdCB0PVsuLi50aGlzLl9tYXBdLm1hcCgoKFt0XSk9PnQpKTtmb3IoO3QubGVuZ3RoPjA7KXRoaXMucmVtb3ZlKHQuc2hpZnQoKSk7dGhpcy5fbWFwPXZvaWQgMH1nZXQodCl7cmV0dXJuIHRoaXMuX21hcC5nZXQodCl9c2V0KHQsZSl7aWYodGhpcy5oYXModCkpe2lmKHRoaXMuZ2V0KHQpPT09ZSlyZXR1cm47dGhpcy5yZW1vdmUodCl9dGhpcy5fbWFwLnNldCh0LGUpfWhhcyh0KXtyZXR1cm4gdGhpcy5fbWFwLmhhcyh0KX1yZW1vdmUodCl7dmFyIGU7aWYoIXRoaXMuaGFzKHQpKXJldHVybiExO2NvbnN0IHM9dGhpcy5nZXQodCk7cmV0dXJuIG51bGw9PShlPXRoaXMuX2Rlc3Ryb3lGbil8fGUuY2FsbCh0aGlzLHMpLHRoaXMuX21hcC5kZWxldGUodCl9bmV4dCgpe2xldCB0O2NvbnN0IGU9dGhpcy5faW5kZXgudG9TdHJpbmcoKTtyZXR1cm4gdGhpcy5oYXMoZSk/dD10aGlzLmdldChlKTp0aGlzLl9jcmVhdGVGbiYmKHQ9dGhpcy5fY3JlYXRlRm4oKSx0aGlzLnNldChlLHQpKSwrK3RoaXMuX2luZGV4LHR9ZmlsbCh0KXtjb25zdCBlPXRoaXMuX2luZGV4O2ZvcihsZXQgcz0wO3M8dDsrK3MpdGhpcy5uZXh0KCk7dGhpcy5faW5kZXg9ZX1yZXNldCgpe3RoaXMuX2luZGV4PTB9fWNvbnN0IHM9TWF0aC5QSS8xODAsaT0idHJhbnNwYXJlbnQiLGE9LjU7bGV0IG4sbyxyLGg9MSxjPSJzZXRUcmFuc2Zvcm0iO2NsYXNzIGx7Y29uc3RydWN0b3IodCxzPSExKXt0aGlzLl9kZWJ1Zz1zLHRoaXMuX2N2cz10LHRoaXMuX2N0eD10LmdldENvbnRleHQoIjJkIiksdGhpcy5fYm1wPW5ldyBlKHZvaWQgMCwodD0+e3QuY2xvc2UoKX0pKSx0aGlzLl9wdG49bmV3IGV9ZGlzcG9zZSgpe3RoaXMuX2JtcC5kaXNwb3NlKCksdGhpcy5fcHRuLmRpc3Bvc2UoKSx0aGlzLl9jdnM9dm9pZCAwfWNhY2hlUmVzb3VyY2UodCxlKXt0aGlzLl9ibXAuc2V0KHQsZSl9Z2V0UmVzb3VyY2UodCl7cmV0dXJuIHRoaXMuX2JtcC5nZXQodCl9ZGlzcG9zZVJlc291cmNlKHQpe3RoaXMuX2JtcC5yZW1vdmUodCl9c2V0RGltZW5zaW9ucyh0LGUpe3RoaXMuX2N2cy53aWR0aD10LHRoaXMuX2N2cy5oZWlnaHQ9ZX1zZXRTbW9vdGhpbmcodCl7Y29uc3QgZT10aGlzLl9jdHg7WyJpbWFnZVNtb290aGluZ0VuYWJsZWQiLCJtb3pJbWFnZVNtb290aGluZ0VuYWJsZWQiLCJvSW1hZ2VTbW9vdGhpbmdFbmFibGVkIiwid2Via2l0SW1hZ2VTbW9vdGhpbmdFbmFibGVkIl0uZm9yRWFjaCgocz0+e3ZvaWQgMCE9PWVbc10mJihlW3NdPXQpfSkpfXNldFBpeGVsUmF0aW8odCl7aD10LGM9MT09PWg/InNldFRyYW5zZm9ybSI6InRyYW5zZm9ybSJ9c2F2ZSgpe3RoaXMuX2N0eC5zYXZlKCl9cmVzdG9yZSgpe3RoaXMuX2N0eC5yZXN0b3JlKCl9dHJhbnNsYXRlKHQsZSl7dGhpcy5fY3R4LnRyYW5zbGF0ZSh0LGUpfXNjYWxlKHQsZT10KXt0aGlzLl9jdHguc2NhbGUodCxlKX1yb3RhdGUodCl7dGhpcy5fY3R4LnJvdGF0ZSh0KX10cmFuc2Zvcm0odCxlLHMsaSxhLG4pe3RoaXMuX2N0eC50cmFuc2Zvcm0odCxlLHMsaSxhLG4pfXNldEJsZW5kTW9kZSh0KXt0aGlzLl9jdHguZ2xvYmFsQ29tcG9zaXRlT3BlcmF0aW9uPXR9c2V0QWxwaGEodCl7dGhpcy5fY3R4Lmdsb2JhbEFscGhhPXR9ZHJhd1BhdGgodCxlPWkscyl7bGV0IGE7bj10aGlzLl9jdHgsbi5iZWdpblBhdGgoKSxuLm1vdmVUbyh0WzBdLngsdFswXS55KTtmb3IobGV0IGk9MSxvPXQubGVuZ3RoO2k8bzsrK2kpbi5saW5lVG8oYS54LGEueSk7ZSE9PWkmJm4uZmlsbCgpLHMmJihkKG4scyksbi5zdHJva2UoKSksbi5jbG9zZVBhdGgoKX1jbGVhclJlY3QodCxlLHMsaSxhKXtjb25zdCBuPWE/dGhpcy5wcmVwYXJlKGEsdCxlLHMsaSk6MDt0aGlzLl9jdHguY2xlYXJSZWN0KHQsZSxzLGkpLHRoaXMuYXBwbHlSZXNldChuKX1kcmF3UmVjdCh0LGUscyxvLHI9aSxoLGMpe2NvbnN0IGw9Yz90aGlzLnByZXBhcmUoYyx0LGUscyxvKTowO249dGhpcy5fY3R4LHIhPT1pJiYobi5maWxsU3R5bGU9cixuLmZpbGxSZWN0KHQsZSxzLG8pKSxoJiYoZChuLGgpLG4uc3Ryb2tlUmVjdChhK3QsYStlLHMsbykpLHRoaXMuYXBwbHlSZXNldChsKX1kcmF3Um91bmRSZWN0KHQsZSxzLG8scixoPWksYyxsKXtjb25zdCBwPWw/dGhpcy5wcmVwYXJlKGwsdCxlLHMsbyk6MDtuPXRoaXMuX2N0eCxuLmJlZ2luUGF0aCgpLGghPT1pJiYobi5maWxsU3R5bGU9aCxuLnJvdW5kUmVjdCh0LGUscyxvLHIpLG4uZmlsbCgpKSxjJiYoZChuLGMpLG4ucm91bmRSZWN0KGErdCxhK2UscyxvLHIpLG4uc3Ryb2tlKCkpLHRoaXMuYXBwbHlSZXNldChwKX1kcmF3Q2lyY2xlKHQsZSxzLGE9aSxvLHIpe2NvbnN0IGg9cj90aGlzLnByZXBhcmUocix0LGUsMipzLDIqcyk6MDtuPXRoaXMuX2N0eCxuLmJlZ2luUGF0aCgpLG4uYXJjKHQrcyxlK3MscywwLDIqTWF0aC5QSSwhMSksYSE9PWkmJihuLmZpbGxTdHlsZT1hLG4uZmlsbCgpKSxvJiYoZChuLG8pLG4uY2xvc2VQYXRoKCksbi5zdHJva2UoKSksdGhpcy5hcHBseVJlc2V0KGgpfWRyYXdJbWFnZSh0LGUscyxhLG4sbyl7aWYoIXRoaXMuX2JtcC5oYXModCkpcmV0dXJuO2NvbnN0IHI9bz90aGlzLnByZXBhcmUobyxlLHMsYSxuKTowO3ZvaWQgMD09PWE/dGhpcy5fY3R4LmRyYXdJbWFnZSh0aGlzLl9ibXAuZ2V0KHQpLGUscyk6dGhpcy5fY3R4LmRyYXdJbWFnZSh0aGlzLl9ibXAuZ2V0KHQpLGUscyxhLG4pLHRoaXMuX2RlYnVnJiZ0aGlzLmRyYXdSZWN0KGUscyxhLG4saSx7c2l6ZToxLGNvbG9yOiJyZWQifSksdGhpcy5hcHBseVJlc2V0KHIpfWRyYXdJbWFnZUNyb3BwZWQodCxlLHMsbixvLHIsaCxjLGwsZCl7aWYoIXRoaXMuX2JtcC5oYXModCkpcmV0dXJuO2lmKG51bGw9PWQ/dm9pZCAwOmQuc2FmZU1vZGUpe2lmKGM8PTB8fGw8PTApcmV0dXJuO2NvbnN0IGk9dGhpcy5fYm1wLmdldCh0KSxhPShjPU1hdGgubWluKHRoaXMuX2N0eC5jYW52YXMud2lkdGgsYykpL24scj0obD1NYXRoLm1pbih0aGlzLl9jdHguY2FudmFzLmhlaWdodCxsKSkvbztlK24+aS53aWR0aCYmKGMtPWEqKGUrbi1pLndpZHRoKSxuLT1lK24taS53aWR0aCkscytvPmkuaGVpZ2h0JiYobC09cioocytvLWkuaGVpZ2h0KSxvLT1zK28taS5oZWlnaHQpfWNvbnN0IHA9ZD90aGlzLnByZXBhcmUoZCxyLGgsYyxsKTowO3RoaXMuX2N0eC5kcmF3SW1hZ2UodGhpcy5fYm1wLmdldCh0KSxhK2U8PDAsYStzPDwwLGErbjw8MCxhK288PDAsYStyPDwwLGEraDw8MCxhK2M8PDAsYStsPDwwKSx0aGlzLl9kZWJ1ZyYmdGhpcy5kcmF3UmVjdChyLGgsYyxsLGkse3NpemU6MSxjb2xvcjoicmVkIn0pLHRoaXMuYXBwbHlSZXNldChwKX1kcmF3VGV4dChlLHMsaSxuKXtjb25zdHtsaW5lczpvLHdpZHRoOnIsaGVpZ2h0Omh9PWZ1bmN0aW9uKGUscyl7dChlLHMpO2NvbnN0IGk9ZS50ZXh0LnNwbGl0KCJcbiIpLGE9W107bGV0IG4sbz0wLHI9MCxoPXMubWVhc3VyZVRleHQoIldxIik7bj1lLmxpbmVIZWlnaHQ/ZS5saW5lSGVpZ2h0OmguYWN0dWFsQm91bmRpbmdCb3hBc2NlbnQraC5hY3R1YWxCb3VuZGluZ0JveERlc2NlbnQ7Y29uc3QgYz1oLmFjdHVhbEJvdW5kaW5nQm94QXNjZW50O2xldCBsPTA7cmV0dXJuIGkuZm9yRWFjaCgoKHQsaSk9PntpZihsPU1hdGgucm91bmQoYytpKm4pLGUuc3BhY2luZyl7Y29uc3Qgcz10LnNwbGl0KCIiKTtvPU1hdGgubWF4KG8scy5sZW5ndGgqZS5zcGFjaW5nKX1lbHNlIGg9cy5tZWFzdXJlVGV4dCh0KSxvPU1hdGgubWF4KG8saC5hY3R1YWxCb3VuZGluZ0JveFJpZ2h0KTthLnB1c2goe2xpbmU6dCx0b3A6bH0pLHIrPW59KSkse2xpbmVzOmEsd2lkdGg6TWF0aC5jZWlsKG8pLGhlaWdodDpNYXRoLmNlaWwocil9fShlLHRoaXMuX2N0eCk7ZS5jZW50ZXImJihzLT1yKmEsaS09aCphKTtjb25zdCBjPW4/dGhpcy5wcmVwYXJlKG4scyxpLHIsaCk6MDshZnVuY3Rpb24oZSxzLGksYSxuKXt0KGksZSk7Y29uc3Qgbz1pLnNwYWNpbmc/PzE7cy5mb3JFYWNoKCgoe2xpbmU6dCx0b3A6c30pPT57aS5zcGFjaW5nP3Quc3BsaXQoIiIpLmZvckVhY2goKCh0LGkpPT57ZS5maWxsVGV4dCh0LGErTWF0aC5yb3VuZChpKm8pLG4rcyl9KSk6ZS5maWxsVGV4dCh0LGEsbitzKX0pKX0odGhpcy5fY3R4LG8sZSxzLGkpLHRoaXMuYXBwbHlSZXNldChjKX1jcmVhdGVQYXR0ZXJuKHQsZSl7dGhpcy5fYm1wLmhhcyh0KSYmdGhpcy5fcHRuLnNldCh0LHRoaXMuX2N0eC5jcmVhdGVQYXR0ZXJuKHRoaXMuX2JtcC5nZXQodCksZSkpfWRyYXdQYXR0ZXJuKHQsZSxzLGksYSl7aWYoIXRoaXMuX3B0bi5oYXModCkpcmV0dXJuO2NvbnN0IG49dGhpcy5fcHRuLmdldCh0KTt0aGlzLl9jdHguZmlsbFN0eWxlPW4sdGhpcy5fY3R4LmZpbGxSZWN0KGUscyxpLGEpfXByZXBhcmUodCxlLGksbixvKXt2YXIgcixoO2NvbnN0IGw9MSE9PXQuc2NhbGUsZD0wIT09dC5yb3RhdGlvbixwPTEhPT10LmFscGhhLGc9dm9pZCAwIT09dC5ibGVuZE1vZGUsbT1wfHxnLHU9bHx8ZDtpZihtKXRoaXMuc2F2ZSgpO2Vsc2UgaWYoIXUpcmV0dXJuIDA7aWYodSl7Y29uc3QgbD10LnNjYWxlPz8xLGQ9KG51bGw9PShyPXQucGl2b3QpP3ZvaWQgMDpyLngpPz9lK24qYSxwPShudWxsPT0oaD10LnBpdm90KT92b2lkIDA6aC55KT8/aStvKmEsZz10LnJvdGF0aW9uKnMsbT1NYXRoLmNvcyhnKSpsLHU9TWF0aC5zaW4oZykqbDt0aGlzLl9jdHhbY10obSx1LC11LG0sZC1kKm0rcCp1LHAtZCp1LXAqbSl9cmV0dXJuIGcmJnRoaXMuc2V0QmxlbmRNb2RlKHQuYmxlbmRNb2RlKSxwJiZ0aGlzLnNldEFscGhhKHQuYWxwaGEpLG0/MToyfWFwcGx5UmVzZXQodCl7Mj09PXQ/dGhpcy5fY3R4LnNldFRyYW5zZm9ybShoLDAsMCxoLDAsMCk6MT09PXQmJnRoaXMucmVzdG9yZSgpfX1mdW5jdGlvbiBkKHQsZSl7dC5saW5lV2lkdGg9ZS5zaXplLHQuc3Ryb2tlU3R5bGU9ZS5jb2xvcixlLmRhc2gmJnQuc2V0TGluZURhc2goZS5kYXNoKX1vbm1lc3NhZ2U9dD0+e3N3aXRjaCh0LmRhdGEuY21kKXtkZWZhdWx0OmJyZWFrO2Nhc2UiaW5pdCI6cj10LmRhdGEuY2FudmFzLG89bmV3IGwocix0LmRhdGEuZGVidWcpO2JyZWFrO2Nhc2UibG9hZFJlc291cmNlIjohYXN5bmMgZnVuY3Rpb24odCxlKXt0cnl7bGV0IHM7aWYoZSBpbnN0YW5jZW9mIEZpbGUpe2NvbnN0IHQ9YXdhaXQgYXN5bmMgZnVuY3Rpb24odCl7Y29uc3QgZT1uZXcgRmlsZVJlYWRlcjtyZXR1cm4gbmV3IFByb21pc2UoKChzLGkpPT57ZS5vbmxvYWQ9ZT0+e3ZhciBhO2lmKCEobnVsbD09KGE9bnVsbD09ZT92b2lkIDA6ZS50YXJnZXQpP3ZvaWQgMDphLnJlc3VsdCkpcmV0dXJuIGkoKTtzKG5ldyBCbG9iKFtlLnRhcmdldC5yZXN1bHRdLHt0eXBlOnQudHlwZX0pKX0sZS5vbmVycm9yPXQ9PmkodCksZS5yZWFkQXNBcnJheUJ1ZmZlcih0KX0pKX0oZSk7cz1hd2FpdCBjcmVhdGVJbWFnZUJpdG1hcCh0KX1lbHNlIGlmKGUgaW5zdGFuY2VvZiBCbG9iKXM9YXdhaXQgY3JlYXRlSW1hZ2VCaXRtYXAoZSk7ZWxzZSBpZigic3RyaW5nIj09dHlwZW9mIGUpe2NvbnN0IHQ9YXdhaXQgZmV0Y2goZSksaT1hd2FpdCB0LmJsb2IoKTtzPWF3YWl0IGNyZWF0ZUltYWdlQml0bWFwKGkpfWVsc2UgZSBpbnN0YW5jZW9mIEltYWdlQml0bWFwJiYocz1lKTtudWxsPT1vfHxvLmNhY2hlUmVzb3VyY2UodCxzKSxwb3N0TWVzc2FnZSh7Y21kOiJvbmxvYWQiLGlkOnQsc2l6ZTp7d2lkdGg6cy53aWR0aCxoZWlnaHQ6cy5oZWlnaHR9fSl9Y2F0Y2gocyl7cG9zdE1lc3NhZ2Uoe2NtZDoib25lcnJvciIsaWQ6dCxlcnJvcjoobnVsbD09cz92b2lkIDA6cy5tZXNzYWdlKT8/c30pfX0odC5kYXRhLmlkLHQuZGF0YS5zb3VyY2UpO2JyZWFrO2Nhc2UiZ2V0UmVzb3VyY2UiOmNvbnN0IGU9bnVsbD09bz92b2lkIDA6by5nZXRSZXNvdXJjZSh0LmRhdGEuaWQpO3Bvc3RNZXNzYWdlKHtjbWQ6Im9ucmVzb3VyY2UiLGlkOnQuZGF0YS5pZCxiaXRtYXA6ZX0pO2JyZWFrO2Nhc2UiZGlzcG9zZVJlc291cmNlIjpudWxsPT1vfHxvLmRpc3Bvc2VSZXNvdXJjZSguLi50LmRhdGEuYXJncyk7YnJlYWs7Y2FzZSJkaXNwb3NlIjpudWxsPT1vfHxvLmRpc3Bvc2UoKSxyPXZvaWQgMCxvPXZvaWQgMDticmVhaztjYXNlInJlbmRlciI6aWYoIW98fCF0LmRhdGEuY29tbWFuZHMpcmV0dXJuO2Zvcihjb25zdCBzIG9mIHQuZGF0YS5jb21tYW5kcyl7Y29uc3QgdD1zLnNoaWZ0KCk7b1t0XSguLi5zKX1wb3N0TWVzc2FnZSh7Y21kOiJvbnJlbmRlciJ9KTticmVhaztjYXNlInNldERpbWVuc2lvbnMiOmNhc2Uic2V0UGl4ZWxSYXRpbyI6Y2FzZSJzZXRTbW9vdGhpbmciOmNhc2UiY3JlYXRlUGF0dGVybiI6b1t0LmRhdGEuY21kXSguLi50LmRhdGEuYXJncyl9fX0oKTsK", k = "undefined" != typeof window && window.Blob && new Blob([atob(Y)], { type: "text/javascript;charset=utf-8" });
-function I() {
+const S = "IWZ1bmN0aW9uKCl7InVzZSBzdHJpY3QiO2Z1bmN0aW9uIHQodCxlKXtlLmZvbnQ9YCR7dC5zaXplfSR7dC51bml0fSAiJHt0LmZvbnR9ImAsZS5maWxsU3R5bGU9dC5jb2xvcn1jbGFzcyBle2NvbnN0cnVjdG9yKHQsZSl7dGhpcy5faW5kZXg9MCx0aGlzLl9tYXA9bmV3IE1hcCx0aGlzLl9jcmVhdGVGbj10LHRoaXMuX2Rlc3Ryb3lGbj1lfWRpc3Bvc2UoKXtjb25zdCB0PVsuLi50aGlzLl9tYXBdLm1hcCgoKFt0XSk9PnQpKTtmb3IoO3QubGVuZ3RoPjA7KXRoaXMucmVtb3ZlKHQuc2hpZnQoKSk7dGhpcy5fbWFwPXZvaWQgMH1nZXQodCl7cmV0dXJuIHRoaXMuX21hcC5nZXQodCl9c2V0KHQsZSl7aWYodGhpcy5oYXModCkpe2lmKHRoaXMuZ2V0KHQpPT09ZSlyZXR1cm47dGhpcy5yZW1vdmUodCl9dGhpcy5fbWFwLnNldCh0LGUpfWhhcyh0KXtyZXR1cm4gdGhpcy5fbWFwLmhhcyh0KX1yZW1vdmUodCl7dmFyIGU7aWYoIXRoaXMuaGFzKHQpKXJldHVybiExO2NvbnN0IHM9dGhpcy5nZXQodCk7cmV0dXJuIG51bGw9PShlPXRoaXMuX2Rlc3Ryb3lGbil8fGUuY2FsbCh0aGlzLHMpLHRoaXMuX21hcC5kZWxldGUodCl9bmV4dCgpe2xldCB0O2NvbnN0IGU9dGhpcy5faW5kZXgudG9TdHJpbmcoKTtyZXR1cm4gdGhpcy5oYXMoZSk/dD10aGlzLmdldChlKTp0aGlzLl9jcmVhdGVGbiYmKHQ9dGhpcy5fY3JlYXRlRm4oKSx0aGlzLnNldChlLHQpKSwrK3RoaXMuX2luZGV4LHR9ZmlsbCh0KXtjb25zdCBlPXRoaXMuX2luZGV4O2ZvcihsZXQgcz0wO3M8dDsrK3MpdGhpcy5uZXh0KCk7dGhpcy5faW5kZXg9ZX1yZXNldCgpe3RoaXMuX2luZGV4PTB9fWNvbnN0IHM9TWF0aC5QSS8xODAsaT0idHJhbnNwYXJlbnQiLGE9MipNYXRoLlBJLGg9LjU7bGV0IG4sbyxyPTEsYz0ic2V0VHJhbnNmb3JtIjtjbGFzcyBse2NvbnN0cnVjdG9yKHQscz0hMSl7dGhpcy5fZGVidWc9cyx0aGlzLl9jdnM9dCx0aGlzLl9jdHg9dC5nZXRDb250ZXh0KCIyZCIpLHRoaXMuX2JtcD1uZXcgZSh2b2lkIDAsKHQ9Pnt0LmNsb3NlKCl9KSksdGhpcy5fcHRuPW5ldyBlfWRpc3Bvc2UoKXt0aGlzLl9ibXAuZGlzcG9zZSgpLHRoaXMuX3B0bi5kaXNwb3NlKCksdGhpcy5fY3ZzPXZvaWQgMH1jYWNoZVJlc291cmNlKHQsZSl7dGhpcy5fYm1wLnNldCh0LGUpfWdldFJlc291cmNlKHQpe3JldHVybiB0aGlzLl9ibXAuZ2V0KHQpfWRpc3Bvc2VSZXNvdXJjZSh0KXt0aGlzLl9ibXAucmVtb3ZlKHQpfXNldERpbWVuc2lvbnModCxlKXt0aGlzLl9jdnMud2lkdGg9dCx0aGlzLl9jdnMuaGVpZ2h0PWV9c2V0U21vb3RoaW5nKHQpe2NvbnN0IGU9dGhpcy5fY3R4O1siaW1hZ2VTbW9vdGhpbmdFbmFibGVkIiwibW96SW1hZ2VTbW9vdGhpbmdFbmFibGVkIiwib0ltYWdlU21vb3RoaW5nRW5hYmxlZCIsIndlYmtpdEltYWdlU21vb3RoaW5nRW5hYmxlZCJdLmZvckVhY2goKHM9Pnt2b2lkIDAhPT1lW3NdJiYoZVtzXT10KX0pKX1zZXRQaXhlbFJhdGlvKHQpe3I9dCxjPTE9PT1yPyJzZXRUcmFuc2Zvcm0iOiJ0cmFuc2Zvcm0ifXNhdmUoKXt0aGlzLl9jdHguc2F2ZSgpfXJlc3RvcmUoKXt0aGlzLl9jdHgucmVzdG9yZSgpfXRyYW5zbGF0ZSh0LGUpe3RoaXMuX2N0eC50cmFuc2xhdGUodCxlKX1zY2FsZSh0LGU9dCl7dGhpcy5fY3R4LnNjYWxlKHQsZSl9cm90YXRlKHQpe3RoaXMuX2N0eC5yb3RhdGUodCl9dHJhbnNmb3JtKHQsZSxzLGksYSxoKXt0aGlzLl9jdHgudHJhbnNmb3JtKHQsZSxzLGksYSxoKX1zZXRCbGVuZE1vZGUodCl7dGhpcy5fY3R4Lmdsb2JhbENvbXBvc2l0ZU9wZXJhdGlvbj10fXNldEFscGhhKHQpe3RoaXMuX2N0eC5nbG9iYWxBbHBoYT10fWNyZWF0ZVBhdHRlcm4odCxlKXt0aGlzLl9ibXAuaGFzKHQpJiZ0aGlzLl9wdG4uc2V0KHQsdGhpcy5fY3R4LmNyZWF0ZVBhdHRlcm4odGhpcy5fYm1wLmdldCh0KSxlKSl9ZHJhd1BhdGgodCxlPWkscyl7bGV0IGE7dGhpcy5fY3R4LmJlZ2luUGF0aCgpLHRoaXMuX2N0eC5tb3ZlVG8odFswXS54LHRbMF0ueSk7Zm9yKGxldCBpPTEsaD10Lmxlbmd0aDtpPGg7KytpKWE9dFtpXSx0aGlzLl9jdHgubGluZVRvKGEueCxhLnkpO2UhPT1pJiZ0aGlzLl9jdHguZmlsbCgpLHMmJihkKHRoaXMuX2N0eCxzKSx0aGlzLl9jdHguc3Ryb2tlKCkpfWNsZWFyUmVjdCh0LGUscyxpLGEpe2NvbnN0IGg9YT90aGlzLnByZXBhcmUoYSx0LGUscyxpKTowO3RoaXMuX2N0eC5jbGVhclJlY3QodCxlLHMsaSksdGhpcy5hcHBseVJlc2V0KGgpfWRyYXdSZWN0KHQsZSxzLGEsbj1pLG8scil7Y29uc3QgYz1yP3RoaXMucHJlcGFyZShyLHQsZSxzLGEpOjA7biE9PWkmJih0aGlzLl9jdHguZmlsbFN0eWxlPW4sdGhpcy5fY3R4LmZpbGxSZWN0KHQsZSxzLGEpKSxvJiYoZCh0aGlzLl9jdHgsbyksdGhpcy5fY3R4LnN0cm9rZVJlY3QoaCt0LGgrZSxzLGEpKSx0aGlzLmFwcGx5UmVzZXQoYyl9ZHJhd1JvdW5kUmVjdCh0LGUscyxhLG4sbz1pLHIsYyl7Y29uc3QgbD1jP3RoaXMucHJlcGFyZShjLHQsZSxzLGEpOjA7dGhpcy5fY3R4LmJlZ2luUGF0aCgpLG8hPT1pJiYodGhpcy5fY3R4LmZpbGxTdHlsZT1vLHRoaXMuX2N0eC5yb3VuZFJlY3QodCxlLHMsYSxuKSx0aGlzLl9jdHguZmlsbCgpKSxyJiYoZCh0aGlzLl9jdHgsciksdGhpcy5fY3R4LnJvdW5kUmVjdChoK3QsaCtlLHMsYSxuKSx0aGlzLl9jdHguc3Ryb2tlKCkpLHRoaXMuYXBwbHlSZXNldChsKX1kcmF3Q2lyY2xlKHQsZSxzLGg9aSxuLG8pe2NvbnN0IHI9bz90aGlzLnByZXBhcmUobyx0LGUsMipzLDIqcyk6MDt0aGlzLl9jdHguYmVnaW5QYXRoKCksdGhpcy5fY3R4LmFyYyh0K3MsZStzLHMsMCxhLCExKSxoIT09aSYmKHRoaXMuX2N0eC5maWxsU3R5bGU9aCx0aGlzLl9jdHguZmlsbCgpKSxuJiYoZCh0aGlzLl9jdHgsbiksdGhpcy5fY3R4LnN0cm9rZSgpKSx0aGlzLmFwcGx5UmVzZXQocil9ZHJhd0VsbGlwc2UodCxlLHMsaCxuPWksbyxyKXtjb25zdCBjPXI/dGhpcy5wcmVwYXJlKHIsdCxlLDIqcywyKmgpOjA7dGhpcy5fY3R4LmJlZ2luUGF0aCgpLHRoaXMuX2N0eC5lbGxpcHNlKHQsZSxzLGgsMCwwLGEsITEpLG4hPT1pJiYodGhpcy5fY3R4LmZpbGxTdHlsZT1uLHRoaXMuX2N0eC5maWxsKCkpLG8mJihkKHRoaXMuX2N0eCxvKSx0aGlzLl9jdHguc3Ryb2tlKCkpLHRoaXMuYXBwbHlSZXNldChjKX1kcmF3SW1hZ2UodCxlLHMsYSxoLG4pe2lmKCF0aGlzLl9ibXAuaGFzKHQpKXJldHVybjtjb25zdCBvPW4/dGhpcy5wcmVwYXJlKG4sZSxzLGEsaCk6MDt2b2lkIDA9PT1hP3RoaXMuX2N0eC5kcmF3SW1hZ2UodGhpcy5fYm1wLmdldCh0KSxlLHMpOnRoaXMuX2N0eC5kcmF3SW1hZ2UodGhpcy5fYm1wLmdldCh0KSxlLHMsYSxoKSx0aGlzLl9kZWJ1ZyYmdGhpcy5kcmF3UmVjdChlLHMsYSxoLGkse3NpemU6MSxjb2xvcjoicmVkIn0pLHRoaXMuYXBwbHlSZXNldChvKX1kcmF3SW1hZ2VDcm9wcGVkKHQsZSxzLGEsbixvLHIsYyxsLGQpe2lmKCF0aGlzLl9ibXAuaGFzKHQpKXJldHVybjtpZihudWxsPT1kP3ZvaWQgMDpkLnNhZmVNb2RlKXtpZihjPD0wfHxsPD0wKXJldHVybjtjb25zdCBpPXRoaXMuX2JtcC5nZXQodCksaD0oYz1NYXRoLm1pbih0aGlzLl9jdHguY2FudmFzLndpZHRoLGMpKS9hLG89KGw9TWF0aC5taW4odGhpcy5fY3R4LmNhbnZhcy5oZWlnaHQsbCkpL247ZSthPmkud2lkdGgmJihjLT1oKihlK2EtaS53aWR0aCksYS09ZSthLWkud2lkdGgpLHMrbj5pLmhlaWdodCYmKGwtPW8qKHMrbi1pLmhlaWdodCksbi09cytuLWkuaGVpZ2h0KX1jb25zdCBwPWQ/dGhpcy5wcmVwYXJlKGQsbyxyLGMsbCk6MDt0aGlzLl9jdHguZHJhd0ltYWdlKHRoaXMuX2JtcC5nZXQodCksaCtlPDwwLGgrczw8MCxoK2E8PDAsaCtuPDwwLGgrbzw8MCxoK3I8PDAsaCtjPDwwLGgrbDw8MCksdGhpcy5fZGVidWcmJnRoaXMuZHJhd1JlY3QobyxyLGMsbCxpLHtzaXplOjEsY29sb3I6InJlZCJ9KSx0aGlzLmFwcGx5UmVzZXQocCl9ZHJhd1RleHQoZSxzLGksYSl7Y29uc3R7bGluZXM6bix3aWR0aDpvLGhlaWdodDpyfT1mdW5jdGlvbihlLHMpe3QoZSxzKTtjb25zdCBpPWUudGV4dC5zcGxpdCgiXG4iKSxhPVtdO2xldCBoLG49MCxvPTAscj1zLm1lYXN1cmVUZXh0KCJXcSIpO2g9ZS5saW5lSGVpZ2h0P2UubGluZUhlaWdodDpyLmFjdHVhbEJvdW5kaW5nQm94QXNjZW50K3IuYWN0dWFsQm91bmRpbmdCb3hEZXNjZW50O2NvbnN0IGM9ci5hY3R1YWxCb3VuZGluZ0JveEFzY2VudDtsZXQgbD0wO3JldHVybiBpLmZvckVhY2goKCh0LGkpPT57aWYobD1NYXRoLnJvdW5kKGMraSpoKSxlLnNwYWNpbmcpe2NvbnN0IHM9dC5zcGxpdCgiIik7bj1NYXRoLm1heChuLHMubGVuZ3RoKmUuc3BhY2luZyl9ZWxzZSByPXMubWVhc3VyZVRleHQodCksbj1NYXRoLm1heChuLHIuYWN0dWFsQm91bmRpbmdCb3hSaWdodCk7YS5wdXNoKHtsaW5lOnQsdG9wOmx9KSxvKz1ofSkpLHtsaW5lczphLHdpZHRoOk1hdGguY2VpbChuKSxoZWlnaHQ6TWF0aC5jZWlsKG8pfX0oZSx0aGlzLl9jdHgpO2UuY2VudGVyJiYocy09bypoLGktPXIqaCk7Y29uc3QgYz1hP3RoaXMucHJlcGFyZShhLHMsaSxvLHIpOjA7IWZ1bmN0aW9uKGUscyxpLGEsaCl7dChpLGUpO2NvbnN0IG49aS5zcGFjaW5nPz8xO3MuZm9yRWFjaCgoKHtsaW5lOnQsdG9wOnN9KT0+e2kuc3BhY2luZz90LnNwbGl0KCIiKS5mb3JFYWNoKCgodCxpKT0+e2UuZmlsbFRleHQodCxhK01hdGgucm91bmQoaSpuKSxoK3MpfSkpOmUuZmlsbFRleHQodCxhLGgrcyl9KSl9KHRoaXMuX2N0eCxuLGUscyxpKSx0aGlzLmFwcGx5UmVzZXQoYyl9ZHJhd1BhdHRlcm4odCxlLHMsaSxhKXtpZighdGhpcy5fcHRuLmhhcyh0KSlyZXR1cm47Y29uc3QgaD10aGlzLl9wdG4uZ2V0KHQpO3RoaXMuX2N0eC5maWxsU3R5bGU9aCx0aGlzLl9jdHguZmlsbFJlY3QoZSxzLGksYSl9cHJlcGFyZSh0LGUsaSxhLG4pe3ZhciBvLHI7Y29uc3QgbD0xIT09dC5zY2FsZSxkPTAhPT10LnJvdGF0aW9uLHA9MSE9PXQuYWxwaGEsXz12b2lkIDAhPT10LmJsZW5kTW9kZSxnPXB8fF8sbT1sfHxkO2lmKGcpdGhpcy5zYXZlKCk7ZWxzZSBpZighbSlyZXR1cm4gMDtpZihtKXtjb25zdCBsPXQuc2NhbGU/PzEsZD0obnVsbD09KG89dC5waXZvdCk/dm9pZCAwOm8ueCk/P2UrYSpoLHA9KG51bGw9PShyPXQucGl2b3QpP3ZvaWQgMDpyLnkpPz9pK24qaCxfPXQucm90YXRpb24qcyxnPU1hdGguY29zKF8pKmwsbT1NYXRoLnNpbihfKSpsO3RoaXMuX2N0eFtjXShnLG0sLW0sZyxkLWQqZytwKm0scC1kKm0tcCpnKX1yZXR1cm4gXyYmdGhpcy5zZXRCbGVuZE1vZGUodC5ibGVuZE1vZGUpLHAmJnRoaXMuc2V0QWxwaGEodC5hbHBoYSksZz8xOjJ9YXBwbHlSZXNldCh0KXsyPT09dD90aGlzLl9jdHguc2V0VHJhbnNmb3JtKHIsMCwwLHIsMCwwKToxPT09dCYmdGhpcy5yZXN0b3JlKCl9fWZ1bmN0aW9uIGQodCxlKXt0LmxpbmVXaWR0aD1lLnNpemUsdC5zdHJva2VTdHlsZT1lLmNvbG9yLGUuY2FwJiYodC5saW5lQ2FwPWUuY2FwKSxlLmRhc2gmJnQuc2V0TGluZURhc2goZS5kYXNoKX1vbm1lc3NhZ2U9dD0+e3N3aXRjaCh0LmRhdGEuY21kKXtkZWZhdWx0OmJyZWFrO2Nhc2UiaW5pdCI6bz10LmRhdGEuY2FudmFzLG49bmV3IGwobyx0LmRhdGEuZGVidWcpO2JyZWFrO2Nhc2UibG9hZFJlc291cmNlIjohYXN5bmMgZnVuY3Rpb24odCxlKXt0cnl7bGV0IHM7aWYoZSBpbnN0YW5jZW9mIEZpbGUpe2NvbnN0IHQ9YXdhaXQgYXN5bmMgZnVuY3Rpb24odCl7Y29uc3QgZT1uZXcgRmlsZVJlYWRlcjtyZXR1cm4gbmV3IFByb21pc2UoKChzLGkpPT57ZS5vbmxvYWQ9ZT0+e3ZhciBhO2lmKCEobnVsbD09KGE9bnVsbD09ZT92b2lkIDA6ZS50YXJnZXQpP3ZvaWQgMDphLnJlc3VsdCkpcmV0dXJuIGkoKTtzKG5ldyBCbG9iKFtlLnRhcmdldC5yZXN1bHRdLHt0eXBlOnQudHlwZX0pKX0sZS5vbmVycm9yPXQ9PmkodCksZS5yZWFkQXNBcnJheUJ1ZmZlcih0KX0pKX0oZSk7cz1hd2FpdCBjcmVhdGVJbWFnZUJpdG1hcCh0KX1lbHNlIGlmKGUgaW5zdGFuY2VvZiBCbG9iKXM9YXdhaXQgY3JlYXRlSW1hZ2VCaXRtYXAoZSk7ZWxzZSBpZigic3RyaW5nIj09dHlwZW9mIGUpe2NvbnN0IHQ9YXdhaXQgZmV0Y2goZSksaT1hd2FpdCB0LmJsb2IoKTtzPWF3YWl0IGNyZWF0ZUltYWdlQml0bWFwKGkpfWVsc2UgZSBpbnN0YW5jZW9mIEltYWdlQml0bWFwJiYocz1lKTtudWxsPT1ufHxuLmNhY2hlUmVzb3VyY2UodCxzKSxwb3N0TWVzc2FnZSh7Y21kOiJvbmxvYWQiLGlkOnQsc2l6ZTp7d2lkdGg6cy53aWR0aCxoZWlnaHQ6cy5oZWlnaHR9fSl9Y2F0Y2gocyl7cG9zdE1lc3NhZ2Uoe2NtZDoib25lcnJvciIsaWQ6dCxlcnJvcjoobnVsbD09cz92b2lkIDA6cy5tZXNzYWdlKT8/c30pfX0odC5kYXRhLmlkLHQuZGF0YS5zb3VyY2UpO2JyZWFrO2Nhc2UiZ2V0UmVzb3VyY2UiOmNvbnN0IGU9bnVsbD09bj92b2lkIDA6bi5nZXRSZXNvdXJjZSh0LmRhdGEuaWQpO3Bvc3RNZXNzYWdlKHtjbWQ6Im9ucmVzb3VyY2UiLGlkOnQuZGF0YS5pZCxiaXRtYXA6ZX0pO2JyZWFrO2Nhc2UiZGlzcG9zZVJlc291cmNlIjpudWxsPT1ufHxuLmRpc3Bvc2VSZXNvdXJjZSguLi50LmRhdGEuYXJncyk7YnJlYWs7Y2FzZSJkaXNwb3NlIjpudWxsPT1ufHxuLmRpc3Bvc2UoKSxvPXZvaWQgMCxuPXZvaWQgMDticmVhaztjYXNlInJlbmRlciI6aWYoIW58fCF0LmRhdGEuY29tbWFuZHMpcmV0dXJuO2Zvcihjb25zdCBzIG9mIHQuZGF0YS5jb21tYW5kcyl7Y29uc3QgdD1zLnNoaWZ0KCk7blt0XSguLi5zKX1wb3N0TWVzc2FnZSh7Y21kOiJvbnJlbmRlciJ9KTticmVhaztjYXNlInNldERpbWVuc2lvbnMiOmNhc2Uic2V0UGl4ZWxSYXRpbyI6Y2FzZSJzZXRTbW9vdGhpbmciOmNhc2UiY3JlYXRlUGF0dGVybiI6blt0LmRhdGEuY21kXSguLi50LmRhdGEuYXJncyl9fX0oKTsK", Y = "undefined" != typeof window && window.Blob && new Blob([atob(S)], { type: "text/javascript;charset=utf-8" });
+function z() {
   let t2;
   try {
-    if (t2 = k && (window.URL || window.webkitURL).createObjectURL(k), !t2)
+    if (t2 = Y && (window.URL || window.webkitURL).createObjectURL(Y), !t2)
       throw "";
     return new Worker(t2);
   } catch (t3) {
-    return new Worker("data:application/javascript;base64," + Y);
+    return new Worker("data:application/javascript;base64," + S);
   } finally {
     t2 && (window.URL || window.webkitURL).revokeObjectURL(t2);
   }
 }
-class H {
+class K {
   constructor(t2, e2 = false, s2 = false) {
     if (this._useW = false, this._el = t2, e2 && "function" == typeof this._el.transferControlToOffscreen) {
       this._useW = true, this._cbs = /* @__PURE__ */ new Map(), this._pl = new p(() => [], (t3) => {
         t3.length = 0;
       }), this._pl.fill(1e3), this._cmds = [];
       const e3 = t2.transferControlToOffscreen();
-      this._wkr = new I(), this._wkr.postMessage({ cmd: "init", canvas: e3, debug: s2 }, [e3]), this._wkr.onmessage = this.handleMessage.bind(this);
+      this._wkr = new z(), this._wkr.postMessage({ cmd: "init", canvas: e3, debug: s2 }, [e3]), this._wkr.onmessage = this.handleMessage.bind(this);
     } else
-      this._rdr = new L(this._el, s2);
+      this._rdr = new W(this._el, s2);
   }
   loadResource(t2, e2) {
     return new Promise(async (s2, i2) => {
@@ -488,6 +492,9 @@ class H {
   drawCircle(t2, e2, s2, i2 = "transparent", h2, n2) {
     this.onDraw("drawCircle", t2, e2, s2, i2, h2, n2);
   }
+  drawEllipse(t2, e2, s2, i2, h2, n2, o2) {
+    this.onDraw("drawEllipse", t2, e2, s2, i2, h2, n2, o2);
+  }
   drawImage(t2, e2, s2, i2, h2, n2) {
     this.onDraw("drawImage", t2, e2, s2, i2, h2, n2);
   }
@@ -513,12 +520,12 @@ class H {
     this._rdr[t2](...e2);
   }
 }
-const K = { x: 0, y: 0 };
+const k = { x: 0, y: 0 };
 function M(t2, e2, s2, i2, h2) {
   return (t2 - e2) / (s2 - e2) * (h2 - i2) + i2;
 }
-const z = [], V = [], N = s(1, 1, true).cvs;
-class F {
+const I = [], F = [], N = s(1, 1, true).cvs;
+class V {
   constructor(t2) {
     this._renderer = t2, this._cacheMap = /* @__PURE__ */ new Map();
   }
@@ -536,12 +543,12 @@ class F {
     const s2 = t2.getIntersection(e2);
     if (void 0 === s2)
       return;
-    this.getPixelArray(t2, s2, z), this.getPixelArray(e2, s2, V);
+    this.getPixelArray(t2, s2, I), this.getPixelArray(e2, s2, F);
     const i2 = s2.width, h2 = s2.height;
     let n2 = 0;
     for (let t3 = 0; t3 < h2; ++t3)
       for (let e3 = 0; e3 < i2; ++e3) {
-        if (1 === z[n2] && 1 === V[n2])
+        if (1 === I[n2] && 1 === F[n2])
           return { x: e3, y: t3 };
         ++n2;
       }
@@ -569,10 +576,10 @@ class F {
     const i2 = t2.getResourceId();
     if (!this.hasCache(i2))
       throw new Error(`Cannot get cached entry for resource "${i2}". Cache it first.`);
-    const h2 = t2.getBounds(), n2 = v(e2.left - h2.left), o2 = v(e2.top - h2.top), a2 = v(e2.width), r2 = v(e2.height), { mask: d2, size: l2 } = this._cacheMap.get(i2);
+    const h2 = t2.getBounds(), n2 = x(e2.left - h2.left), o2 = x(e2.top - h2.top), a2 = x(e2.width), r2 = x(e2.height), { mask: d2, size: l2 } = this._cacheMap.get(i2);
     if (a2 <= 0 || r2 <= 0)
       return void (s2.length = 0);
-    s2.length = v(a2 * r2);
+    s2.length = x(a2 * r2);
     const c2 = l2.height, p2 = l2.width, u2 = n2 + a2, m2 = o2 + r2;
     let g2 = -1, _2 = 0;
     for (let t3 = o2; t3 < m2; ++t3)
@@ -624,17 +631,17 @@ class P {
     this._children = [];
   }
 }
-const { min: U, max: J } = Math;
-class Q extends P {
+const { min: J, max: Q } = Math;
+class U extends P {
   constructor({ width: t2 = 300, height: e2 = 300, fps: s2 = 60, backgroundColor: i2 = null, animate: h2 = false, smoothing: n2 = true, stretchToFit: o2 = false, autoSize: a2 = true, viewport: r2 = null, preventEventBubbling: d2 = false, parentElement: l2 = null, debug: c2 = false, optimize: p2 = "auto", viewportHandler: u2, onUpdate: m2, onResize: g2 } = {}) {
     if (super(), this.DEBUG = false, this.bbox = { left: 0, top: 0, right: 0, bottom: 0 }, this._smooth = false, this._stretch = false, this._pxr = 1, this._prevDef = false, this._lastRender = 0, this._renderId = 0, this._renderPending = false, this._disposed = false, this._scale = { x: 1, y: 1 }, this._aTchs = [], this._animate = false, this._isFs = false, this._hasFsH = false, t2 <= 0 || e2 <= 0)
       throw new Error("cannot construct a zCanvas without valid dimensions");
-    this.DEBUG = c2, this._el = document.createElement("canvas"), this._rdr = new H(this._el, function(t3) {
+    this.DEBUG = c2, this._el = document.createElement("canvas"), this._rdr = new K(this._el, function(t3) {
       if ("worker" === t3)
         return true;
       const { userAgent: e3 } = navigator, s3 = e3.includes("Safari") && !e3.includes("Chrome");
       return "auto" === t3 && !s3;
-    }(p2), c2), this.collision = new F(this._rdr), this._upHdlr = m2, this._renHdlr = this.render.bind(this), this._vpHdlr = u2, this._resHdrl = g2, this.setFrameRate(s2), this.setAnimatable(h2), i2 && this.setBackgroundColor(i2), this._pxr = window.devicePixelRatio || 1, this._rdr.setPixelRatio(this._pxr), this.setDimensions(t2, e2, true, true), r2 && this.setViewport(r2.width, r2.height), this._stretch = o2, this.setSmoothing(n2), this.preventEventBubbling(d2), this.addListeners(a2), l2 instanceof HTMLElement && this.insertInPage(l2), requestAnimationFrame(() => this.handleResize());
+    }(p2), c2), this.collision = new V(this._rdr), this._upHdlr = m2, this._renHdlr = this.render.bind(this), this._vpHdlr = u2, this._resHdrl = g2, this.setFrameRate(s2), this.setAnimatable(h2), i2 && this.setBackgroundColor(i2), this._pxr = window.devicePixelRatio || 1, this._rdr.setPixelRatio(this._pxr), this.setDimensions(t2, e2, true, true), r2 && this.setViewport(r2.width, r2.height), this._stretch = o2, this.setSmoothing(n2), this.preventEventBubbling(d2), this.addListeners(a2), l2 instanceof HTMLElement && this.insertInPage(l2), requestAnimationFrame(() => this.handleResize());
   }
   loadResource(t2, e2) {
     return this._rdr.loadResource(t2, e2);
@@ -713,7 +720,7 @@ class Q extends P {
   panViewport(t2, e2, s2 = false) {
     var _a;
     const i2 = this._vp;
-    i2.left = J(0, U(t2, this._width - i2.width)), i2.right = i2.left + i2.width, i2.top = J(0, U(e2, this._height - i2.height)), i2.bottom = i2.top + i2.height, this.invalidate(), s2 && ((_a = this._vpHdlr) == null ? void 0 : _a.call(this, { type: "panned", value: i2 }));
+    i2.left = Q(0, J(t2, this._width - i2.width)), i2.right = i2.left + i2.width, i2.top = Q(0, J(e2, this._height - i2.height)), i2.bottom = i2.top + i2.height, this.invalidate(), s2 && ((_a = this._vpHdlr) == null ? void 0 : _a.call(this, { type: "panned", value: i2 }));
   }
   setBackgroundColor(t2) {
     this._bgColor = t2;
@@ -790,7 +797,7 @@ class Q extends P {
           if (this._isFs) {
             const e3 = function(t3, e4, s3, i3, h3) {
               const n3 = window.innerHeight / h3, o3 = 0.5 * (window.innerWidth - i3 * n3);
-              return K.x = M(t3.clientX - s3.left - o3, 0, i3 * n3, 0, e4.width), K.y = M(t3.clientY - s3.top, 0, h3 * n3, 0, e4.height), K;
+              return k.x = M(t3.clientX - s3.left - o3, 0, i3 * n3, 0, e4.width), k.y = M(t3.clientY - s3.top, 0, h3 * n3, 0, e4.height), k;
             }(t2, this._el, this.getCoordinate(), this._width, this._height);
             c2 = e3.x / this._pxr, p2 = e3.y / this._pxr;
           }
@@ -841,7 +848,7 @@ class Q extends P {
       }(s2, i2, t2, e2);
       h2 = t2 / n2, this.setDimensions(n2, o2, false, true);
     } else
-      U(s2, t2), this.setDimensions(s2, i2, false), this._vp || s2 > t2 && (h2 = t2 / s2);
+      J(s2, t2), this.setDimensions(s2, i2, false), this._vp || s2 > t2 && (h2 = t2 / s2);
     this.scale(h2);
   }
   updateCanvasSize() {
@@ -850,7 +857,7 @@ class Q extends P {
     let e2, s2;
     if (void 0 !== this._qSize && ({ width: e2, height: s2 } = this._qSize, this._qSize = void 0, this._width = e2, this._height = s2, this.bbox.right = e2, this.bbox.bottom = s2), this._vp) {
       const t3 = this._width, i2 = this._height;
-      e2 = U(this._vp.width, t3), s2 = U(this._vp.height, i2);
+      e2 = J(this._vp.width, t3), s2 = J(this._vp.height, i2);
     }
     if (e2 && s2) {
       const i2 = this.getElement();
@@ -859,8 +866,8 @@ class Q extends P {
     this._rdr.scale(t2), this.setSmoothing(this._smooth), this._coords = void 0;
   }
 }
-const { min: B, max: D } = Math, T = 0.5;
-class E extends P {
+const { min: j, max: B } = Math, D = 0.5;
+class T extends P {
   constructor({ resourceId: t2, x: e2 = 0, y: s2 = 0, width: i2 = 10, height: h2 = 10, rotation: n2 = 0, collidable: o2 = false, interactive: a2 = false, mask: r2 = false, sheet: d2 }) {
     if (super(), this.hover = false, this.isDragging = false, this._mask = false, this._interactive = false, this._draggable = false, this._keepInBounds = false, this._pressed = false, i2 <= 0 || h2 <= 0)
       throw new Error("cannot construct a Sprite without valid dimensions");
@@ -914,14 +921,14 @@ class E extends P {
   }
   setWidth(t2) {
     const e2 = this._bounds.width;
-    e2 !== t2 && (this._bounds.width = t2, 0 !== e2 && (this._bounds.left -= t2 * T - e2 * T), !this._tfb || 0 === this.getRotation() && 1 === this.getScale() || this.invalidateDrawProps({ rotation: this.getRotation(), scale: this.getScale() }), this.invalidate());
+    e2 !== t2 && (this._bounds.width = t2, 0 !== e2 && (this._bounds.left -= t2 * D - e2 * D), !this._tfb || 0 === this.getRotation() && 1 === this.getScale() || this.invalidateDrawProps({ rotation: this.getRotation(), scale: this.getScale() }), this.invalidate());
   }
   getHeight() {
     return this._bounds.height;
   }
   setHeight(t2) {
     const e2 = this._bounds.height;
-    e2 !== t2 && (this._bounds.height = t2, 0 !== e2 && (this._bounds.top -= t2 * T - e2 * T), !this._tfb || 0 === this.getRotation() && 1 === this.getScale() || this.invalidateDrawProps({ rotation: this.getRotation(), scale: this.getScale() }), this.invalidate());
+    e2 !== t2 && (this._bounds.height = t2, 0 !== e2 && (this._bounds.top -= t2 * D - e2 * D), !this._tfb || 0 === this.getRotation() && 1 === this.getScale() || this.invalidateDrawProps({ rotation: this.getRotation(), scale: this.getScale() }), this.invalidate());
   }
   setBounds(t2, e2, s2, i2) {
     this._cstrt && (t2 -= this._cstrt.left, e2 -= this._cstrt.top);
@@ -929,10 +936,10 @@ class E extends P {
     "number" == typeof s2 && (h2 = this._bounds.width !== s2, this._bounds.width = s2), "number" == typeof i2 && (h2 = h2 || this._bounds.height !== i2, this._bounds.height = i2);
     const n2 = this._bounds.width, o2 = this._bounds.height, a2 = this._cstrt ? this._cstrt.width : this.canvas.getWidth(), r2 = this._cstrt ? this._cstrt.height : this.canvas.getHeight();
     if (this._keepInBounds) {
-      const s3 = B(0, -(n2 - a2)), i3 = B(0, -(o2 - r2)), h3 = r2 - o2;
-      t2 = B(a2 - n2, D(t2, s3)), e2 = B(h3, D(e2, i3));
+      const s3 = j(0, -(n2 - a2)), i3 = j(0, -(o2 - r2)), h3 = r2 - o2;
+      t2 = j(a2 - n2, B(t2, s3)), e2 = j(h3, B(e2, i3));
     } else
-      t2 > a2 && (t2 += n2 * T), e2 > r2 && (e2 += o2 * T);
+      t2 > a2 && (t2 += n2 * D), e2 > r2 && (e2 += o2 * D);
     this.setX(t2), this.setY(e2), h2 && this.invalidate();
   }
   getBounds(t2 = false) {
@@ -975,8 +982,8 @@ class E extends P {
   }
   getIntersection(t2) {
     if (this.collidesWith(t2)) {
-      const e2 = this._bounds, s2 = t2.getBounds(), i2 = D(e2.left, s2.left), h2 = D(e2.top, s2.top);
-      return { left: i2, top: h2, width: B(e2.left + e2.width, s2.width + s2.height) - i2, height: B(e2.top + e2.height, s2.top + s2.height) - h2 };
+      const e2 = this._bounds, s2 = t2.getBounds(), i2 = B(e2.left, s2.left), h2 = B(e2.top, s2.top);
+      return { left: i2, top: h2, width: j(e2.left + e2.width, s2.width + s2.height) - i2, height: j(e2.top + e2.height, s2.top + s2.height) - h2 };
     }
   }
   collidesWithEdge(t2, e2) {
@@ -1021,7 +1028,7 @@ class E extends P {
       e2.setCanvas(t2);
   }
   setConstraint(t2, e2, s2, i2) {
-    return this._cstrt = { left: t2, top: e2, width: s2, height: i2 }, this._bounds.left = D(t2, this._bounds.left), this._bounds.top = D(e2, this._bounds.top), this._keepInBounds = true, this.getConstraint();
+    return this._cstrt = { left: t2, top: e2, width: s2, height: i2 }, this._bounds.left = B(t2, this._bounds.left), this._bounds.top = B(e2, this._bounds.top), this._keepInBounds = true, this.getConstraint();
   }
   getConstraint() {
     return this._cstrt;
@@ -1041,10 +1048,10 @@ class E extends P {
       const i3 = this._animation;
       let { left: h2, top: n2, width: o2, height: a2 } = s2;
       if (i3) {
-        const s3 = i3.tileWidth ? i3.tileWidth : T + o2 << 0, r2 = i3.tileHeight ? i3.tileHeight : T + a2 << 0;
+        const s3 = i3.tileWidth ? i3.tileWidth : D + o2 << 0, r2 = i3.tileHeight ? i3.tileHeight : D + a2 << 0;
         e2 && (h2 -= e2.left, n2 -= e2.top), t2.drawImageCropped(this._resourceId, i3.col * s3, i3.type.row * r2, s3, r2, h2, n2, o2, a2, this.getDrawProps());
       } else if (e2) {
-        const { src: i4, dest: h3 } = X(s2, e2);
+        const { src: i4, dest: h3 } = Z(s2, e2);
         t2.drawImageCropped(this._resourceId, i4.left, i4.top, i4.width, i4.height, h3.left, h3.top, h3.width, h3.height, this.getDrawProps());
       } else
         t2.drawImage(this._resourceId, h2, n2, o2, a2, this.getDrawProps());
@@ -1102,11 +1109,11 @@ class E extends P {
     const h2 = this.gdp();
     h2.alpha = t2 ?? h2.alpha, h2.scale = e2 ?? h2.scale, h2.rotation = s2 ?? h2.rotation, h2.pivot = i2 ?? h2.pivot, void 0 === s2 && void 0 === e2 || (this._tfb || (this._tfb = { ...this._bounds }), function(t3, e3, s3, i3) {
       if (0 === e3 && 1 === s3)
-        return Z(t3, 1, i3);
-      const { left: h3, top: n2, width: o2, height: a2 } = Z(t3, s3, i3);
+        return v(t3, 1, i3);
+      const { left: h3, top: n2, width: o2, height: a2 } = v(t3, s3, i3);
       if (0 !== e3) {
-        const t4 = -o2 * g, s4 = o2 * g, r2 = o2 * g, d2 = -o2 * g, l2 = a2 * g, c2 = a2 * g, p2 = -a2 * g, _2 = -a2 * g, b2 = e3 * G, w2 = Math.cos(b2), f2 = Math.sin(b2), v2 = t4 * w2 + l2 * f2, X2 = -t4 * f2 + l2 * w2, Z2 = s4 * w2 + c2 * f2, R2 = -s4 * f2 + c2 * w2, x2 = r2 * w2 + p2 * f2, y2 = -r2 * f2 + p2 * w2, C2 = d2 * w2 + _2 * f2, W2 = -d2 * f2 + _2 * w2, L2 = u(v2, Z2, x2, C2), S2 = m(v2, Z2, x2, C2), Y2 = u(X2, R2, y2, W2), k2 = m(X2, R2, y2, W2);
-        i3.width = S2 - L2, i3.height = k2 - Y2, i3.left = h3 - (i3.width * g - o2 * g), i3.top = n2 - (i3.height * g - a2 * g);
+        const t4 = -o2 * g, s4 = o2 * g, r2 = o2 * g, d2 = -o2 * g, l2 = a2 * g, c2 = a2 * g, p2 = -a2 * g, _2 = -a2 * g, b2 = e3 * G, w2 = Math.cos(b2), f2 = Math.sin(b2), x2 = t4 * w2 + l2 * f2, Z2 = -t4 * f2 + l2 * w2, v2 = s4 * w2 + c2 * f2, X2 = -s4 * f2 + c2 * w2, C2 = r2 * w2 + p2 * f2, R2 = -r2 * f2 + p2 * w2, y2 = d2 * w2 + _2 * f2, L2 = -d2 * f2 + _2 * w2, W2 = u(x2, v2, C2, y2), H2 = m(x2, v2, C2, y2), S2 = u(Z2, X2, R2, L2), Y2 = m(Z2, X2, R2, L2);
+        i3.width = H2 - W2, i3.height = Y2 - S2, i3.left = h3 - (i3.width * g - o2 * g), i3.top = n2 - (i3.height * g - a2 * g);
       }
     }(this._bounds, h2.rotation, h2.scale, this._tfb));
   }
@@ -1119,7 +1126,7 @@ class E extends P {
   }
 }
 export {
-  Q as Canvas,
+  U as Canvas,
   d as Loader,
-  E as Sprite
+  T as Sprite
 };

@@ -287,6 +287,10 @@ export default class RenderAPI implements IRenderer {
         this.onDraw( "drawCircle", x, y, radius, fillColor, stroke, props );
     }
 
+    drawEllipse( x: number, y: number, xRadius: number, yRadius: number, color?: string, stroke?: StrokeProps, props?: DrawProps ): void {
+        this.onDraw( "drawEllipse", x, y, xRadius, yRadius, color, stroke, props );
+    }
+
     drawImage( resourceId: string, x: number, y: number, width: number, height: number, props?: DrawProps ): void {
         this.onDraw( "drawImage", resourceId, x, y, width, height, props );
     }
@@ -319,7 +323,7 @@ export default class RenderAPI implements IRenderer {
 
     /* Proxies for interacting with the renderer using the appropriate backend */
 
-    protected onDraw( cmd: string, ...args: any[] ): void {
+    protected onDraw( cmd: keyof IRenderer, ...args: any[] ): void {
         // Worker receives all its commands in a single batch
         if ( this._useW ) {
             const command = this._pl.next();
