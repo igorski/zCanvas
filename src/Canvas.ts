@@ -26,6 +26,7 @@ import RenderAPI from "./rendering/RenderAPI";
 import EventHandler from "./utils/EventHandler";
 import { toggleFullScreen, transformPointer } from "./utils/Fullscreen";
 import { constrainAspectRatio } from "./utils/ImageMath";
+import { imageToCanvas } from "./utils/ImageUtil";
 import { useWorker } from "./utils/Optimization";
 import Collision from "./Collision";
 import DisplayObject from "./DisplayObject";
@@ -194,6 +195,17 @@ export default class Canvas extends DisplayObject<Canvas> {
 
     disposeResource( id: string ): void {
         return this._rdr.disposeResource( id );
+    }
+
+    async getContent( resourceId?: string ): Promise<HTMLCanvasElement> {
+        const output = document.createElement( "canvas" );
+        if ( resourceId ) {
+            const bitmap = await this.getResource( resourceId );
+            imageToCanvas( output, bitmap );
+        } else {
+            imageToCanvas( output, this._el );
+        }
+        return output;
     }
 
     getRenderer(): IRenderer {

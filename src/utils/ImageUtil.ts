@@ -78,7 +78,7 @@ export function cloneCanvas( canvasToClone: HTMLCanvasElement ): HTMLCanvasEleme
     return cvs;
 }
 
-export function imageToCanvas( cvs: HTMLCanvasElement, image: HTMLImageElement | HTMLCanvasElement | ImageBitmap, width: number, height: number ): void {
+export function imageToCanvas( cvs: HTMLCanvasElement, image: HTMLImageElement | HTMLCanvasElement | ImageBitmap, width?: number, height?: number ): void {
     drawImageOnCanvas( cvs, image, width, height );
 }
 

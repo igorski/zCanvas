@@ -23,9 +23,9 @@ declare module "src/rendering/IRenderer" {
         save(): void;
         restore(): void;
         translate(x: number, y: number): void;
+        scale(xScale: number, yScale?: number): void;
         rotate(angleInRadians: number): void;
         transform(a: number, b: number, c: number, d: number, e: number, f: number): void;
-        scale(xScale: number, yScale?: number): void;
         setBlendMode(type: GlobalCompositeOperation): void;
         setAlpha(value: number): void;
         drawPath(points: Point[], color?: ColorOrTransparent, stroke?: StrokeProps): void;
@@ -42,6 +42,7 @@ declare module "src/rendering/IRenderer" {
     export type StrokeProps = {
         color: string;
         size: number;
+        dash?: number[];
     };
     export type TextProps = {
         text: string;
@@ -237,7 +238,7 @@ declare module "src/utils/ImageUtil" {
     export function clearTempCanvas(): void;
     export function resizeImage(image: HTMLImageElement | HTMLCanvasElement | ImageBitmap, width: number, height: number): Promise<ImageBitmap>;
     export function cloneCanvas(canvasToClone: HTMLCanvasElement): HTMLCanvasElement;
-    export function imageToCanvas(cvs: HTMLCanvasElement, image: HTMLImageElement | HTMLCanvasElement | ImageBitmap, width: number, height: number): void;
+    export function imageToCanvas(cvs: HTMLCanvasElement, image: HTMLImageElement | HTMLCanvasElement | ImageBitmap, width?: number, height?: number): void;
     export function imageToBitmap(image: HTMLImageElement | HTMLCanvasElement | Blob): Promise<ImageBitmap>;
     export function blobToImage(blob: Blob): Promise<HTMLImageElement>;
 }
@@ -314,9 +315,9 @@ declare module "src/rendering/RendererImpl" {
         save(): void;
         restore(): void;
         translate(x: number, y: number): void;
+        scale(xScale: number, yScale?: number): void;
         rotate(angleInRadians: number): void;
         transform(a: number, b: number, c: number, d: number, e: number, f: number): void;
-        scale(xScale: number, yScale?: number): void;
         setBlendMode(mode: GlobalCompositeOperation): void;
         setAlpha(value: number): void;
         drawPath(points: Point[], color?: string, stroke?: StrokeProps): void;
@@ -475,6 +476,7 @@ declare module "src/Canvas" {
         loadResource(id: string, source: ImageSource): Promise<Size>;
         getResource(id: string): Promise<ImageBitmap | undefined>;
         disposeResource(id: string): void;
+        getContent(resourceId?: string): Promise<HTMLCanvasElement>;
         getRenderer(): IRenderer;
         insertInPage(container: HTMLElement): void;
         getElement(): HTMLCanvasElement;

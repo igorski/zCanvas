@@ -38,7 +38,7 @@ export interface IRenderer {
     rotate( angleInRadians: number ): void;
     transform( a: number, b: number, c: number, d: number, e: number, f: number ): void;
 
-    // E.O. compatibility section
+    // blending
 
     setBlendMode( type: GlobalCompositeOperation ): void
     setAlpha( value: number ): void
@@ -79,6 +79,7 @@ export interface IRenderer {
 export type StrokeProps = {
     color: string;
     size: number;
+    dash?: number[];
 };
 
 export type TextProps = {

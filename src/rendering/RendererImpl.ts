@@ -122,6 +122,10 @@ export default class RendererImpl implements IRenderer {
         this._ctx.translate( x, y );
     }
 
+    scale( xScale: number, yScale = xScale ): void {
+        this._ctx.scale( xScale, yScale );// * _pixelRatio, yScale * _pixelRatio );
+    }
+
     rotate( angleInRadians: number ): void {
         this._ctx.rotate( angleInRadians );
     }
@@ -130,9 +134,7 @@ export default class RendererImpl implements IRenderer {
         this._ctx.transform( a, b, c, d, e, f );
     }
 
-    scale( xScale: number, yScale = xScale ): void {
-        this._ctx.scale( xScale, yScale );// * _pixelRatio, yScale * _pixelRatio );
-    }
+    /* blending */
 
     setBlendMode( mode: GlobalCompositeOperation ): void {
         this._ctx.globalCompositeOperation = mode;
@@ -142,19 +144,23 @@ export default class RendererImpl implements IRenderer {
         this._ctx.globalAlpha = value;
     }
 
+    /* graphic rendering */
+
     drawPath( points: Point[], color = TRANSPARENT, stroke?: StrokeProps ): void {
+        ctx = this._ctx;
+
         ctx.beginPath();
         ctx.moveTo( points[ 0 ].x, points[ 0 ].y );
             
-        for ( const point of points ) {
+        let point: Point;
+        for ( let i = 1, l = points.length; i < l; ++i ) {
             ctx.lineTo( point.x, point.y );
         }
         if ( color !== TRANSPARENT ) {
             ctx.fill();
         }
         if ( stroke ) {
-            ctx.lineWidth   = stroke.size;
-            ctx.strokeStyle = stroke.color;
+            applyStrokeProps( ctx, stroke );
             ctx.stroke();
         }
         ctx.closePath();
@@ -178,8 +184,7 @@ export default class RendererImpl implements IRenderer {
             ctx.fillRect( x, y, width, height );
         }
         if ( stroke ) {
-            ctx.lineWidth   = stroke.size;
-            ctx.strokeStyle = stroke.color;
+            applyStrokeProps( ctx, stroke );
             ctx.strokeRect( HALF + x, HALF + y, width, height );
         }
         this.applyReset( prep );
@@ -197,8 +202,7 @@ export default class RendererImpl implements IRenderer {
             ctx.fill();
         }
         if ( stroke ) {
-            ctx.lineWidth   = stroke.size;
-            ctx.strokeStyle = stroke.color;
+            applyStrokeProps( ctx, stroke );
             ctx.roundRect( HALF + x, HALF + y, width, height, radius );
             ctx.stroke();
         }
@@ -219,8 +223,7 @@ export default class RendererImpl implements IRenderer {
         }
 
         if ( stroke ) {
-            ctx.lineWidth   = stroke.size;
-            ctx.strokeStyle = stroke.color;
+            applyStrokeProps( ctx, stroke );
             ctx.closePath();
             ctx.stroke();
         }
@@ -393,5 +396,15 @@ export default class RendererImpl implements IRenderer {
         } else if ( cmd === ResetCommand.ALL ) {
             this.restore();
         }
+    }
+}
+
+/* internal methods */
+
+function applyStrokeProps( ctx: CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D, props: StrokeProps ): void {
+    ctx.lineWidth   = props.size;
+    ctx.strokeStyle = props.color;
+    if ( props.dash ) {
+        ctx.setLineDash( props.dash );
     }
 }
