@@ -20,6 +20,8 @@
  * IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
+export type { CanvasProps } from "../Canvas";
+export type { SpriteProps } from "../Sprite";
 import type Sprite from "../Sprite";
 export type { IRenderer, ColorOrTransparent, DrawProps, StrokeProps, TextProps } from "../rendering/IRenderer";
 

@@ -46,7 +46,7 @@ const { min, max } = Math;
 const IDEAL_FPS = 60;
 const HIGH_REFRESH_THROTTLE = IDEAL_FPS + 3;
 
-interface CanvasProps {
+export interface CanvasProps {
     width?: number;
     height?: number;
     fps?: number;

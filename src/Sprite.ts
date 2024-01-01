@@ -29,7 +29,7 @@ import { isInsideArea, calculateDrawRectangle, transformRectangle } from "./util
 const { min, max } = Math;
 const HALF = 0.5;
 
-interface SpriteProps {
+export interface SpriteProps {
     width: number;
     height: number;
     x?: number;
