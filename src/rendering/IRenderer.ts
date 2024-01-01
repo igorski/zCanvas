@@ -77,6 +77,10 @@ export interface IRenderer {
     ): void
     drawText( text: TextProps, x: number, y: number, props?: DrawProps ): void
     drawPattern( patternResourceId: string, x: number, y: number, width: number, height: number ): void
+
+    // blitting
+
+    putImageData( imageData: ImageData, x: number, y: number, sourceX?: number, sourceY?: number, destWidth?: number, destHeight?: number ): void
 };
 
 export type StrokeProps = {

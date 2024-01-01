@@ -61,8 +61,6 @@ export default class RendererImpl implements IRenderer {
         this._cvs = undefined;
     }
 
-    /* public methods */
-
     cacheResource( id: string, bitmap: ImageBitmap ): void {
         this._bmp.set( id, bitmap );
     }
@@ -358,6 +356,17 @@ export default class RendererImpl implements IRenderer {
         
         this._ctx.fillStyle = pattern;
         this._ctx.fillRect( x, y, width, height );
+    }
+
+    /* blitting */
+
+    putImageData( imageData: ImageData, x: number, y: number, sourceX?: number, sourceY?: number, destWidth?: number, destHeight?: number ): void {
+        const useExtended = sourceX !== undefined;
+        if ( useExtended ) {
+            this._ctx.putImageData( imageData, x, y, sourceX, sourceY, destWidth, destHeight );
+        } else {
+            this._ctx.putImageData( imageData, x, y );
+        }
     }
 
     /* internal methods */
