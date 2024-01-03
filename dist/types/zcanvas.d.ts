@@ -44,6 +44,7 @@ declare module "src/rendering/IRenderer" {
     export type StrokeProps = {
         color: string;
         size: number;
+        close?: boolean;
         dash?: number[];
         cap?: "butt" | "round" | "square";
     };
