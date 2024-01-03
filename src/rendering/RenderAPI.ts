@@ -324,8 +324,8 @@ export default class RenderAPI implements IRenderer {
     // @todo pass ImageData as ArrayBuffer (implements Transferable interface) for Worker based usage ?
     // this method shouldn't actually be used in an animated zCanvas context
 
-    putImageData( imageData: ImageData, x: number, y: number, sourceX?: number, sourceY?: number, destWidth?: number, destHeight?: number ): void {
-        this.onDraw( "putImageData", imageData, x, y, sourceX, sourceY, destWidth, destHeight );
+    drawImageData( imageData: ImageData, x: number, y: number, sourceX?: number, sourceY?: number, destWidth?: number, destHeight?: number ): void {
+        this.onDraw( "drawImageData", imageData, x, y, sourceX, sourceY, destWidth, destHeight );
     }
 
     /* Proxies for interacting with the renderer using the appropriate backend */

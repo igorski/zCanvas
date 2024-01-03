@@ -39,6 +39,7 @@ declare module "src/rendering/IRenderer" {
         drawImageCropped(resourceId: string, sourceX: number, sourceY: number, sourceWidth: number, sourceHeight: number, destinationX: number, destinationY: number, destinationWidth: number, destinationHeight: number, props?: DrawProps): void;
         drawText(text: TextProps, x: number, y: number, props?: DrawProps): void;
         drawPattern(patternResourceId: string, x: number, y: number, width: number, height: number): void;
+        drawImageData(imageData: ImageData, x: number, y: number, sourceX?: number, sourceY?: number, destWidth?: number, destHeight?: number): void;
     }
     export type StrokeProps = {
         color: string;
@@ -83,7 +84,7 @@ declare module "src/Sprite" {
     import DisplayObject from "src/DisplayObject";
     import type { Point, Rectangle, SpriteSheet, Viewport } from "src/definitions/types";
     import type { IRenderer, DrawProps } from "src/rendering/IRenderer";
-    interface SpriteProps {
+    export interface SpriteProps {
         width: number;
         height: number;
         x?: number;
@@ -188,6 +189,8 @@ declare module "src/Sprite" {
     }
 }
 declare module "src/definitions/types" {
+    export type { CanvasProps } from "src/Canvas";
+    export type { SpriteProps } from "src/Sprite";
     import type Sprite from "src/Sprite";
     export type { IRenderer, ColorOrTransparent, DrawProps, StrokeProps, TextProps } from "src/rendering/IRenderer";
     export type Size = {
@@ -333,6 +336,7 @@ declare module "src/rendering/RendererImpl" {
         drawImageCropped(resourceId: string, sourceX: number, sourceY: number, sourceWidth: number, sourceHeight: number, destinationX: number, destinationY: number, destinationWidth: number, destinationHeight: number, props?: DrawProps): void;
         drawText(text: TextProps, x: number, y: number, props?: DrawProps): void;
         drawPattern(patternResourceId: string, x: number, y: number, width: number, height: number): void;
+        drawImageData(imageData: ImageData, x: number, y: number, sourceX?: number, sourceY?: number, destWidth?: number, destHeight?: number): void;
         protected prepare(props: DrawProps, x: number, y: number, width: number, height: number): ResetCommand;
         protected applyReset(cmd: ResetCommand): void;
     }
@@ -379,6 +383,7 @@ declare module "src/rendering/RenderAPI" {
         drawImageCropped(resourceId: string, sourceX: number, sourceY: number, sourceWidth: number, sourceHeight: number, destinationX: number, destinationY: number, destinationWidth: number, destinationHeight: number, props?: DrawProps): void;
         drawText(text: TextProps, x: number, y: number, props?: DrawProps): void;
         drawPattern(patternResourceId: string, x: number, y: number, width: number, height: number): void;
+        drawImageData(imageData: ImageData, x: number, y: number, sourceX?: number, sourceY?: number, destWidth?: number, destHeight?: number): void;
         protected onDraw(cmd: keyof IRenderer, ...args: any[]): void;
         protected getBackend(cmd: string, ...args: any[]): void;
     }
@@ -416,7 +421,7 @@ declare module "src/Canvas" {
     import Collision from "src/Collision";
     import DisplayObject from "src/DisplayObject";
     import type Sprite from "src/Sprite";
-    interface CanvasProps {
+    export interface CanvasProps {
         width?: number;
         height?: number;
         fps?: number;

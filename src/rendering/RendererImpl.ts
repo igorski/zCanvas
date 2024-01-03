@@ -360,7 +360,7 @@ export default class RendererImpl implements IRenderer {
 
     /* blitting */
 
-    putImageData( imageData: ImageData, x: number, y: number, sourceX?: number, sourceY?: number, destWidth?: number, destHeight?: number ): void {
+    drawImageData( imageData: ImageData, x: number, y: number, sourceX?: number, sourceY?: number, destWidth?: number, destHeight?: number ): void {
         const useExtended = sourceX !== undefined;
         if ( useExtended ) {
             this._ctx.putImageData( imageData, x, y, sourceX, sourceY, destWidth, destHeight );

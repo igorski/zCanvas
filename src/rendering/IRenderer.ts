@@ -80,7 +80,7 @@ export interface IRenderer {
 
     // blitting
 
-    putImageData( imageData: ImageData, x: number, y: number, sourceX?: number, sourceY?: number, destWidth?: number, destHeight?: number ): void
+    drawImageData( imageData: ImageData, x: number, y: number, sourceX?: number, sourceY?: number, destWidth?: number, destHeight?: number ): void
 };
 
 export type StrokeProps = {
