@@ -188,7 +188,7 @@ describe( "Canvas", () => {
             expect( content.height ).toEqual( 768 );
         });
 
-        it( "should by return a Canvas as big as the requested resource when a sourceId was provided", async () => {
+        it( "should by request return a Canvas as big as the requested resource when a resourceId was provided", async () => {
             const canvas = new Canvas({ width: 1024, height: 768 });
 
             vi.spyOn( RenderAPI.prototype, "getResource" ).mockImplementation(() => Promise.resolve(createMockImageBitmap( 100, 50 )));

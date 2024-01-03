@@ -50,6 +50,7 @@ export function createMockRenderer(): IRenderer {
         drawEllipse: vi.fn(),
         drawImage: vi.fn(),
         drawImageCropped: vi.fn(),
+        drawImageData: vi.fn(),
         drawPattern: vi.fn(),
         drawText: vi.fn(),
     };
