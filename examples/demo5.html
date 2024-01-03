@@ -39,8 +39,10 @@ import { Canvas, Sprite } from "../dist/zcanvas.mjs";
 const demoContainer   = document.querySelector( ".demo-container" );
 const canvasContainer = document.querySelector( ".demo-canvas-container" );
 
-const CANVAS_WIDTH  = 800;
-const CANVAS_HEIGHT = 400;
+const { innerWidth, innerHeight } = window;
+
+const CANVAS_WIDTH  = isMobile() ? innerWidth  : 800;
+const CANVAS_HEIGHT = isMobile() ? innerHeight : 400;
 
 const engine = Matter.Engine.create(); // create MatterJS instance
 
@@ -84,11 +86,17 @@ const cvsCenterY = cvs.getHeight() / 2;
 // first sprite will act as a background
 // (see included "assets.js"-file for the assetBackground-image data)
 
-const bgWidth  = 800;
-const bgHeight = 1067;
-const bgSprite = new Sprite({ width: bgWidth, height: bgHeight, resourceId: "background" });
+const backgroundImageWidth  = 800;
+const backgroundImageHeight = 1067;
 
-cvs.addChild( bgSprite );
+const scaledSize = scaleImageToAvailableSize( cvs, backgroundImageWidth, backgroundImageHeight );
+
+const backgroundSprite = new Sprite({
+    resourceId: "background",
+    width: scaledSize.width,
+    height: scaledSize.height,
+});
+cvs.addChild( backgroundSprite );
 
 // 2.1 WRECKING BALL
 

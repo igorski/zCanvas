@@ -33,11 +33,11 @@ export enum ResetCommand {
 };
 
 const TRANSPARENT = "transparent";
+const TWO_PI = Math.PI * 2;
 const HALF = 0.5;
 
 let _pixelRatio = 1;
 let transformFn: "setTransform" | "transform" = "setTransform";
-let ctx: CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D;
 
 export default class RendererImpl implements IRenderer {
     _cvs: HTMLCanvasElement | OffscreenCanvas;
@@ -47,7 +47,7 @@ export default class RendererImpl implements IRenderer {
 
     constructor( canvas: HTMLCanvasElement | OffscreenCanvas, private _debug = false ) {
         this._cvs = canvas;
-        this._ctx = canvas.getContext( "2d" );
+        this._ctx = canvas.getContext( "2d" ) as CanvasRenderingContext2D;
 
         this._bmp = new Cache( undefined, ( bitmap: ImageBitmap ) => {
             bitmap.close();
@@ -60,8 +60,6 @@ export default class RendererImpl implements IRenderer {
         this._ptn.dispose();
         this._cvs = undefined;
     }
-
-    /* public methods */
 
     cacheResource( id: string, bitmap: ImageBitmap ): void {
         this._bmp.set( id, bitmap );
@@ -122,6 +120,10 @@ export default class RendererImpl implements IRenderer {
         this._ctx.translate( x, y );
     }
 
+    scale( xScale: number, yScale = xScale ): void {
+        this._ctx.scale( xScale, yScale );// * _pixelRatio, yScale * _pixelRatio );
+    }
+
     rotate( angleInRadians: number ): void {
         this._ctx.rotate( angleInRadians );
     }
@@ -130,9 +132,7 @@ export default class RendererImpl implements IRenderer {
         this._ctx.transform( a, b, c, d, e, f );
     }
 
-    scale( xScale: number, yScale = xScale ): void {
-        this._ctx.scale( xScale, yScale );// * _pixelRatio, yScale * _pixelRatio );
-    }
+    /* blending */
 
     setBlendMode( mode: GlobalCompositeOperation ): void {
         this._ctx.globalCompositeOperation = mode;
@@ -142,22 +142,39 @@ export default class RendererImpl implements IRenderer {
         this._ctx.globalAlpha = value;
     }
 
+    /* preparation */
+
+    createPattern( resourceId: string, repetition: "repeat" | "repeat-x" | "repeat-y" | "no-repeat" ): void {
+        if ( !this._bmp.has( resourceId )) {
+            return;
+        }
+        this._ptn.set(
+            resourceId,
+            this._ctx.createPattern( this._bmp.get( resourceId ), repetition )
+        );
+    }
+
+    /* graphic rendering */
+
     drawPath( points: Point[], color = TRANSPARENT, stroke?: StrokeProps ): void {
-        ctx.beginPath();
-        ctx.moveTo( points[ 0 ].x, points[ 0 ].y );
+        this._ctx.beginPath();
+        this._ctx.moveTo( points[ 0 ].x, points[ 0 ].y );
             
-        for ( const point of points ) {
-            ctx.lineTo( point.x, point.y );
+        let point: Point;
+        for ( let i = 1, l = points.length; i < l; ++i ) {
+            point = points[ i ];
+            this._ctx.lineTo( point.x, point.y );
         }
         if ( color !== TRANSPARENT ) {
-            ctx.fill();
+            this._ctx.fill();
         }
         if ( stroke ) {
-            ctx.lineWidth   = stroke.size;
-            ctx.strokeStyle = stroke.color;
-            ctx.stroke();
+            if ( stroke.close ) {
+                this._ctx.closePath(); // fill will always close this affects strokes only
+            }
+            applyStrokeProps( this._ctx, stroke );
+            this._ctx.stroke();
         }
-        ctx.closePath();
     }
 
     clearRect( x: number, y: number, width: number, height: number, props?: DrawProps ): void {
@@ -171,16 +188,13 @@ export default class RendererImpl implements IRenderer {
     drawRect( x: number, y: number, width: number, height: number, color = TRANSPARENT, stroke?: StrokeProps, props?: DrawProps ): void {
         const prep = props ? this.prepare( props, x, y, width, height ) : ResetCommand.NONE;
 
-        ctx = this._ctx;
-
         if ( color !== TRANSPARENT ) {
-            ctx.fillStyle = color;
-            ctx.fillRect( x, y, width, height );
+            this._ctx.fillStyle = color;
+            this._ctx.fillRect( x, y, width, height );
         }
         if ( stroke ) {
-            ctx.lineWidth   = stroke.size;
-            ctx.strokeStyle = stroke.color;
-            ctx.strokeRect( HALF + x, HALF + y, width, height );
+            applyStrokeProps( this._ctx, stroke );
+            this._ctx.strokeRect( HALF + x, HALF + y, width, height );
         }
         this.applyReset( prep );
     }
@@ -188,18 +202,17 @@ export default class RendererImpl implements IRenderer {
     drawRoundRect( x: number, y: number, width: number, height: number, radius: number, color = TRANSPARENT, stroke?: StrokeProps, props?: DrawProps ): void {
         const prep = props ? this.prepare( props, x, y, width, height ) : ResetCommand.NONE;
 
-        ctx = this._ctx;
-
+        this._ctx.beginPath();
+   
         if ( color !== TRANSPARENT ) {
-            ctx.fillStyle = color;
-            ctx.fillRect( x, y, width, height );
+            this._ctx.fillStyle = color;
+            this._ctx.roundRect( x, y, width, height, radius );
+            this._ctx.fill();
         }
         if ( stroke ) {
-            ctx.lineWidth   = stroke.size;
-            ctx.strokeStyle = stroke.color;
-            ctx.beginPath();
-            ctx.roundRect( HALF + x, HALF + y, width, height, radius );
-            ctx.stroke();
+            applyStrokeProps( this._ctx, stroke );
+            this._ctx.roundRect( HALF + x, HALF + y, width, height, radius );
+            this._ctx.stroke();
         }
         this.applyReset( prep );
     }
@@ -207,21 +220,39 @@ export default class RendererImpl implements IRenderer {
     drawCircle( x: number, y: number, radius: number, fillColor = TRANSPARENT, stroke?: StrokeProps, props?: DrawProps ): void {
         const prep = props ? this.prepare( props, x, y, radius * 2, radius * 2 ) : ResetCommand.NONE;
 
-        ctx = this._ctx;
+        this._ctx.beginPath();
+        this._ctx.arc( x + radius, y + radius, radius, 0, TWO_PI, false );
 
-        ctx.beginPath();
-        ctx.arc( x + radius, y + radius, radius, 0, 2 * Math.PI, false );
+        // ctx.closePath(); // a circle is a closed shape
 
         if ( fillColor !== TRANSPARENT ) {
-            ctx.fillStyle = fillColor;
-            ctx.fill();
+            this._ctx.fillStyle = fillColor;
+            this._ctx.fill();
         }
 
         if ( stroke ) {
-            ctx.lineWidth   = stroke.size;
-            ctx.strokeStyle = stroke.color;
-            ctx.closePath();
-            ctx.stroke();
+            applyStrokeProps( this._ctx, stroke );
+            this._ctx.stroke();
+        }
+        this.applyReset( prep );
+    }
+
+    drawEllipse( x: number, y: number, xRadius: number, yRadius: number, fillColor = TRANSPARENT, stroke?: StrokeProps, props?: DrawProps ): void {
+        const prep = props ? this.prepare( props, x - xRadius, y - yRadius, xRadius * 2, yRadius * 2 ) : ResetCommand.NONE;
+
+        this._ctx.beginPath();
+        this._ctx.ellipse( x, y, xRadius, yRadius, 0, 0, TWO_PI, false );
+        
+        // ctx.closePath(); // an ellipse is a closed shape
+            
+        if ( fillColor !== TRANSPARENT ) {
+            this._ctx.fillStyle = fillColor;
+            this._ctx.fill();
+        }
+
+        if ( stroke ) {
+            applyStrokeProps( this._ctx, stroke );
+            this._ctx.stroke();
         }
         this.applyReset( prep );
     }
@@ -321,16 +352,6 @@ export default class RendererImpl implements IRenderer {
         this.applyReset( prep );
     }
 
-    createPattern( resourceId: string, repetition: "repeat" | "repeat-x" | "repeat-y" | "no-repeat" ): void {
-        if ( !this._bmp.has( resourceId )) {
-            return;
-        }
-        this._ptn.set(
-            resourceId,
-            this._ctx.createPattern( this._bmp.get( resourceId ), repetition )
-        );
-    }
-
     drawPattern( patternResourceId: string, x: number, y: number, width: number, height: number ): void {
         if ( !this._ptn.has( patternResourceId )) {
             return;
@@ -339,6 +360,17 @@ export default class RendererImpl implements IRenderer {
         
         this._ctx.fillStyle = pattern;
         this._ctx.fillRect( x, y, width, height );
+    }
+
+    /* blitting */
+
+    drawImageData( imageData: ImageData, x: number, y: number, sourceX?: number, sourceY?: number, destWidth?: number, destHeight?: number ): void {
+        const useExtended = sourceX !== undefined;
+        if ( useExtended ) {
+            this._ctx.putImageData( imageData, x, y, sourceX, sourceY, destWidth, destHeight );
+        } else {
+            this._ctx.putImageData( imageData, x, y );
+        }
     }
 
     /* internal methods */
@@ -392,5 +424,18 @@ export default class RendererImpl implements IRenderer {
         } else if ( cmd === ResetCommand.ALL ) {
             this.restore();
         }
+    }
+}
+
+/* internal methods */
+
+function applyStrokeProps( ctx: CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D, props: StrokeProps ): void {
+    ctx.lineWidth   = props.size;
+    ctx.strokeStyle = props.color;
+    if ( props.cap ) {
+        ctx.lineCap = props.cap;
+    }
+    if ( props.dash ) {
+        ctx.setLineDash( props.dash );
     }
 }

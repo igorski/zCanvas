@@ -34,22 +34,27 @@ export interface IRenderer {
     save(): void
     restore(): void
     translate( x: number, y: number ): void
-    rotate( angleInRadians: number ): void;
-    transform( a: number, b: number, c: number, d: number, e: number, f: number ): void;
-
-    // E.O. compatibility section
-
     scale( xScale: number, yScale?: number ): void
+    rotate( angleInRadians: number ): void
+    transform( a: number, b: number, c: number, d: number, e: number, f: number ): void
+
+    // blending
+
     setBlendMode( type: GlobalCompositeOperation ): void
     setAlpha( value: number ): void
 
+    // preparation
+
+    createPattern( resourceId: string, repetition: "repeat" | "repeat-x" | "repeat-y" | "no-repeat" ): void
+
     // graphic rendering
 
-    drawPath( points: Point[], color?: ColorOrTransparent, stroke?: StrokeProps ): void;
-    clearRect( x: number, y: number, width: number, height: number, props?: DrawProps ): void;
+    drawPath( points: Point[], color?: ColorOrTransparent, stroke?: StrokeProps ): void
+    clearRect( x: number, y: number, width: number, height: number, props?: DrawProps ): void
     drawRect( x: number, y: number, width: number, height: number, color?: ColorOrTransparent, stroke?: StrokeProps, props?: DrawProps ): void
     drawRoundRect( x: number, y: number, width: number, height: number, radius: number, color?: ColorOrTransparent, stroke?: StrokeProps, props?: DrawProps ): void
     drawCircle( x: number, y: number, radius: number, color?: string, stroke?: StrokeProps, props?: DrawProps ): void
+    drawEllipse( x: number, y: number, xRadius: number, yRadius: number, color?: string, stroke?: StrokeProps, props?: DrawProps ): void
     drawImage(
         resourceId: string,
         x: number,
@@ -71,14 +76,19 @@ export interface IRenderer {
         props?: DrawProps,
     ): void
     drawText( text: TextProps, x: number, y: number, props?: DrawProps ): void
-
-    createPattern( resourceId: string, repetition: "repeat" | "repeat-x" | "repeat-y" | "no-repeat" ): void
     drawPattern( patternResourceId: string, x: number, y: number, width: number, height: number ): void
+
+    // blitting
+
+    drawImageData( imageData: ImageData, x: number, y: number, sourceX?: number, sourceY?: number, destWidth?: number, destHeight?: number ): void
 };
 
 export type StrokeProps = {
     color: string;
     size: number;
+    close?: boolean;
+    dash?: number[];
+    cap?: "butt" | "round" | "square";
 };
 
 export type TextProps = {

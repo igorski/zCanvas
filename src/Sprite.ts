@@ -29,7 +29,7 @@ import { isInsideArea, calculateDrawRectangle, transformRectangle } from "./util
 const { min, max } = Math;
 const HALF = 0.5;
 
-interface SpriteProps {
+export interface SpriteProps {
     width: number;
     height: number;
     x?: number;
@@ -409,7 +409,7 @@ export default class Sprite extends DisplayObject<Sprite> {
      * evaluates whether given coordinate is within the Sprite bounds
      */
     insideBounds( x: number, y: number ): boolean {
-        const { left, top, width, height } = this._bounds;
+        const { left, top, width, height } = this.getBounds( true );
         return x >= left && x <= ( left + width ) && y >= top  && y <= ( top  + height );
     }
 

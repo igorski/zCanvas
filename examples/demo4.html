@@ -38,8 +38,10 @@ import { Canvas, Sprite } from "../dist/zcanvas.mjs";
 const demoContainer   = document.querySelector( ".demo-container" );
 const canvasContainer = document.querySelector( ".demo-canvas-container" );
 
-const CANVAS_WIDTH  = 800;
-const CANVAS_HEIGHT = 400;
+const { innerWidth, innerHeight } = window;
+
+const CANVAS_WIDTH  = isMobile() ? innerWidth  : 800;
+const CANVAS_HEIGHT = isMobile() ? innerHeight : 400;
 
 const cvs = new Canvas({
     width: CANVAS_WIDTH,

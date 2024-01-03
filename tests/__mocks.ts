@@ -42,12 +42,15 @@ export function createMockRenderer(): IRenderer {
         setBlendMode: vi.fn(),
         createPattern: vi.fn(),
 
+        drawPath: vi.fn(),
         clearRect: vi.fn(),
         drawRect: vi.fn(),
         drawRoundRect: vi.fn(),
         drawCircle: vi.fn(),
+        drawEllipse: vi.fn(),
         drawImage: vi.fn(),
         drawImageCropped: vi.fn(),
+        drawImageData: vi.fn(),
         drawPattern: vi.fn(),
         drawText: vi.fn(),
     };

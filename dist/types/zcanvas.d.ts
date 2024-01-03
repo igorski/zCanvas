@@ -23,25 +23,30 @@ declare module "src/rendering/IRenderer" {
         save(): void;
         restore(): void;
         translate(x: number, y: number): void;
+        scale(xScale: number, yScale?: number): void;
         rotate(angleInRadians: number): void;
         transform(a: number, b: number, c: number, d: number, e: number, f: number): void;
-        scale(xScale: number, yScale?: number): void;
         setBlendMode(type: GlobalCompositeOperation): void;
         setAlpha(value: number): void;
+        createPattern(resourceId: string, repetition: "repeat" | "repeat-x" | "repeat-y" | "no-repeat"): void;
         drawPath(points: Point[], color?: ColorOrTransparent, stroke?: StrokeProps): void;
         clearRect(x: number, y: number, width: number, height: number, props?: DrawProps): void;
         drawRect(x: number, y: number, width: number, height: number, color?: ColorOrTransparent, stroke?: StrokeProps, props?: DrawProps): void;
         drawRoundRect(x: number, y: number, width: number, height: number, radius: number, color?: ColorOrTransparent, stroke?: StrokeProps, props?: DrawProps): void;
         drawCircle(x: number, y: number, radius: number, color?: string, stroke?: StrokeProps, props?: DrawProps): void;
+        drawEllipse(x: number, y: number, xRadius: number, yRadius: number, color?: string, stroke?: StrokeProps, props?: DrawProps): void;
         drawImage(resourceId: string, x: number, y: number, width?: number, height?: number, props?: DrawProps): void;
         drawImageCropped(resourceId: string, sourceX: number, sourceY: number, sourceWidth: number, sourceHeight: number, destinationX: number, destinationY: number, destinationWidth: number, destinationHeight: number, props?: DrawProps): void;
         drawText(text: TextProps, x: number, y: number, props?: DrawProps): void;
-        createPattern(resourceId: string, repetition: "repeat" | "repeat-x" | "repeat-y" | "no-repeat"): void;
         drawPattern(patternResourceId: string, x: number, y: number, width: number, height: number): void;
+        drawImageData(imageData: ImageData, x: number, y: number, sourceX?: number, sourceY?: number, destWidth?: number, destHeight?: number): void;
     }
     export type StrokeProps = {
         color: string;
         size: number;
+        close?: boolean;
+        dash?: number[];
+        cap?: "butt" | "round" | "square";
     };
     export type TextProps = {
         text: string;
@@ -80,7 +85,7 @@ declare module "src/Sprite" {
     import DisplayObject from "src/DisplayObject";
     import type { Point, Rectangle, SpriteSheet, Viewport } from "src/definitions/types";
     import type { IRenderer, DrawProps } from "src/rendering/IRenderer";
-    interface SpriteProps {
+    export interface SpriteProps {
         width: number;
         height: number;
         x?: number;
@@ -185,6 +190,8 @@ declare module "src/Sprite" {
     }
 }
 declare module "src/definitions/types" {
+    export type { CanvasProps } from "src/Canvas";
+    export type { SpriteProps } from "src/Sprite";
     import type Sprite from "src/Sprite";
     export type { IRenderer, ColorOrTransparent, DrawProps, StrokeProps, TextProps } from "src/rendering/IRenderer";
     export type Size = {
@@ -237,7 +244,7 @@ declare module "src/utils/ImageUtil" {
     export function clearTempCanvas(): void;
     export function resizeImage(image: HTMLImageElement | HTMLCanvasElement | ImageBitmap, width: number, height: number): Promise<ImageBitmap>;
     export function cloneCanvas(canvasToClone: HTMLCanvasElement): HTMLCanvasElement;
-    export function imageToCanvas(cvs: HTMLCanvasElement, image: HTMLImageElement | HTMLCanvasElement | ImageBitmap, width: number, height: number): void;
+    export function imageToCanvas(cvs: HTMLCanvasElement, image: HTMLImageElement | HTMLCanvasElement | ImageBitmap, width?: number, height?: number): void;
     export function imageToBitmap(image: HTMLImageElement | HTMLCanvasElement | Blob): Promise<ImageBitmap>;
     export function blobToImage(blob: Blob): Promise<HTMLImageElement>;
 }
@@ -314,21 +321,23 @@ declare module "src/rendering/RendererImpl" {
         save(): void;
         restore(): void;
         translate(x: number, y: number): void;
+        scale(xScale: number, yScale?: number): void;
         rotate(angleInRadians: number): void;
         transform(a: number, b: number, c: number, d: number, e: number, f: number): void;
-        scale(xScale: number, yScale?: number): void;
         setBlendMode(mode: GlobalCompositeOperation): void;
         setAlpha(value: number): void;
+        createPattern(resourceId: string, repetition: "repeat" | "repeat-x" | "repeat-y" | "no-repeat"): void;
         drawPath(points: Point[], color?: string, stroke?: StrokeProps): void;
         clearRect(x: number, y: number, width: number, height: number, props?: DrawProps): void;
         drawRect(x: number, y: number, width: number, height: number, color?: string, stroke?: StrokeProps, props?: DrawProps): void;
         drawRoundRect(x: number, y: number, width: number, height: number, radius: number, color?: string, stroke?: StrokeProps, props?: DrawProps): void;
         drawCircle(x: number, y: number, radius: number, fillColor?: string, stroke?: StrokeProps, props?: DrawProps): void;
+        drawEllipse(x: number, y: number, xRadius: number, yRadius: number, fillColor?: string, stroke?: StrokeProps, props?: DrawProps): void;
         drawImage(resourceId: string, x: number, y: number, width?: number, height?: number, props?: DrawProps): void;
         drawImageCropped(resourceId: string, sourceX: number, sourceY: number, sourceWidth: number, sourceHeight: number, destinationX: number, destinationY: number, destinationWidth: number, destinationHeight: number, props?: DrawProps): void;
         drawText(text: TextProps, x: number, y: number, props?: DrawProps): void;
-        createPattern(resourceId: string, repetition: "repeat" | "repeat-x" | "repeat-y" | "no-repeat"): void;
         drawPattern(patternResourceId: string, x: number, y: number, width: number, height: number): void;
+        drawImageData(imageData: ImageData, x: number, y: number, sourceX?: number, sourceY?: number, destWidth?: number, destHeight?: number): void;
         protected prepare(props: DrawProps, x: number, y: number, width: number, height: number): ResetCommand;
         protected applyReset(cmd: ResetCommand): void;
     }
@@ -370,11 +379,13 @@ declare module "src/rendering/RenderAPI" {
         drawRect(x: number, y: number, width: number, height: number, color?: ColorOrTransparent, stroke?: StrokeProps, props?: DrawProps): void;
         drawRoundRect(x: number, y: number, width: number, height: number, radius: number, color?: ColorOrTransparent, stroke?: StrokeProps, props?: DrawProps): void;
         drawCircle(x: number, y: number, radius: number, fillColor?: string, stroke?: StrokeProps, props?: DrawProps): void;
+        drawEllipse(x: number, y: number, xRadius: number, yRadius: number, color?: string, stroke?: StrokeProps, props?: DrawProps): void;
         drawImage(resourceId: string, x: number, y: number, width: number, height: number, props?: DrawProps): void;
         drawImageCropped(resourceId: string, sourceX: number, sourceY: number, sourceWidth: number, sourceHeight: number, destinationX: number, destinationY: number, destinationWidth: number, destinationHeight: number, props?: DrawProps): void;
         drawText(text: TextProps, x: number, y: number, props?: DrawProps): void;
         drawPattern(patternResourceId: string, x: number, y: number, width: number, height: number): void;
-        protected onDraw(cmd: string, ...args: any[]): void;
+        drawImageData(imageData: ImageData, x: number, y: number, sourceX?: number, sourceY?: number, destWidth?: number, destHeight?: number): void;
+        protected onDraw(cmd: keyof IRenderer, ...args: any[]): void;
         protected getBackend(cmd: string, ...args: any[]): void;
     }
 }
@@ -411,7 +422,7 @@ declare module "src/Canvas" {
     import Collision from "src/Collision";
     import DisplayObject from "src/DisplayObject";
     import type Sprite from "src/Sprite";
-    interface CanvasProps {
+    export interface CanvasProps {
         width?: number;
         height?: number;
         fps?: number;
@@ -475,6 +486,7 @@ declare module "src/Canvas" {
         loadResource(id: string, source: ImageSource): Promise<Size>;
         getResource(id: string): Promise<ImageBitmap | undefined>;
         disposeResource(id: string): void;
+        getContent(resourceId?: string): Promise<HTMLCanvasElement>;
         getRenderer(): IRenderer;
         insertInPage(container: HTMLElement): void;
         getElement(): HTMLCanvasElement;

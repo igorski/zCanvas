@@ -40,6 +40,28 @@ function addCanvasDemoControls( container, zCanvas ) {
 }
 
 /**
+ * Scales an image of provided dimensions to fit inside the available
+ * size of the provided Canvas. The image will be scaled to fully cover the
+ * Canvas area without distortion (non-dominant axis will be clipped)
+ */
+function scaleImageToAvailableSize( canvas, imageWidth, imageHeight ) {
+    let width  = imageWidth;
+    let height = imageHeight;
+    let scale  = 1;
+
+    if ( canvas.getWidth() > canvas.getHeight() ) {
+        // Canvas is in landscape orientation
+        height = canvas.getWidth() / imageWidth * imageHeight;
+        scale  = canvas.getWidth() / imageWidth;
+    } else {
+        // Canvas is in portrait (or square) orientation
+        width = canvas.getHeight() / imageHeight * imageWidth;
+        scale = canvas.getHeight() / imageHeight;
+    }
+    return { width: width * scale, height: height * scale };
+}
+
+/**
  * Creates a simple joypad to control actors with in the demo content
  * 
  * @param {HTMLElement} container 

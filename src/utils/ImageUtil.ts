@@ -20,6 +20,8 @@
  * IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
+// @ts-expect-error "WorkerGlobalScope" is not universallly defined
+const isWorker = typeof WorkerGlobalScope !== "undefined" && self instanceof WorkerGlobalScope;
 
 /* lazily create a pooled canvas for pixel retrieval operations */
 
@@ -30,8 +32,13 @@ let _tempCanvas: HTMLCanvasElement;
  * the element and its CanvasRenderingContext2D
  */
 export function createCanvas( width = 0, height = 0, optimizedReads = false ): { cvs: HTMLCanvasElement, ctx: CanvasRenderingContext2D } {
-    const cvs = document.createElement( "canvas" );
-    const ctx = cvs.getContext( "2d", optimizedReads ? { willReadFrequently: true } : undefined );
+    let cvs: HTMLCanvasElement;
+    if ( isWorker ) {
+        cvs = new OffscreenCanvas( width, height ) as unknown as HTMLCanvasElement;
+    } else {
+        cvs = self.document.createElement( "canvas" );
+    }
+    const ctx = cvs.getContext( "2d", optimizedReads ? { willReadFrequently: true } : undefined ) as CanvasRenderingContext2D;
 
     if ( width !== 0 && height !== 0 ) {
         cvs.width  = width;
@@ -78,7 +85,7 @@ export function cloneCanvas( canvasToClone: HTMLCanvasElement ): HTMLCanvasEleme
     return cvs;
 }
 
-export function imageToCanvas( cvs: HTMLCanvasElement, image: HTMLImageElement | HTMLCanvasElement | ImageBitmap, width: number, height: number ): void {
+export function imageToCanvas( cvs: HTMLCanvasElement, image: HTMLImageElement | HTMLCanvasElement | ImageBitmap, width?: number, height?: number ): void {
     drawImageOnCanvas( cvs, image, width, height );
 }
 
