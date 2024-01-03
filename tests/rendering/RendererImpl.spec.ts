@@ -50,6 +50,53 @@ describe( "RendererImpl", () => {
         });
     });
 
+    describe( "when drawing a Path", () => {
+        const points = [
+            // unclosed triangle
+            { x: 0, y: 0 }, { x: 10, y: 30 }, { x: -10, y: 30 }
+        ];
+
+        it( "should first move to the first supplied coordinate, then make lines to the next", () => {
+            const moveToSpy = vi.spyOn( ctx, "moveTo" );
+            const lineToSpy = vi.spyOn( ctx, "lineTo" );
+
+            renderer.drawPath( points );
+
+            expect( moveToSpy ).toHaveBeenCalledTimes( 1 );
+            expect( lineToSpy ).toHaveBeenCalledTimes( 2 );
+
+            expect( moveToSpy ).toHaveBeenCalledWith( 0, 0 );
+            expect( lineToSpy ).toHaveBeenNthCalledWith( 1, 10, 30 );
+            expect( lineToSpy ).toHaveBeenNthCalledWith( 2, -10, 30 );
+        });
+
+        it( "should only fill the path when a non transparent fill color was provided", () => {
+            const ctxFillSpy = vi.spyOn( ctx, "fill" );
+
+            renderer.drawPath( points, "transparent", { color: "red", size: 1 });
+            expect( ctxFillSpy ).not.toHaveBeenCalled();
+
+            renderer.drawPath( points, "blue", { color: "red", size: 1 });
+            expect( ctxFillSpy ).toHaveBeenCalled();
+        });
+
+        it( "should not close the path unless explicitly requested", () => {
+            const ctxCloseSpy = vi.spyOn( ctx, "closePath" );
+
+            renderer.drawPath( points, "blue", { color: "red", size: 1 });
+
+            expect( ctxCloseSpy ).not.toHaveBeenCalled();
+        });
+
+        it( "should close the path when requested", () => {
+            const ctxCloseSpy = vi.spyOn( ctx, "closePath" );
+
+            renderer.drawPath( points, "blue", { color: "red", size: 1, close: true });
+
+            expect( ctxCloseSpy ).toHaveBeenCalled();
+        });
+    });
+
     describe( "when managing transformation and blending operations for a DrawProps definition", () => {
         const x = 20, y = 10, width = 30, height = 15;
 

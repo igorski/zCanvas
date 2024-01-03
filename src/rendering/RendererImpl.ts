@@ -47,7 +47,7 @@ export default class RendererImpl implements IRenderer {
 
     constructor( canvas: HTMLCanvasElement | OffscreenCanvas, private _debug = false ) {
         this._cvs = canvas;
-        this._ctx = canvas.getContext( "2d" );
+        this._ctx = canvas.getContext( "2d" ) as CanvasRenderingContext2D;
 
         this._bmp = new Cache( undefined, ( bitmap: ImageBitmap ) => {
             bitmap.close();
@@ -169,10 +169,12 @@ export default class RendererImpl implements IRenderer {
             this._ctx.fill();
         }
         if ( stroke ) {
+            if ( stroke.close ) {
+                this._ctx.closePath(); // fill will always close this affects strokes only
+            }
             applyStrokeProps( this._ctx, stroke );
             this._ctx.stroke();
         }
-        // this._ctx.closePath();
     }
 
     clearRect( x: number, y: number, width: number, height: number, props?: DrawProps ): void {
@@ -221,6 +223,8 @@ export default class RendererImpl implements IRenderer {
         this._ctx.beginPath();
         this._ctx.arc( x + radius, y + radius, radius, 0, TWO_PI, false );
 
+        // ctx.closePath(); // a circle is a closed shape
+
         if ( fillColor !== TRANSPARENT ) {
             this._ctx.fillStyle = fillColor;
             this._ctx.fill();
@@ -228,18 +232,19 @@ export default class RendererImpl implements IRenderer {
 
         if ( stroke ) {
             applyStrokeProps( this._ctx, stroke );
-            // ctx.closePath();
             this._ctx.stroke();
         }
         this.applyReset( prep );
     }
 
     drawEllipse( x: number, y: number, xRadius: number, yRadius: number, fillColor = TRANSPARENT, stroke?: StrokeProps, props?: DrawProps ): void {
-        const prep = props ? this.prepare( props, x, y, xRadius * 2, yRadius * 2 ) : ResetCommand.NONE;
+        const prep = props ? this.prepare( props, x - xRadius, y - yRadius, xRadius * 2, yRadius * 2 ) : ResetCommand.NONE;
 
         this._ctx.beginPath();
         this._ctx.ellipse( x, y, xRadius, yRadius, 0, 0, TWO_PI, false );
-
+        
+        // ctx.closePath(); // an ellipse is a closed shape
+            
         if ( fillColor !== TRANSPARENT ) {
             this._ctx.fillStyle = fillColor;
             this._ctx.fill();
@@ -247,7 +252,6 @@ export default class RendererImpl implements IRenderer {
 
         if ( stroke ) {
             applyStrokeProps( this._ctx, stroke );
-            // ctx.closePath();
             this._ctx.stroke();
         }
         this.applyReset( prep );

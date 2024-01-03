@@ -449,7 +449,7 @@ describe( "Sprite", () => {
             expect( bounds.height ).toEqual( height );
         });
 
-        it( "should return the transformed rectangle when requesting the transformed bounds (and transformations are set)", () => {
+        it( "should return the transformed rectangle when requesting the transformed bounds (when transformations are set)", () => {
             const sprite = new Sprite({ x, y, width, height, rotation: 90 });
 
             const bounds = sprite.getBounds( true );
@@ -461,7 +461,7 @@ describe( "Sprite", () => {
             expect( Math.round( bounds.height )).toEqual( 40 );
         });
 
-        it( "should return the untransformed rectangle when requesting the transformed bounds (and no transformations are set)", () => {
+        it( "should return the untransformed rectangle when requesting the transformed bounds (when no transformations are set)", () => {
             const sprite = new Sprite({ x, y, width, height });
             
             const bounds = sprite.getBounds( true );
@@ -788,23 +788,48 @@ describe( "Sprite", () => {
         });
     });
 
-    it( "should be able to determine whether a coordinate is inside the sprites bounding box", () => {
-        const sprite = new Sprite({ x, y, width, height });
+    describe( "when determining whether a coordinate is inside the Sprites bounding box", () => {
+        it( "should be able to determine whether a coordinate is inside the sprites bounding box", () => {
+            const sprite = new Sprite({ x, y, width, height });
+    
+            // top left
+            expect( sprite.insideBounds( x - 1, y - 1 )).toBe( false );
+            expect( sprite.insideBounds( x, y )).toBe( true );
+            // top right
+            expect( sprite.insideBounds( x + width + 1, y )).toBe( false );
+            expect( sprite.insideBounds( x + width, y )).toBe( true );
+            // bottom right
+            expect( sprite.insideBounds( x + width, y + height + 1 )).toBe( false );
+            expect( sprite.insideBounds( x + width, y + height )).toBe( true );
+            // bottom left
+            expect( sprite.insideBounds( x - 1, y + height )).toBe( false );
+            expect( sprite.insideBounds( x, y + height )).toBe( true );
+            // center
+            expect( sprite.insideBounds( x + width / 2, y + height / 2 )).toBe( true );
+        });
 
-        // top left
-        expect( sprite.insideBounds( x - 1, y - 1 )).toBe( false );
-        expect( sprite.insideBounds( x, y )).toBe( true );
-        // top right
-        expect( sprite.insideBounds( x + width + 1, y )).toBe( false );
-        expect( sprite.insideBounds( x + width, y )).toBe( true );
-        // bottom right
-        expect( sprite.insideBounds( x + width, y + height + 1 )).toBe( false );
-        expect( sprite.insideBounds( x + width, y + height )).toBe( true );
-        // bottom left
-        expect( sprite.insideBounds( x - 1, y + height )).toBe( false );
-        expect( sprite.insideBounds( x, y + height )).toBe( true );
-        // center
-        expect( sprite.insideBounds( x + width / 2, y + height / 2 )).toBe( true );
+        it( "should take scaling into account", () => {
+            const sprite = new Sprite({ x, y, width, height });
+
+            expect( sprite.insideBounds( x - width / 2, y - height / 2)).toBe( false );
+
+            sprite.setScale( 2 );
+
+            expect( sprite.insideBounds( x - width / 2, y - height / 2 )).toBe( true );
+        });
+
+        it( "should take rotation into account", () => {
+            width  = 10;
+            height = 40;
+
+            const sprite = new Sprite({ x, y, width, height });
+
+            expect( sprite.insideBounds( x - width / 2, y + height / 2 )).toBe( false );
+
+            sprite.setRotation( 90 );
+            
+            expect( sprite.insideBounds( x - width / 2, y + height / 2 )).toBe( true );
+        });
     });
 
     it( "should be able to determine when it collides with another sprite", () => {
