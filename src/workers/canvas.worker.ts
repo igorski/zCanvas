@@ -34,7 +34,6 @@ onmessage = ( e: MessageEvent ): void => {
         
         case "init":
             canvas = e.data.canvas;
-            console.info("pi pa data",e.data);
             renderer = new RendererImpl( canvas!, e.data.opts as IContextProps, e.data.debug );
             break;
 

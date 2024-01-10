@@ -61,7 +61,7 @@ export default class RenderAPI implements IRenderer {
 
         const opts = { alpha: props.alpha };
 
-        if ( props.useOffscreen && typeof this._el[ "transferControlToOffscreen" ] === "function" ) {
+        if ( props.useOffscreen && typeof canvas[ "transferControlToOffscreen" ] === "function" ) {
             this._useW = true;
             this._cbs = new Map();
             this._pl = new Cache(() => ([]), ( cmd: DrawCommand ) => {
@@ -81,7 +81,7 @@ export default class RenderAPI implements IRenderer {
             }, [ offscreenCanvas ]);
             this._wkr.onmessage = this.handleMessage.bind( this );
         } else {
-            this._rdr = new RendererImpl( this._el, opts, props.debug );
+            this._rdr = new RendererImpl( canvas, opts, props.debug );
         }
     }
 

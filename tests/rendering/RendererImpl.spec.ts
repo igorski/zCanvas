@@ -28,7 +28,7 @@ describe( "RendererImpl", () => {
         expect( getContextSpy ).toHaveBeenCalledWith( "2d", { alpha: true });
     });
 
-    it( "should by construct to use a 2D rendering context for an opaque background when requested", () => {
+    it( "should construct to use a 2D rendering context for an opaque background upon request", () => {
         const getContextSpy = vi.spyOn( canvas.getElement(), "getContext" );
 
         renderer = new RendererImpl( canvas.getElement(), { alpha: false });
@@ -72,21 +72,33 @@ describe( "RendererImpl", () => {
     });
 
     describe( "when drawing an Image", () => {
-        it( "should not do anything when the provided resource does not have a cached Bitmap", () => {
-            const ctxDrawSpy = vi.spyOn( ctx, "drawImage" ).mockImplementationOnce(() => true );
+        let ctxDrawSpy;
+        beforeEach(() => {
+            ctxDrawSpy = vi.spyOn( ctx, "drawImage" ).mockImplementationOnce(() => true );
+        });
 
+        it( "should not do anything when the provided resource does not have a cached Bitmap", () => {
             renderer.drawImage( "foo", 0, 0, 10, 10 );
 
             expect( ctxDrawSpy ).not.toHaveBeenCalled();
         });
 
-        it( "should draw using the Bitmap cached for the provided resource", () => {
+        it( "should draw using the Bitmap cached for the provided resource for the 3-arity variant", () => {
             const fooBitmap = createMockImageBitmap();
             renderer.cacheResource( "foo", fooBitmap );
 
-            const ctxDrawSpy = vi.spyOn( ctx, "drawImage" ).mockImplementationOnce(() => true );
+            renderer.drawImage( "foo", 5, 7 );
 
-            renderer.drawImage( "foo", 0, 0, 10, 10 );
+            expect( ctxDrawSpy ).toHaveBeenCalledWith(
+                fooBitmap, expect.any( Number ), expect.any( Number ),
+            );
+        });
+
+        it( "should draw using the Bitmap cached for the provided resource for the 5-arity variant", () => {
+            const fooBitmap = createMockImageBitmap();
+            renderer.cacheResource( "foo", fooBitmap );
+
+            renderer.drawImage( "foo", 5, 7, 10, 10 );
 
             expect( ctxDrawSpy ).toHaveBeenCalledWith(
                 fooBitmap,
@@ -94,11 +106,8 @@ describe( "RendererImpl", () => {
             );
         });
 
-        it( "should round all values in its bounding box to prevent anti-aliased performance issues", () => {
+        it( "should round all values in its bounding box to prevent performance issues caused by anti-aliasing", () => {
             renderer.cacheResource( "foo", createMockImageBitmap() );
-            
-            const ctxDrawSpy = vi.spyOn( ctx, "drawImage" ).mockImplementationOnce(() => true );
-
             renderer.drawImage( "foo", 17.5, 12.3, 10.5, 11.07 );
 
             expect( ctxDrawSpy ).toHaveBeenCalledWith(
@@ -108,9 +117,12 @@ describe( "RendererImpl", () => {
     });
 
     describe( "when drawing an Image using cropping", () => {
-        it( "should not do anything when the provided resource does not have a cached Bitmap", () => {
-            const ctxDrawSpy = vi.spyOn( ctx, "drawImage" ).mockImplementationOnce(() => true );
+        let ctxDrawSpy;
+        beforeEach(() => {
+            ctxDrawSpy = vi.spyOn( ctx, "drawImage" ).mockImplementationOnce(() => true );
+        });
 
+        it( "should not do anything when the provided resource does not have a cached Bitmap", () => {
             renderer.drawImageCropped( "foo", 0, 0, 10, 10, 0, 0, 10, 10 );
 
             expect( ctxDrawSpy ).not.toHaveBeenCalled();
@@ -119,8 +131,6 @@ describe( "RendererImpl", () => {
         it( "should draw using the Bitmap cached for the provided resource", () => {
             const fooBitmap = createMockImageBitmap();
             renderer.cacheResource( "foo", fooBitmap );
-
-            const ctxDrawSpy = vi.spyOn( ctx, "drawImage" ).mockImplementationOnce(() => true );
 
             renderer.drawImageCropped( "foo", 0, 0, 10, 10, 0, 0, 10, 10 );
 
@@ -131,11 +141,8 @@ describe( "RendererImpl", () => {
             );
         });
 
-        it( "should round all values in its bounding box to prevent anti-aliased performance issues", () => {
+        it( "should round all values in its bounding box to prevent performance issues caused by anti-aliasing", () => {
             renderer.cacheResource( "foo", createMockImageBitmap() );
-            
-            const ctxDrawSpy = vi.spyOn( ctx, "drawImage" ).mockImplementationOnce(() => true );
-
             renderer.drawImageCropped( "foo", 17.5, 12.3, 10.5, 11.07, 3.4, 5.6, 7.5, 8.9 );
 
             expect( ctxDrawSpy ).toHaveBeenCalledWith(
