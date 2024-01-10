@@ -1,5 +1,6 @@
-import { describe, it, expect, beforeEach, vi } from "vitest";
+import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import "vitest-canvas-mock";
+import { createMockImageBitmap } from "../__mocks";
 import RendererImpl, { ResetCommand } from "../../src/rendering/RendererImpl";
 import Canvas from "../../src/Canvas";
 
@@ -13,6 +14,26 @@ describe( "RendererImpl", () => {
         renderer = new RendererImpl( canvas.getElement() );
 
         ctx = renderer._ctx as CanvasRenderingContext2D;
+    });
+
+    afterEach(() => {
+        vi.restoreAllMocks();
+    });
+
+    it( "should by default construct to use a 2D rendering context supporting a transparent background", () => {
+        const getContextSpy = vi.spyOn( canvas.getElement(), "getContext" );
+
+        renderer = new RendererImpl( canvas.getElement() );
+
+        expect( getContextSpy ).toHaveBeenCalledWith( "2d", { alpha: true });
+    });
+
+    it( "should by construct to use a 2D rendering context for an opaque background when requested", () => {
+        const getContextSpy = vi.spyOn( canvas.getElement(), "getContext" );
+
+        renderer = new RendererImpl( canvas.getElement(), { alpha: false });
+
+        expect( getContextSpy ).toHaveBeenCalledWith( "2d", { alpha: false });
     });
 
     it( "should be able to render crisp pixel art when image smoothing is disabled", () => {
@@ -47,6 +68,79 @@ describe( "RendererImpl", () => {
             renderer.scale( 2, 3 );
 
             expect( ctxScaleSpy ).toHaveBeenCalledWith( 2, 3 );
+        });
+    });
+
+    describe( "when drawing an Image", () => {
+        it( "should not do anything when the provided resource does not have a cached Bitmap", () => {
+            const ctxDrawSpy = vi.spyOn( ctx, "drawImage" ).mockImplementationOnce(() => true );
+
+            renderer.drawImage( "foo", 0, 0, 10, 10 );
+
+            expect( ctxDrawSpy ).not.toHaveBeenCalled();
+        });
+
+        it( "should draw using the Bitmap cached for the provided resource", () => {
+            const fooBitmap = createMockImageBitmap();
+            renderer.cacheResource( "foo", fooBitmap );
+
+            const ctxDrawSpy = vi.spyOn( ctx, "drawImage" ).mockImplementationOnce(() => true );
+
+            renderer.drawImage( "foo", 0, 0, 10, 10 );
+
+            expect( ctxDrawSpy ).toHaveBeenCalledWith(
+                fooBitmap,
+                expect.any( Number ), expect.any( Number ), expect.any( Number ), expect.any( Number ),
+            );
+        });
+
+        it( "should round all values in its bounding box to prevent anti-aliased performance issues", () => {
+            renderer.cacheResource( "foo", createMockImageBitmap() );
+            
+            const ctxDrawSpy = vi.spyOn( ctx, "drawImage" ).mockImplementationOnce(() => true );
+
+            renderer.drawImage( "foo", 17.5, 12.3, 10.5, 11.07 );
+
+            expect( ctxDrawSpy ).toHaveBeenCalledWith(
+                expect.any( Object ), 18, 12, 11, 11
+            );
+        });
+    });
+
+    describe( "when drawing an Image using cropping", () => {
+        it( "should not do anything when the provided resource does not have a cached Bitmap", () => {
+            const ctxDrawSpy = vi.spyOn( ctx, "drawImage" ).mockImplementationOnce(() => true );
+
+            renderer.drawImageCropped( "foo", 0, 0, 10, 10, 0, 0, 10, 10 );
+
+            expect( ctxDrawSpy ).not.toHaveBeenCalled();
+        });
+
+        it( "should draw using the Bitmap cached for the provided resource", () => {
+            const fooBitmap = createMockImageBitmap();
+            renderer.cacheResource( "foo", fooBitmap );
+
+            const ctxDrawSpy = vi.spyOn( ctx, "drawImage" ).mockImplementationOnce(() => true );
+
+            renderer.drawImageCropped( "foo", 0, 0, 10, 10, 0, 0, 10, 10 );
+
+            expect( ctxDrawSpy ).toHaveBeenCalledWith(
+                fooBitmap,
+                expect.any( Number ), expect.any( Number ), expect.any( Number ), expect.any( Number ),
+                expect.any( Number ), expect.any( Number ), expect.any( Number ), expect.any( Number )
+            );
+        });
+
+        it( "should round all values in its bounding box to prevent anti-aliased performance issues", () => {
+            renderer.cacheResource( "foo", createMockImageBitmap() );
+            
+            const ctxDrawSpy = vi.spyOn( ctx, "drawImage" ).mockImplementationOnce(() => true );
+
+            renderer.drawImageCropped( "foo", 17.5, 12.3, 10.5, 11.07, 3.4, 5.6, 7.5, 8.9 );
+
+            expect( ctxDrawSpy ).toHaveBeenCalledWith(
+                expect.any( Object ), 18, 12, 11, 11, 3, 6, 8, 9
+            );
         });
     });
 

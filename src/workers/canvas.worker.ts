@@ -20,7 +20,7 @@
  * IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-import RendererImpl from "../rendering/RendererImpl";
+import RendererImpl, { type IContextProps } from "../rendering/RendererImpl";
 import { type IRenderer } from "../rendering/IRenderer";
 import { readFile } from "../utils/FileUtil";
 
@@ -34,7 +34,8 @@ onmessage = ( e: MessageEvent ): void => {
         
         case "init":
             canvas = e.data.canvas;
-            renderer = new RendererImpl( canvas!, e.data.debug );
+            console.info("pi pa data",e.data);
+            renderer = new RendererImpl( canvas!, e.data.opts as IContextProps, e.data.debug );
             break;
 
         case "loadResource":

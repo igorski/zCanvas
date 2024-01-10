@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, vi } from "vitest";
 import "vitest-canvas-mock";
-import type { ImageSource } from "../src/definitions/types";
+import type { ImageSource, Size } from "../src/definitions/types";
 import Collision from "../src/Collision";
 import Sprite from "../src/Sprite";
 import RenderAPI from "../src/rendering/RenderAPI";
@@ -11,7 +11,7 @@ describe( "Collision", () => {
     let renderer: RenderAPI;
 
     beforeEach(() => {
-        renderer  = new RenderAPI( document.createElement( "canvas" ));
+        renderer  = new RenderAPI( document.createElement( "canvas" ), { alpha: true, useOffscreen: false, debug: false });
         collision = new Collision( renderer );
         
         vi.spyOn( renderer, "loadResource" ).mockImplementation( function( id: string, source: ImageSource ): Promise<Size> {

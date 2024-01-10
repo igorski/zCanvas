@@ -40,18 +40,28 @@ const canvasContainer = document.querySelector( ".demo-canvas-container" );
 const cvsWidth  = 800;
 const cvsHeight = 350;
 
-const cvs = new Canvas({
+let cvs;
+cvs = new Canvas({
     width: cvsWidth,
     height: cvsHeight,
     animate: true,
     smoothing: false, // pixel art ahoy
+    backgroundColor: "#000",
     fps: IDEAL_FPS,
     stretchToFit: isMobile(), // in mobile view all DOM elements apart from canvas container are hidden, so essentially fullscreen
     preventEventBubbling: true,
     parentElement: canvasContainer,
+  //  viewport: { width: window.innerWidth, height: window.innerHeight },
     onResize: ( width, height ) => {
         // resize demo container to accomodate the canvas size
         demoContainer.style.width = `${width}px`;
+
+        const isPortrait = width < height;
+        if ( isPortrait && cvs && !cvs.getViewport() ) {
+            console.info(width,height);
+            cvs.setViewport( width, height );
+            cvs.setDimensions( width * ( height / width ), height );
+        }
     }
 });
 addCanvasDemoControls( demoContainer, cvs );
@@ -209,7 +219,10 @@ class Hero extends Sprite {
             targetX = this.getX() + horizontalCollision.x - thisWidth;
             this.setX( prevX );//targetX );
         }
-
+        const viewport = cvs.getViewport();
+        if ( viewport ) {
+        cvs.panViewport( this.getX() - ( viewport.width / 2 ), this.getY() - ( viewport.top / 2 ));
+        }
         this.setY( targetY );
         if ( verticalCollision = cvs.collision.pixelCollision( this, wallSprite, true )) {
             // vertical collision, e.g. touched ground or bumped head
