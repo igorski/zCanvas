@@ -177,4 +177,24 @@ button,
     #action-btn {
         position: fixed;
     }
+
+    /* sometimes we want to force display, regardless of display size */
+
+    .scrollable {
+        overflow-y: auto;
+    }
+
+    .visible {
+        display: block;
+        padding: 0 16px;
+        box-sizing: border-box;
+    }
+}
+
+/* compact mode also hides UI */
+
+.demo-container.compact .demo-header,
+.demo-container.compact .demo-controls,
+.demo-container.compact .demo-description {
+    display: none;
 }
