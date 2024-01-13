@@ -81,7 +81,7 @@ function scaleViewport() {
         canvasScale = innerWidth / viewportWidth; // scale clipped Canvas so viewport fills screen
     }
     demoContainer.style.width = `${viewportWidth}px`; // container should match viewport size
-    cvs.setDimensions( WORLD_WIDTH, WORLD_HEIGHT, false, true ); // keep Canvas size equal to ideal
+    cvs.setDimensions( WORLD_WIDTH, WORLD_HEIGHT, false, true ); // keep Canvas size equal to world size
     requestAnimationFrame(() => { cvs.scale( canvasScale ); });  // scale clipped Canvas
 }
 window.addEventListener( "resize", scaleViewport );
@@ -236,6 +236,7 @@ class Hero extends Sprite {
             targetX = this.getX() + horizontalCollision.x - thisWidth;
             this.setX( prevX );//targetX );
         }
+        // keep player visible inside Viewport (pans Viewport relative to canvas "world" size)
         const viewport = cvs.getViewport();
         cvs.panViewport( this.getX() - ( viewport.width / 2 ), 0 );
         
