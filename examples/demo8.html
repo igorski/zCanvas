@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable = no" name="viewport">
+    <meta charset="utf-8" />
+    <title>zCanvas audio analyser example</title>
+    <!-- load demo assets -->
+    <link rel="stylesheet" href="./assets/styles.css">
+    <script type="text/javascript" src="./assets/images.js"></script>
+    <script type="text/javascript" src="./assets/utils.js"></script>
+</head>
+<body class="scrollable">
+<div class="demo-container">
+    <div class="demo-header">
+        <h1>zCanvas : Audio analyser</h1>
+    </div>
+    <div class="demo-canvas-container"><!-- x --></div>
+    <div class="demo-controls visible">
+        <div>
+            <label for="fps">Framerate (15 to 60 fps)</label>
+            <input type="range" id="fps" min="15" max="60" value="60" step="1" />
+        </div>
+        <button type="button" id="record-button">Record audio</button>
+    </div>
+    <p class="demo-description visible">
+        Demo features : a zCanvas that visualises an audio stream in real-time. By clicking "record", audio
+        will be recorded lived from your device's microphone and visualised as a waveform on the Canvas.<br /><br />
+        For a complete music making application using zCanvas to visualise audio, you can look into the open source
+        <a href="https://www.igorski.nl/application/efflux/" target="_blank" title="Efflux music maker on igorski.nl">Efflux.</a><br /><br />
+        <i>*no audio will be recorded and sent over the internet, keeping your data private.</i>
+    </p>
+</div>
+<script type="module">
+import { Canvas, Sprite } from "../dist/zcanvas.mjs";
+
+// STEP 1 : SETUP
+// --------------------------------------
+
+const demoContainer   = document.querySelector( ".demo-container" );
+const canvasContainer = document.querySelector( ".demo-canvas-container" );
+const recordButton    = document.querySelector( "#record-button" );
+
+const CANVAS_WIDTH  = 640;
+const CANVAS_HEIGHT = 240;
+
+const cvs = new Canvas({
+    width: CANVAS_WIDTH,
+    height: CANVAS_HEIGHT,
+    preventEventBubbling: true,
+    parentElement: canvasContainer,
+    backgroundColor: "#000",
+    animate: true,
+    onResize: ( width, height ) => {
+        // resize demo container to accommodate the canvas size
+        demoContainer.style.width = `${isMobile() ? "100%" : width}px`;
+    }
+});
+addCanvasDemoControls( demoContainer, cvs );
+
+// STEP 2: AUDIO ENGINE SETUP
+// --------------------------
+
+recordButton.addEventListener( "click", async () => {
+    const audioContext = new AudioContext(); // AudioContext can only be unlocked after user interaction!
+
+    try {
+        // 1. request permission to retrieve audio devices
+        await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
+        // 2. permission granted, retrieve the devices 
+        const deviceList = await navigator.mediaDevices.enumerateDevices();
+        // 3. automatically select the microphone (is usually the default input)
+        const inputs = deviceList.filter(({ kind }) => kind === "audioinput" );
+        const selectedInput = inputs.find(({ deviceId }) => deviceId === "default" ) || devices[ 0 ];
+     
+        // 4. create an audio stream to get audio from the microphone
+        const stream = await navigator.mediaDevices.getUserMedia({
+            audio: { deviceId : selectedInput.deviceId }
+        });
+
+        // 5. create an AnalyserNode to analyse the incoming audio stream
+        const analyser = audioContext.createAnalyser();
+        analyser.fftSize = 2048;
+        audioContext.createMediaStreamSource( stream ).connect( analyser );
+
+        // 6. construct the AnalyserSprite to visualise the audio stream on the Canvas
+        const analyserSprite = new AnalyserSprite( analyser );
+        cvs.addChild( analyserSprite );
+
+        recordButton.setAttribute( "disabled", "disabled" ); // nothing left to do
+        recordButton.innerHTML = "Recording...";
+    } catch {
+        alert( "Could not create audio analyser. Please provide permission to use microphone and use a Web Audio compliant browser" );
+    }
+});
+
+// STEP 3 : CREATING A SPRITE TO VISUALISE AUDIO
+// ---------------------------------------------
+
+class AnalyserSprite extends Sprite {
+    constructor( analyser ) {
+        super({ x: 0, y: 0, width: CANVAS_WIDTH, height: CANVAS_HEIGHT });
+
+        /* instance properties */
+
+        this.analyser = analyser;
+
+        // create a sample buffer to store snapshot of analysed audio input
+
+        this.sampleBuffer = new Float32Array( analyser.fftSize );
+        
+        // the sample buffer is always of the same size, create a pool of Points
+        // used to draw the path of the waveform
+
+        this.points = new Array( this.sampleBuffer.length );
+        for ( let i = 0; i < this.sampleBuffer.length; ++i ) {
+            this.points[ i ] = { x: 0, y: 0 };
+        }
+        this.strokeProps = { size: 4, color: "yellow" };
+    }
+
+    /* overridden zCanvas.sprite methods */
+
+    draw( renderer, viewport ) {
+        // synchronise the sample buffer with the latest analysis snapshot
+        this.analyser.getFloatTimeDomainData( this.sampleBuffer );
+
+        const { width, height } = this.getBounds();
+        const sliceWidth = width * 1.0 / this.points.length;
+
+        // draw the waveform
+       
+        let x = 0;
+        for ( let i = 0, l = this.sampleBuffer.length; i < l; ++i ) {
+            const point = this.points[ i ];
+            const v = this.sampleBuffer[ i ] * height;
+            const y = height / 2 + v;
+
+            point.x = x;
+            point.y = y;
+
+            x += sliceWidth;
+        }
+        renderer.drawPath( this.points, "transparent", this.strokeProps );
+    }
+}
+</script>
+</body>
+</html>

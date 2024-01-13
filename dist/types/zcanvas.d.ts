@@ -304,13 +304,16 @@ declare module "src/rendering/RendererImpl" {
         ALL = 1,
         TRANSFORM = 2
     }
+    export type IContextProps = {
+        alpha?: boolean;
+    };
     export default class RendererImpl implements IRenderer {
         private _debug;
         _cvs: HTMLCanvasElement | OffscreenCanvas;
         _ctx: CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D;
         _bmp: Cache<ImageBitmap>;
         _ptn: Cache<CanvasPattern>;
-        constructor(canvas: HTMLCanvasElement | OffscreenCanvas, _debug?: boolean);
+        constructor(canvas: HTMLCanvasElement | OffscreenCanvas, opts?: IContextProps, _debug?: boolean);
         dispose(): void;
         cacheResource(id: string, bitmap: ImageBitmap): void;
         getResource(id: string): ImageBitmap | undefined;
@@ -345,6 +348,11 @@ declare module "src/rendering/RendererImpl" {
 declare module "src/rendering/RenderAPI" {
     import type { ImageSource, Point, Size } from "src/definitions/types";
     import type { IRenderer, ColorOrTransparent, DrawProps, StrokeProps, TextProps } from "src/rendering/IRenderer";
+    type RenderProps = {
+        useOffscreen: boolean;
+        alpha: boolean;
+        debug: boolean;
+    };
     export default class RenderAPI implements IRenderer {
         private _el;
         private _rdr;
@@ -353,7 +361,7 @@ declare module "src/rendering/RenderAPI" {
         private _pl;
         private _cmds;
         private _cbs;
-        constructor(canvas: HTMLCanvasElement, useOffscreen?: boolean, debug?: boolean);
+        constructor(canvas: HTMLCanvasElement, props: RenderProps);
         loadResource(id: string, source: ImageSource): Promise<Size>;
         getResource(id: string): Promise<ImageBitmap | undefined>;
         disposeResource(id: string): void;

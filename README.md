@@ -23,7 +23,7 @@ Note these demos were written in vanilla JavaScript without the use of any libra
 ### Game demos
 
  * [Demo #1: Spritesheets, gameloops and fast collision detection](https://rawgithub.com/igorski/zcanvas/master/examples/demo1.html)
-  * [Demo #2: Pixel-perfect collisions](https://rawgithub.com/igorski/zcanvas/master/examples/demo2.html)
+  * [Demo #2: Pixel-perfect collisions and clipping viewports](https://rawgithub.com/igorski/zcanvas/master/examples/demo2.html)
 
 ### Graphics manipulation demos
 
@@ -31,7 +31,8 @@ Note these demos were written in vanilla JavaScript without the use of any libra
  * [Demo #4: Integrating 3rd party animation library](https://rawgithub.com/igorski/zcanvas/master/examples/demo4.html)
   * [Demo #5: Integrating 3rd party physics library](https://rawgithub.com/igorski/zcanvas/master/examples/demo5.html)
  * [Demo #6: Local image manipulation](https://rawgithub.com/igorski/zcanvas/master/examples/demo6.html)
- * [Demo #7: Pannable viewport](https://rawgithub.com/igorski/zcanvas/master/examples/demo7.html)
+ * [Demo #7: Scrollable viewport](https://rawgithub.com/igorski/zcanvas/master/examples/demo7.html) 
+ * [Demo #8: Audio waveform analyser](https://rawgithub.com/igorski/zcanvas/master/examples/demo8.html)
 
 ## Real-life examples
 

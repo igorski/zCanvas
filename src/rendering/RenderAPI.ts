@@ -32,6 +32,12 @@ import Cache from "../utils/Cache";
 
 type DrawCommand = ( string | number | DrawProps )[];
 
+type RenderProps = {
+    useOffscreen: boolean;
+    alpha: boolean;
+    debug: boolean;
+};
+
 /**
  * All draw commands are executed on the RenderAPI which can delegate
  * it to a Worker (when using OffscreenCanvas) or run it inline.
@@ -50,10 +56,12 @@ export default class RenderAPI implements IRenderer {
     private _cmds: DrawCommand[]; // DrawCommands to be executed on next render
     private _cbs: Map<string, { resolve: ( data?: any ) => void, reject: ( error: Error ) => void }>;
 
-    constructor( canvas: HTMLCanvasElement, useOffscreen = false, debug = false ) {
+    constructor( canvas: HTMLCanvasElement, props: RenderProps ) {
         this._el = canvas;
 
-        if ( useOffscreen && typeof this._el[ "transferControlToOffscreen" ] === "function" ) {
+        const opts = { alpha: props.alpha };
+
+        if ( props.useOffscreen && typeof canvas[ "transferControlToOffscreen" ] === "function" ) {
             this._useW = true;
             this._cbs = new Map();
             this._pl = new Cache(() => ([]), ( cmd: DrawCommand ) => {
@@ -68,11 +76,12 @@ export default class RenderAPI implements IRenderer {
             this._wkr.postMessage({
                 cmd: "init",
                 canvas: offscreenCanvas,
-                debug,
+                debug: props.debug,
+                opts,
             }, [ offscreenCanvas ]);
             this._wkr.onmessage = this.handleMessage.bind( this );
         } else {
-            this._rdr = new RendererImpl( this._el, debug );
+            this._rdr = new RendererImpl( canvas, opts, props.debug );
         }
     }
 

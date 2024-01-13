@@ -3,7 +3,7 @@
 <head>
     <meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable = no" name="viewport">
     <meta charset="utf-8" />
-    <title>zCanvas animated spritesheet example</title>
+    <title>zCanvas collision detection and viewport examples</title>
     <!-- load demo assets -->
     <link rel="stylesheet" href="./assets/styles.css">
     <script type="text/javascript" src="./assets/images.js"></script>
@@ -12,7 +12,7 @@
 <body>
 <div class="demo-container">
     <div class="demo-header">
-        <h1>zCanvas : spritesheets and collisions</h1>
+        <h1>zCanvas : pixel-perfect collisions and clipping viewports</h1>
     </div>
     <div class="demo-canvas-container"><!-- x --></div>
     <div class="demo-controls">
@@ -23,8 +23,11 @@
         <button type="button" id="fullscreen">Fullscreen</button>
     </div>
     <p class="demo-description">
-        Demo features : a keyboard / touchscreen-controllable spritesheet character that uses the pixel-accurate (and slightly heavier) collision
-        detection-variant (see API docs) to resolve collisions with the environment. The simulation speed is locked to the configured canvas framerate.
+        Demo features : a keyboard / touchscreen-controllable spritesheet character that uses the <strong>pixel-accurate</strong> (and slightly
+        heavier) collision detection-variant (see API docs) to resolve collisions with the environment.<br />
+        <strong>Viewport:</strong> on mobile screens (or resize your window to a portrait oriented view), the content of the canvas will be clipped by a Viewport
+        where the Viewport will center around the player character. The size of the canvas remains static as it describes
+        the "world" size, while the Viewport describes the visible area.<br /><br />
         Use arrow keys and spacebar to jump.
     </p>
 </div>
@@ -37,24 +40,51 @@ import { Canvas, Sprite } from "../dist/zcanvas.mjs";
 const demoContainer   = document.querySelector( ".demo-container" );
 const canvasContainer = document.querySelector( ".demo-canvas-container" );
 
-const cvsWidth  = 800;
-const cvsHeight = 350;
+const WORLD_WIDTH  = 800;
+const WORLD_HEIGHT = 350;
 
-const cvs = new Canvas({
-    width: cvsWidth,
-    height: cvsHeight,
+let cvs;
+cvs = new Canvas({
+    width: WORLD_WIDTH,
+    height: WORLD_HEIGHT,
     animate: true,
     smoothing: false, // pixel art ahoy
+    backgroundColor: "#000",
     fps: IDEAL_FPS,
-    stretchToFit: isMobile(), // in mobile view all DOM elements apart from canvas container are hidden, so essentially fullscreen
+    autoSize: false, // we will manage our own resize handler to resize the Viewport instead of scaling the Canvas
     preventEventBubbling: true,
     parentElement: canvasContainer,
-    onResize: ( width, height ) => {
-        // resize demo container to accomodate the canvas size
-        demoContainer.style.width = `${width}px`;
-    }
+    viewport: { width: WORLD_WIDTH, height: WORLD_HEIGHT },
 });
 addCanvasDemoControls( demoContainer, cvs );
+
+// 1.1 custom canvas Viewport scaling function (accomodates to available screen space / mobile screens)
+
+function scaleViewport() {
+    const { innerWidth, innerHeight } = window;
+    let viewportWidth = isMobile() ? innerWidth : WORLD_WIDTH;
+    let canvasScale   = isMobile() ? innerWidth / WORLD_WIDTH : 1;
+
+    if ( innerWidth >= WORLD_WIDTH && innerHeight >= WORLD_HEIGHT ) {
+        cvs.setViewport( viewportWidth, WORLD_HEIGHT );
+        demoContainer.classList.remove( "compact" );
+    } else {
+        const isPortrait = innerHeight > innerWidth;
+        if ( isPortrait ) {
+            viewportWidth = innerWidth / innerHeight * WORLD_HEIGHT;
+            cvs.setViewport( viewportWidth, WORLD_HEIGHT );
+            demoContainer.classList.add( "compact" );
+        } else {
+            viewportWidth = innerWidth;
+            cvs.setViewport( viewportWidth, innerHeight );
+        }
+        canvasScale = innerWidth / viewportWidth; // scale clipped Canvas so viewport fills screen
+    }
+    demoContainer.style.width = `${viewportWidth}px`; // container should match viewport size
+    cvs.setDimensions( WORLD_WIDTH, WORLD_HEIGHT, false, true ); // keep Canvas size equal to world size
+    requestAnimationFrame(() => { cvs.scale( canvasScale ); });  // scale clipped Canvas
+}
+window.addEventListener( "resize", scaleViewport );
 
 // STEP 2: REGISTER ASSETS
 // -----------------------
@@ -64,9 +94,6 @@ await Promise.all([
     cvs.loadResource( "spritesheet", IMAGE_SPRITE_SHEET ),
     cvs.loadResource( "level", IMAGE_LEVEL )
 ]);
-
-// STEP 3 : SELF ANIMATING IMAGE EXAMPLE
-// --------------------------------------
 
 // first sprite will act as a background
 // (see included "assets.js"-file for the assetBackground-image data)
@@ -176,11 +203,11 @@ class Hero extends Sprite {
 
             // keep in bounds (exiting screen on left/right result in appearing on right/left)
 
-            if ( targetX > ( cvsWidth + thisWidth )) {
+            if ( targetX > ( WORLD_WIDTH + thisWidth )) {
                 targetX = -thisWidth;
             }
             if ( targetX < -thisWidth ) {
-                targetX = cvsWidth + thisWidth - 1;
+                targetX = WORLD_WIDTH + thisWidth - 1;
             }
         }
 
@@ -209,7 +236,10 @@ class Hero extends Sprite {
             targetX = this.getX() + horizontalCollision.x - thisWidth;
             this.setX( prevX );//targetX );
         }
-
+        // keep player visible inside Viewport (pans Viewport relative to canvas "world" size)
+        const viewport = cvs.getViewport();
+        cvs.panViewport( this.getX() - ( viewport.width / 2 ), 0 );
+        
         this.setY( targetY );
         if ( verticalCollision = cvs.collision.pixelCollision( this, wallSprite, true )) {
             // vertical collision, e.g. touched ground or bumped head
@@ -274,7 +304,7 @@ cvs.addChild( hero );
 const wallImageWidth = 660;
 const wallImageHeight = 261;
 const wallSprite = new Sprite({
-    x: cvsWidth / 2 - wallImageWidth / 2,
+    x: WORLD_WIDTH / 2 - wallImageWidth / 2,
     y: 50,
     width  : wallImageWidth,
     height : wallImageHeight,
@@ -345,6 +375,10 @@ window.addEventListener( "keyup", e => {
         hero.stop();
     }
 });
+
+// perform the initial Canvas scale
+
+scaleViewport();
 </script>
 </body>
 </html>

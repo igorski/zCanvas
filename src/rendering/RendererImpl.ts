@@ -32,6 +32,10 @@ export enum ResetCommand {
     TRANSFORM
 };
 
+export type IContextProps = {
+    alpha?: boolean;
+};
+
 const TRANSPARENT = "transparent";
 const TWO_PI = Math.PI * 2;
 const HALF = 0.5;
@@ -45,9 +49,9 @@ export default class RendererImpl implements IRenderer {
     _bmp: Cache<ImageBitmap>;   // cache for all image Bitmaps
     _ptn: Cache<CanvasPattern>; // cache for all Pattern Bitmaps
 
-    constructor( canvas: HTMLCanvasElement | OffscreenCanvas, private _debug = false ) {
+    constructor( canvas: HTMLCanvasElement | OffscreenCanvas, opts: IContextProps = { alpha: true }, private _debug = false ) {
         this._cvs = canvas;
-        this._ctx = canvas.getContext( "2d" ) as CanvasRenderingContext2D;
+        this._ctx = canvas.getContext( "2d", opts ) as CanvasRenderingContext2D;
 
         this._bmp = new Cache( undefined, ( bitmap: ImageBitmap ) => {
             bitmap.close();
@@ -264,9 +268,13 @@ export default class RendererImpl implements IRenderer {
         const prep = props ? this.prepare( props, x, y, width, height ) : ResetCommand.NONE;
 
         if ( width === undefined ) {
-            this._ctx.drawImage( this._bmp.get( resourceId ), x, y );
+            this._ctx.drawImage( this._bmp.get( resourceId ), ( HALF + x ) << 0, ( HALF + y ) << 0 );
         } else {
-            this._ctx.drawImage( this._bmp.get( resourceId ), x, y, width, height );
+            this._ctx.drawImage(
+                this._bmp.get( resourceId ),
+                ( HALF + x ) << 0, ( HALF + y ) << 0,
+                ( HALF + width ) << 0, ( HALF + height ) << 0
+            );
         }
         if ( this._debug ) {
             this.drawRect( x, y, width, height, TRANSPARENT, { size: 1, color: "red" });

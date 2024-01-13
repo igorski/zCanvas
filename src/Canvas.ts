@@ -147,7 +147,7 @@ export default class Canvas extends DisplayObject<Canvas> {
         this.DEBUG = debug;
 
         this._el  = document.createElement( "canvas" );
-        this._rdr = new RenderAPI( this._el, useWorker( optimize ), debug );
+        this._rdr = new RenderAPI( this._el, { debug, alpha: !backgroundColor, useOffscreen: useWorker( optimize ) });
         this.collision = new Collision( this._rdr );
 
         this._upHdlr   = onUpdate;
