@@ -648,14 +648,14 @@ export default class Canvas extends DisplayObject<Canvas> {
         // configured framerate of the canvas (this for instance prevents
         // 120 Hz Apple M1 rendering things too fast when you were expecting 60 fps)
        
-        if ( this._animate && ( delta / this._rIval ) < 0.999 ) {
+        if ( this._animate && ( delta / this._rIval ) < 0.55 ) {
             this._renderId = window.requestAnimationFrame( this._renHdlr );
             this._lastRaf  = now;   
             return;
         }
         // calculate frame rate relative to last actual render
 
-        this._aFps = 1000 / ( now - this._lastRender );
+        this._aFps = 1000 / ( now - this._lastRaf );
 
         // the amount of frames the Sprite.update() steps should proceed
         // when the actual frame rate differs to configured frame rate

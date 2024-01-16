@@ -825,10 +825,10 @@ class j extends J {
   render(t2 = 0) {
     this._renderPending = false;
     const e2 = t2 - this._lastRender;
-    if (this._animate && e2 / this._rIval < 0.999)
+    if (this._animate && e2 / this._rIval < 0.55)
       return this._renderId = window.requestAnimationFrame(this._renHdlr), void (this._lastRaf = t2);
     let s2, i2;
-    this._aFps = 1e3 / (t2 - this._lastRender), s2 = this._fps > 60 ? this._fps / this._aFps : 60 === this._fps && this._aFps > 63 ? 1 : 1 / (this._fps / this._aFps), this._lastRaf = t2, this._lastRender = t2 - e2 % this._rIval, this._qSize && this.updateCanvasSize();
+    this._aFps = 1e3 / (t2 - this._lastRaf), s2 = this._fps > 60 ? this._fps / this._aFps : 60 === this._fps && this._aFps > 63 ? 1 : 1 / (this._fps / this._aFps), this._lastRaf = t2, this._lastRender = t2 - e2 % this._rIval, this._qSize && this.updateCanvasSize();
     const h2 = this._width, n2 = this._height;
     this._bgColor ? this._rdr.drawRect(0, 0, h2, n2, this._bgColor) : this._rdr.clearRect(0, 0, h2, n2);
     const a2 = "function" == typeof this._upHdlr;
