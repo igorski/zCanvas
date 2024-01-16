@@ -738,7 +738,7 @@ class j extends J {
     this._bgColor = t2;
   }
   setAnimatable(t2) {
-    this._lastRaf = window.performance.now(), t2 && !this._renderPending && this.invalidate(), this._animate = t2;
+    t2 && (this._frstRaf = window.performance.now(), this._renderPending || this.invalidate()), this._animate = t2;
   }
   isAnimatable() {
     return this._animate;
@@ -825,15 +825,18 @@ class j extends J {
   render(t2 = 0) {
     this._renderPending = false;
     const e2 = t2 - this._lastRender;
-    if (this._animate && e2 / this._rIval < 0.55)
-      return this._renderId = window.requestAnimationFrame(this._renHdlr), void (this._lastRaf = t2);
-    let s2, i2;
-    this._aFps = 1e3 / (t2 - this._lastRaf), s2 = this._fps > 60 ? this._fps / this._aFps : 60 === this._fps && this._aFps > 63 ? 1 : 1 / (this._fps / this._aFps), this._lastRaf = t2, this._lastRender = t2 - e2 % this._rIval, this._qSize && this.updateCanvasSize();
-    const h2 = this._width, n2 = this._height;
-    this._bgColor ? this._rdr.drawRect(0, 0, h2, n2, this._bgColor) : this._rdr.clearRect(0, 0, h2, n2);
-    const a2 = "function" == typeof this._upHdlr;
-    for (a2 && this._upHdlr(t2, s2), i2 = this._children[0]; i2; )
-      a2 || i2.update(t2, s2), i2.draw(this._rdr, this._vp), i2 = i2.next;
+    if (this._animate && e2 / this._rIval < 0.99)
+      return void (this._renderId = window.requestAnimationFrame(this._renHdlr));
+    void 0 === this.frameCount && (this.frameCount = 0), ++this.frameCount, this._aFps = 1e3 / ((t2 - this._frstRaf) / this.frameCount);
+    const s2 = e2 / this._rIval;
+    this._frstRaf = t2, this._lastRender = t2 - e2 % this._rIval, this._qSize && this.updateCanvasSize();
+    const i2 = this._width, h2 = this._height;
+    this._bgColor ? this._rdr.drawRect(0, 0, i2, h2, this._bgColor) : this._rdr.clearRect(0, 0, i2, h2);
+    const n2 = "function" == typeof this._upHdlr;
+    n2 && this._upHdlr(t2, s2);
+    let a2 = this._children[0];
+    for (; a2; )
+      n2 || a2.update(t2, s2), a2.draw(this._rdr, this._vp), a2 = a2.next;
     this._rdr.onCommandsReady(), !this._disposed && this._animate && (this._renderPending = true, this._renderId = window.requestAnimationFrame(this._renHdlr));
   }
   addListeners(e2 = false) {

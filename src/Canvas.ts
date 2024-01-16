@@ -111,7 +111,7 @@ export default class Canvas extends DisplayObject<Canvas> {
     protected _qSize: Size | undefined; // size enqueued to be set on next render cycle
     
     protected _animate = false;
-    protected _lastRaf: DOMHighResTimeStamp;
+    protected _frstRaf: DOMHighResTimeStamp;
     protected _fps: number;   // intended framerate
     protected _aFps: number;  // actual framerate (calculated at runtime)
     protected _rIval: number; // the render interval
@@ -409,10 +409,11 @@ export default class Canvas extends DisplayObject<Canvas> {
     }
 
     setAnimatable( value: boolean ): void {
-        this._lastRaf = window.performance.now();
-
-        if ( value && !this._renderPending ) {
-            this.invalidate();
+        if ( value ) {
+            this._frstRaf = window.performance.now();
+            if ( !this._renderPending ) {
+                this.invalidate();
+            }
         }
         this._animate = value;
     }
@@ -648,31 +649,26 @@ export default class Canvas extends DisplayObject<Canvas> {
         // configured framerate of the canvas (this for instance prevents
         // 120 Hz Apple M1 rendering things too fast when you were expecting 60 fps)
        
-        if ( this._animate && ( delta / this._rIval ) < 0.55 ) {
+        if ( this._animate && ( delta / this._rIval ) < 0.99 ) {
             this._renderId = window.requestAnimationFrame( this._renHdlr );
-            this._lastRaf  = now;   
             return;
         }
         // calculate frame rate relative to last actual render
 
-        this._aFps = 1000 / ( now - this._lastRaf );
+if (this.frameCount === undefined) {
+    this.frameCount = 0;
+}
+++this.frameCount;
+
+
+        this._aFps = 1000 / (( now - this._frstRaf ) / this.frameCount );
 
         // the amount of frames the Sprite.update() steps should proceed
         // when the actual frame rate differs to configured frame rate
 
-        let framesSinceLastRender;
-        if ( this._fps > IDEAL_FPS ) {
-            // zCanvas configured for a high refresh rate
-            framesSinceLastRender = this._fps / this._aFps;
-        } else if ( this._fps === IDEAL_FPS && this._aFps > HIGH_REFRESH_THROTTLE ) {
-            // zCanvas configured for IDEAL_FPS and running on a high refresh rate configuration
-            framesSinceLastRender = 1;
-        } else {
-            // zCanvas configured to run at a lower framerate than the IDEAL_FPS
-            framesSinceLastRender = 1 / ( this._fps / this._aFps );
-        }
+        const framesSinceLastRender = delta / this._rIval;
 
-        this._lastRaf    = now;
+        this._frstRaf    = now;
         this._lastRender = now - ( delta % this._rIval );
 
         // in case a resize was requested execute it now as we will
@@ -681,8 +677,6 @@ export default class Canvas extends DisplayObject<Canvas> {
         if ( this._qSize ) {
             this.updateCanvasSize();
         }
-
-        let theSprite;
 
         const width  = this._width;
         const height = this._height;
@@ -704,15 +698,15 @@ export default class Canvas extends DisplayObject<Canvas> {
 
         // draw the children onto the canvas
 
-        theSprite = this._children[ 0 ];
+        let sprite = this._children[ 0 ];
 
-        while ( theSprite ) {
+        while ( sprite ) {
 
             if ( !useExternalUpdateHandler ) {
-                theSprite.update( now, framesSinceLastRender );
+                sprite.update( now, framesSinceLastRender );
             }
-            theSprite.draw( this._rdr, this._vp );
-            theSprite = theSprite.next;
+            sprite.draw( this._rdr, this._vp );
+            sprite = sprite.next;
         }
 
         this._rdr.onCommandsReady();
@@ -723,18 +717,6 @@ export default class Canvas extends DisplayObject<Canvas> {
             this._renderPending = true;
             this._renderId = window.requestAnimationFrame( this._renHdlr );
         }
-        /*
-        if ( this.DEBUG && now > 2 ) {
-            const elapsed = window.performance.now() - now;
-
-            this.benchmark.minElapsed = min( this.benchmark.minElapsed, elapsed );
-            this.benchmark.maxElapsed = max( this.benchmark.maxElapsed, elapsed );
-
-            if ( this._aFps !== Infinity ) {
-                this.benchmark.minFps = min( this.benchmark.minFps, this._aFps );
-                this.benchmark.maxFps = max( this.benchmark.maxFps, this._aFps );
-            }
-        }*/
     }
 
     /**
