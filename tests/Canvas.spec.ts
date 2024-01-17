@@ -575,19 +575,18 @@ describe( "Canvas", () => {
         });
 
         it( "should keep track of the actual framerate", () => {
-            const canvas = new Canvas({ animate: false });
+            const canvas = new Canvas({ animate: false, fps: 60 });
 
             // @ts-expect-error snooping on a protected method
-            canvas.render( 0 );
-            // @ts-expect-error snooping on a protected method
-            canvas.render( 1000 / 120 ); // second render at 1/120th of a second further
+            canvas.render( 0 ); // initial render
 
-            expect( Math.round( canvas.getActualFrameRate() )).toBe( 120 );
-
-            // @ts-expect-error snooping on a protected method
-            canvas.render( 1000 / 120 + 1000 / 60 ); // third render at 1/60th of a second further
-
-            expect( Math.round( canvas.getActualFrameRate() )).toBe( 60 );
+            // render a few seconds to get a good sample pool of rendered frames
+            const actualFps = 50;
+            for ( let i = 0, l = 5 * actualFps; i < l; ++i ) {
+                // @ts-expect-error snooping on a protected method
+                canvas.render( i * ( 1000 / actualFps ));
+            }
+            expect( Math.floor( canvas.getActualFrameRate() )).toEqual( actualFps );
         });
 
         it( "should invoke the update()-method of its children upon render", (): Promise<void> => {
@@ -640,7 +639,8 @@ describe( "Canvas", () => {
                     }
 
                     expect( timestamp ).toEqual( now + 100 );
-                    expect( Math.round( framesSinceLastRender )).toEqual( 6 ); // there were six render() invocations
+                    // there were six render() invocations deferred into a single frame render
+                    expect( Math.round( framesSinceLastRender )).toEqual( 1 );
 
                     resolve();
                 }});
@@ -675,7 +675,7 @@ describe( "Canvas", () => {
             return new Promise(( resolve, reject ) => {
                 let mayRender = false;
                 
-                // 60 fps being the norma
+                // 60 fps being the norm
                 const canvas = new Canvas({ fps: 60, onUpdate: ( timestamp, framesSinceLastRender ) => {
                     // if update handler is triggered we know rendering is executed when it shouldn't
                     if ( !mayRender ) {
@@ -685,7 +685,7 @@ describe( "Canvas", () => {
                     // the deferred rendering should have capped the rendering to 60
                     // (thus we are progressing exactly one frame per render iteration
                     // we can disregard the skipped render)
-                    expect( framesSinceLastRender ).toEqual( 1 );
+                    expect( Math.round( framesSinceLastRender )).toEqual( 1 );
 
                     resolve();
                 }});
@@ -694,12 +694,13 @@ describe( "Canvas", () => {
                 // @ts-expect-error snooping on a protected property
                 canvas._lastRender = now;
 
-                // at 60 fps, we expect 16.66 ms frame durations (1000ms / 60fps)
-                // we will however run the callbacks at 8.33 ms (1000ms / 120fps)
+                // at 60 fps, we expect 16.66 ms frame intervals (1000ms / 60fps)
+                // we will however run the RAF callbacks at 8.33 ms (1000ms / 120fps)
                 // to emulate an Apple M1 120 Hz refresh rate
 
                 const incr = 1000 / 120;
 
+                // this first render should not trigger the update handler (not enough frames have elapsed)
                 // @ts-expect-error snooping on protected property
                 canvas.render( now + incr );
 
@@ -713,13 +714,13 @@ describe( "Canvas", () => {
             });
         });
 
-        it( "should calculate the correct elapsed frames multiplier when the actual frame rate is lower than the configured frame rate", (): Promise<void> => {
+        it( "should calculate the correct elapsed frames multiplier when the actual frame rate is lower than the configured frame rate due to a low refresh rate screen", (): Promise<void> => {
             return new Promise(( resolve, reject ) =>  {
-                const canvas = new Canvas({ fps: 120, onUpdate: ( timestamp, framesSinceLastRender ) => {
-                    expect( timestamp ).toEqual( now + ( 1000 / 60 ));
+                const canvas = new Canvas({ fps: 60, onUpdate: ( timestamp, framesSinceLastRender ) => {
+                    expect( timestamp ).toEqual( now + ( 1000 / 50 ));
                     // as the environment manages less fps than the configured value, we
                     // should progress the update() by more frames
-                    expect( Math.ceil( framesSinceLastRender )).toEqual( 2 );
+                    expect( framesSinceLastRender ).toEqual( 1.2 );
     
                     resolve();
                 }});
@@ -728,9 +729,33 @@ describe( "Canvas", () => {
                 // @ts-expect-error snooping on protected property
                 canvas._lastRender = now;
 
-                // at 120 fps, we expect 8.33 ms frame durations (1000ms / 120fps)
-                // we will however run the callback at 16.66 ms (1000ms / 60fps)
-                // to emulate a device that can't match the configured rate
+                // at 60 fps, we expect 16.33 ms frame intervals (1000ms / 60fps)
+                // we will however run the RAF callback at 20 ms (1000ms / 50fps)
+                // to emulate a device with a lower refresh rate screen
+    
+                // @ts-expect-error snooping on protected property
+                canvas.render( now + ( 1000 / 50 ));
+            });
+        });
+
+        it( "should calculate the correct elapsed frames multiplier when the actual frame rate is lower than the configured high refresh rate", (): Promise<void> => {
+            return new Promise(( resolve, reject ) =>  {
+                const canvas = new Canvas({ fps: 120, onUpdate: ( timestamp, framesSinceLastRender ) => {
+                    expect( timestamp ).toEqual( now + ( 1000 / 60 ));
+                    // as the environment manages less fps than the configured value, we
+                    // should progress the update() by more frames
+                    expect( framesSinceLastRender ).toBeCloseTo( 2 );
+    
+                    resolve();
+                }});
+
+                canvas.setAnimatable( true );
+                // @ts-expect-error snooping on protected property
+                canvas._lastRender = now;
+
+                // at 120 fps, we expect 8.33 ms frame intervals (1000ms / 120fps)
+                // we will however run the RAF callback at 16.66 ms (1000ms / 60fps)
+                // to emulate a device with a standardized refresh rate screen
     
                 // @ts-expect-error snooping on protected property
                 canvas.render( now + ( 1000 / 60 ));

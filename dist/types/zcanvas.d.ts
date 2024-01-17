@@ -470,7 +470,7 @@ declare module "src/Canvas" {
         }) => void;
         protected _hdlr: EventHandler;
         protected _prevDef: boolean;
-        protected _lastRender: number;
+        protected _lastRender: DOMHighResTimeStamp;
         protected _renderId: number;
         protected _renderPending: boolean;
         protected _disposed: boolean;
@@ -483,10 +483,11 @@ declare module "src/Canvas" {
         protected _prefHeight: number;
         protected _qSize: Size | undefined;
         protected _animate: boolean;
-        protected _lastRaf: DOMHighResTimeStamp;
+        protected _frstRaf: DOMHighResTimeStamp;
         protected _fps: number;
-        protected _aFps: number;
         protected _rIval: number;
+        protected _frMul: number;
+        protected _frms: number;
         protected _bgColor: string | undefined;
         protected _isFs: boolean;
         protected _hasFsH: boolean;
@@ -522,7 +523,7 @@ declare module "src/Canvas" {
         getCoordinate(): DOMRect;
         dispose(): void;
         protected handleInteraction(event: MouseEvent | TouchEvent | WheelEvent): void;
-        protected render(now?: DOMHighResTimeStamp): void;
+        protected render(now: DOMHighResTimeStamp): void;
         protected addListeners(addResizeListener?: boolean): void;
         protected removeListeners(): void;
         protected handleResize(): void;

@@ -1,7 +1,7 @@
 /**
  * The MIT License (MIT)
  *
- * Igor Zinken 2013-2023 - https://www.igorski.nl
+ * Igor Zinken 2013-2024 - https://www.igorski.nl
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of
  * this software and associated documentation files (the "Software"), to deal in
@@ -36,15 +36,10 @@ const { min, max } = Math;
 
 /**
  * In most instances the expected framerate is 60 fps which we consider IDEAL_FPS
- * Newer devices such as Apple M1 on Chrome manage a refresh rate of 120 fps
+ * Newer devices such as Apple M1 laptops manage a screen refresh rate of 120 fps
  * This constant is used to balance performance across different hardware / browsers
- *
- * When the actual frame rate exceeds the number defined in HIGH_REFRESH_THROTTLE
- * we consider the rendering environment to be of a high refresh rate, and cap
- * the speed to 60 fps (unless a framerate higher than IDEAL_FPS was configured)
  */
 const IDEAL_FPS = 60;
-const HIGH_REFRESH_THROTTLE = IDEAL_FPS + 3;
 
 export interface CanvasProps {
     width?: number;
@@ -72,13 +67,6 @@ export interface CanvasProps {
  */
 export default class Canvas extends DisplayObject<Canvas> {
     public DEBUG = false;
-    /*
-    public benchmark = {
-        minElapsed: Infinity,
-        maxElapsed: -Infinity,
-        minFps: Infinity,
-        maxFps: -Infinity,
-    };*/
     public collision: Collision;
     public bbox: BoundingBox = { left: 0, top: 0, right: 0, bottom: 0 }; // relative to Sprites, not DOM!
 
@@ -96,7 +84,7 @@ export default class Canvas extends DisplayObject<Canvas> {
     protected _hdlr: EventHandler; // event handler map
     protected _prevDef = false;    // whether to prevent Event defaults
   
-    protected _lastRender = 0;
+    protected _lastRender: DOMHighResTimeStamp;
     protected _renderId = 0;
     protected _renderPending = false;
   
@@ -111,10 +99,11 @@ export default class Canvas extends DisplayObject<Canvas> {
     protected _qSize: Size | undefined; // size enqueued to be set on next render cycle
     
     protected _animate = false;
-    protected _lastRaf: DOMHighResTimeStamp;
+    protected _frstRaf: DOMHighResTimeStamp = 0;
     protected _fps: number;   // intended framerate
-    protected _aFps: number;  // actual framerate (calculated at runtime)
-    protected _rIval: number; // the render interval
+    protected _rIval: number; // the render interval between frames
+    protected _frMul: number; // step multiplier to use when throttling frame rate
+    protected _frms = 0;      // the amount of rendered frames
     protected _bgColor: string | undefined;
 
     protected _isFs = false;   // whether zCanvas is currently fullscreen
@@ -151,9 +140,11 @@ export default class Canvas extends DisplayObject<Canvas> {
         this.collision = new Collision( this._rdr );
 
         this._upHdlr   = onUpdate;
-        this._renHdlr   = this.render.bind( this );
-        this._vpHdlr = viewportHandler;
-        this._resHdrl   = onResize;
+        this._renHdlr  = this.render.bind( this );
+        this._vpHdlr   = viewportHandler;
+        this._resHdrl  = onResize;
+
+        this._frMul = 1 / ( 1000 / fps );
 
         this.setFrameRate( fps );
         this.setAnimatable( animate );
@@ -274,8 +265,7 @@ export default class Canvas extends DisplayObject<Canvas> {
     }
 
     setFrameRate( value: number ): void {
-        this._fps = value;
-        this._aFps = value;
+        this._fps   = value;
         this._rIval = 1000 / value;
     }
 
@@ -283,7 +273,10 @@ export default class Canvas extends DisplayObject<Canvas> {
      * Returns the actual framerate achieved by the zCanvas renderer
      */
     getActualFrameRate(): number {
-        return this._aFps;
+        if ( this._frms === 0 ) {
+            return 0;
+        }
+        return 1000 / (( this._lastRender - this._frstRaf ) / this._frms );
     }
 
     /**
@@ -409,8 +402,6 @@ export default class Canvas extends DisplayObject<Canvas> {
     }
 
     setAnimatable( value: boolean ): void {
-        this._lastRaf = window.performance.now();
-
         if ( value && !this._renderPending ) {
             this.invalidate();
         }
@@ -639,42 +630,33 @@ export default class Canvas extends DisplayObject<Canvas> {
      *
      * @param {DOMHighResTimeStamp} now time elapsed since document time origin
      */
-    protected render( now: DOMHighResTimeStamp = 0 ): void {
+    protected render( now: DOMHighResTimeStamp ): void {
         this._renderPending = false;
         const delta = now - this._lastRender;
 
-        // for animatable canvas instances, ensure we cap the framerate
-        // by deferring the render in case the actual framerate is above the
-        // configured framerate of the canvas (this for instance prevents
-        // 120 Hz Apple M1 rendering things too fast when you were expecting 60 fps)
-       
-        if ( this._animate && ( delta / this._rIval ) < 0.999 ) {
-            this._renderId = window.requestAnimationFrame( this._renHdlr );
-            this._lastRaf = now;
-            return;
+        if ( this._frstRaf === 0 ) {
+            this._frstRaf = now; // track the timestamp of the first RAF callback
         }
 
-        // calculate frame rate relative to last actual render
+        // keep render loop going while Canvas is animatable
 
-        this._aFps = 1000 / ( now - this._lastRaf );
+        if ( !this._disposed && this._animate ) {
+            this._renderPending = true;
+            this._renderId = window.requestAnimationFrame( this._renHdlr );
+
+            // for animatable canvas instances, ensure we cap the framerate
+            // by deferring the render in case the actual framerate is above the
+            // configured framerate of the Canvas instance
+            
+            if (( delta / this._rIval ) < 0.99 ) {
+                return;
+            }
+        }
 
         // the amount of frames the Sprite.update() steps should proceed
-        // when the actual frame rate differs to configured frame rate
+        // when the actual frame rate (screen refresh rate) differs from the configured frame rate
 
-        let framesSinceLastRender;
-        if ( this._fps > IDEAL_FPS ) {
-            // zCanvas configured for a high refresh rate
-            framesSinceLastRender = this._fps / this._aFps;
-        } else if ( this._fps === IDEAL_FPS && this._aFps > HIGH_REFRESH_THROTTLE ) {
-            // zCanvas configured for IDEAL_FPS and running on a high refresh rate configuration
-            framesSinceLastRender = 1;
-        } else {
-            // zCanvas configured to run at a lower framerate than the IDEAL_FPS
-            framesSinceLastRender = 1 / ( this._fps / this._aFps );
-        }
-
-        this._lastRaf    = now;
-        this._lastRender = now - ( delta % this._rIval );
+        const framesSinceLastRender = delta * this._frMul;
 
         // in case a resize was requested execute it now as we will
         // immediately draw new contents onto the screen
@@ -682,8 +664,6 @@ export default class Canvas extends DisplayObject<Canvas> {
         if ( this._qSize ) {
             this.updateCanvasSize();
         }
-
-        let theSprite;
 
         const width  = this._width;
         const height = this._height;
@@ -705,37 +685,20 @@ export default class Canvas extends DisplayObject<Canvas> {
 
         // draw the children onto the canvas
 
-        theSprite = this._children[ 0 ];
+        let sprite = this._children[ 0 ];
 
-        while ( theSprite ) {
+        while ( sprite ) {
 
             if ( !useExternalUpdateHandler ) {
-                theSprite.update( now, framesSinceLastRender );
+                sprite.update( now, framesSinceLastRender );
             }
-            theSprite.draw( this._rdr, this._vp );
-            theSprite = theSprite.next;
+            sprite.draw( this._rdr, this._vp );
+            sprite = sprite.next;
         }
-
         this._rdr.onCommandsReady();
 
-        // keep render loop going while Canvas is animatable
-
-        if ( !this._disposed && this._animate ) {
-            this._renderPending = true;
-            this._renderId = window.requestAnimationFrame( this._renHdlr );
-        }
-        /*
-        if ( this.DEBUG && now > 2 ) {
-            const elapsed = window.performance.now() - now;
-
-            this.benchmark.minElapsed = min( this.benchmark.minElapsed, elapsed );
-            this.benchmark.maxElapsed = max( this.benchmark.maxElapsed, elapsed );
-
-            if ( this._aFps !== Infinity ) {
-                this.benchmark.minFps = min( this.benchmark.minFps, this._aFps );
-                this.benchmark.maxFps = max( this.benchmark.maxFps, this._aFps );
-            }
-        }*/
+        this._lastRender = now;
+        ++this._frms;
     }
 
     /**
@@ -777,7 +740,6 @@ export default class Canvas extends DisplayObject<Canvas> {
         });
         theHandler.add( window, "focus", () => {
             this.setAnimatable( wasAnimating );
-            this._lastRender = this._lastRaf;
         });*/
     }
 
