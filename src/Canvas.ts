@@ -96,7 +96,7 @@ export default class Canvas extends DisplayObject<Canvas> {
     protected _hdlr: EventHandler; // event handler map
     protected _prevDef = false;    // whether to prevent Event defaults
   
-    protected _lastRender = 0;
+    protected _lastRender = window.performance.now();
     protected _renderId = 0;
     protected _renderPending = false;
   
@@ -112,8 +112,8 @@ export default class Canvas extends DisplayObject<Canvas> {
     
     protected _animate = false;
     protected _frstRaf: DOMHighResTimeStamp;
+    protected _lastRaf: DOMHighResTimeStamp;
     protected _fps: number;   // intended framerate
-    protected _aFps: number;  // actual framerate (calculated at runtime)
     protected _rIval: number; // the render interval
     protected _bgColor: string | undefined;
 
@@ -275,15 +275,16 @@ export default class Canvas extends DisplayObject<Canvas> {
 
     setFrameRate( value: number ): void {
         this._fps = value;
-        this._aFps = value;
         this._rIval = 1000 / value;
+
+        console.info('fps:'+value+', interval:'+this._rIval);
     }
 
     /**
      * Returns the actual framerate achieved by the zCanvas renderer
      */
     getActualFrameRate(): number {
-        return this._aFps;
+        return  1000 / (( this._lastRaf - this._frstRaf ) / this.frameCount );
     }
 
     /**
@@ -640,18 +641,24 @@ export default class Canvas extends DisplayObject<Canvas> {
      *
      * @param {DOMHighResTimeStamp} now time elapsed since document time origin
      */
-    protected render( now: DOMHighResTimeStamp = 0 ): void {
+    protected render( now: DOMHighResTimeStamp ): void {
         this._renderPending = false;
+        this._lastRaf = now; // TODO is last render then effectively the same?
         const delta = now - this._lastRender;
 
-        // for animatable canvas instances, ensure we cap the framerate
-        // by deferring the render in case the actual framerate is above the
-        // configured framerate of the canvas (this for instance prevents
-        // 120 Hz Apple M1 rendering things too fast when you were expecting 60 fps)
-       
-        if ( this._animate && ( delta / this._rIval ) < 0.99 ) {
+        // keep render loop going while Canvas is animatable
+
+        if ( !this._disposed && this._animate ) {
+            this._renderPending = true;
             this._renderId = window.requestAnimationFrame( this._renHdlr );
-            return;
+
+            // for animatable canvas instances, ensure we cap the framerate
+            // by deferring the render in case the actual framerate is above the
+            // configured framerate of the canvas
+            
+            if (( delta / this._rIval ) < 0.99 ) {
+                return;
+            }
         }
         // calculate frame rate relative to last actual render
 
@@ -660,16 +667,21 @@ if (this.frameCount === undefined) {
 }
 ++this.frameCount;
 
-
-        this._aFps = 1000 / (( now - this._frstRaf ) / this.frameCount );
-
         // the amount of frames the Sprite.update() steps should proceed
         // when the actual frame rate differs to configured frame rate
 
-        const framesSinceLastRender = delta / this._rIval;
+        const framesSinceLastRender = delta / ( 1000 / IDEAL_FPS );//this._rIval;
 
-        this._frstRaf    = now;
-        this._lastRender = now - ( delta % this._rIval );
+if (!this.q){
+    this.q = [];
+}
+this.q.push('d:'+delta.toFixed(2) + ',fr:' + framesSinceLastRender.toFixed(2));
+if(this.q.length ===60) {
+    console.info(this.q.join(""));
+    this.q.length = 0;
+}
+
+        this._lastRender = now;// - ( delta % this._rIval );
 
         // in case a resize was requested execute it now as we will
         // immediately draw new contents onto the screen
@@ -708,15 +720,7 @@ if (this.frameCount === undefined) {
             sprite.draw( this._rdr, this._vp );
             sprite = sprite.next;
         }
-
         this._rdr.onCommandsReady();
-
-        // keep render loop going while Canvas is animatable
-
-        if ( !this._disposed && this._animate ) {
-            this._renderPending = true;
-            this._renderId = window.requestAnimationFrame( this._renHdlr );
-        }
     }
 
     /**
@@ -758,7 +762,6 @@ if (this.frameCount === undefined) {
         });
         theHandler.add( window, "focus", () => {
             this.setAnimatable( wasAnimating );
-            this._lastRender = this._lastRaf;
         });*/
     }
 
