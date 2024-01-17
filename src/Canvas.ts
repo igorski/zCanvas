@@ -67,13 +67,6 @@ export interface CanvasProps {
  */
 export default class Canvas extends DisplayObject<Canvas> {
     public DEBUG = false;
-    /*
-    public benchmark = {
-        minElapsed: Infinity,
-        maxElapsed: -Infinity,
-        minFps: Infinity,
-        maxFps: -Infinity,
-    };*/
     public collision: Collision;
     public bbox: BoundingBox = { left: 0, top: 0, right: 0, bottom: 0 }; // relative to Sprites, not DOM!
 
