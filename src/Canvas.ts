@@ -1,7 +1,7 @@
 /**
  * The MIT License (MIT)
  *
- * Igor Zinken 2013-2023 - https://www.igorski.nl
+ * Igor Zinken 2013-2024 - https://www.igorski.nl
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of
  * this software and associated documentation files (the "Software"), to deal in
@@ -36,15 +36,10 @@ const { min, max } = Math;
 
 /**
  * In most instances the expected framerate is 60 fps which we consider IDEAL_FPS
- * Newer devices such as Apple M1 on Chrome manage a refresh rate of 120 fps
+ * Newer devices such as Apple M1 manage a screen refresh rate of 120 fps
  * This constant is used to balance performance across different hardware / browsers
- *
- * When the actual frame rate exceeds the number defined in HIGH_REFRESH_THROTTLE
- * we consider the rendering environment to be of a high refresh rate, and cap
- * the speed to 60 fps (unless a framerate higher than IDEAL_FPS was configured)
  */
 const IDEAL_FPS = 60;
-const HIGH_REFRESH_THROTTLE = IDEAL_FPS + 3;
 
 export interface CanvasProps {
     width?: number;
@@ -96,7 +91,7 @@ export default class Canvas extends DisplayObject<Canvas> {
     protected _hdlr: EventHandler; // event handler map
     protected _prevDef = false;    // whether to prevent Event defaults
   
-    protected _lastRender = window.performance.now();
+    protected _lastRender: DOMHighResTimeStamp;
     protected _renderId = 0;
     protected _renderPending = false;
   
@@ -111,10 +106,11 @@ export default class Canvas extends DisplayObject<Canvas> {
     protected _qSize: Size | undefined; // size enqueued to be set on next render cycle
     
     protected _animate = false;
-    protected _frstRaf: DOMHighResTimeStamp;
-    protected _lastRaf: DOMHighResTimeStamp;
+    protected _frstRaf: DOMHighResTimeStamp = 0;
     protected _fps: number;   // intended framerate
+    protected _fs: number;    // step multiplier to use when throttling frame rate
     protected _rIval: number; // the render interval
+    protected frameCount = 0; // the amount of renderer frames
     protected _bgColor: string | undefined;
 
     protected _isFs = false;   // whether zCanvas is currently fullscreen
@@ -151,9 +147,9 @@ export default class Canvas extends DisplayObject<Canvas> {
         this.collision = new Collision( this._rdr );
 
         this._upHdlr   = onUpdate;
-        this._renHdlr   = this.render.bind( this );
-        this._vpHdlr = viewportHandler;
-        this._resHdrl   = onResize;
+        this._renHdlr  = this.render.bind( this );
+        this._vpHdlr   = viewportHandler;
+        this._resHdrl  = onResize;
 
         this.setFrameRate( fps );
         this.setAnimatable( animate );
@@ -274,17 +270,19 @@ export default class Canvas extends DisplayObject<Canvas> {
     }
 
     setFrameRate( value: number ): void {
-        this._fps = value;
+        this._fps   = value;
+        this._fs    = 1 / ( 1000 / Math.max( IDEAL_FPS, value ));
         this._rIval = 1000 / value;
-
-        console.info('fps:'+value+', interval:'+this._rIval);
     }
 
     /**
      * Returns the actual framerate achieved by the zCanvas renderer
      */
     getActualFrameRate(): number {
-        return  1000 / (( this._lastRaf - this._frstRaf ) / this.frameCount );
+        if ( this.frameCount === 0 ) {
+            return 0;
+        }
+        return 1000 / (( this._lastRender - this._frstRaf ) / this.frameCount );
     }
 
     /**
@@ -410,11 +408,8 @@ export default class Canvas extends DisplayObject<Canvas> {
     }
 
     setAnimatable( value: boolean ): void {
-        if ( value ) {
-            this._frstRaf = window.performance.now();
-            if ( !this._renderPending ) {
-                this.invalidate();
-            }
+        if ( value && !this._renderPending ) {
+            this.invalidate();
         }
         this._animate = value;
     }
@@ -643,8 +638,11 @@ export default class Canvas extends DisplayObject<Canvas> {
      */
     protected render( now: DOMHighResTimeStamp ): void {
         this._renderPending = false;
-        this._lastRaf = now; // TODO is last render then effectively the same?
         const delta = now - this._lastRender;
+
+        if ( this._frstRaf === 0 ) {
+            this._frstRaf = now;
+        }
 
         // keep render loop going while Canvas is animatable
 
@@ -654,34 +652,17 @@ export default class Canvas extends DisplayObject<Canvas> {
 
             // for animatable canvas instances, ensure we cap the framerate
             // by deferring the render in case the actual framerate is above the
-            // configured framerate of the canvas
+            // configured framerate of the Canvas instance
             
             if (( delta / this._rIval ) < 0.99 ) {
                 return;
             }
         }
-        // calculate frame rate relative to last actual render
-
-if (this.frameCount === undefined) {
-    this.frameCount = 0;
-}
-++this.frameCount;
 
         // the amount of frames the Sprite.update() steps should proceed
-        // when the actual frame rate differs to configured frame rate
+        // when the actual frame rate (screen refresh rate) differs from the configured frame rate
 
-        const framesSinceLastRender = delta / ( 1000 / IDEAL_FPS );//this._rIval;
-
-if (!this.q){
-    this.q = [];
-}
-this.q.push('d:'+delta.toFixed(2) + ',fr:' + framesSinceLastRender.toFixed(2));
-if(this.q.length ===60) {
-    console.info(this.q.join(""));
-    this.q.length = 0;
-}
-
-        this._lastRender = now;// - ( delta % this._rIval );
+        const framesSinceLastRender = delta * this._fs;
 
         // in case a resize was requested execute it now as we will
         // immediately draw new contents onto the screen
@@ -721,6 +702,9 @@ if(this.q.length ===60) {
             sprite = sprite.next;
         }
         this._rdr.onCommandsReady();
+
+        this._lastRender = now;
+        ++this.frameCount;
     }
 
     /**
