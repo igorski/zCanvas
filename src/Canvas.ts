@@ -108,9 +108,9 @@ export default class Canvas extends DisplayObject<Canvas> {
     protected _animate = false;
     protected _frstRaf: DOMHighResTimeStamp = 0;
     protected _fps: number;   // intended framerate
-    protected _fs: number;    // step multiplier to use when throttling frame rate
-    protected _rIval: number; // the render interval
-    protected frameCount = 0; // the amount of renderer frames
+    protected _frMul: number; // step multiplier to use when throttling frame rate
+    protected _rIval: number; // the render interval between frames
+    protected _frms = 0;      // the amount of renderer frames
     protected _bgColor: string | undefined;
 
     protected _isFs = false;   // whether zCanvas is currently fullscreen
@@ -270,8 +270,8 @@ export default class Canvas extends DisplayObject<Canvas> {
     }
 
     setFrameRate( value: number ): void {
-        this._fps   = value;
-        this._fs    = 1 / ( 1000 / Math.max( IDEAL_FPS, value ));
+        this._fps = value;
+        this._frMul = 1 / ( 1000 / Math.max( IDEAL_FPS, value ));
         this._rIval = 1000 / value;
     }
 
@@ -279,10 +279,10 @@ export default class Canvas extends DisplayObject<Canvas> {
      * Returns the actual framerate achieved by the zCanvas renderer
      */
     getActualFrameRate(): number {
-        if ( this.frameCount === 0 ) {
+        if ( this._frms === 0 ) {
             return 0;
         }
-        return 1000 / (( this._lastRender - this._frstRaf ) / this.frameCount );
+        return 1000 / (( this._lastRender - this._frstRaf ) / this._frms );
     }
 
     /**
@@ -641,7 +641,7 @@ export default class Canvas extends DisplayObject<Canvas> {
         const delta = now - this._lastRender;
 
         if ( this._frstRaf === 0 ) {
-            this._frstRaf = now;
+            this._frstRaf = now; // track the timestamp of the first RAF callback
         }
 
         // keep render loop going while Canvas is animatable
@@ -662,7 +662,7 @@ export default class Canvas extends DisplayObject<Canvas> {
         // the amount of frames the Sprite.update() steps should proceed
         // when the actual frame rate (screen refresh rate) differs from the configured frame rate
 
-        const framesSinceLastRender = delta * this._fs;
+        const framesSinceLastRender = delta * this._frMul;
 
         // in case a resize was requested execute it now as we will
         // immediately draw new contents onto the screen
@@ -704,7 +704,7 @@ export default class Canvas extends DisplayObject<Canvas> {
         this._rdr.onCommandsReady();
 
         this._lastRender = now;
-        ++this.frameCount;
+        ++this._frms;
     }
 
     /**
