@@ -36,7 +36,7 @@ const { min, max } = Math;
 
 /**
  * In most instances the expected framerate is 60 fps which we consider IDEAL_FPS
- * Newer devices such as Apple M1 manage a screen refresh rate of 120 fps
+ * Newer devices such as Apple M1 laptops manage a screen refresh rate of 120 fps
  * This constant is used to balance performance across different hardware / browsers
  */
 const IDEAL_FPS = 60;
@@ -108,9 +108,9 @@ export default class Canvas extends DisplayObject<Canvas> {
     protected _animate = false;
     protected _frstRaf: DOMHighResTimeStamp = 0;
     protected _fps: number;   // intended framerate
-    protected _frMul: number; // step multiplier to use when throttling frame rate
     protected _rIval: number; // the render interval between frames
-    protected _frms = 0;      // the amount of renderer frames
+    protected _frMul: number; // step multiplier to use when throttling frame rate
+    protected _frms = 0;      // the amount of rendered frames
     protected _bgColor: string | undefined;
 
     protected _isFs = false;   // whether zCanvas is currently fullscreen
@@ -150,6 +150,8 @@ export default class Canvas extends DisplayObject<Canvas> {
         this._renHdlr  = this.render.bind( this );
         this._vpHdlr   = viewportHandler;
         this._resHdrl  = onResize;
+
+        this._frMul = 1 / ( 1000 / fps );
 
         this.setFrameRate( fps );
         this.setAnimatable( animate );
@@ -270,8 +272,7 @@ export default class Canvas extends DisplayObject<Canvas> {
     }
 
     setFrameRate( value: number ): void {
-        this._fps = value;
-        this._frMul = 1 / ( 1000 / Math.max( IDEAL_FPS, value ));
+        this._fps   = value;
         this._rIval = 1000 / value;
     }
 

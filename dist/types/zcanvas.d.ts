@@ -485,8 +485,8 @@ declare module "src/Canvas" {
         protected _animate: boolean;
         protected _frstRaf: DOMHighResTimeStamp;
         protected _fps: number;
-        protected _frMul: number;
         protected _rIval: number;
+        protected _frMul: number;
         protected _frms: number;
         protected _bgColor: string | undefined;
         protected _isFs: boolean;

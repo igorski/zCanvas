@@ -640,7 +640,8 @@ describe( "Canvas", () => {
                     }
 
                     expect( timestamp ).toEqual( now + 100 );
-                    expect( Math.round( framesSinceLastRender )).toEqual( 6 ); // there were six render() invocations
+                    // there were six render() invocations deferred into a single frame render
+                    expect( Math.round( framesSinceLastRender )).toEqual( 1 );
 
                     resolve();
                 }});
