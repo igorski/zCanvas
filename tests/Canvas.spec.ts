@@ -581,7 +581,6 @@ describe( "Canvas", () => {
             canvas.render( 0 ); // initial render
 
             // render a few seconds to get a good sample pool of rendered frames
-            // where each render call had a slight deviation (see randomise)
             const actualFps = 50;
             for ( let i = 0, l = 5 * actualFps; i < l; ++i ) {
                 // @ts-expect-error snooping on a protected method
