@@ -614,6 +614,21 @@ describe( "Canvas", () => {
             });
         });
 
+        it( "should not invoke a render upon requesting invalidation on a paused Canvas", (): void => {
+            // hijack render method
+            // @ts-expect-error snooping on a protected method
+            const orgRender = vi.spyOn( Canvas.prototype, "render" );
+
+            const canvas = new Canvas({ animate: false });
+            
+            canvas.pause( true );
+            canvas.invalidate();
+            
+            vi.runAllTimers(); // advance RAF
+
+            expect( orgRender ).not.toHaveBeenCalled();
+        });
+
         it( "should invoke the optionally provided updateHandler upon render", (): Promise<void> => {
             return new Promise( resolve => {
                 const canvas = new Canvas({ animate: false , onUpdate: () => resolve() });
