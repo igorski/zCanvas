@@ -99,6 +99,7 @@ export default class Canvas extends DisplayObject<Canvas> {
     
     protected _animate = false;
     protected _hasAni  = false; // whether animation was enabled before pause
+    protected _psd = false;     // whether animation is currently paused
     protected _frstRaf: DOMHighResTimeStamp = 0;
     protected _fps: number;   // intended framerate
     protected _rIval: number; // the render interval between frames
@@ -250,7 +251,7 @@ export default class Canvas extends DisplayObject<Canvas> {
      * multiple render executions (a single one will suffice)
      */
     override invalidate(): void {
-        if ( !this._animate && !this._hasR ) {
+        if ( !this._psd && !this._animate && !this._hasR ) {
             this._hasR = true;
             this._rId = window.requestAnimationFrame( this._renHdlr );
         }
@@ -402,8 +403,6 @@ export default class Canvas extends DisplayObject<Canvas> {
     }
 
     setAnimatable( value: boolean ): void {
-        this._animate = value;
-        
         if ( value ) {
             if ( !this._hasR ) {
                 this.invalidate();
@@ -412,6 +411,7 @@ export default class Canvas extends DisplayObject<Canvas> {
             window.cancelAnimationFrame( this._rId ); // kill render loop
             this._hasR = false;
         }
+        this._animate = value;
     }
 
     isAnimatable(): boolean {
@@ -488,6 +488,11 @@ export default class Canvas extends DisplayObject<Canvas> {
      * Halt the render cycle of an animated Canvas
      */
     pause( isPaused: boolean ): void {
+        if ( this._psd === isPaused ) {
+            return; // prevent conflict when visibility changes for an already paused Canvas
+        }
+        this._psd = isPaused;
+
         if ( isPaused ) {
             this._hasAni = this._animate;
             this.setAnimatable( false );

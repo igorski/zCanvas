@@ -651,7 +651,7 @@ class J {
 const { min: Q, max: U } = Math;
 class j extends J {
   constructor({ width: t2 = 300, height: e2 = 300, fps: s2 = 60, backgroundColor: i2 = null, animate: h2 = false, smoothing: n2 = true, stretchToFit: a2 = false, autoSize: o2 = true, viewport: r2 = null, preventEventBubbling: d2 = false, parentElement: l2 = null, debug: c2 = false, optimize: p2 = "auto", viewportHandler: u2, onUpdate: m2, onResize: g2 } = {}) {
-    if (super(), this.DEBUG = false, this.bbox = { left: 0, top: 0, right: 0, bottom: 0 }, this._smooth = false, this._stretch = false, this._pxr = 1, this._prevDef = false, this._rId = 0, this._hasR = false, this._scale = { x: 1, y: 1 }, this._aTchs = [], this._animate = false, this._hasAni = false, this._frstRaf = 0, this._frms = 0, this._isFs = false, this._hasFsH = false, t2 <= 0 || e2 <= 0)
+    if (super(), this.DEBUG = false, this.bbox = { left: 0, top: 0, right: 0, bottom: 0 }, this._smooth = false, this._stretch = false, this._pxr = 1, this._prevDef = false, this._rId = 0, this._hasR = false, this._scale = { x: 1, y: 1 }, this._aTchs = [], this._animate = false, this._hasAni = false, this._psd = false, this._frstRaf = 0, this._frms = 0, this._isFs = false, this._hasFsH = false, t2 <= 0 || e2 <= 0)
       throw new Error("cannot construct a zCanvas without valid dimensions");
     this.DEBUG = c2, this._el = document.createElement("canvas"), this._rdr = new M(this._el, { debug: c2, alpha: !i2, useOffscreen: F(p2) }), this.collision = new B(this._rdr), this._upHdlr = m2, this._renHdlr = this.render.bind(this), this._vpHdlr = u2, this._resHdrl = g2, this._frMul = 1 / (1e3 / s2), this.setFrameRate(s2), this.setAnimatable(h2), i2 && this.setBackgroundColor(i2), this._pxr = window.devicePixelRatio || 1, this._rdr.setPixelRatio(this._pxr), this.setDimensions(t2, e2, true, true), r2 && this.setViewport(r2.width, r2.height), this._stretch = a2, this.setSmoothing(n2), this.preventEventBubbling(d2), this.addListeners(o2), l2 instanceof HTMLElement && this.insertInPage(l2), requestAnimationFrame(() => this.handleResize());
   }
@@ -690,7 +690,7 @@ class j extends J {
     return t2.setCanvas(this), super.addChild(t2);
   }
   invalidate() {
-    this._animate || this._hasR || (this._hasR = true, this._rId = window.requestAnimationFrame(this._renHdlr));
+    this._psd || this._animate || this._hasR || (this._hasR = true, this._rId = window.requestAnimationFrame(this._renHdlr));
   }
   getFrameRate() {
     return this._fps;
@@ -738,7 +738,7 @@ class j extends J {
     this._bgColor = t2;
   }
   setAnimatable(t2) {
-    this._animate = t2, t2 ? this._hasR || this.invalidate() : (window.cancelAnimationFrame(this._rId), this._hasR = false);
+    t2 ? this._hasR || this.invalidate() : (window.cancelAnimationFrame(this._rId), this._hasR = false), this._animate = t2;
   }
   isAnimatable() {
     return this._animate;
@@ -770,7 +770,7 @@ class j extends J {
     return void 0 === this._coords && (this._coords = this._el.getBoundingClientRect()), this._coords;
   }
   pause(t2) {
-    t2 ? (this._hasAni = this._animate, this.setAnimatable(false)) : this._hasAni && (this._lRdr = window.performance.now(), this.setAnimatable(true));
+    this._psd !== t2 && (this._psd = t2, t2 ? (this._hasAni = this._animate, this.setAnimatable(false)) : this._hasAni && (this._lRdr = window.performance.now(), this.setAnimatable(true)));
   }
   dispose() {
     this._disposed || (this.pause(true), this.removeListeners(), super.dispose(), this._el.parentNode && this._el.parentNode.removeChild(this._el), window.requestAnimationFrame(() => {

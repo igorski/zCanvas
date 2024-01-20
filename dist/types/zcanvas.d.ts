@@ -483,6 +483,7 @@ declare module "src/Canvas" {
         protected _qSize: Size | undefined;
         protected _animate: boolean;
         protected _hasAni: boolean;
+        protected _psd: boolean;
         protected _frstRaf: DOMHighResTimeStamp;
         protected _fps: number;
         protected _rIval: number;
