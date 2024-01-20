@@ -492,7 +492,7 @@ export default class Canvas extends DisplayObject<Canvas> {
             this._hasAni = this._animate;
             this.setAnimatable( false );
         } else if ( this._hasAni ) {
-            this._lRdr = window.performance.now();
+            this._lRdr = window.performance.now(); // ensure framesSinceLastRender isn't as large as the pause duration
             this.setAnimatable( true );
         }
     }
