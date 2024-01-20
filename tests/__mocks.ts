@@ -2,8 +2,8 @@ import { vi } from "vitest";
 import type { IRenderer } from "../src/rendering/IRenderer";
 
 /**
- * Execute calls debounced by requestAnimationFrame()
- * Use together with vi.useFakeTimers();
+ * Execute calls debounced by requestAnimationFrame() to use timeeout, which allows
+ * us to use these with vi.useFakeTimers();
  * Run each RAF callback by invoking vi.runAllTimers();
  * Don't forget to use vi.useRealTimers() and vi.restoreAllMocks() to clean up.
  */

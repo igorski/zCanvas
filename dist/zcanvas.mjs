@@ -176,15 +176,15 @@ class u {
 const { min: m, max: g } = Math, _ = 0.5;
 let b, f, w, G;
 const x = Math.PI / 180;
-function Z(t2) {
+function R(t2) {
   return t2 > 0 ? t2 + 0.5 << 0 : 0 | t2;
 }
-function v(t2, e2) {
+function Z(t2, e2) {
   ({ left: b, top: f, width: w, height: G } = t2);
   const { left: s2, top: i2, width: h2, height: n2 } = e2;
   return w = b > s2 ? m(w, h2 - (b - s2)) : m(h2, w - (s2 - b)), G = f > i2 ? m(G, n2 - (f - i2)) : m(n2, G - (i2 - f)), { src: { left: b > s2 ? 0 : s2 - b, top: f > i2 ? 0 : i2 - f, width: w, height: G }, dest: { left: b > s2 ? b - s2 : 0, top: f > i2 ? f - i2 : 0, width: w, height: G } };
 }
-function R(t2, e2, s2) {
+function v(t2, e2, s2) {
   const { left: i2, top: h2, width: n2, height: a2 } = t2;
   return s2.width = n2 * e2, s2.height = a2 * e2, s2.left = i2 - (s2.width - n2) * _, s2.top = h2 - (s2.height - a2) * _, s2;
 }
@@ -535,13 +535,13 @@ const k = { x: 0, y: 0 };
 function I(t2, e2, s2, i2, h2) {
   return (t2 - e2) / (s2 - e2) * (h2 - i2) + i2;
 }
-function P(t2) {
+function F(t2) {
   if ("worker" === t2)
     return true;
   const { userAgent: e2 } = navigator, s2 = e2.includes("Safari") && !e2.includes("Chrome");
   return "auto" === t2 && !s2;
 }
-const F = [], V = [], N = i(1, 1, true).cvs;
+const V = [], P = [], N = i(1, 1, true).cvs;
 class B {
   constructor(t2) {
     this._renderer = t2, this._cacheMap = /* @__PURE__ */ new Map();
@@ -560,12 +560,12 @@ class B {
     const s2 = t2.getIntersection(e2);
     if (void 0 === s2)
       return;
-    this.getPixelArray(t2, s2, F), this.getPixelArray(e2, s2, V);
+    this.getPixelArray(t2, s2, V), this.getPixelArray(e2, s2, P);
     const i2 = s2.width, h2 = s2.height;
     let n2 = 0;
     for (let t3 = 0; t3 < h2; ++t3)
       for (let e3 = 0; e3 < i2; ++e3) {
-        if (1 === F[n2] && 1 === V[n2])
+        if (1 === V[n2] && 1 === P[n2])
           return { x: e3, y: t3 };
         ++n2;
       }
@@ -593,10 +593,10 @@ class B {
     const i2 = t2.getResourceId();
     if (!this.hasCache(i2))
       throw new Error(`Cannot get cached entry for resource "${i2}". Cache it first.`);
-    const h2 = t2.getBounds(), n2 = Z(e2.left - h2.left), a2 = Z(e2.top - h2.top), o2 = Z(e2.width), r2 = Z(e2.height), { mask: d2, size: l2 } = this._cacheMap.get(i2);
+    const h2 = t2.getBounds(), n2 = R(e2.left - h2.left), a2 = R(e2.top - h2.top), o2 = R(e2.width), r2 = R(e2.height), { mask: d2, size: l2 } = this._cacheMap.get(i2);
     if (o2 <= 0 || r2 <= 0)
       return void (s2.length = 0);
-    s2.length = Z(o2 * r2);
+    s2.length = R(o2 * r2);
     const c2 = l2.height, p2 = l2.width, u2 = n2 + o2, m2 = a2 + r2;
     let g2 = -1, _2 = 0;
     for (let t3 = a2; t3 < m2; ++t3)
@@ -651,9 +651,9 @@ class J {
 const { min: Q, max: U } = Math;
 class j extends J {
   constructor({ width: t2 = 300, height: e2 = 300, fps: s2 = 60, backgroundColor: i2 = null, animate: h2 = false, smoothing: n2 = true, stretchToFit: a2 = false, autoSize: o2 = true, viewport: r2 = null, preventEventBubbling: d2 = false, parentElement: l2 = null, debug: c2 = false, optimize: p2 = "auto", viewportHandler: u2, onUpdate: m2, onResize: g2 } = {}) {
-    if (super(), this.DEBUG = false, this.bbox = { left: 0, top: 0, right: 0, bottom: 0 }, this._smooth = false, this._stretch = false, this._pxr = 1, this._prevDef = false, this._renderId = 0, this._renderPending = false, this._disposed = false, this._scale = { x: 1, y: 1 }, this._aTchs = [], this._animate = false, this._frstRaf = 0, this._frms = 0, this._isFs = false, this._hasFsH = false, t2 <= 0 || e2 <= 0)
+    if (super(), this.DEBUG = false, this.bbox = { left: 0, top: 0, right: 0, bottom: 0 }, this._smooth = false, this._stretch = false, this._pxr = 1, this._prevDef = false, this._rId = 0, this._hasR = false, this._scale = { x: 1, y: 1 }, this._aTchs = [], this._animate = false, this._hasAni = false, this._frstRaf = 0, this._frms = 0, this._isFs = false, this._hasFsH = false, t2 <= 0 || e2 <= 0)
       throw new Error("cannot construct a zCanvas without valid dimensions");
-    this.DEBUG = c2, this._el = document.createElement("canvas"), this._rdr = new M(this._el, { debug: c2, alpha: !i2, useOffscreen: P(p2) }), this.collision = new B(this._rdr), this._upHdlr = m2, this._renHdlr = this.render.bind(this), this._vpHdlr = u2, this._resHdrl = g2, this._frMul = 1 / (1e3 / s2), this.setFrameRate(s2), this.setAnimatable(h2), i2 && this.setBackgroundColor(i2), this._pxr = window.devicePixelRatio || 1, this._rdr.setPixelRatio(this._pxr), this.setDimensions(t2, e2, true, true), r2 && this.setViewport(r2.width, r2.height), this._stretch = a2, this.setSmoothing(n2), this.preventEventBubbling(d2), this.addListeners(o2), l2 instanceof HTMLElement && this.insertInPage(l2), requestAnimationFrame(() => this.handleResize());
+    this.DEBUG = c2, this._el = document.createElement("canvas"), this._rdr = new M(this._el, { debug: c2, alpha: !i2, useOffscreen: F(p2) }), this.collision = new B(this._rdr), this._upHdlr = m2, this._renHdlr = this.render.bind(this), this._vpHdlr = u2, this._resHdrl = g2, this._frMul = 1 / (1e3 / s2), this.setFrameRate(s2), this.setAnimatable(h2), i2 && this.setBackgroundColor(i2), this._pxr = window.devicePixelRatio || 1, this._rdr.setPixelRatio(this._pxr), this.setDimensions(t2, e2, true, true), r2 && this.setViewport(r2.width, r2.height), this._stretch = a2, this.setSmoothing(n2), this.preventEventBubbling(d2), this.addListeners(o2), l2 instanceof HTMLElement && this.insertInPage(l2), requestAnimationFrame(() => this.handleResize());
   }
   loadResource(t2, e2) {
     return this._rdr.loadResource(t2, e2);
@@ -690,7 +690,7 @@ class j extends J {
     return t2.setCanvas(this), super.addChild(t2);
   }
   invalidate() {
-    this._animate || this._renderPending || (this._renderPending = true, this._renderId = window.requestAnimationFrame(this._renHdlr));
+    this._animate || this._hasR || (this._hasR = true, this._rId = window.requestAnimationFrame(this._renHdlr));
   }
   getFrameRate() {
     return this._fps;
@@ -699,7 +699,7 @@ class j extends J {
     this._fps = t2, this._rIval = 1e3 / t2;
   }
   getActualFrameRate() {
-    return 0 === this._frms ? 0 : 1e3 / ((this._lastRender - this._frstRaf) / this._frms);
+    return 0 === this._frms ? 0 : 1e3 / ((this._lRdr - this._frstRaf) / this._frms);
   }
   getRenderInterval() {
     return this._rIval;
@@ -738,7 +738,7 @@ class j extends J {
     this._bgColor = t2;
   }
   setAnimatable(t2) {
-    t2 && !this._renderPending && this.invalidate(), this._animate = t2;
+    this._animate = t2, t2 ? this._hasR || this.invalidate() : (window.cancelAnimationFrame(this._rId), this._hasR = false);
   }
   isAnimatable() {
     return this._animate;
@@ -769,10 +769,13 @@ class j extends J {
   getCoordinate() {
     return void 0 === this._coords && (this._coords = this._el.getBoundingClientRect()), this._coords;
   }
+  pause(t2) {
+    t2 ? (this._hasAni = this._animate, this.setAnimatable(false)) : this._hasAni && (this._lRdr = window.performance.now(), this.setAnimatable(true));
+  }
   dispose() {
-    this._disposed || (this._animate = false, window.cancelAnimationFrame(this._renderId), this.removeListeners(), super.dispose(), this._el.parentNode && this._el.parentNode.removeChild(this._el), requestAnimationFrame(() => {
+    this._disposed || (this.pause(true), this.removeListeners(), super.dispose(), this._el.parentNode && this._el.parentNode.removeChild(this._el), window.requestAnimationFrame(() => {
       this._rdr.dispose(), this._rdr = void 0, this.collision.dispose(), this.collision = void 0;
-    }), this._disposed = true);
+    }));
   }
   handleInteraction(t2) {
     const e2 = this._children.length, s2 = this._vp;
@@ -823,9 +826,10 @@ class j extends J {
     this._prevDef && (t2.stopPropagation(), t2.preventDefault()), this._animate || this.invalidate();
   }
   render(t2) {
-    this._renderPending = false;
-    const e2 = t2 - this._lastRender;
-    if (0 === this._frstRaf && (this._frstRaf = t2), !this._disposed && this._animate && (this._renderPending = true, this._renderId = window.requestAnimationFrame(this._renHdlr), e2 / this._rIval < 0.99))
+    if (this._hasR = false, this._disposed)
+      return;
+    const e2 = t2 - this._lRdr;
+    if (0 === this._frstRaf && (this._frstRaf = t2), this._animate && (this._hasR = true, this._rId = window.requestAnimationFrame(this._renHdlr), e2 / this._rIval < 0.99))
       return;
     const s2 = e2 * this._frMul;
     this._qSize && this.updateCanvasSize();
@@ -836,7 +840,7 @@ class j extends J {
     let a2 = this._children[0];
     for (; a2; )
       n2 || a2.update(t2, s2), a2.draw(this._rdr, this._vp), a2 = a2.next;
-    this._rdr.onCommandsReady(), this._lastRender = t2, ++this._frms;
+    this._rdr.onCommandsReady(), this._lRdr = t2, ++this._frms;
   }
   addListeners(e2 = false) {
     this._hdlr || (this._hdlr = new t());
@@ -845,7 +849,9 @@ class j extends J {
       s2.add(h2, `touch${t2}`, i2);
     }), ["down", "move"].forEach((t2) => {
       s2.add(h2, `mouse${t2}`, i2);
-    }), s2.add(window, "mouseup", i2), this._vp && s2.add(h2, "wheel", i2), e2 && s2.add(window, "resize", this.handleResize.bind(this));
+    }), s2.add(window, "mouseup", i2), this._vp && s2.add(h2, "wheel", i2), e2 && s2.add(window, "resize", this.handleResize.bind(this)), s2.add(document, "visibilitychange", () => {
+      this.pause(document.hidden);
+    });
   }
   removeListeners() {
     var _a;
@@ -1065,7 +1071,7 @@ class A extends J {
         const s3 = i3.tileWidth ? i3.tileWidth : E + a2 << 0, r2 = i3.tileHeight ? i3.tileHeight : E + o2 << 0;
         e2 && (h2 -= e2.left, n2 -= e2.top), t2.drawImageCropped(this._resourceId, i3.col * s3, i3.type.row * r2, s3, r2, h2, n2, a2, o2, this.getDrawProps());
       } else if (e2) {
-        const { src: i4, dest: h3 } = v(s2, e2);
+        const { src: i4, dest: h3 } = Z(s2, e2);
         t2.drawImageCropped(this._resourceId, i4.left, i4.top, i4.width, i4.height, h3.left, h3.top, h3.width, h3.height, this.getDrawProps());
       } else
         t2.drawImage(this._resourceId, h2, n2, a2, o2, this.getDrawProps());
@@ -1123,10 +1129,10 @@ class A extends J {
     const h2 = this.gdp();
     h2.alpha = t2 ?? h2.alpha, h2.scale = e2 ?? h2.scale, h2.rotation = s2 ?? h2.rotation, h2.pivot = i2 ?? h2.pivot, void 0 === s2 && void 0 === e2 || (this._tfb || (this._tfb = { ...this._bounds }), function(t3, e3, s3, i3) {
       if (0 === e3 && 1 === s3)
-        return R(t3, 1, i3);
-      const { left: h3, top: n2, width: a2, height: o2 } = R(t3, s3, i3);
+        return v(t3, 1, i3);
+      const { left: h3, top: n2, width: a2, height: o2 } = v(t3, s3, i3);
       if (0 !== e3) {
-        const t4 = -a2 * _, s4 = a2 * _, r2 = a2 * _, d2 = -a2 * _, l2 = o2 * _, c2 = o2 * _, p2 = -o2 * _, u2 = -o2 * _, b2 = e3 * x, f2 = Math.cos(b2), w2 = Math.sin(b2), G2 = t4 * f2 + l2 * w2, Z2 = -t4 * w2 + l2 * f2, v2 = s4 * f2 + c2 * w2, R2 = -s4 * w2 + c2 * f2, X2 = r2 * f2 + p2 * w2, y2 = -r2 * w2 + p2 * f2, C2 = d2 * f2 + u2 * w2, L2 = -d2 * w2 + u2 * f2, W2 = m(G2, v2, X2, C2), S2 = g(G2, v2, X2, C2), Y2 = m(Z2, R2, y2, L2), H2 = g(Z2, R2, y2, L2);
+        const t4 = -a2 * _, s4 = a2 * _, r2 = a2 * _, d2 = -a2 * _, l2 = o2 * _, c2 = o2 * _, p2 = -o2 * _, u2 = -o2 * _, b2 = e3 * x, f2 = Math.cos(b2), w2 = Math.sin(b2), G2 = t4 * f2 + l2 * w2, R2 = -t4 * w2 + l2 * f2, Z2 = s4 * f2 + c2 * w2, v2 = -s4 * w2 + c2 * f2, X2 = r2 * f2 + p2 * w2, y2 = -r2 * w2 + p2 * f2, C2 = d2 * f2 + u2 * w2, L2 = -d2 * w2 + u2 * f2, W2 = m(G2, Z2, X2, C2), S2 = g(G2, Z2, X2, C2), Y2 = m(R2, v2, y2, L2), H2 = g(R2, v2, y2, L2);
         i3.width = S2 - W2, i3.height = H2 - Y2, i3.left = h3 - (i3.width * _ - a2 * _), i3.top = n2 - (i3.height * _ - o2 * _);
       }
     }(this._bounds, h2.rotation, h2.scale, this._tfb));

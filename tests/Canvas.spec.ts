@@ -119,6 +119,33 @@ describe( "Canvas", () => {
 
             expect( resizeSpy ).not.toHaveBeenCalled();
         });
+
+        it( "should stop and restart animation when the page visibility changes", () => {
+            const canvas = new Canvas({ animate: true });
+
+            const animateSpy = vi.spyOn( canvas, "setAnimatable" );
+
+            vi.spyOn( document, "hidden", "get" ).mockImplementation(() => true );
+            document.dispatchEvent( new Event( "visibilitychange" ));
+
+            expect( animateSpy ).toHaveBeenCalledWith( false );
+
+            vi.spyOn( document, "hidden", "get" ).mockImplementation(() => false );
+            document.dispatchEvent( new Event( "visibilitychange" ));
+
+            expect( animateSpy ).toHaveBeenCalledWith( true );
+        });
+
+        it( "should not restart animation when the page visibility is restored for non-animatable canvas instance", () => {
+            const canvas = new Canvas({ animate: false });
+
+            const animateSpy = vi.spyOn( canvas, "setAnimatable" );
+
+            vi.spyOn( document, "hidden", "get" ).mockImplementation(() => false );
+            document.dispatchEvent( new Event( "visibilitychange" ));
+
+            expect( animateSpy ).not.toHaveBeenCalled();
+        });
     });
 
     describe( "when acting as a mediator for the resource Cache", () => {
@@ -449,6 +476,29 @@ describe( "Canvas", () => {
         });
     });
 
+    describe( "when pausing the canvas animation", () => {
+        it( "should halt the animation cycle on pause", () => {
+            const canvas = new Canvas({ width, height, animate: true });
+
+            const animateSpy = vi.spyOn( canvas, "setAnimatable" );
+
+            canvas.pause( true );
+
+            expect( animateSpy ).toHaveBeenCalledWith( false );
+        });
+
+        it( "should restore the animation cycle on unpause", () => {
+            const canvas = new Canvas({ width, height, animate: true });
+            canvas.pause( true );
+
+            const animateSpy = vi.spyOn( canvas, "setAnimatable" );
+
+            canvas.pause( false );
+
+            expect( animateSpy ).toHaveBeenCalledWith( true );
+        });
+    });
+
     describe( "when scaling the canvas", () => {
         it( "should be able to scale to the requested factor", () => {
             const canvas  = new Canvas({ width, height });
@@ -649,7 +699,7 @@ describe( "Canvas", () => {
                 canvas.setAnimatable( true );
     
                 // @ts-expect-error snooping on a protected property
-                canvas._lastRender = now;
+                canvas._lRdr = now;
 
                 // at 10 fps, we expect 100 ms frame durations (1000ms / 10fps)
                 // as such the following invocations (at 1000ms / 60fps intervals)
@@ -692,7 +742,7 @@ describe( "Canvas", () => {
 
                 canvas.setAnimatable( true );
                 // @ts-expect-error snooping on a protected property
-                canvas._lastRender = now;
+                canvas._lRdr = now;
 
                 // at 60 fps, we expect 16.66 ms frame intervals (1000ms / 60fps)
                 // we will however run the RAF callbacks at 8.33 ms (1000ms / 120fps)
@@ -727,7 +777,7 @@ describe( "Canvas", () => {
 
                 canvas.setAnimatable( true );
                 // @ts-expect-error snooping on protected property
-                canvas._lastRender = now;
+                canvas._lRdr = now;
 
                 // at 60 fps, we expect 16.33 ms frame intervals (1000ms / 60fps)
                 // we will however run the RAF callback at 20 ms (1000ms / 50fps)
@@ -751,7 +801,7 @@ describe( "Canvas", () => {
 
                 canvas.setAnimatable( true );
                 // @ts-expect-error snooping on protected property
-                canvas._lastRender = now;
+                canvas._lRdr = now;
 
                 // at 120 fps, we expect 8.33 ms frame intervals (1000ms / 120fps)
                 // we will however run the RAF callback at 16.66 ms (1000ms / 60fps)
@@ -796,6 +846,27 @@ describe( "Canvas", () => {
 
                     vi.runAllTimers(); // advance RAF
                 });
+            });
+
+            it( "should halt the pending animation cycle when halting animation", () => {
+                const canvas = new Canvas({ width, height, animate: true });
+    
+                const cancelSpy = vi.spyOn( window, "cancelAnimationFrame" );
+    
+                canvas.setAnimatable( false );
+    
+                expect( cancelSpy ).toHaveBeenCalled();
+            });
+    
+            it( "should invalidate the Canvas when activating animation to restart the render loop", () => {
+                const canvas = new Canvas({ width, height, animate: true });
+                canvas.setAnimatable( false );
+    
+                const invalidateSpy = vi.spyOn( canvas, "invalidate" );
+    
+                canvas.setAnimatable( true );
+    
+                expect( invalidateSpy ).toHaveBeenCalled();
             });
 
             it( "should only render on invalidation when not animatable", (): Promise<void> => {

@@ -470,10 +470,9 @@ declare module "src/Canvas" {
         }) => void;
         protected _hdlr: EventHandler;
         protected _prevDef: boolean;
-        protected _lastRender: DOMHighResTimeStamp;
-        protected _renderId: number;
-        protected _renderPending: boolean;
-        protected _disposed: boolean;
+        protected _lRdr: DOMHighResTimeStamp;
+        protected _rId: number;
+        protected _hasR: boolean;
         protected _scale: Point;
         protected _aTchs: Sprite[];
         protected _coords: DOMRect | undefined;
@@ -483,6 +482,7 @@ declare module "src/Canvas" {
         protected _prefHeight: number;
         protected _qSize: Size | undefined;
         protected _animate: boolean;
+        protected _hasAni: boolean;
         protected _frstRaf: DOMHighResTimeStamp;
         protected _fps: number;
         protected _rIval: number;
@@ -521,6 +521,7 @@ declare module "src/Canvas" {
         stretchToFit(value: boolean): void;
         setFullScreen(value: boolean, stretchToFit?: boolean): void;
         getCoordinate(): DOMRect;
+        pause(isPaused: boolean): void;
         dispose(): void;
         protected handleInteraction(event: MouseEvent | TouchEvent | WheelEvent): void;
         protected render(now: DOMHighResTimeStamp): void;
