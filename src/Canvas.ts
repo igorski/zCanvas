@@ -84,11 +84,10 @@ export default class Canvas extends DisplayObject<Canvas> {
     protected _hdlr: EventHandler; // event handler map
     protected _prevDef = false;    // whether to prevent Event defaults
   
-    protected _lastRender: DOMHighResTimeStamp;
-    protected _renderId = 0;
-    protected _renderPending = false;
+    protected _lRdr: DOMHighResTimeStamp; // timestamp of last render
+    protected _rId = 0; // RAF id of next render callback
+    protected _hasR = false; // whether a render is pending (e.g. RAF requested)
   
-    protected _disposed = false;
     protected _scale: Point = { x: 1, y: 1 };
     protected _aTchs: Sprite[] = []; // Sprites that are currently mapped to touch pointers
     protected _coords: DOMRect | undefined;
@@ -99,6 +98,8 @@ export default class Canvas extends DisplayObject<Canvas> {
     protected _qSize: Size | undefined; // size enqueued to be set on next render cycle
     
     protected _animate = false;
+    protected _hasAni  = false; // whether animation was enabled before pause
+    protected _psd = false;     // whether animation is currently paused
     protected _frstRaf: DOMHighResTimeStamp = 0;
     protected _fps: number;   // intended framerate
     protected _rIval: number; // the render interval between frames
@@ -250,9 +251,9 @@ export default class Canvas extends DisplayObject<Canvas> {
      * multiple render executions (a single one will suffice)
      */
     override invalidate(): void {
-        if ( !this._animate && !this._renderPending ) {
-            this._renderPending = true;
-            this._renderId = window.requestAnimationFrame( this._renHdlr );
+        if ( !this._psd && !this._animate && !this._hasR ) {
+            this._hasR = true;
+            this._rId = window.requestAnimationFrame( this._renHdlr );
         }
     }
 
@@ -276,7 +277,7 @@ export default class Canvas extends DisplayObject<Canvas> {
         if ( this._frms === 0 ) {
             return 0;
         }
-        return 1000 / (( this._lastRender - this._frstRaf ) / this._frms );
+        return 1000 / (( this._lRdr - this._frstRaf ) / this._frms );
     }
 
     /**
@@ -402,8 +403,13 @@ export default class Canvas extends DisplayObject<Canvas> {
     }
 
     setAnimatable( value: boolean ): void {
-        if ( value && !this._renderPending ) {
-            this.invalidate();
+        if ( value ) {
+            if ( !this._hasR ) {
+                this.invalidate();
+            }
+        } else {
+            window.cancelAnimationFrame( this._rId ); // kill render loop
+            this._hasR = false;
         }
         this._animate = value;
     }
@@ -478,12 +484,29 @@ export default class Canvas extends DisplayObject<Canvas> {
         return this._coords;
     }
 
+    /**
+     * Halt the render cycle of an animated Canvas
+     */
+    pause( isPaused: boolean ): void {
+        if ( this._psd === isPaused ) {
+            return; // prevent conflict when visibility changes for an already paused Canvas
+        }
+        this._psd = isPaused;
+
+        if ( isPaused ) {
+            this._hasAni = this._animate;
+            this.setAnimatable( false );
+        } else if ( this._hasAni ) {
+            this._lRdr = window.performance.now(); // ensure framesSinceLastRender isn't as large as the pause duration
+            this.setAnimatable( true );
+        }
+    }
+
     dispose(): void {
         if ( this._disposed ) {
             return;
         }
-        this._animate = false;
-        window.cancelAnimationFrame( this._renderId ); // kill render loop
+        this.pause( true );
         this.removeListeners();
 
         // dispose all sprites on Display List
@@ -495,13 +518,12 @@ export default class Canvas extends DisplayObject<Canvas> {
         }
         
         // debounce disposing the renderer to not conflict with running render cycle
-        requestAnimationFrame(() => {
+        window.requestAnimationFrame(() => {
             this._rdr.dispose();
             this._rdr = undefined;
             this.collision.dispose();
             this.collision = undefined;
         });
-        this._disposed = true;
     }
 
     /* event handlers */
@@ -631,8 +653,12 @@ export default class Canvas extends DisplayObject<Canvas> {
      * @param {DOMHighResTimeStamp} now time elapsed since document time origin
      */
     protected render( now: DOMHighResTimeStamp ): void {
-        this._renderPending = false;
-        const delta = now - this._lastRender;
+        this._hasR = false;
+
+        if ( this._disposed ) {
+            return;
+        }
+        const delta = now - this._lRdr;
 
         if ( this._frstRaf === 0 ) {
             this._frstRaf = now; // track the timestamp of the first RAF callback
@@ -640,9 +666,9 @@ export default class Canvas extends DisplayObject<Canvas> {
 
         // keep render loop going while Canvas is animatable
 
-        if ( !this._disposed && this._animate ) {
-            this._renderPending = true;
-            this._renderId = window.requestAnimationFrame( this._renHdlr );
+        if ( this._animate ) {
+            this._hasR = true;
+            this._rId = window.requestAnimationFrame( this._renHdlr );
 
             // for animatable canvas instances, ensure we cap the framerate
             // by deferring the render in case the actual framerate is above the
@@ -697,7 +723,7 @@ export default class Canvas extends DisplayObject<Canvas> {
         }
         this._rdr.onCommandsReady();
 
-        this._lastRender = now;
+        this._lRdr = now;
         ++this._frms;
     }
 
@@ -710,37 +736,32 @@ export default class Canvas extends DisplayObject<Canvas> {
         if ( !this._hdlr ) {
             this._hdlr = new EventHandler();
         }
-        const theHandler  = this._hdlr;
-        const theListener = this.handleInteraction.bind( this );
-        const element     = this._el;
+        const handler  = this._hdlr;
+        const listener = this.handleInteraction.bind( this );
+        const element  = this._el;
 
         // use touch events ?
         if ( !!( "ontouchstart" in window )) {
             [ "start", "move", "end", "cancel" ].forEach( touchType => {
-                theHandler.add( element, `touch${touchType}`,  theListener );
+                handler.add( element, `touch${touchType}`,  listener );
             });
         }
         [ "down", "move" ].forEach( mouseType => {
-            theHandler.add( element, `mouse${mouseType}`, theListener );
+            handler.add( element, `mouse${mouseType}`, listener );
         });
-        theHandler.add( window, "mouseup", theListener ); // note: different element in listener
+        handler.add( window, "mouseup", listener ); // note: different element in listener
 
         if ( this._vp ) {
-            theHandler.add( element, "wheel", theListener );
+            handler.add( element, "wheel", listener );
         }
         if ( addResizeListener ) {
-            theHandler.add( window, "resize", this.handleResize.bind( this ));
+            handler.add( window, "resize", this.handleResize.bind( this ));
         }
-        /*
-        // pause the renderer on window blur/focus
-        let wasAnimating = false;
-        theHandler.add( window, "blur", () => {
-            wasAnimating = this._animate;
-            // this.setAnimatable( false );
+
+        // pause the renderer when the document is unfocused
+        handler.add( document, "visibilitychange", () => {
+            this.pause( document.hidden );
         });
-        theHandler.add( window, "focus", () => {
-            this.setAnimatable( wasAnimating );
-        });*/
     }
 
     protected removeListeners(): void {
