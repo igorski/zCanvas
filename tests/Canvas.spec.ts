@@ -700,7 +700,7 @@ describe( "Canvas", () => {
                 const canvas = new Canvas({ fps: 10, onUpdate: ( timestamp, framesSinceLastRender ) => {
                     // if update handler is triggered we know rendering is executed when it shouldn't
                     if ( !mayRender ) {
-                        reject( new Error( "render update handler should not have been called" ));
+                        reject( new Error( "render update handler should not have been called at " + timestamp ));
                     }
 
                     expect( timestamp ).toEqual( now + 100 );
@@ -709,12 +709,10 @@ describe( "Canvas", () => {
 
                     resolve();
                 }});
-                // @ts-expect-error snooping on a protected property
-                canvas._renderHandler = vi.fn(); // stub the RAF handler
                 canvas.setAnimatable( true );
     
                 // @ts-expect-error snooping on a protected property
-                canvas._lRdr = now;
+                canvas._lastRndr = now;
 
                 // at 10 fps, we expect 100 ms frame durations (1000ms / 10fps)
                 // as such the following invocations (at 1000ms / 60fps intervals)
@@ -757,7 +755,7 @@ describe( "Canvas", () => {
 
                 canvas.setAnimatable( true );
                 // @ts-expect-error snooping on a protected property
-                canvas._lRdr = now;
+                canvas._lastRndr = now;
 
                 // at 60 fps, we expect 16.66 ms frame intervals (1000ms / 60fps)
                 // we will however run the RAF callbacks at 8.33 ms (1000ms / 120fps)
@@ -792,7 +790,7 @@ describe( "Canvas", () => {
 
                 canvas.setAnimatable( true );
                 // @ts-expect-error snooping on protected property
-                canvas._lRdr = now;
+                canvas._lastRndr = now;
 
                 // at 60 fps, we expect 16.33 ms frame intervals (1000ms / 60fps)
                 // we will however run the RAF callback at 20 ms (1000ms / 50fps)
@@ -816,7 +814,7 @@ describe( "Canvas", () => {
 
                 canvas.setAnimatable( true );
                 // @ts-expect-error snooping on protected property
-                canvas._lRdr = now;
+                canvas._lastRndr = now;
 
                 // at 120 fps, we expect 8.33 ms frame intervals (1000ms / 120fps)
                 // we will however run the RAF callback at 16.66 ms (1000ms / 60fps)

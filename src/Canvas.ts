@@ -77,14 +77,15 @@ export default class Canvas extends DisplayObject<Canvas> {
     protected _stretch = false;
     protected _pxr = 1;
 
-    protected _renHdlr: ( now: DOMHighResTimeStamp ) => void;
-    protected _upHdlr?: ( now: DOMHighResTimeStamp, framesSinceLastRender: number ) => void;
-    protected _resHdrl?: ( width: number, height: number ) => void;
-    protected _vpHdlr?: ({}: { type: "panned", value: Viewport }) => void;
+    protected _onRdr : ( now: DOMHighResTimeStamp ) => void;
+    protected _onUpd?: ( now: DOMHighResTimeStamp, framesSinceLastRender: number ) => void;
+    protected _onRsz?: ( width: number, height: number ) => void;
+    protected _onVp? : ({}: { type: "panned", value: Viewport }) => void;
     protected _hdlr: EventHandler; // event handler map
     protected _prevDef = false;    // whether to prevent Event defaults
   
-    protected _lRdr: DOMHighResTimeStamp; // timestamp of last render
+    protected _frstRndr: DOMHighResTimeStamp = 0; // timestamp of first render operation
+    protected _lastRndr: DOMHighResTimeStamp;     // timestamp of last render operation
     protected _rId = 0; // RAF id of next render callback
     protected _hasR = false; // whether a render is pending (e.g. RAF requested)
   
@@ -100,12 +101,11 @@ export default class Canvas extends DisplayObject<Canvas> {
     protected _animate = false;
     protected _hasAni  = false; // whether animation was enabled before pause
     protected _psd = false;     // whether animation is currently paused
-    protected _frstRaf: DOMHighResTimeStamp = 0;
     protected _fps: number;   // intended framerate
     protected _rIval: number; // the render interval between frames
     protected _frMul: number; // step multiplier to use when throttling frame rate
     protected _frms = 0;      // the amount of rendered frames
-    protected _bgColor: string | undefined;
+    protected _bgCol: string | undefined;
 
     protected _isFs = false;   // whether zCanvas is currently fullscreen
     protected _hasFsH = false; // whether a fullscreen handler is registered
@@ -140,10 +140,10 @@ export default class Canvas extends DisplayObject<Canvas> {
         this._rdr = new RenderAPI( this._el, { debug, alpha: !backgroundColor, useOffscreen: useWorker( optimize ) });
         this.collision = new Collision( this._rdr );
 
-        this._upHdlr   = onUpdate;
-        this._renHdlr  = this.render.bind( this );
-        this._vpHdlr   = viewportHandler;
-        this._resHdrl  = onResize;
+        this._onUpd  = onUpdate;
+        this._onRdr  = this.render.bind( this );
+        this._onVp   = viewportHandler;
+        this._onRsz  = onResize;
 
         this._frMul = 1 / ( 1000 / fps );
 
@@ -253,7 +253,7 @@ export default class Canvas extends DisplayObject<Canvas> {
     override invalidate(): void {
         if ( !this._psd && !this._animate && !this._hasR ) {
             this._hasR = true;
-            this._rId = window.requestAnimationFrame( this._renHdlr );
+            this._rId = window.requestAnimationFrame( this._onRdr );
         }
     }
 
@@ -277,7 +277,7 @@ export default class Canvas extends DisplayObject<Canvas> {
         if ( this._frms === 0 ) {
             return 0;
         }
-        return 1000 / (( this._lRdr - this._frstRaf ) / this._frms );
+        return 1000 / (( this._lastRndr - this._frstRndr ) / this._frms );
     }
 
     /**
@@ -390,7 +390,7 @@ export default class Canvas extends DisplayObject<Canvas> {
         this.invalidate();
 
         if ( broadcast ) {
-            this._vpHdlr?.({ type: "panned", value: vp });
+            this._onVp?.({ type: "panned", value: vp });
         }
     }
 
@@ -399,7 +399,7 @@ export default class Canvas extends DisplayObject<Canvas> {
      * or RGB/RGBA, e.g. "#FF0000" or "rgba(255,0,0,1)";
      */
     setBackgroundColor( color: string ): void {
-        this._bgColor = color;
+        this._bgCol = color;
     }
 
     setAnimatable( value: boolean ): void {
@@ -497,7 +497,7 @@ export default class Canvas extends DisplayObject<Canvas> {
             this._hasAni = this._animate;
             this.setAnimatable( false );
         } else if ( this._hasAni ) {
-            this._lRdr = window.performance.now(); // ensure framesSinceLastRender isn't as large as the pause duration
+            this._lastRndr = window.performance.now(); // ensure framesSinceLastRender isn't as large as the pause duration
             this.setAnimatable( true );
         }
     }
@@ -650,7 +650,7 @@ export default class Canvas extends DisplayObject<Canvas> {
      * the render loop drawing the Objects onto the Canvas, shouldn't be
      * invoked directly but by the animation loop or an update request
      *
-     * @param {DOMHighResTimeStamp} now time elapsed since document time origin
+     * @param {DOMHighResTimeStamp} now time elapsed since document time origin, in milliseconds
      */
     protected render( now: DOMHighResTimeStamp ): void {
         this._hasR = false;
@@ -658,24 +658,24 @@ export default class Canvas extends DisplayObject<Canvas> {
         if ( this._disposed ) {
             return;
         }
-        const delta = now - this._lRdr;
+        const delta = now - this._lastRndr;
 
-        if ( this._frstRaf === 0 ) {
-            this._frstRaf = now; // track the timestamp of the first RAF callback
+        if ( this._frstRndr === 0 ) {
+            this._frstRndr = now; // track the timestamp of the first RAF callback
         }
 
         // keep render loop going while Canvas is animatable
 
         if ( this._animate ) {
             this._hasR = true;
-            this._rId = window.requestAnimationFrame( this._renHdlr );
+            this._rId  = window.requestAnimationFrame( this._onRdr );
 
             // for animatable canvas instances, ensure we cap the framerate
             // by deferring the render in case the actual framerate is above the
             // configured framerate of the Canvas instance
             
-            if (( delta / this._rIval ) < 0.99 ) {
-                return;
+            if (( delta / this._rIval ) < 0.6 ) {
+               return;
             }
         }
 
@@ -697,16 +697,16 @@ export default class Canvas extends DisplayObject<Canvas> {
         // clear previous canvas contents either by flooding it
         // with the optional background colour, or by clearing all pixel content
 
-        if ( this._bgColor ) {
-            this._rdr.drawRect( 0, 0, width, height, this._bgColor );
+        if ( this._bgCol ) {
+            this._rdr.drawRect( 0, 0, width, height, this._bgCol );
         } else {
             this._rdr.clearRect( 0, 0, width, height );
         }
 
-        const useExternalUpdateHandler = typeof this._upHdlr === "function";
+        const useExternalUpdateHandler = typeof this._onUpd === "function";
 
         if ( useExternalUpdateHandler ) {
-            this._upHdlr( now, framesSinceLastRender );
+            this._onUpd( now, framesSinceLastRender );
         }
 
         // draw the children onto the canvas
@@ -723,7 +723,7 @@ export default class Canvas extends DisplayObject<Canvas> {
         }
         this._rdr.onCommandsReady();
 
-        this._lRdr = now;
+        this._lastRndr = now;
         ++this._frms;
     }
 
@@ -866,7 +866,7 @@ export default class Canvas extends DisplayObject<Canvas> {
             element.style.width  = `${width}px`;
             element.style.height = `${height}px`;
 
-            this._resHdrl?.( width, height );
+            this._onRsz?.( width, height );
         }
         this._rdr.scale( scaleFactor );
     
