@@ -167,38 +167,40 @@ class Ship extends Actor {
     /* overridden methods */
 
     update( timestamp, framesSinceLastUpdate ) {
+        const scaledSpeed = SPEED_INCREMENT * framesSinceLastUpdate;
+
         switch ( this.horizontalThrust ) {
             default:
             case 0: // no thrust, decrease speed
                 if ( this.xSpeed < 0 )
-                    this.xSpeed += SPEED_INCREMENT;
+                    this.xSpeed += scaledSpeed;
                 else if ( this.xSpeed > 0 )
-                    this.xSpeed -= SPEED_INCREMENT;
+                    this.xSpeed -= scaledSpeed;
                 // until we come to an eventual stand-still
                 if ( Math.abs( this.xSpeed ) < 0.01 ) this.xSpeed = 0;
                 break;
             case 1: // thrusting to move left
-                if ( this.xSpeed > -this.maxSpeed ) this.xSpeed -= SPEED_INCREMENT;
+                if ( this.xSpeed > -this.maxSpeed ) this.xSpeed -= scaledSpeed;
                 break;
             case 2: // thrusting to move right
-                if ( this.xSpeed < this.maxSpeed ) this.xSpeed += SPEED_INCREMENT;
+                if ( this.xSpeed < this.maxSpeed ) this.xSpeed += scaledSpeed;
                 break;
         }
         switch( this.verticalThrust ) {
             default:
             case 0: // no thrust, decrease speed
                 if ( this.ySpeed < 0 )
-                    this.ySpeed += SPEED_INCREMENT;
+                    this.ySpeed += scaledSpeed;
                 else if ( this.ySpeed > 0 )
-                    this.ySpeed -= SPEED_INCREMENT;
+                    this.ySpeed -= scaledSpeed;
                 // until we come to an eventual stand-still
                 if ( Math.abs( this.ySpeed ) < 0.01 ) this.ySpeed = 0;
                 break;
             case 1: // thrusting to move up
-                if ( this.ySpeed > -this.maxSpeed ) this.ySpeed -= SPEED_INCREMENT;
+                if ( this.ySpeed > -this.maxSpeed ) this.ySpeed -= scaledSpeed;
                 break;
             case 2: // thrusting to move down
-                if ( this.ySpeed < this.maxSpeed ) this.ySpeed += SPEED_INCREMENT;
+                if ( this.ySpeed < this.maxSpeed ) this.ySpeed += scaledSpeed;
                 break;
         }
 

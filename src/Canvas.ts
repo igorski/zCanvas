@@ -660,23 +660,23 @@ export default class Canvas extends DisplayObject<Canvas> {
         }
         const delta = now - this._lastRndr;
 
-        if ( this._frstRndr === 0 ) {
-            this._frstRndr = now; // track the timestamp of the first RAF callback
-        }
-
         // keep render loop going while Canvas is animatable
 
         if ( this._animate ) {
             this._hasR = true;
             this._rId  = window.requestAnimationFrame( this._onRdr );
 
-            // for animatable canvas instances, ensure we cap the framerate
-            // by deferring the render in case the actual framerate is above the
-            // configured framerate of the Canvas instance
+            // for animatable canvas instances, ensure we cap the framerate by deferring the render
+            // in case the actual framerate is above the configured framerate of the Canvas instance.
+            // we use 90 % as a margin of error
             
-            if (( delta / this._rIval ) < 0.6 ) {
-               return;
+            if (( delta / this._rIval ) < 0.9 ) {
+                return;
             }
+        }
+
+        if ( this._frstRndr === 0 ) {
+            this._frstRndr = now; // track the timestamp of the first RAF callback
         }
 
         // the amount of frames the Sprite.update() steps should proceed

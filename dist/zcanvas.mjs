@@ -829,8 +829,9 @@ class j extends J {
     if (this._hasR = false, this._disposed)
       return;
     const e2 = t2 - this._lastRndr;
-    if (0 === this._frstRndr && (this._frstRndr = t2), this._animate && (this._hasR = true, this._rId = window.requestAnimationFrame(this._onRdr), e2 / this._rIval < 0.6))
+    if (this._animate && (this._hasR = true, this._rId = window.requestAnimationFrame(this._onRdr), e2 / this._rIval < 0.9))
       return;
+    0 === this._frstRndr && (this._frstRndr = t2);
     const s2 = e2 * this._frMul;
     this._qSize && this.updateCanvasSize();
     const i2 = this._width, h2 = this._height;
