@@ -79,7 +79,7 @@ export default class Canvas extends DisplayObject<Canvas> {
 
     protected _onRdr : ( now: DOMHighResTimeStamp ) => void;
     protected _onUpd?: ( now: DOMHighResTimeStamp, framesSinceLastRender: number ) => void;
-    protected _onRsz?: ( width: number, height: number ) => void;
+    protected _onRes?: ( width: number, height: number ) => void;
     protected _onVp? : ({}: { type: "panned", value: Viewport }) => void;
     protected _hdlr: EventHandler; // event handler map
     protected _prevDef = false;    // whether to prevent Event defaults
@@ -143,7 +143,7 @@ export default class Canvas extends DisplayObject<Canvas> {
         this._onUpd  = onUpdate;
         this._onRdr  = this.render.bind( this );
         this._onVp   = viewportHandler;
-        this._onRsz  = onResize;
+        this._onRes  = onResize;
 
         this._frMul = 1 / ( 1000 / fps );
 
@@ -866,7 +866,7 @@ export default class Canvas extends DisplayObject<Canvas> {
             element.style.width  = `${width}px`;
             element.style.height = `${height}px`;
 
-            this._onRsz?.( width, height );
+            this._onRes?.( width, height );
         }
         this._rdr.scale( scaleFactor );
     

@@ -693,6 +693,29 @@ describe( "Canvas", () => {
             });
         });
 
+        it( "should render a frame upon each RAF callback on the default 60 fps refresh rate", (): Promise<void> => {
+            return new Promise(( resolve, reject ) =>  {
+                let invocations = 0;
+                const canvas = new Canvas({ fps: 60, onUpdate: ( timestamp, framesSinceLastRender ) => {
+                    expect( framesSinceLastRender ).toBeCloseTo( 1 );
+                    if ( ++invocations === 60 ) {
+                        resolve();
+                    }
+                }});
+
+                canvas.setAnimatable( true );
+                // @ts-expect-error snooping on protected property
+                canvas._lastRndr = now;
+
+                // at 60 fps, we expect 16.66 ms frame intervals (1000ms / 60fps)
+    
+                for ( let i = 0; i < 60; ++i ) {
+                    // @ts-expect-error snooping on protected property
+                    canvas.render( now + (( 1000 / 60 ) * ( i + 1 )));
+                }
+            });
+        });
+
         it( "should defer actual rendering and calculate elapsed frames between render callbacks when a lower frame rate is specified", (): Promise<void> => {
             return new Promise(( resolve, reject ) => {
                 let mayRender = false;
