@@ -461,16 +461,17 @@ declare module "src/Canvas" {
         protected _smooth: boolean;
         protected _stretch: boolean;
         protected _pxr: number;
-        protected _renHdlr: (now: DOMHighResTimeStamp) => void;
-        protected _upHdlr?: (now: DOMHighResTimeStamp, framesSinceLastRender: number) => void;
-        protected _resHdrl?: (width: number, height: number) => void;
-        protected _vpHdlr?: ({}: {
+        protected _onRdr: (now: DOMHighResTimeStamp) => void;
+        protected _onUpd?: (now: DOMHighResTimeStamp, framesSinceLastRender: number) => void;
+        protected _onRes?: (width: number, height: number) => void;
+        protected _onVp?: ({}: {
             type: "panned";
             value: Viewport;
         }) => void;
         protected _hdlr: EventHandler;
         protected _prevDef: boolean;
-        protected _lRdr: DOMHighResTimeStamp;
+        protected _frstRndr: DOMHighResTimeStamp;
+        protected _lastRndr: DOMHighResTimeStamp;
         protected _rId: number;
         protected _hasR: boolean;
         protected _scale: Point;
@@ -484,12 +485,11 @@ declare module "src/Canvas" {
         protected _animate: boolean;
         protected _hasAni: boolean;
         protected _psd: boolean;
-        protected _frstRaf: DOMHighResTimeStamp;
         protected _fps: number;
         protected _rIval: number;
         protected _frMul: number;
         protected _frms: number;
-        protected _bgColor: string | undefined;
+        protected _bgCol: string | undefined;
         protected _isFs: boolean;
         protected _hasFsH: boolean;
         constructor({ width, height, fps, backgroundColor, animate, smoothing, stretchToFit, autoSize, viewport, preventEventBubbling, parentElement, debug, optimize, viewportHandler, onUpdate, onResize, }?: CanvasProps);
