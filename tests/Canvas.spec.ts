@@ -693,7 +693,7 @@ describe( "Canvas", () => {
             });
         });
 
-        it( "should render a frame upon each RAF callback on the default 60 fps refresh rate", (): Promise<void> => {
+        it( "should render a frame upon each RAF callback at the default refresh rate of 60 fps", (): Promise<void> => {
             return new Promise(( resolve, reject ) =>  {
                 let invocations = 0;
                 const canvas = new Canvas({ fps: 60, onUpdate: ( timestamp, framesSinceLastRender ) => {
