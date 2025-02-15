@@ -1,7 +1,7 @@
 /**
  * The MIT License (MIT)
  *
- * Igor Zinken 2023 - https://www.igorski.nl
+ * Igor Zinken 2023-2025 - https://www.igorski.nl
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of
  * this software and associated documentation files (the "Software"), to deal in
@@ -64,7 +64,7 @@ export default class RenderAPI implements IRenderer {
         if ( props.useOffscreen && typeof canvas[ "transferControlToOffscreen" ] === "function" ) {
             this._useW = true;
             this._cbs = new Map();
-            this._pl = new Cache(() => ([]), ( cmd: DrawCommand ) => {
+            this._pl = new Cache((): DrawCommand => ([]), ( cmd: DrawCommand ) => {
                 cmd.length = 0;
             });
             this._pl.fill( 1000 ); // allocate memory to hold at least this amount of commands

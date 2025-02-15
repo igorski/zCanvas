@@ -61,7 +61,7 @@ describe( "Loader", () => {
                 for ( const url of urls ) {
                     const data = await Loader.loadImage( url );
                     // expected crossOrigin attribute to be undefined for local images
-                    expect( data.image.crossOrigin ).toEqual( "" );
+                    expect( data.image.crossOrigin ).toBeNull();
                 }
             });
 
