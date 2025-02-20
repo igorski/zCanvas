@@ -43,7 +43,7 @@
     "test": "vitest --environment jsdom --no-watch",
     "typecheck": "npx -p typescript tsc -p tsconfig.check.json --noEmit",
     "types": "npx -p typescript tsc",
-    "prepublish": "npm run test && npm run build && npm run types"
+    "prepublishOnly": "npm run test && npm run build && npm run types"
   },
   "devDependencies": {
     "jsdom": "^26.0.0",
